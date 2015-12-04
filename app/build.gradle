@@ -2,14 +2,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.neenbedankt.android-apt'
 apply plugin: 'me.tatarka.retrolambda'
 
-
 buildscript {
     repositories {
         // required for this library, don't use mavenCentral()
         jcenter()
     }
     dependencies {
-        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.4'
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
         classpath 'me.tatarka:gradle-retrolambda:3.2.4'
     }
 }
@@ -52,7 +51,7 @@ dependencies {
 
     compile 'org.apache.commons:commons-lang3:3.4'
 
-    apt 'com.raizlabs.android:DBFlow-Compiler:2.2.1'
+    provided 'com.raizlabs.android:DBFlow-Compiler:2.2.1'
     compile "com.raizlabs.android:DBFlow-Core:2.2.1"
     compile "com.raizlabs.android:DBFlow:2.2.1"
 }
