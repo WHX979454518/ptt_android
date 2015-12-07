@@ -47,4 +47,14 @@ public class DatabaseTest extends ApplicationTestCase<App> {
 
         Assert.assertEquals(persons, Broker.INSTANCE.getGroupMembers(groups.get(0)).toBlocking().first());
     }
+
+    public void testReplaceMembers() {
+        final List<Person> persons = Arrays.asList(new Person(2, "User 1"), new Person(3, "User 2"), new Person(4, "User 3"));
+        Broker.INSTANCE.updatePersons(persons).toBlocking().first();
+        Assert.assertEquals(persons, Broker.INSTANCE.getPersons().toBlocking().first());
+
+        final List<Person> secondPersonList = Arrays.asList(new Person(4, "User 1"), new Person(5, "User 2"));
+        Broker.INSTANCE.updatePersons(secondPersonList).toBlocking().first();
+        Assert.assertEquals(secondPersonList, Broker.INSTANCE.getPersons().toBlocking().first());
+    }
 }

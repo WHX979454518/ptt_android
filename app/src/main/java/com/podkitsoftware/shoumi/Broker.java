@@ -105,6 +105,13 @@ public enum Broker {
         });
     }
 
+    public Observable<List<Person>> getPersons() {
+        return Database.INSTANCE
+                .createQuery(Person.TABLE_NAME,  "SELECT * FROM " + Person.TABLE_NAME)
+                .mapToList(Person.MAPPER)
+                .subscribeOn(queryScheduler);
+    }
+
     public Observable<Void> addGroupMembers(final Group group, final List<Person> persons) {
         if (persons == null || persons.isEmpty()) {
             return Observable.just(null);
