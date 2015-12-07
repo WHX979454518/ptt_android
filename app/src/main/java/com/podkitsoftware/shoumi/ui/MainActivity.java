@@ -23,6 +23,7 @@ import com.podkitsoftware.shoumi.ui.util.ResourceUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
 import butterknife.Bind;
+import butterknife.BindColor;
 import butterknife.ButterKnife;
 
 public class MainActivity extends BaseActivity {
@@ -54,6 +55,12 @@ public class MainActivity extends BaseActivity {
     @Bind(R.id.main_tabContainer)
     ViewGroup tabContainer;
 
+    @BindColor(R.color.primary)
+    int selectedTintColor;
+
+    @BindColor(R.color.secondary_text)
+    int normalTintColor;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,11 +70,10 @@ public class MainActivity extends BaseActivity {
 
         final LayoutInflater inflater = LayoutInflater.from(this);
         final Tab[] values = Tab.values();
-        final int primaryColor = ResourceUtil.getColor(this, R.color.primary);
         for (final Tab tab : values) {
             final TextView tabView = (TextView) inflater.inflate(R.layout.view_tab, tabContainer, false);
             final Drawable drawable = DrawableCompat.wrap(ResourceUtil.getDrawable(this, tab.drawableRes));
-            DrawableCompat.setTint(drawable, primaryColor);
+            DrawableCompat.setTint(drawable, normalTintColor);
             tabView.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             tabView.setText(tab.labelRes);
             tabView.setOnClickListener(v -> viewPager.setCurrentItem(ArrayUtils.indexOf(values, tab), true));
@@ -90,16 +96,22 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onPageSelected(int position) {
                 for (int i = 0, childCount = tabContainer.getChildCount(); i < childCount; i++) {
-                    tabContainer.getChildAt(i).setSelected(i == position);
+                    setTabItemSelected(i, i == position);
                 }
             }
         });
 
         if (savedInstanceState == null) {
-            tabContainer.getChildAt(0).setSelected(true);
+            setTabItemSelected(0, true);
         }
 
         toolbar.setTitle(R.string.app_name);
+    }
+
+    private void setTabItemSelected(final int position, final boolean selected) {
+        final TextView tabItem = (TextView) tabContainer.getChildAt(position);
+        tabItem.setSelected(selected);
+        DrawableCompat.setTint(tabItem.getCompoundDrawables()[1], selected ? selectedTintColor : normalTintColor);
     }
 
 }

@@ -36,7 +36,7 @@
     <style name="Text.Button" parent="TextAppearance.AppCompat.Button" />
 
     <style name="Text.MainTabButton" parent="Text.Button">
-        <item name="android:textColor">@color/tab_text</item>
+        <item name="android:textColor">@color/tab_item</item>
         <item name="android:padding">@dimen/unit_one</item>
         <item name="android:drawablePadding">@dimen/unit_one</item>
         <item name="android:gravity">center</item>
