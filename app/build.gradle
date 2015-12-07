@@ -32,14 +32,26 @@ android {
         }
     }
 
+    productFlavors {
+        dev {
+            applicationId 'com.podkitsoftware.shoumi.dev'
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
     }
 }
 
 dependencies {
     testCompile 'junit:junit:4.12'
+    devCompile 'com.facebook.stetho:stetho:1.2.0'
 
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
@@ -51,9 +63,7 @@ dependencies {
 
     compile 'org.apache.commons:commons-lang3:3.4'
 
-    provided 'com.raizlabs.android:DBFlow-Compiler:2.2.1'
-    compile "com.raizlabs.android:DBFlow-Core:2.2.1"
-    compile "com.raizlabs.android:DBFlow:2.2.1"
+    compile 'com.squareup.sqlbrite:sqlbrite:0.4.1'
 }
 
 

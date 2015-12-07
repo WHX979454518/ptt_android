@@ -1,131 +1,156 @@
 package com.podkitsoftware.shoumi;
 
-import android.content.ContentResolver;
-import android.database.ContentObserver;
-import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.CheckResult;
 import android.support.v4.util.SimpleArrayMap;
 
 import com.podkitsoftware.shoumi.model.Group;
-import com.podkitsoftware.shoumi.model.Group$Table;
 import com.podkitsoftware.shoumi.model.GroupMember;
-import com.podkitsoftware.shoumi.model.GroupMember$Table;
 import com.podkitsoftware.shoumi.model.Person;
-import com.podkitsoftware.shoumi.model.Person$Table;
-import com.raizlabs.android.dbflow.runtime.TransactionManager;
-import com.raizlabs.android.dbflow.runtime.transaction.BaseTransaction;
-import com.raizlabs.android.dbflow.sql.builder.Condition;
-import com.raizlabs.android.dbflow.sql.language.ColumnAlias;
-import com.raizlabs.android.dbflow.sql.language.Delete;
-import com.raizlabs.android.dbflow.sql.language.Insert;
-import com.raizlabs.android.dbflow.sql.language.Join;
-import com.raizlabs.android.dbflow.sql.language.Select;
+import com.podkitsoftware.shoumi.util.SqlUtil;
+import com.squareup.sqlbrite.BriteDatabase;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
-import rx.subscriptions.Subscriptions;
 
 public enum Broker {
     INSTANCE;
 
     final Scheduler queryScheduler = Schedulers.computation();
     final Scheduler modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
-    final Handler mainHandler = new Handler(Looper.myLooper());
 
-    private Observable<Void> observeContent(final Uri...uris) {
-        return Observable.create(subscriber -> {
-            final ContentResolver resolver = App.getInstance().getContentResolver();
-            final ContentObserver observer = new ContentObserver(mainHandler) {
-                @Override
-                public void onChange(boolean selfChange) {
-                    subscriber.onNext(null);
-                }
-            };
-
-            for (final Uri uri : uris) {
-                resolver.registerContentObserver(uri, true, observer);
+    private <T> Observable<T> updateInTransaction(final Func0<T> func) {
+        return Observable.defer(() -> {
+            final BriteDatabase.Transaction transaction = Database.INSTANCE.newTransaction();
+            try {
+                final T result = func.call();
+                transaction.markSuccessful();
+                return Observable.just(result);
+            } finally {
+                transaction.close();
             }
-
-            subscriber.add(Subscriptions.create(() -> resolver.unregisterContentObserver(observer)));
-        });
-    }
-
-    private <T> Observable<T> queryActive(final Func0<T> query, final Uri...uris) {
-        final Observable<T> deferred = Observable.defer(() -> Observable.just(query.call())).observeOn(queryScheduler);
-
-        return Observable.merge(
-                observeContent(uris).debounce(200, TimeUnit.MILLISECONDS).flatMap(aVoid -> deferred),
-                deferred);
-    }
-
-    private Observable<Void> modifyActive(final Runnable query) {
-        return Observable.<Void>defer(() -> {
-            query.run();
-            return Observable.just(null);
         }).subscribeOn(modifyScheduler);
     }
 
+    @CheckResult
     public Observable<List<Group>> getGroups() {
-        return queryActive(() ->
-                        new Select().from(Group.class).queryList(),
-                Group.BASE_URI);
+        return Database.INSTANCE
+                .createQuery(Group.TABLE_NAME, "SELECT * FROM " + Group.TABLE_NAME)
+                .mapToList(Group.MAPPER)
+                .subscribeOn(queryScheduler);
     }
 
+    @CheckResult
     public Observable<List<Person>> getGroupMembers(final Group group) {
-        return queryActive(() ->
-                        new Select().from(Person.class).as("P")
-                                .join(GroupMember.class, Join.JoinType.LEFT).as("GM")
-                                .on(Condition.column(ColumnAlias.columnWithTable("GM", GroupMember$Table.PERSON_PERSON_ID))
-                                        .eq(Condition.column(ColumnAlias.columnWithTable("P", Person$Table.ID))))
-                                .where(Condition.column(ColumnAlias.columnWithTable("GM", GroupMember$Table.GROUP_GROUP_ID)).eq(group.getId()))
-                                .queryList(),
-                group.getUri(),
-                GroupMember.BASE_URI);
+        final String sql = "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " +
+                "LEFT JOIN " + GroupMember.TABLE_NAME + " AS GM ON " +
+                    "GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
+                "WHERE GM." + GroupMember.COL_GROUP_ID + " = ?";
+
+
+        return Database.INSTANCE
+                .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME), sql, Long.toString(group.getId()))
+                .mapToList(Person.MAPPER)
+                .subscribeOn(queryScheduler);
     }
 
-    public Observable<Void> updateGroups(final Collection<Group> groups, final SimpleArrayMap<Long, Long[]> groupMembers) {
-        return modifyActive(() -> TransactionManager.getInstance().addTransaction(new BaseTransaction<Void>() {
-            @Override
-            public Void onExecute() {
-                Insert.into(Group.class).orReplace().values(groups).queryClose();
-                new Delete().from(Group.class).where(Condition.column(Group$Table.ID).notIn(groups)).queryClose();
+    @CheckResult
+    public Observable<Void> updateGroups(final List<Group> groups, final SimpleArrayMap<Group, long[]> groupMembers) {
+        return updateInTransaction(() -> {
+            final String[] groupIds;
 
-                for (int i = 0, size = groupMembers.size(); i < size; i++) {
-                    final long groupId = groupMembers.keyAt(i);
-                    final Long[] members = groupMembers.valueAt(i);
-
-                    doUpdateGroup(groupId, members);
+            // Replace all existing groups
+            if (groups != null && !groups.isEmpty()) {
+                groupIds = new String[groups.size()];
+                final ContentValues contentValues = new ContentValues();
+                for (int i = 0, groupsSize = groups.size(); i < groupsSize; i++) {
+                    final Group group = groups.get(i);
+                    groupIds[i] = Long.toString(group.getId());
+                    contentValues.clear();
+                    group.toValues(contentValues);
+                    Database.INSTANCE.insert(Group.TABLE_NAME, contentValues, SQLiteDatabase.CONFLICT_REPLACE);
                 }
-
-                App.getInstance().getContentResolver().notifyChange(Group.BASE_URI, null);
-                App.getInstance().getContentResolver().notifyChange(GroupMember.BASE_URI, null);
-
-                return null;
+            } else {
+                groupIds = null;
             }
-        }));
+
+            // Delete remaining groups.
+            Database.INSTANCE.delete(Group.TABLE_NAME,
+                    Group.COL_ID + " NOT IN " + SqlUtil.toSqlSet(groupIds));
+
+            // Replace all group members
+            if (groupMembers != null) {
+                for (int i = 0, size = groupMembers.size(); i < size; i++) {
+                    doUpdateGroupMembers(groupMembers.keyAt(i).getId(), groupMembers.valueAt(i));
+                }
+            }
+
+            return null;
+        });
     }
 
-    public Observable<Void> updateGroupMembers(final Group group, final Long[] groupMembers) {
-        return modifyActive(() -> TransactionManager.getInstance().addTransaction(new BaseTransaction<Void>() {
-            @Override
-            public Void onExecute() {
-                doUpdateGroup(group.getId(), groupMembers);
-                return null;
-            }
-        }));
+    @CheckResult
+    public Observable<Void> updateGroupMembers(final Group group, final long[] groupMembers) {
+        return updateInTransaction(() -> {
+            doUpdateGroupMembers(group.getId(), groupMembers);
+            return null;
+        });
     }
 
-    private static void doUpdateGroup(long groupId, Long[] members) {
-        new Delete().from(GroupMember.class).where(Condition.column(GroupMember$Table.GROUP_GROUP_ID).eq(groupId)).queryClose();
-        Insert.into(GroupMember.class).columns(GroupMember$Table.PERSON_PERSON_ID).values(members);
+    public Observable<Void> addGroupMembers(final Group group, final List<Person> persons) {
+        if (persons == null || persons.isEmpty()) {
+            return Observable.just(null);
+        }
+
+        return updateInTransaction(() -> {
+            final long[] members = new long[persons.size()];
+            for (int i = 0, personsSize = persons.size(); i < personsSize; i++) {
+                members[i] = persons.get(i).getId();
+            }
+            doAddGroupMembers(group.getId(), members);
+            return null;
+        });
+    }
+
+    public Observable<Void> updatePersons(final Collection<Person> persons) {
+        return updateInTransaction(() -> {
+            Database.INSTANCE.delete(Person.TABLE_NAME, "");
+
+
+            final ContentValues values = new ContentValues();
+            for (Person person : persons) {
+                values.clear();
+                person.toValues(values);
+                Database.INSTANCE.insert(Person.TABLE_NAME, values, SQLiteDatabase.CONFLICT_REPLACE);
+            }
+
+            return null;
+        });
+    }
+
+    private static void doAddGroupMembers(long groupId, long[] members) {
+        final ContentValues values = new ContentValues(2);
+
+        for (long memberId : members) {
+            values.put(GroupMember.COL_GROUP_ID, groupId);
+            values.put(GroupMember.COL_PERSON_ID, memberId);
+            Database.INSTANCE.insert(GroupMember.TABLE_NAME, values, SQLiteDatabase.CONFLICT_REPLACE);
+        }
+    }
+
+    private static void doUpdateGroupMembers(long groupId, long[] members) {
+        doAddGroupMembers(groupId, members);
+
+        Database.INSTANCE.delete(Group.TABLE_NAME,
+                GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members));
     }
 
 }

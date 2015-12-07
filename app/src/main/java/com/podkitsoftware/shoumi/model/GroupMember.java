@@ -1,46 +1,51 @@
 package com.podkitsoftware.shoumi.model;
 
-import android.net.Uri;
+import android.content.ContentValues;
+import android.database.Cursor;
 
-import com.podkitsoftware.shoumi.Database;
-import com.raizlabs.android.dbflow.annotation.Column;
-import com.raizlabs.android.dbflow.annotation.ForeignKey;
-import com.raizlabs.android.dbflow.annotation.ForeignKeyAction;
-import com.raizlabs.android.dbflow.annotation.ForeignKeyReference;
-import com.raizlabs.android.dbflow.annotation.PrimaryKey;
-import com.raizlabs.android.dbflow.annotation.Table;
-import com.raizlabs.android.dbflow.structure.BaseModel;
-import com.raizlabs.android.dbflow.structure.container.ForeignKeyContainer;
+import com.podkitsoftware.shoumi.util.CursorUtil;
 
-@Table(databaseName = Database.NAME, tableName = "group_members")
-public class GroupMember extends BaseModel {
 
-    public static final Uri BASE_URI = Database.BASE_CONTENT_URI.buildUpon().appendPath(GroupMember$Table.TABLE_NAME).build();
+public class GroupMember implements Model {
 
-    @Column
-    @PrimaryKey
-    Long id;
+    public static final String COL_ID = "id";
+    public static final String COL_GROUP_ID = "group_id";
+    public static final String COL_PERSON_ID = "person_id";
+    public static final String TABLE_NAME = "group_members";
 
-    @Column
-    @ForeignKey(
-            references = @ForeignKeyReference(columnName = "group_id", columnType = Long.class, foreignColumnName = "id"),
-            onDelete = ForeignKeyAction.CASCADE)
-    ForeignKeyContainer<Group> group;
+    private Long id;
+    private long groupId;
+    private long personId;
 
-    @Column
-    @ForeignKey(references = @ForeignKeyReference(columnName = "person_id", columnType = Long.class, foreignColumnName = "id"),
-            onDelete = ForeignKeyAction.CASCADE)
-    ForeignKeyContainer<Person> person;
-
-    public Uri getUri() {
-        return BASE_URI.buildUpon().appendPath(id == null ? "null" : id.toString()).build();
+    public GroupMember() {
     }
 
-    public Group getGroup() {
-        return group.load();
+    public GroupMember(long groupId, long personId) {
+        this.groupId = groupId;
+        this.personId = personId;
     }
 
-    public Person getPerson() {
-        return person.load();
+    @Override
+    public void toValues(ContentValues values) {
+        values.put(COL_ID, id);
+        values.put(COL_GROUP_ID, groupId);
+        values.put(COL_PERSON_ID, personId);
+    }
+
+    @Override
+    public void readFrom(Cursor cursor) {
+        id = CursorUtil.getOptionalLong(cursor, COL_ID);
+        groupId = CursorUtil.getLong(cursor, COL_GROUP_ID);
+        personId = CursorUtil.getLong(cursor, COL_PERSON_ID);
+    }
+
+    public static String getCreateTableSql() {
+        return "CREATE TABLE " + TABLE_NAME + "(" +
+                    COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL," +
+                    COL_GROUP_ID + " INTEGER NOT NULL REFERENCES "
+                                + Group.TABLE_NAME + "(" + Group.COL_ID + ") ON DELETE CASCADE, " +
+                    COL_PERSON_ID + " INTEGER NOT NULL REFERENCES "
+                                + Person.TABLE_NAME + "(" + Person.COL_ID + ") ON DELETE CASCADE, " +
+                "UNIQUE (" + COL_GROUP_ID + "," + COL_PERSON_ID + ") ON CONFLICT REPLACE)";
     }
 }
