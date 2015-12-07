@@ -1,159 +1,105 @@
 package com.podkitsoftware.shoumi.ui;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.StringRes;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.podkitsoftware.shoumi.R;
+import com.podkitsoftware.shoumi.ui.base.BaseActivity;
+import com.podkitsoftware.shoumi.ui.home.ContactsFragment;
+import com.podkitsoftware.shoumi.ui.home.ConversationFragment;
+import com.podkitsoftware.shoumi.ui.home.PersonFragment;
+import com.podkitsoftware.shoumi.ui.util.ResourceUtil;
 
-public class MainActivity extends AppCompatActivity {
+import org.apache.commons.lang3.ArrayUtils;
 
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
+import butterknife.Bind;
+import butterknife.ButterKnife;
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    private ViewPager mViewPager;
+public class MainActivity extends BaseActivity {
+
+    private enum Tab {
+        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, ConversationFragment.class),
+        Contacts(R.string.tab_contacts, R.drawable.ic_people, ContactsFragment.class),
+        Person(R.string.tab_me, R.drawable.ic_person, PersonFragment.class),
+        ;
+
+        public final @StringRes int labelRes;
+        public final @DrawableRes int drawableRes;
+        public final Class<? extends Fragment> fragmentClazz;
+
+        Tab(@StringRes int labelRes, @DrawableRes int drawableRes, Class<? extends Fragment> fragmentClazz) {
+            this.labelRes = labelRes;
+            this.drawableRes = drawableRes;
+            this.fragmentClazz = fragmentClazz;
+        }
+    }
+
+
+    @Bind(R.id.main_viewPager)
+    ViewPager viewPager;
+
+    @Bind(R.id.main_toolbar)
+    Toolbar toolbar;
+
+    @Bind(R.id.main_tabContainer)
+    ViewGroup tabContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        final LayoutInflater inflater = LayoutInflater.from(this);
+        final Tab[] values = Tab.values();
+        final int primaryColor = ResourceUtil.getColor(this, R.color.primary);
+        for (final Tab tab : values) {
+            final TextView tabView = (TextView) inflater.inflate(R.layout.view_tab, tabContainer, false);
+            final Drawable drawable = DrawableCompat.wrap(ResourceUtil.getDrawable(this, tab.drawableRes));
+            DrawableCompat.setTint(drawable, primaryColor);
+            tabView.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
+            tabView.setText(tab.labelRes);
+            tabView.setOnClickListener(v -> viewPager.setCurrentItem(ArrayUtils.indexOf(values, tab), true));
+            tabContainer.addView(tabView);
+        }
 
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        viewPager.setAdapter(new FragmentStatePagerAdapter(getSupportFragmentManager()) {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            public Fragment getItem(int position) {
+                return Fragment.instantiate(MainActivity.this, Tab.values()[position].fragmentClazz.getName());
+            }
+
+            @Override
+            public int getCount() {
+                return Tab.values().length;
             }
         });
 
-    }
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        public PlaceholderFragment() {
-        }
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
-        }
-    }
-
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
-        }
-
-        @Override
-        public int getCount() {
-            // Show 3 total pages.
-            return 3;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "SECTION 1";
-                case 1:
-                    return "SECTION 2";
-                case 2:
-                    return "SECTION 3";
+        viewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                for (int i = 0, childCount = tabContainer.getChildCount(); i < childCount; i++) {
+                    tabContainer.getChildAt(i).setSelected(i == position);
+                }
             }
-            return null;
+        });
+
+        if (savedInstanceState == null) {
+            tabContainer.getChildAt(0).setSelected(true);
         }
+
+        toolbar.setTitle(R.string.app_name);
     }
+
 }
