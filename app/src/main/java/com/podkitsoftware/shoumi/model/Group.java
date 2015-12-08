@@ -2,6 +2,7 @@ package com.podkitsoftware.shoumi.model;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.net.Uri;
 
 import com.podkitsoftware.shoumi.Broker;
 
@@ -10,7 +11,7 @@ import java.util.List;
 import rx.Observable;
 import rx.functions.Func1;
 
-public class Group implements Model {
+public class Group implements Model, Cloneable {
 
     public static final String TABLE_NAME = "groups";
 
@@ -26,6 +27,15 @@ public class Group implements Model {
     }
 
     public Group() {
+    }
+
+    @Override
+    public Group clone() {
+        try {
+            return (Group) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -59,6 +69,11 @@ public class Group implements Model {
     public void readFrom(Cursor cursor) {
         id = cursor.getLong(cursor.getColumnIndex(COL_ID));
         name = cursor.getString(cursor.getColumnIndex(COL_NAME));
+    }
+
+    public Uri getImageUri() {
+        //TODO: 生成组的图像
+        return Uri.parse("http://icons.iconarchive.com/icons/hopstarter/face-avatars/256/Male-Face-F5-icon.png");
     }
 
     public long getId() {

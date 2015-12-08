@@ -4,4 +4,5 @@
     <dimen name="unit_two">16dp</dimen>
 
     <dimen name="divider_normal">1dp</dimen>
+    <dimen name="group_list_icon_size">48dp</dimen>
 </resources>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content">
+
+    <ImageView
+        android:layout_width="@dimen/group_list_icon_size"
+        android:layout_height="@dimen/group_list_icon_size"
+        android:id="@+id/groupListItem_icon"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="@dimen/unit_two" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="群组1"
+        android:id="@+id/groupListItem_name"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/groupListItem_icon"
+        android:layout_toLeftOf="@+id/groupListItem_arrow"
+        style="@style/Text.Subhead"
+        android:layout_marginLeft="@dimen/unit_two"
+        android:layout_marginTop="@dimen/unit_two" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="成员1 成员2 成员3"
+        android:id="@+id/groupListItem_members"
+        android:layout_below="@+id/groupListItem_name"
+        android:layout_toLeftOf="@+id/groupListItem_arrow"
+        android:layout_alignLeft="@+id/groupListItem_name"
+        android:layout_marginTop="@dimen/unit_one"
+        style="@style/Text.Caption" />
+
+    <ImageView
+        android:id="@+id/groupListItem_arrow"
+        android:src="@drawable/ic_arrow_right"
+        android:layout_centerVertical="true"
+        android:tint="@color/secondary_text"
+        android:layout_alignParentRight="true"
+        android:layout_margin="@dimen/unit_one"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <View
+        style="@style/Divider"
+        android:layout_marginTop="@dimen/unit_two"
+        android:layout_below="@+id/groupListItem_members" />
+
+</RelativeLayout>

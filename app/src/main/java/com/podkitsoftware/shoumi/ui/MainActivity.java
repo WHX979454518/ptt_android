@@ -16,7 +16,7 @@ import android.widget.TextView;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.ui.base.BaseActivity;
 import com.podkitsoftware.shoumi.ui.home.ContactsFragment;
-import com.podkitsoftware.shoumi.ui.home.ConversationFragment;
+import com.podkitsoftware.shoumi.ui.home.GroupListFragment;
 import com.podkitsoftware.shoumi.ui.home.PersonFragment;
 import com.podkitsoftware.shoumi.ui.util.ResourceUtil;
 
@@ -29,7 +29,7 @@ import butterknife.ButterKnife;
 public class MainActivity extends BaseActivity {
 
     private enum Tab {
-        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, ConversationFragment.class),
+        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, GroupListFragment.class),
         Contacts(R.string.tab_contacts, R.drawable.ic_people, ContactsFragment.class),
         Person(R.string.tab_me, R.drawable.ic_person, PersonFragment.class),
         ;

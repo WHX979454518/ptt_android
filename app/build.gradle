@@ -52,12 +52,17 @@ android {
 dependencies {
     testCompile 'junit:junit:4.12'
     devCompile 'com.facebook.stetho:stetho:1.2.0'
+    devCompile 'com.facebook.stetho:stetho-okhttp:1.2.0'
+    devCompile 'com.hanhuy.android:viewserver:1.0.3'
 
     compile 'com.android.support:appcompat-v7:23.1.1'
+    compile 'com.android.support:recyclerview-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
 
     compile 'io.reactivex:rxandroid:1.0.1'
     compile 'com.trello:rxlifecycle:0.3.1'
+    compile 'com.squareup.picasso:picasso:2.5.2'
+    compile 'com.squareup.okhttp:okhttp:2.6.0'
 
     compile 'com.jakewharton:butterknife:7.0.1'
 

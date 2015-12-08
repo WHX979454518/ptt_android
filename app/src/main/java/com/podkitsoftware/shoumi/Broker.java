@@ -6,13 +6,16 @@ import android.support.annotation.CheckResult;
 import android.support.v4.util.SimpleArrayMap;
 
 import com.podkitsoftware.shoumi.model.Group;
+import com.podkitsoftware.shoumi.model.GroupInfo;
 import com.podkitsoftware.shoumi.model.GroupMember;
 import com.podkitsoftware.shoumi.model.Person;
+import com.podkitsoftware.shoumi.util.CursorUtil;
 import com.podkitsoftware.shoumi.util.SqlUtil;
 import com.squareup.sqlbrite.BriteDatabase;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -48,11 +51,37 @@ public enum Broker {
                 .subscribeOn(queryScheduler);
     }
 
+    public Observable<List<GroupInfo<String>>> getGroupsWithMemberNames(int maxMember) {
+        return Database.INSTANCE
+                .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME, GroupMember.TABLE_NAME),
+                        "SELECT * FROM " + Group.TABLE_NAME)
+                .mapToList(Group.MAPPER)
+                .map(groups -> {
+                    for (int i = 0, groupsSize = groups.size(); i < groupsSize; i++) {
+                        final Group group = groups.get(i);
+
+                        // Count group member
+                        final int memberCount = CursorUtil.countAndClose(Database.INSTANCE.query(
+                                "SELECT COUNT(" + GroupMember.COL_PERSON_ID + ") FROM " + GroupMember.TABLE_NAME + " WHERE " + GroupMember.COL_GROUP_ID + " = ?",
+                                Long.toString(group.getId())), 0);
+
+                        // Get members
+                        final List<String> persons = CursorUtil.mapCursorAndClose(Database.INSTANCE.query("SELECT P." + Person.COL_NAME + " FROM " + Person.TABLE_NAME + " AS P " +
+                                        "LEFT JOIN " + GroupMember.TABLE_NAME + " AS GM ON GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " AND " + GroupMember.COL_GROUP_ID + " = ? " +
+                                        "LIMIT " + maxMember,
+                                String.valueOf(group.getId())), cursor -> cursor.getString(0));
+
+                        ((List)groups).set(i, new GroupInfo<>(group, Collections.unmodifiableList(persons), memberCount));
+                    }
+                    return (List)groups;
+                });
+    }
+
     @CheckResult
     public Observable<List<Person>> getGroupMembers(final Group group) {
         final String sql = "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " +
                 "LEFT JOIN " + GroupMember.TABLE_NAME + " AS GM ON " +
-                    "GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
+                "GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
                 "WHERE GM." + GroupMember.COL_GROUP_ID + " = ?";
 
 
@@ -156,7 +185,7 @@ public enum Broker {
     private static void doUpdateGroupMembers(long groupId, long[] members) {
         doAddGroupMembers(groupId, members);
 
-        Database.INSTANCE.delete(Group.TABLE_NAME,
+        Database.INSTANCE.delete(GroupMember.TABLE_NAME,
                 GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members));
     }
 

@@ -26,6 +26,14 @@ public class SqlUtil {
             return "()";
         }
 
-        return "('" + StringUtils.join(values, "','") + "')";
+        final StringBuilder sb = new StringBuilder("(");
+        for (int i = 0, valuesLength = values.length; i < valuesLength; i++) {
+            sb.append('\'').append(values[i]).append('\'');
+            if (i < valuesLength - 1) {
+                sb.append(',');
+            }
+        }
+
+        return sb.append(')').toString();
     }
 }
