@@ -10,22 +10,28 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
-import com.podkitsoftware.shoumi.model.Group;
+import com.podkitsoftware.shoumi.model.GroupInfo;
 import com.podkitsoftware.shoumi.ui.base.BaseFragment;
 import com.squareup.picasso.Picasso;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * 显示会话列表(Group)的界面
  */
-public class GroupListFragment extends BaseFragment {
+public class GroupListFragment extends BaseFragment<Void> {
+
+    private static final int MAX_MEMBER_TO_DISPLAY = 5;
 
     @Bind(R.id.groupList_recyclerView)
     RecyclerView listView;
@@ -48,7 +54,28 @@ public class GroupListFragment extends BaseFragment {
         super.onDestroyView();
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        Broker.INSTANCE.getGroupsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
+                .observeOn(AndroidSchedulers.mainThread())
+                .compose(this.<List<GroupInfo<String>>>bindToLifecycle())
+                .subscribe(adapter::setGroups);
+    }
+
     private class Adapter extends RecyclerView.Adapter<GroupItemHolder> {
+        private final ArrayList<GroupInfo<String>> groups = new ArrayList<>();
+
+        public void setGroups(final Collection<GroupInfo<String>> newGroups) {
+            groups.clear();
+            if (newGroups != null) {
+                groups.addAll(newGroups);
+            }
+            notifyDataSetChanged();
+        }
+
+
         @Override
         public GroupItemHolder onCreateViewHolder(final ViewGroup parent, final int viewType) {
             return new GroupItemHolder(parent);
@@ -56,12 +83,12 @@ public class GroupListFragment extends BaseFragment {
 
         @Override
         public void onBindViewHolder(final GroupItemHolder holder, final int position) {
-
+            holder.setGroup(groups.get(position));
         }
 
         @Override
         public int getItemCount() {
-            return 0;
+            return groups.size();
         }
     }
 
@@ -82,15 +109,15 @@ public class GroupListFragment extends BaseFragment {
             ButterKnife.bind(this, itemView);
         }
 
-        public void setGroup(final Group group, final Collection<String> memberNames, final boolean hasMoreMembers) {
-            nameView.setText(group.getName());
+        public void setGroup(final GroupInfo<String> info) {
+            nameView.setText(info.group.getName());
             Picasso.with(itemView.getContext())
-                    .load(group.getImageUri())
+                    .load(info.group.getImageUri())
                     .fit()
                     .into(iconView);
 
-            memberView.setText(itemView.getResources().getString(hasMoreMembers ? R.string.group_member_with_more : R.string.group_member,
-                    StringUtils.join(memberNames, itemView.getResources().getString(R.string.member_separator))));
+            memberView.setText(itemView.getResources().getString(info.memberCount > info.members.size() ? R.string.group_member_with_more : R.string.group_member,
+                    StringUtils.join(info.members, itemView.getResources().getString(R.string.member_separator))));
         }
     }
 }

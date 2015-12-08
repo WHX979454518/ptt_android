@@ -56,6 +56,7 @@ public enum Broker {
                 .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME, GroupMember.TABLE_NAME),
                         "SELECT * FROM " + Group.TABLE_NAME)
                 .mapToList(Group.MAPPER)
+                .subscribeOn(queryScheduler)
                 .map(groups -> {
                     for (int i = 0, groupsSize = groups.size(); i < groupsSize; i++) {
                         final Group group = groups.get(i);
@@ -67,13 +68,13 @@ public enum Broker {
 
                         // Get members
                         final List<String> persons = CursorUtil.mapCursorAndClose(Database.INSTANCE.query("SELECT P." + Person.COL_NAME + " FROM " + Person.TABLE_NAME + " AS P " +
-                                        "LEFT JOIN " + GroupMember.TABLE_NAME + " AS GM ON GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " AND " + GroupMember.COL_GROUP_ID + " = ? " +
+                                        "INNER JOIN " + GroupMember.TABLE_NAME + " AS GM ON GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " AND " + GroupMember.COL_GROUP_ID + " = ? " +
                                         "LIMIT " + maxMember,
                                 String.valueOf(group.getId())), cursor -> cursor.getString(0));
 
-                        ((List)groups).set(i, new GroupInfo<>(group, Collections.unmodifiableList(persons), memberCount));
+                        ((List) groups).set(i, new GroupInfo<>(group, Collections.unmodifiableList(persons), memberCount));
                     }
-                    return (List)groups;
+                    return (List) groups;
                 });
     }
 
@@ -186,7 +187,8 @@ public enum Broker {
         doAddGroupMembers(groupId, members);
 
         Database.INSTANCE.delete(GroupMember.TABLE_NAME,
-                GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members));
+                GroupMember.COL_GROUP_ID + " = ? AND " +
+                GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members), String.valueOf(groupId));
     }
 
 }
