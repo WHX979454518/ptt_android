@@ -31,7 +31,7 @@ import rx.android.schedulers.AndroidSchedulers;
  */
 public class GroupListFragment extends BaseFragment<Void> {
 
-    private static final int MAX_MEMBER_TO_DISPLAY = 5;
+    private static final int MAX_MEMBER_TO_DISPLAY = 3;
 
     @Bind(R.id.groupList_recyclerView)
     RecyclerView listView;

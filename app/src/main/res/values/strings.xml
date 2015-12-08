@@ -3,7 +3,7 @@
     <string name="tab_conversation">会话</string>
     <string name="tab_contacts">联系人</string>
     <string name="tab_me">我</string>
-    <string name="group_member_with_more">%s$1 等</string>
+    <string name="group_member_with_more">%1$s 等</string>
     <string name="group_member">%1$s</string>
     <string name="member_separator">、</string>
 </resources>
