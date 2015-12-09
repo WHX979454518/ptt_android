@@ -14,7 +14,6 @@ import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.model.GroupInfo;
 import com.podkitsoftware.shoumi.ui.base.BaseFragment;
-import com.squareup.picasso.Picasso;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -111,10 +110,10 @@ public class GroupListFragment extends BaseFragment<Void> {
 
         public void setGroup(final GroupInfo<String> info) {
             nameView.setText(info.group.getName());
-            Picasso.with(itemView.getContext())
-                    .load(info.group.getImageUri())
-                    .fit()
-                    .into(iconView);
+//            Picasso.with(itemView.getContext())
+//                    .load(info.group.getImageUri())
+//                    .fit()
+//                    .into(iconView);
 
             memberView.setText(itemView.getResources().getString(info.memberCount > info.members.size() ? R.string.group_member_with_more : R.string.group_member,
                     StringUtils.join(info.members, itemView.getResources().getString(R.string.member_separator))));

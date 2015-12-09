@@ -19,6 +19,8 @@
 # Retro lambda
 -dontwarn java.lang.invoke.*
 
+-dontwarn com.squareup.okhttp.**
+
 # Butterknife
 -keep class butterknife.** { *; }
 -dontwarn butterknife.internal.**
