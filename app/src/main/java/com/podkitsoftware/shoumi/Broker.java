@@ -3,6 +3,7 @@ package com.podkitsoftware.shoumi;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.CheckResult;
+import android.support.annotation.Nullable;
 import android.support.v4.util.SimpleArrayMap;
 
 import com.podkitsoftware.shoumi.model.Group;
@@ -12,6 +13,9 @@ import com.podkitsoftware.shoumi.model.Person;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 import com.podkitsoftware.shoumi.util.SqlUtil;
 import com.squareup.sqlbrite.BriteDatabase;
+import com.squareup.sqlbrite.QueryObservable;
+
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -135,9 +139,21 @@ public enum Broker {
         });
     }
 
-    public Observable<List<Person>> getPersons() {
-        return Database.INSTANCE
-                .createQuery(Person.TABLE_NAME,  "SELECT * FROM " + Person.TABLE_NAME)
+    public Observable<List<Person>> getContacts(final @Nullable String searchTerm) {
+        final QueryObservable query;
+        if (StringUtils.isNotEmpty(searchTerm)) {
+            query = Database.INSTANCE
+                    .createQuery(Person.TABLE_NAME,
+                            "SELECT * FROM " + Person.TABLE_NAME + " " +
+                                    "WHERE " + Person.COL_IS_CONTACT + " <> 0 AND " + Person.COL_NAME + " LIKE ?", '%' + searchTerm + '%');
+        }
+        else {
+            query = Database.INSTANCE
+                    .createQuery(Person.TABLE_NAME,
+                            "SELECT * FROM " + Person.TABLE_NAME + " WHERE " + Person.COL_IS_CONTACT + " <> 0");
+        }
+
+        return query
                 .mapToList(Person.MAPPER)
                 .subscribeOn(queryScheduler);
     }

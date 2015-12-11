@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:background="?attr/selectableItemBackground"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/contactItem_icon"
+        android:layout_marginTop="@dimen/unit_one"
+        android:layout_marginBottom="@dimen/unit_one"
+        android:layout_marginLeft="@dimen/unit_two"
+        android:src="@drawable/ic_account_circle"
+        android:layout_width="@dimen/contact_list_icon_size"
+        android:layout_height="@dimen/contact_list_icon_size" />
+
+    <TextView
+        android:id="@+id/contactItem_name"
+        style="@style/Text.Subhead"
+        android:layout_marginLeft="@dimen/unit_one"
+        android:layout_marginRight="@dimen/unit_two"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

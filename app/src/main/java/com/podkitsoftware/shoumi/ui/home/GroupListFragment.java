@@ -83,6 +83,7 @@ public class GroupListFragment extends BaseFragment<Void> {
         @Override
         public void onBindViewHolder(final GroupItemHolder holder, final int position) {
             holder.setGroup(groups.get(position));
+            holder.itemView.setOnClickListener(v -> {});
         }
 
         @Override
@@ -117,6 +118,7 @@ public class GroupListFragment extends BaseFragment<Void> {
 
             memberView.setText(itemView.getResources().getString(info.memberCount > info.members.size() ? R.string.group_member_with_more : R.string.group_member,
                     StringUtils.join(info.members, itemView.getResources().getString(R.string.member_separator))));
+
         }
     }
 }

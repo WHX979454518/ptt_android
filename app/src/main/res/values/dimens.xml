@@ -5,4 +5,5 @@
 
     <dimen name="divider_normal">1dp</dimen>
     <dimen name="group_list_icon_size">48dp</dimen>
+    <dimen name="contact_list_icon_size">40dp</dimen>
 </resources>

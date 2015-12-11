@@ -53,7 +53,7 @@ public class DatabaseTest extends ApplicationTestCase<App> {
         final List<Group> groups = Arrays.asList(new Group(1, "Group 1"), new Group(2, "Group 2"));
         Broker.INSTANCE.updateGroups(groups, null).toBlocking().first();
 
-        final List<Person> persons = Arrays.asList(new Person(1, "User 1"), new Person(2, "User 2"));
+        final List<Person> persons = Arrays.asList(new Person(1, "User 1", true), new Person(2, "User 2", true));
         Broker.INSTANCE.updatePersons(persons).toBlocking().first();
         Broker.INSTANCE.addGroupMembers(groups.get(0), persons).toBlocking().first();
 
@@ -61,17 +61,17 @@ public class DatabaseTest extends ApplicationTestCase<App> {
     }
 
     public void testReplaceMembers() {
-        final List<Person> persons = Arrays.asList(new Person(2, "User 1"), new Person(3, "User 2"), new Person(4, "User 3"));
+        final List<Person> persons = Arrays.asList(new Person(2, "User 1", true), new Person(3, "User 2", true), new Person(4, "User 3", true));
         Broker.INSTANCE.updatePersons(persons).toBlocking().first();
-        Assert.assertEquals(persons, Broker.INSTANCE.getPersons().toBlocking().first());
+        Assert.assertEquals(persons, Broker.INSTANCE.getContacts().toBlocking().first());
 
-        final List<Person> secondPersonList = Arrays.asList(new Person(4, "User 1"), new Person(5, "User 2"));
+        final List<Person> secondPersonList = Arrays.asList(new Person(4, "User 1", true), new Person(5, "User 2", true));
         Broker.INSTANCE.updatePersons(secondPersonList).toBlocking().first();
-        Assert.assertEquals(secondPersonList, Broker.INSTANCE.getPersons().toBlocking().first());
+        Assert.assertEquals(secondPersonList, Broker.INSTANCE.getContacts().toBlocking().first());
     }
 
     public void testGetGroupWithMemberNames() {
-        final List<Person> persons = Arrays.asList(new Person(0, "User 1"), new Person(1, "User 2"), new Person(2, "User 3"));
+        final List<Person> persons = Arrays.asList(new Person(0, "User 1", true), new Person(1, "User 2", true), new Person(2, "User 3", true));
         final long[] personIds = new long[persons.size()];
         final List<String> personNames = new ArrayList<>(persons.size());
         for (int i = 0, personsSize = persons.size(); i < personsSize; i++) {

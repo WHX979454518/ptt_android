@@ -27,6 +27,11 @@ public class CursorUtil {
         return columnIndex >= 0 ? cursor.getString(columnIndex) : null;
     }
 
+    public static boolean getBoolean(final Cursor cursor, final String name) {
+        final int columnIndex = cursor.getColumnIndex(name);
+        return cursor.getInt(columnIndex) != 0;
+    }
+
     public static int countAndClose(final Cursor cursor, final int index) {
         try {
             cursor.moveToNext();
