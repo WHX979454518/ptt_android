@@ -3,6 +3,8 @@ package com.podkitsoftware.shoumi.model;
 import android.content.ContentValues;
 import android.database.Cursor;
 
+import com.bluelinelabs.logansquare.annotation.JsonField;
+import com.bluelinelabs.logansquare.annotation.JsonObject;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 
 import java.text.Collator;
@@ -11,6 +13,7 @@ import java.util.Locale;
 
 import rx.functions.Func1;
 
+@JsonObject
 public class Person implements Model {
 
     public static final String TABLE_NAME = "persons";
@@ -19,9 +22,14 @@ public class Person implements Model {
     public static final String COL_NAME = "name";
     public static final String COL_IS_CONTACT = "is_contact";
 
-    private long id;
-    private String name;
-    private boolean isContact;
+    @JsonField(name = "id")
+    long id;
+
+    @JsonField(name = "name")
+    String name;
+
+    @JsonField(name = "is_contact")
+    boolean isContact;
 
     public Person() {
     }

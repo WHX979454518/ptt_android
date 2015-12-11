@@ -4,22 +4,33 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 
+import com.bluelinelabs.logansquare.annotation.JsonField;
+import com.bluelinelabs.logansquare.annotation.JsonObject;
 import com.podkitsoftware.shoumi.Broker;
+import com.podkitsoftware.shoumi.util.CursorUtil;
 
 import java.util.List;
 
 import rx.Observable;
 import rx.functions.Func1;
 
+@JsonObject
 public class Group implements Model, Cloneable {
 
     public static final String TABLE_NAME = "groups";
 
     public static final String COL_ID = "id";
     public static final String COL_NAME = "name";
+    public static final String COL_PRIORITY = "priority";
 
-    private long id;
-    private String name;
+    @JsonField(name = "id")
+    long id;
+
+    @JsonField(name = "name")
+    String name;
+
+    @JsonField(name = "priority")
+    int priority;
 
     public Group(long id, String name) {
         this.id = id;
@@ -46,7 +57,6 @@ public class Group implements Model, Cloneable {
         Group group = (Group) o;
 
         return id == group.id;
-
     }
 
     @Override
@@ -63,12 +73,14 @@ public class Group implements Model, Cloneable {
     public void toValues(ContentValues values) {
         values.put(COL_ID, id);
         values.put(COL_NAME, name);
+        values.put(COL_PRIORITY, priority);
     }
 
     @Override
     public void readFrom(Cursor cursor) {
-        id = cursor.getLong(cursor.getColumnIndex(COL_ID));
-        name = cursor.getString(cursor.getColumnIndex(COL_NAME));
+        id = CursorUtil.getLong(cursor, COL_ID);
+        name = CursorUtil.getString(cursor, COL_NAME);
+        priority = CursorUtil.getInt(cursor, COL_PRIORITY);
     }
 
     public Uri getImageUri() {
@@ -84,10 +96,15 @@ public class Group implements Model, Cloneable {
         return name;
     }
 
+    public int getPriority() {
+        return priority;
+    }
+
     public static String getCreateTableSql() {
         return "CREATE TABLE " + TABLE_NAME + " (" +
                     COL_ID   + " INTEGER PRIMARY KEY NOT NULL," +
-                    COL_NAME + " TEXT NOT NULL" +
+                    COL_NAME + " TEXT NOT NULL," +
+                    COL_PRIORITY + " INTEGER NOT NULL" +
                 ")";
     }
 

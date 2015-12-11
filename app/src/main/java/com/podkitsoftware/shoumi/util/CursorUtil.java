@@ -52,4 +52,8 @@ public class CursorUtil {
             cursor.close();
         }
     }
+
+    public static int getInt(final Cursor cursor, final String columnName) {
+        return cursor.getInt(cursor.getColumnIndex(columnName));
+    }
 }
