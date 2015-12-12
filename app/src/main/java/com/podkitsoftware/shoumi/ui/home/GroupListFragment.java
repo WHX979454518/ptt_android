@@ -14,6 +14,7 @@ import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.model.GroupInfo;
 import com.podkitsoftware.shoumi.ui.base.BaseFragment;
+import com.podkitsoftware.shoumi.ui.room.RoomActivity;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -83,7 +84,7 @@ public class GroupListFragment extends BaseFragment<Void> {
         @Override
         public void onBindViewHolder(final GroupItemHolder holder, final int position) {
             holder.setGroup(groups.get(position));
-            holder.itemView.setOnClickListener(v -> {});
+            holder.itemView.setOnClickListener(v -> startActivity(RoomActivity.builder(getContext(), groups.get(position).group.getId())));
         }
 
         @Override

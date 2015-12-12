@@ -20,19 +20,24 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
+import rx.subjects.BehaviorSubject;
 
 public enum Broker {
     INSTANCE;
 
     final Scheduler queryScheduler = Schedulers.computation();
     final Scheduler modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
+
+    final BehaviorSubject<Set<String>> onlineUsersSubject = BehaviorSubject.create(Collections.emptySet());
 
     private <T> Observable<T> updateInTransaction(final Func0<T> func) {
         return Observable.defer(() -> {
@@ -47,6 +52,23 @@ public enum Broker {
         }).subscribeOn(modifyScheduler);
     }
 
+    public void updateOnlineUsers(final Collection<String> newOnlineUsers) {
+        onlineUsersSubject.onNext(Collections.unmodifiableSet(new HashSet<>(newOnlineUsers)));
+    }
+
+    @CheckResult
+    public Observable<Set<String>> getOnlineUsers() {
+        return onlineUsersSubject;
+    }
+
+    @CheckResult
+    public Observable<Group> getGroup(final String id) {
+        return Database.INSTANCE
+                .createQuery(Group.TABLE_NAME, "SELECT * FROM " + Group.TABLE_NAME + " WHERE " + Group.COL_ID + " = ?", String.valueOf(id))
+                .mapToOne(Group.MAPPER)
+                .subscribeOn(queryScheduler);
+    }
+
     @CheckResult
     public Observable<List<Group>> getGroups() {
         return Database.INSTANCE
@@ -55,6 +77,7 @@ public enum Broker {
                 .subscribeOn(queryScheduler);
     }
 
+    @CheckResult
     public Observable<List<GroupInfo<String>>> getGroupsWithMemberNames(int maxMember) {
         return Database.INSTANCE
                 .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME, GroupMember.TABLE_NAME),
@@ -68,7 +91,7 @@ public enum Broker {
                         // Count group member
                         final int memberCount = CursorUtil.countAndClose(Database.INSTANCE.query(
                                 "SELECT COUNT(" + GroupMember.COL_PERSON_ID + ") FROM " + GroupMember.TABLE_NAME + " WHERE " + GroupMember.COL_GROUP_ID + " = ?",
-                                Long.toString(group.getId())), 0);
+                                group.getId()), 0);
 
                         // Get members
                         final List<String> persons = CursorUtil.mapCursorAndClose(Database.INSTANCE.query("SELECT P." + Person.COL_NAME + " FROM " + Person.TABLE_NAME + " AS P " +
@@ -83,7 +106,7 @@ public enum Broker {
     }
 
     @CheckResult
-    public Observable<List<Person>> getGroupMembers(final Group group) {
+    public Observable<List<Person>> getGroupMembers(final String groupId) {
         final String sql = "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " +
                 "LEFT JOIN " + GroupMember.TABLE_NAME + " AS GM ON " +
                 "GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
@@ -91,13 +114,13 @@ public enum Broker {
 
 
         return Database.INSTANCE
-                .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME), sql, Long.toString(group.getId()))
+                .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME), sql, String.valueOf(groupId))
                 .mapToList(Person.MAPPER)
                 .subscribeOn(queryScheduler);
     }
 
     @CheckResult
-    public Observable<Void> updateGroups(final List<Group> groups, final SimpleArrayMap<Group, long[]> groupMembers) {
+    public Observable<Void> updateGroups(final List<Group> groups, final SimpleArrayMap<Group, String[]> groupMembers) {
         return updateInTransaction(() -> {
             final String[] groupIds;
 
@@ -107,7 +130,7 @@ public enum Broker {
                 final ContentValues contentValues = new ContentValues();
                 for (int i = 0, groupsSize = groups.size(); i < groupsSize; i++) {
                     final Group group = groups.get(i);
-                    groupIds[i] = Long.toString(group.getId());
+                    groupIds[i] = group.getId();
                     contentValues.clear();
                     group.toValues(contentValues);
                     Database.INSTANCE.insert(Group.TABLE_NAME, contentValues, SQLiteDatabase.CONFLICT_REPLACE);
@@ -132,13 +155,14 @@ public enum Broker {
     }
 
     @CheckResult
-    public Observable<Void> updateGroupMembers(final Group group, final long[] groupMembers) {
+    public Observable<Void> updateGroupMembers(final Group group, final String[] groupMembers) {
         return updateInTransaction(() -> {
             doUpdateGroupMembers(group.getId(), groupMembers);
             return null;
         });
     }
 
+    @CheckResult
     public Observable<List<Person>> getContacts(final @Nullable String searchTerm) {
         final QueryObservable query;
         if (StringUtils.isNotEmpty(searchTerm)) {
@@ -158,13 +182,14 @@ public enum Broker {
                 .subscribeOn(queryScheduler);
     }
 
+    @CheckResult
     public Observable<Void> addGroupMembers(final Group group, final List<Person> persons) {
         if (persons == null || persons.isEmpty()) {
             return Observable.just(null);
         }
 
         return updateInTransaction(() -> {
-            final long[] members = new long[persons.size()];
+            final String[] members = new String[persons.size()];
             for (int i = 0, personsSize = persons.size(); i < personsSize; i++) {
                 members[i] = persons.get(i).getId();
             }
@@ -173,6 +198,7 @@ public enum Broker {
         });
     }
 
+    @CheckResult
     public Observable<Void> updatePersons(final Collection<Person> persons) {
         return updateInTransaction(() -> {
             Database.INSTANCE.delete(Person.TABLE_NAME, "");
@@ -189,22 +215,22 @@ public enum Broker {
         });
     }
 
-    private static void doAddGroupMembers(long groupId, long[] members) {
+    private static void doAddGroupMembers(String groupId, String[] members) {
         final ContentValues values = new ContentValues(2);
 
-        for (long memberId : members) {
+        for (String memberId : members) {
             values.put(GroupMember.COL_GROUP_ID, groupId);
             values.put(GroupMember.COL_PERSON_ID, memberId);
             Database.INSTANCE.insert(GroupMember.TABLE_NAME, values, SQLiteDatabase.CONFLICT_REPLACE);
         }
     }
 
-    private static void doUpdateGroupMembers(long groupId, long[] members) {
+    private static void doUpdateGroupMembers(String groupId, String[] members) {
         doAddGroupMembers(groupId, members);
 
         Database.INSTANCE.delete(GroupMember.TABLE_NAME,
                 GroupMember.COL_GROUP_ID + " = ? AND " +
-                GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members), String.valueOf(groupId));
+                GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members), groupId);
     }
 
 }

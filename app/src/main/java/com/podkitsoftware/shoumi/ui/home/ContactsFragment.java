@@ -105,7 +105,7 @@ public class ContactsFragment extends BaseFragment<Void> {
         @Override
         public void onBindViewHolder(final ContactHolder holder, final int position) {
             final Person person = personList.get(position);
-            holder.iconView.setColorFilter(accountColors[((int) (person.getId() % accountColors.length))]);
+            holder.iconView.setColorFilter(accountColors[(person.getId().hashCode() % accountColors.length)]);
             holder.nameView.setText(person.getName());
             holder.itemView.setOnClickListener(v -> {
 

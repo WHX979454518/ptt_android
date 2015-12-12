@@ -7,6 +7,8 @@ import com.bluelinelabs.logansquare.annotation.JsonField;
 import com.bluelinelabs.logansquare.annotation.JsonObject;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
@@ -23,7 +25,7 @@ public class Person implements Model {
     public static final String COL_IS_CONTACT = "is_contact";
 
     @JsonField(name = "id")
-    long id;
+    String id;
 
     @JsonField(name = "name")
     String name;
@@ -34,7 +36,7 @@ public class Person implements Model {
     public Person() {
     }
 
-    public Person(long id, String name, final boolean isContact) {
+    public Person(String id, String name, final boolean isContact) {
         this.id = id;
         this.name = name;
         this.isContact = isContact;
@@ -49,7 +51,7 @@ public class Person implements Model {
 
     @Override
     public void readFrom(Cursor cursor) {
-        id = CursorUtil.getLong(cursor, COL_ID);
+        id = CursorUtil.getString(cursor, COL_ID);
         name = CursorUtil.getString(cursor, COL_NAME);
         isContact = CursorUtil.getBoolean(cursor, COL_IS_CONTACT);
     }
@@ -59,7 +61,7 @@ public class Person implements Model {
         return "Person {id=" + id + ",name=" + name + ",isContact=" + isContact + "}";
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
@@ -76,15 +78,13 @@ public class Person implements Model {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Person person = (Person) o;
-
-        return id == person.id;
-
+        final Person person = (Person) o;
+        return StringUtils.equals(person.id, id);
     }
 
     @Override
     public int hashCode() {
-        return (int) (id ^ (id >>> 32));
+        return id == null ? 0 : id.hashCode();
     }
 
     public static Func1<Cursor, Person> MAPPER = cursor -> {
@@ -95,7 +95,7 @@ public class Person implements Model {
 
     public static String getCreateTableSql() {
         return "CREATE TABLE " + TABLE_NAME + " (" +
-                    COL_ID + " INTEGER PRIMARY KEY NOT NULL, " +
+                    COL_ID + " TEXT PRIMARY KEY NOT NULL, " +
                     COL_NAME + " TEXT NOT NULL," +
                     COL_IS_CONTACT + " INTEGER NOT NULL" +
                 ")";

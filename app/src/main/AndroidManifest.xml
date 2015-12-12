@@ -22,6 +22,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:theme="@style/AppTheme.Room"
+            android:name=".ui.room.RoomActivity" />
     </application>
 
 </manifest>

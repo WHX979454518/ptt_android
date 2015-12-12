@@ -9,6 +9,8 @@ import com.bluelinelabs.logansquare.annotation.JsonObject;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.List;
 
 import rx.Observable;
@@ -24,7 +26,7 @@ public class Group implements Model, Cloneable {
     public static final String COL_PRIORITY = "priority";
 
     @JsonField(name = "id")
-    long id;
+    String id;
 
     @JsonField(name = "name")
     String name;
@@ -32,7 +34,7 @@ public class Group implements Model, Cloneable {
     @JsonField(name = "priority")
     int priority;
 
-    public Group(long id, String name) {
+    public Group(String id, String name) {
         this.id = id;
         this.name = name;
     }
@@ -54,14 +56,13 @@ public class Group implements Model, Cloneable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Group group = (Group) o;
-
-        return id == group.id;
+        final Group group = (Group) o;
+        return StringUtils.equals(group.id, id);
     }
 
     @Override
     public int hashCode() {
-        return (int) (id ^ (id >>> 32));
+        return id == null ? 0 : id.hashCode();
     }
 
     @Override
@@ -78,7 +79,7 @@ public class Group implements Model, Cloneable {
 
     @Override
     public void readFrom(Cursor cursor) {
-        id = CursorUtil.getLong(cursor, COL_ID);
+        id = CursorUtil.getString(cursor, COL_ID);
         name = CursorUtil.getString(cursor, COL_NAME);
         priority = CursorUtil.getInt(cursor, COL_PRIORITY);
     }
@@ -88,7 +89,7 @@ public class Group implements Model, Cloneable {
         return Uri.parse("http://icons.iconarchive.com/icons/hopstarter/face-avatars/256/Male-Face-F5-icon.png");
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
@@ -115,6 +116,6 @@ public class Group implements Model, Cloneable {
     };
 
     public Observable<List<Person>> getMembers() {
-        return Broker.INSTANCE.getGroupMembers(this);
+        return Broker.INSTANCE.getGroupMembers(id);
     }
 }
