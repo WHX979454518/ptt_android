@@ -70,10 +70,10 @@ public class DevApp extends App {
                 new Group("2", "北京自驾群"),
                 new Group("3", "非主流群"));
 
-        final SimpleArrayMap<Group, String[]> groupMembers = new SimpleArrayMap<>();
-        groupMembers.put(groups.get(0), new String[] { persons.get(0).getId(), persons.get(1).getId() });
-        groupMembers.put(groups.get(1), new String[]{persons.get(2).getId(), persons.get(4).getId()});
-        groupMembers.put(groups.get(2), new String[]{persons.get(0).getId(), persons.get(1).getId(), persons.get(2).getId(), persons.get(3).getId()});
+        final SimpleArrayMap<Group, List<String>> groupMembers = new SimpleArrayMap<>();
+        groupMembers.put(groups.get(0), Arrays.asList(persons.get(0).getId(), persons.get(1).getId()));
+        groupMembers.put(groups.get(1), Arrays.asList(persons.get(2).getId(), persons.get(4).getId()));
+        groupMembers.put(groups.get(2), Arrays.asList(persons.get(0).getId(), persons.get(1).getId(), persons.get(2).getId(), persons.get(3).getId()));
 
         Broker.INSTANCE.updatePersons(persons).subscribe();
         Broker.INSTANCE.updateGroups(groups, groupMembers).subscribe();

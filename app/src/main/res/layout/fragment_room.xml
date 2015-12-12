@@ -1,22 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipChildren="false"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <View
-        android:id="@+id/room_darkBackground"
+    <android.support.design.widget.AppBarLayout
+        android:id="@+id/room_appBar"
         android:background="?attr/colorPrimary"
-        android:layout_alignParentTop="true"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/room_dark_height" />
+        android:layout_height="@dimen/room_dark_height">
 
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/room_toolbar"
-        app:title="Hello"
-        android:layout_alignParentTop="true"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/room_toolbar"
+            app:title="Hello"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-</RelativeLayout>
+    </android.support.design.widget.AppBarLayout>
+
+    <com.podkitsoftware.shoumi.ui.widget.PushToTalkButton
+        android:id="@+id/room_pushToTalkButton"
+        android:layout_below="@+id/room_appBar"
+        android:src="@drawable/ic_voice_large"
+        android:scaleType="center"
+        android:tint="?attr/colorPrimary"
+        app:layout_anchor="@+id/room_appBar"
+        app:layout_anchorGravity="bottom|center_horizontal"
+        android:background="@drawable/bg_push_button"
+        android:layout_width="@dimen/push_button"
+        android:layout_height="@dimen/push_button"/>
+
+
+
+</android.support.design.widget.CoordinatorLayout>

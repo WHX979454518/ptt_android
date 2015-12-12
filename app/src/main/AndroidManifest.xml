@@ -24,7 +24,7 @@
         </activity>
 
         <activity
-            android:theme="@style/AppTheme.Room"
+            android:theme="@style/AppTheme.Dark"
             android:name=".ui.room.RoomActivity" />
     </application>
 

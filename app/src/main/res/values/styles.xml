@@ -11,7 +11,7 @@
         <item name="toolbarStyle">@style/Toolbar</item>
     </style>
 
-    <style name="AppTheme.Room" parent="Theme.AppCompat.NoActionBar" />
+    <style name="AppTheme.Dark" parent="Theme.AppCompat.NoActionBar" />
 
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>

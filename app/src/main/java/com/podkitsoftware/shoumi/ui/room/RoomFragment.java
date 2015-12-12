@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import com.podkitsoftware.shoumi.model.Group;
 import com.podkitsoftware.shoumi.model.Person;
 import com.podkitsoftware.shoumi.ui.base.BaseFragment;
 import com.podkitsoftware.shoumi.ui.util.ResourceUtil;
+import com.podkitsoftware.shoumi.ui.widget.PushToTalkButton;
 
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -38,6 +40,12 @@ public class RoomFragment extends BaseFragment<RoomFragment.Callbacks> {
     @Bind(R.id.room_toolbar)
     Toolbar toolbar;
 
+    @Bind(R.id.room_pushToTalkButton)
+    PushToTalkButton pttBtn;
+
+    @Bind(R.id.room_appBar)
+    ViewGroup appBar;
+
     @Nullable
     @Override
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
@@ -45,6 +53,7 @@ public class RoomFragment extends BaseFragment<RoomFragment.Callbacks> {
         ButterKnife.bind(this, view);
         toolbar.setNavigationIcon(ResourceUtil.getTintedDrawable(getContext(), R.drawable.ic_arrow_back, Color.WHITE));
         toolbar.setNavigationOnClickListener(v -> getActivity().finish());
+        ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + getResources().getDimension(R.dimen.divider_normal));
         return view;
     }
 

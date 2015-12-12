@@ -7,4 +7,5 @@
     <dimen name="group_list_icon_size">48dp</dimen>
     <dimen name="contact_list_icon_size">40dp</dimen>
     <dimen name="room_dark_height">180dp</dimen>
+    <dimen name="push_button">180dp</dimen>
 </resources>

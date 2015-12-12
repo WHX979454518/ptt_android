@@ -17,6 +17,7 @@ import com.squareup.sqlbrite.QueryObservable;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -64,7 +65,7 @@ public enum Broker {
     @CheckResult
     public Observable<Group> getGroup(final String id) {
         return Database.INSTANCE
-                .createQuery(Group.TABLE_NAME, "SELECT * FROM " + Group.TABLE_NAME + " WHERE " + Group.COL_ID + " = ?", String.valueOf(id))
+                .createQuery(Group.TABLE_NAME, "SELECT * FROM " + Group.TABLE_NAME + " WHERE " + Group.COL_ID + " = ?", id)
                 .mapToOne(Group.MAPPER)
                 .subscribeOn(queryScheduler);
     }
@@ -97,7 +98,7 @@ public enum Broker {
                         final List<String> persons = CursorUtil.mapCursorAndClose(Database.INSTANCE.query("SELECT P." + Person.COL_NAME + " FROM " + Person.TABLE_NAME + " AS P " +
                                         "INNER JOIN " + GroupMember.TABLE_NAME + " AS GM ON GM." + GroupMember.COL_PERSON_ID + " = P." + Person.COL_ID + " AND " + GroupMember.COL_GROUP_ID + " = ? " +
                                         "LIMIT " + maxMember,
-                                String.valueOf(group.getId())), cursor -> cursor.getString(0));
+                                group.getId()), cursor -> cursor.getString(0));
 
                         ((List) groups).set(i, new GroupInfo<>(group, Collections.unmodifiableList(persons), memberCount));
                     }
@@ -114,13 +115,13 @@ public enum Broker {
 
 
         return Database.INSTANCE
-                .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME), sql, String.valueOf(groupId))
+                .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME), sql, groupId)
                 .mapToList(Person.MAPPER)
                 .subscribeOn(queryScheduler);
     }
 
     @CheckResult
-    public Observable<Void> updateGroups(final List<Group> groups, final SimpleArrayMap<Group, String[]> groupMembers) {
+    public Observable<Void> updateGroups(final List<Group> groups, final SimpleArrayMap<Group, List<String>> groupMembers) {
         return updateInTransaction(() -> {
             final String[] groupIds;
 
@@ -155,9 +156,9 @@ public enum Broker {
     }
 
     @CheckResult
-    public Observable<Void> updateGroupMembers(final Group group, final String[] groupMembers) {
+    public Observable<Void> updateGroupMembers(final String groupId, final Collection<String> groupMembers) {
         return updateInTransaction(() -> {
-            doUpdateGroupMembers(group.getId(), groupMembers);
+            doUpdateGroupMembers(groupId, groupMembers);
             return null;
         });
     }
@@ -183,15 +184,15 @@ public enum Broker {
     }
 
     @CheckResult
-    public Observable<Void> addGroupMembers(final Group group, final List<Person> persons) {
+    public Observable<Void> addGroupMembers(final Group group, final Collection<Person> persons) {
         if (persons == null || persons.isEmpty()) {
             return Observable.just(null);
         }
 
         return updateInTransaction(() -> {
-            final String[] members = new String[persons.size()];
-            for (int i = 0, personsSize = persons.size(); i < personsSize; i++) {
-                members[i] = persons.get(i).getId();
+            final ArrayList<String> members = new ArrayList<>(persons.size());
+            for (Person person : persons) {
+                members.add(person.getId());
             }
             doAddGroupMembers(group.getId(), members);
             return null;
@@ -215,7 +216,7 @@ public enum Broker {
         });
     }
 
-    private static void doAddGroupMembers(String groupId, String[] members) {
+    private static void doAddGroupMembers(String groupId, Collection<String> members) {
         final ContentValues values = new ContentValues(2);
 
         for (String memberId : members) {
@@ -225,7 +226,7 @@ public enum Broker {
         }
     }
 
-    private static void doUpdateGroupMembers(String groupId, String[] members) {
+    private static void doUpdateGroupMembers(String groupId, Collection<String> members) {
         doAddGroupMembers(groupId, members);
 
         Database.INSTANCE.delete(GroupMember.TABLE_NAME,

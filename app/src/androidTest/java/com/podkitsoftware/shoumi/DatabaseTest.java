@@ -72,17 +72,17 @@ public class DatabaseTest extends ApplicationTestCase<App> {
 
     public void testGetGroupWithMemberNames() {
         final List<Person> persons = Arrays.asList(new Person("0", "User 1", true), new Person("1", "User 2", true), new Person("2", "User 3", true));
-        final String[] personIds = new String[persons.size()];
+        final ArrayList<String> personIds = new ArrayList<>(persons.size());
         final List<String> personNames = new ArrayList<>(persons.size());
         for (int i = 0, personsSize = persons.size(); i < personsSize; i++) {
-            personIds[i] = persons.get(i).getId();
+            personIds.add(persons.get(i).getId());
             personNames.add(persons.get(i).getName());
         }
 
         final List<Group> groups = Arrays.asList(new Group("0", "Group 1"), new Group("1", "Group 2"));
 
         Broker.INSTANCE.updatePersons(persons).toBlocking().first();
-        final SimpleArrayMap<Group, String[]> groupMembers = new SimpleArrayMap<>();
+        final SimpleArrayMap<Group, List<String>> groupMembers = new SimpleArrayMap<>();
         groupMembers.put(groups.get(0), personIds);
         Broker.INSTANCE.updateGroups(groups, groupMembers).toBlocking().first();
 
