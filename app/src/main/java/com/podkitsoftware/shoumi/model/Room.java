@@ -4,6 +4,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 /**
+ * 对讲房间信息
+ *
  * Created by fanchao on 13/12/15.
  */
 public class Room implements Parcelable {

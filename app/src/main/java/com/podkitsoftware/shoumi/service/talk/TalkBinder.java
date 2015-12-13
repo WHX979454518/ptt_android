@@ -16,5 +16,5 @@ public interface TalkBinder extends IBinder {
     int ROOM_STATUS_DISCONNECTING = 5;
 
     @RoomStatus int getCurrRoomStatus();
-    Integer getCurrRoomId();
+    String getCurrGroupId();
 }

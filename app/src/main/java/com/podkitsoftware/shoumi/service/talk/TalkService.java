@@ -4,21 +4,20 @@ import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.os.Binder;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.SparseArray;
+import android.support.v4.util.SimpleArrayMap;
 
-import com.podkitsoftware.shoumi.BuildConfig;
+import com.podkitsoftware.shoumi.App;
+import com.podkitsoftware.shoumi.engine.TalkEngine;
+import com.podkitsoftware.shoumi.engine.TalkEngineFactory;
 import com.podkitsoftware.shoumi.model.Room;
+import com.podkitsoftware.shoumi.service.signal.SignalService;
 import com.podkitsoftware.shoumi.util.Logger;
 
-import org.apache.commons.lang3.ObjectUtils;
-import org.webrtc.autoim.MediaEngine;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -35,40 +34,20 @@ public class TalkService extends Service {
 
     public static final String ACTION_CONNECT = "action_connect";
     public static final String ACTION_DISCONNECT = "action_disconnect";
+    public static final String ACTION_SET_FOCUS = "action_request_focus";
 
-    public static final String ACTION_EXTRA_ROOM_ID = "extra_room_id";
-    public static final String ACTION_EXTRA_ROOM = "extra_room";
-
-    private static final short RTP_EXT_PROTO_JOIN_ROOM = 300;
-    private static final short RTP_EXT_PROTO_QUIT_ROOM = 301;
-    private static final short RTP_EXT_PROTO_HEARTBEAT = 302;
-
-    private static final long HEARTBEAT_INTERVAL_MILLS = 5000;
-
-    private static final int LOCAL_RTP_PORT = 10010;
-    private static final int LOCAL_RTCP_PORT = 10011;
-    private static final int MSG_HEARTBEAT = 1;
+    public static final String ACTION_EXTRA_GROUP_ID = "extra_group_id";
+    public static final String ACTION_EXTRA_HAS_AUDIO_FOCUS = "action_extra_has_audio_focus";
 
     private final IBinder binder = new LocalBinder();
     @RoomStatus int roomStatus = TalkBinder.ROOM_STATUS_NOT_CONNECTED;
+
+    @Nullable String currGroupId;
     @Nullable Room currRoom;
-    private final SparseArray<MediaEngine> mediaEngines = new SparseArray<>();
-    private final HandlerThread executionThread = new HandlerThread("TalkServiceCommand") {
-        {
-            start();
-        }
-    };
-    private final Handler executionHandler = new Handler(executionThread.getLooper()) {
-        @Override
-        public void handleMessage(final Message msg) {
-            switch (msg.what) {
-                case MSG_HEARTBEAT: {
-                    doHeartBeat((Integer) msg.obj);
-                    break;
-                }
-            }
-        }
-    };
+
+    private final SimpleArrayMap<String, TalkEngine> talkEngineMap = new SimpleArrayMap<>();
+    private final SignalService signalService = App.getInstance().providesSignalServer();
+    private final TalkEngineFactory talkEngineFactory = App.getInstance().providesTalkEngineFactory();
     private LocalBroadcastManager broadcastManager;
     private AudioManager audioManager;
 
@@ -83,10 +62,9 @@ public class TalkService extends Service {
     @Override
     public void onDestroy() {
         broadcastManager = null;
-        
-        for (int i = 0, count = mediaEngines.size(); i < count; i++) {
-            final int roomId = mediaEngines.keyAt(i);
-            executionHandler.post(() -> doDisconnect(roomId, false));
+
+        for (int i = 0, count = talkEngineMap.size(); i < count; i++) {
+            doDisconnect(talkEngineMap.keyAt(i), false);
         }
         
         super.onDestroy();
@@ -101,10 +79,13 @@ public class TalkService extends Service {
     @Override
     public int onStartCommand(final Intent intent, final int flags, final int startId) {
         if (intent != null) {
-            if (ACTION_CONNECT.equals(intent.getAction())) {
-                executionHandler.post(() -> doConnect(intent.getParcelableExtra(ACTION_EXTRA_ROOM)));
-            } else if (ACTION_DISCONNECT.equals(intent.getAction())) {
-                executionHandler.post(() -> doDisconnect(intent.getIntExtra(ACTION_EXTRA_ROOM_ID, -1), true));
+            final String action = intent.getAction();
+            if (ACTION_CONNECT.equals(action)) {
+                doConnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID));
+            } else if (ACTION_DISCONNECT.equals(action)) {
+                doDisconnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), true);
+            } else if (ACTION_EXTRA_HAS_AUDIO_FOCUS.equals(action)) {
+                doSetFocus(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), intent.getBooleanExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, false));
             } else {
                 throw new IllegalArgumentException("Unknown intent: " + intent);
             }
@@ -113,113 +94,99 @@ public class TalkService extends Service {
         return START_STICKY;
     }
 
-    private void doHeartBeat(int roomId) {
-        checkExecutionThread();
-
-        final MediaEngine mediaEngine;
-
-        if ((mediaEngine = mediaEngines.get(roomId)) == null) {
-            Logger.d(LOG_TAG, "No current room. Stop heartbeat.");
+    private void doSetFocus(final String groupId, final boolean hasFocus) {
+        if (!StringUtils.equals(groupId, currGroupId)) {
+            Logger.w(LOG_TAG, "Requesting focus %s for group %s, but current group is %s. Ignored.", hasFocus, groupId, currGroupId);
             return;
         }
 
-        mediaEngine.sendExtPacket(RTP_EXT_PROTO_HEARTBEAT, new int[]{roomId});
-        scheduleHeartBeat(roomId);
+        if (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE && hasFocus) {
+            Logger.w(LOG_TAG, "Group %s already has focus. Ignored.");
+            return;
+        }
+
+        final TalkEngine talkEngine;
+        if ((roomStatus != TalkBinder.ROOM_STATUS_CONNECTED && (roomStatus != TalkBinder.ROOM_STATUS_ACTIVE)) ||
+                currRoom == null || (talkEngine = (talkEngineMap.get(groupId))) == null) {
+            Logger.e(LOG_TAG, "Group %s not connected yet", groupId);
+            return;
+        }
+
+        if (hasFocus && signalService.requestFocus(currRoom.getRoomId())) {
+            talkEngine.startSend();
+            setCurrentRoomStatus(TalkBinder.ROOM_STATUS_ACTIVE);
+        }
+        else if (!hasFocus && (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE)) {
+            setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
+            talkEngine.stopSend();
+        }
     }
 
-    private void scheduleHeartBeat(final int roomId) {
-        executionHandler.sendMessageDelayed(executionHandler.obtainMessage(MSG_HEARTBEAT, roomId), HEARTBEAT_INTERVAL_MILLS);
-    }
-
-    private void doDisconnect(final int roomId, final boolean stopIfNoConnectionLeft) {
-        checkExecutionThread();
-
-        final MediaEngine mediaEngine = mediaEngines.get(roomId);
+    private void doDisconnect(final String groupId, final boolean stopIfNoConnectionLeft) {
+        final TalkEngine mediaEngine = talkEngineMap.remove(groupId);
         if (mediaEngine == null) {
-            Logger.d(LOG_TAG, "Room %s already disconnected", roomId);
+            Logger.w(LOG_TAG, "Room %s already disconnected", groupId);
             return;
         }
 
-        mediaEngines.remove(roomId);
-
-        final boolean isCurrentRoom = currRoom != null && roomId == currRoom.getRoomId();
+        final boolean isCurrentRoom = StringUtils.equals(this.currGroupId, groupId);
 
         if (isCurrentRoom) {
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_DISCONNECTING);
         }
 
-        Logger.d(LOG_TAG, "Disconnecting from room %s", roomId);
-        mediaEngine.sendExtPacket(RTP_EXT_PROTO_QUIT_ROOM, new int[]{roomId});
-        mediaEngine.dispose();
+        Logger.d(LOG_TAG, "Disconnecting from room %s", groupId);
 
         if (isCurrentRoom) {
             audioManager.abandonAudioFocus(null);
             audioManager.setMode(AudioManager.MODE_NORMAL);
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_NOT_CONNECTED);
-            currRoom = null;
+            this.currGroupId = null;
         }
 
-        executionHandler.removeMessages(MSG_HEARTBEAT, roomId);
-        if (stopIfNoConnectionLeft && mediaEngines.size() == 0) {
+        if (stopIfNoConnectionLeft && talkEngineMap.size() == 0) {
             stopSelf();
         }
     }
 
-    private void doConnect(final @NonNull Room room) {
-        checkExecutionThread();
-
-        if (ObjectUtils.equals(currRoom, room)) {
-            Logger.d(LOG_TAG, "Room %s already connected", room);
+    private void doConnect(final @NonNull String groupId) {
+        if (StringUtils.equals(currGroupId, groupId)) {
+            Logger.d(LOG_TAG, "Group %s already connected", groupId);
             return;
         }
 
-        if (currRoom != null) {
-            doDisconnect(currRoom.getRoomId(), true);
+        if (currGroupId != null) {
+            doDisconnect(currGroupId, true);
         }
 
-        currRoom = room;
-        Logger.d(LOG_TAG, "Connecting to room %s", room);
+        Logger.d(LOG_TAG, "Connecting to room %s", groupId);
+
+        currGroupId = groupId;
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTING);
 
-        final MediaEngine mediaEngine = new MediaEngine(this, false);
-        mediaEngine.setLocalSSRC(room.getLocalUserId());
-        mediaEngine.setRemoteIp(room.getRemoteServer());
-        mediaEngine.setAudioTxPort(room.getRemotePort());
-        mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT);
-        mediaEngine.setAgc(true);
-        mediaEngine.setNs(true);
-        mediaEngine.setEc(true);
-        mediaEngine.setSpeaker(false);
-        mediaEngine.setAudio(true);
-        mediaEngine.start(room.getRoomId());
-        mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, new int[]{room.getRoomId()});
-
-        mediaEngines.put(room.getRoomId(), mediaEngine);
+        talkEngineMap.put(groupId, talkEngineFactory.createEngine(this, currRoom = signalService.getRoom(groupId)));
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
-
-        // Fire a heartbeat event
-        scheduleHeartBeat(room.getRoomId());
     }
 
-    private void checkExecutionThread() {
-        if (BuildConfig.DEBUG && Thread.currentThread() == executionThread) {
-            throw new RuntimeException("Must be called in execution thread");
-        }
+    public static Intent buildConnectIntent(final String groupId) {
+        return new Intent(ACTION_CONNECT).putExtra(ACTION_EXTRA_GROUP_ID, groupId);
     }
 
-    public static Intent buildConnectIntent(final Room room) {
-        return new Intent(ACTION_CONNECT).putExtra(ACTION_EXTRA_ROOM, room);
+    public static Intent buildDisconnectIntent(final String groupId) {
+        return new Intent(ACTION_DISCONNECT).putExtra(ACTION_EXTRA_GROUP_ID, groupId);
     }
 
-    public static Intent buildDisconnectIntent(final int roomId) {
-        return new Intent(ACTION_DISCONNECT).putExtra(ACTION_EXTRA_ROOM_ID, roomId);
+    public static Intent buildSetAudioFocusIntent(final String groupId, final boolean hasAudioFocus) {
+        return new Intent(ACTION_SET_FOCUS)
+                .putExtra(ACTION_EXTRA_GROUP_ID, groupId)
+                .putExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, hasAudioFocus);
     }
 
     public void setCurrentRoomStatus(final @RoomStatus int newRoomStatus) {
         if (this.roomStatus != newRoomStatus) {
             this.roomStatus = newRoomStatus;
             broadcastManager.sendBroadcast(new Intent(ACTION_ROOM_STATUS_CHANGED)
-                    .putExtra(ACTION_EXTRA_ROOM_ID, currRoom.getRoomId())
+                    .putExtra(ACTION_EXTRA_GROUP_ID, currGroupId)
                     .putExtra(ACTION_EXTRA_ROOM_STATUS, newRoomStatus));
         }
     }
@@ -232,8 +199,8 @@ public class TalkService extends Service {
         }
 
         @Override
-        public Integer getCurrRoomId() {
-            return currRoom == null ? null : currRoom.getRoomId();
+        public String getCurrGroupId() {
+            return currGroupId;
         }
     }
 
