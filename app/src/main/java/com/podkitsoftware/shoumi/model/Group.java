@@ -1,11 +1,13 @@
 package com.podkitsoftware.shoumi.model;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
 import com.bluelinelabs.logansquare.annotation.JsonField;
 import com.bluelinelabs.logansquare.annotation.JsonObject;
+import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 
 import org.apache.commons.lang3.StringUtils;
@@ -67,6 +69,11 @@ public class Group implements Model, Cloneable, IContactItem {
     }
 
     @Override
+    public String getTableName() {
+        return TABLE_NAME;
+    }
+
+    @Override
     public void toValues(ContentValues values) {
         values.put(COL_ID, id);
         values.put(COL_NAME, name);
@@ -78,6 +85,12 @@ public class Group implements Model, Cloneable, IContactItem {
         id = CursorUtil.getString(cursor, COL_ID);
         name = CursorUtil.getString(cursor, COL_NAME);
         priority = CursorUtil.getInt(cursor, COL_PRIORITY);
+    }
+
+    @Override
+    public int getTintColor(final Context context) {
+        final int[] colors = context.getResources().getIntArray(R.array.account_colors);
+        return colors[id.hashCode() % colors.length];
     }
 
     @Override

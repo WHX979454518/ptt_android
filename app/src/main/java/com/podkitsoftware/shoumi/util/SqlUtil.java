@@ -2,14 +2,8 @@ package com.podkitsoftware.shoumi.util;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Collection;
-
 public class SqlUtil {
-    public static String toSqlSet(final Collection<?> values) {
-        if (values.isEmpty()) {
-            return "()";
-        }
-
+    public static String toSqlSet(final Iterable<?> values) {
         return "('" + StringUtils.join(values, "','") + "')";
     }
 

@@ -27,6 +27,11 @@ public class GroupMember implements Model {
     }
 
     @Override
+    public String getTableName() {
+        return TABLE_NAME;
+    }
+
+    @Override
     public void toValues(ContentValues values) {
         values.put(COL_ID, id);
         values.put(COL_GROUP_ID, groupId);

@@ -1,18 +1,16 @@
 package com.podkitsoftware.shoumi.model;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
 import com.bluelinelabs.logansquare.annotation.JsonField;
 import com.bluelinelabs.logansquare.annotation.JsonObject;
+import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 
 import org.apache.commons.lang3.StringUtils;
-
-import java.text.Collator;
-import java.util.Comparator;
-import java.util.Locale;
 
 import rx.functions.Func1;
 
@@ -39,6 +37,11 @@ public class Person implements Model, IContactItem {
     }
 
     @Override
+    public String getTableName() {
+        return TABLE_NAME;
+    }
+
+    @Override
     public void toValues(ContentValues values) {
         values.put(COL_ID, id);
         values.put(COL_NAME, name);
@@ -62,6 +65,12 @@ public class Person implements Model, IContactItem {
     @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public int getTintColor(final Context context) {
+        final int[] colors = context.getResources().getIntArray(R.array.account_colors);
+        return colors[id.hashCode() % colors.length];
     }
 
     @Override
@@ -95,23 +104,6 @@ public class Person implements Model, IContactItem {
                     COL_ID + " TEXT PRIMARY KEY NOT NULL, " +
                     COL_NAME + " TEXT NOT NULL" +
                 ")";
-    }
-
-    public static class LocaleAwareComparator implements Comparator<Person> {
-        private final Collator collator;
-
-        public LocaleAwareComparator() {
-            collator = Collator.getInstance();
-        }
-
-        public LocaleAwareComparator(final Locale locale) {
-            collator = Collator.getInstance(locale);
-        }
-
-        @Override
-        public int compare(final Person lhs, final Person rhs) {
-            return collator.compare(lhs.getName(), rhs.getName());
-        }
     }
 
 }

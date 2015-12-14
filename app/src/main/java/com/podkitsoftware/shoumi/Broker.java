@@ -6,6 +6,7 @@ import android.support.annotation.CheckResult;
 import android.support.annotation.Nullable;
 import android.support.v4.util.SimpleArrayMap;
 
+import com.podkitsoftware.shoumi.model.ContactItem;
 import com.podkitsoftware.shoumi.model.Group;
 import com.podkitsoftware.shoumi.model.GroupMember;
 import com.podkitsoftware.shoumi.model.IContactItem;
@@ -125,7 +126,7 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<Void> updateGroups(final List<Group> groups, final SimpleArrayMap<Group, List<String>> groupMembers) {
+    public Observable<Void> updateGroups(final Collection<Group> groups, final SimpleArrayMap<Group, ? extends Iterable<String>> groupMembers) {
         return updateInTransaction(() -> {
             final String[] groupIds;
 
@@ -133,9 +134,9 @@ public class Broker {
             if (groups != null && !groups.isEmpty()) {
                 groupIds = new String[groups.size()];
                 final ContentValues contentValues = new ContentValues();
-                for (int i = 0, groupsSize = groups.size(); i < groupsSize; i++) {
-                    final Group group = groups.get(i);
-                    groupIds[i] = group.getId();
+                int i = 0;
+                for (final Group group : groups) {
+                    groupIds[i++] = group.getId();
                     contentValues.clear();
                     group.toValues(contentValues);
                     db.insert(Group.TABLE_NAME, contentValues, SQLiteDatabase.CONFLICT_REPLACE);
@@ -171,20 +172,51 @@ public class Broker {
     public Observable<List<IContactItem>> getContacts(final @Nullable String searchTerm) {
         final QueryObservable query;
         if (StringUtils.isNotEmpty(searchTerm)) {
+            final String formattedSearchTerm = '%' + searchTerm + '%';
             query = db
                     .createQuery(Person.TABLE_NAME,
-                            "SELECT * FROM " + Person.TABLE_NAME + " " +
-                                    "WHERE " + Person.COL_IS_CONTACT + " <> 0 AND " + Person.COL_NAME + " LIKE ?", '%' + searchTerm + '%');
+                            "SELECT * FROM " + Person.TABLE_NAME + " AS P " +
+                                    "LEFT JOIN " + Group.TABLE_NAME + " AS G ON G." + Group.COL_ID + " = CI." + ContactItem.COL_GROUP_ID + " " +
+                                    "LEFT JOIN " + ContactItem.TABLE_NAME + " AS CI ON CI." + ContactItem.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
+                                    "AND (G." + Group.COL_NAME + " LIKE ? OR P." + Person.COL_NAME + " LIKE ?)",
+                            formattedSearchTerm,
+                            formattedSearchTerm);
         }
         else {
             query = db
                     .createQuery(Person.TABLE_NAME,
-                            "SELECT * FROM " + Person.TABLE_NAME + " WHERE " + Person.COL_IS_CONTACT + " <> 0");
+                            "SELECT * FROM " + Person.TABLE_NAME + " AS P " +
+                                    "LEFT JOIN " + Group.TABLE_NAME + " AS G ON G." + Group.COL_ID + " = CI." + ContactItem.COL_GROUP_ID + " " +
+                                    "LEFT JOIN " + ContactItem.TABLE_NAME + " AS CI ON CI." + ContactItem.COL_PERSON_ID + " = P." + Person.COL_ID);
         }
 
-        return query
-                .mapToList(Person.MAPPER)
-                .subscribeOn(queryScheduler);
+        return query.mapToList(ContactItem.REAL_ITEM_MAPPER).subscribeOn(queryScheduler);
+    }
+
+
+    @CheckResult
+    public Observable<Void> updateContacts(final @Nullable Collection<Person> persons, final @Nullable Collection<Group> groups) {
+        return updateInTransaction(() -> {
+            db.execute("DELETE FROM " + ContactItem.TABLE_NAME + " WHERE 1");
+            final ContentValues values = new ContentValues();
+            if (persons != null) {
+                for (final Person person : persons) {
+                    values.clear();
+                    values.put(ContactItem.COL_PERSON_ID, person.getId());
+                    db.insert(ContactItem.TABLE_NAME, values);
+                }
+            }
+
+            if (groups != null) {
+                for (final Group group : groups) {
+                    values.clear();
+                    values.put(ContactItem.COL_GROUP_ID, group.getId());
+                    db.insert(ContactItem.TABLE_NAME, values);
+                }
+            }
+
+            return null;
+        });
     }
 
     @CheckResult
@@ -220,7 +252,7 @@ public class Broker {
         });
     }
 
-    private void doAddGroupMembers(String groupId, Collection<String> members) {
+    private void doAddGroupMembers(String groupId, Iterable<String> members) {
         final ContentValues values = new ContentValues(2);
 
         for (String memberId : members) {
@@ -230,7 +262,7 @@ public class Broker {
         }
     }
 
-    private void doUpdateGroupMembers(String groupId, Collection<String> members) {
+    private void doUpdateGroupMembers(String groupId, Iterable<String> members) {
         doAddGroupMembers(groupId, members);
 
         db.delete(GroupMember.TABLE_NAME,

@@ -16,10 +16,11 @@ import android.widget.TextView;
 import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
-import com.podkitsoftware.shoumi.model.Person;
+import com.podkitsoftware.shoumi.model.IContactItem;
 import com.podkitsoftware.shoumi.ui.base.BaseFragment;
 import com.podkitsoftware.shoumi.ui.util.ResourceUtil;
 import com.podkitsoftware.shoumi.ui.util.RxUtil;
+import com.podkitsoftware.shoumi.util.ContactLocaleAwareComparator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -77,7 +78,7 @@ public class ContactsFragment extends BaseFragment<Void> {
                 .debounce(500, TimeUnit.MILLISECONDS)
                 .flatMap(broker::getContacts)
                 .observeOn(AndroidSchedulers.mainThread())
-                .compose(this.<List<Person>>bindToLifecycle())
+                .compose(this.<List<IContactItem>>bindToLifecycle())
                 .subscribe(adapter::setPersons);
     }
 
@@ -88,13 +89,13 @@ public class ContactsFragment extends BaseFragment<Void> {
     }
 
     private class Adapter extends RecyclerView.Adapter<ContactHolder> {
-        private final ArrayList<Person> personList = new ArrayList<>();
+        private final ArrayList<IContactItem> contactItems = new ArrayList<>();
 
-        public void setPersons(final Collection<Person> newPersons) {
-            this.personList.clear();
+        public void setPersons(final Collection<IContactItem> newPersons) {
+            this.contactItems.clear();
             if (newPersons != null) {
-                this.personList.addAll(newPersons);
-                Collections.sort(this.personList, new Person.LocaleAwareComparator(Locale.CHINESE));
+                this.contactItems.addAll(newPersons);
+                Collections.sort(this.contactItems, new ContactLocaleAwareComparator(Locale.CHINESE));
             }
 
             notifyDataSetChanged();
@@ -107,9 +108,9 @@ public class ContactsFragment extends BaseFragment<Void> {
 
         @Override
         public void onBindViewHolder(final ContactHolder holder, final int position) {
-            final Person person = personList.get(position);
-            holder.iconView.setColorFilter(accountColors[(person.getId().hashCode() % accountColors.length)]);
-            holder.nameView.setText(person.getName());
+            final IContactItem contactItem = contactItems.get(position);
+            holder.iconView.setColorFilter(contactItem.getTintColor(getContext()));
+            holder.nameView.setText(contactItem.getName());
             holder.itemView.setOnClickListener(v -> {
 
             });
@@ -117,7 +118,7 @@ public class ContactsFragment extends BaseFragment<Void> {
 
         @Override
         public int getItemCount() {
-            return personList.size();
+            return contactItems.size();
         }
     }
 

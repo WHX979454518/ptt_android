@@ -1,5 +1,6 @@
 package com.podkitsoftware.shoumi.model;
 
+import android.content.Context;
 import android.net.Uri;
 
 /**
@@ -8,7 +9,8 @@ import android.net.Uri;
  *
  * Created by fanchao on 14/12/15.
  */
-public interface IContactItem {
+public interface IContactItem extends Model {
+    int getTintColor(final Context context);
     String getName();
     Uri getImage();
 }
