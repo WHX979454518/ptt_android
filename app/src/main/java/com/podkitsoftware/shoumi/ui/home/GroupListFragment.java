@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.model.GroupInfo;
@@ -36,6 +37,14 @@ public class GroupListFragment extends BaseFragment<Void> {
     @Bind(R.id.groupList_recyclerView)
     RecyclerView listView;
     private final Adapter adapter = new Adapter();
+    private Broker broker;
+
+    @Override
+    public void onCreate(final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        broker = ((AppComponent) getActivity().getApplication()).providesBroker();
+    }
 
     @Nullable
     @Override
@@ -58,7 +67,7 @@ public class GroupListFragment extends BaseFragment<Void> {
     public void onStart() {
         super.onStart();
 
-        Broker.INSTANCE.getGroupsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
+        broker.getGroupsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(this.<List<GroupInfo<String>>>bindToLifecycle())
                 .subscribe(adapter::setGroups);

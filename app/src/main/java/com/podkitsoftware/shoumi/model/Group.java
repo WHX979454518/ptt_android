@@ -6,14 +6,10 @@ import android.net.Uri;
 
 import com.bluelinelabs.logansquare.annotation.JsonField;
 import com.bluelinelabs.logansquare.annotation.JsonObject;
-import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
-
-import rx.Observable;
 import rx.functions.Func1;
 
 @JsonObject
@@ -114,8 +110,4 @@ public class Group implements Model, Cloneable {
         group.readFrom(cursor);
         return group;
     };
-
-    public Observable<List<Person>> getMembers() {
-        return Broker.INSTANCE.getGroupMembers(id);
-    }
 }

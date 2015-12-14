@@ -66,6 +66,13 @@ public class Room implements Parcelable {
     public Room() {
     }
 
+    public Room(final int roomId, final int localUserId, final String remoteServer, final int remotePort) {
+        this.roomId = roomId;
+        this.localUserId = localUserId;
+        this.remoteServer = remoteServer;
+        this.remotePort = remotePort;
+    }
+
     protected Room(Parcel in) {
         this.roomId = in.readInt();
         this.remotePort = in.readInt();

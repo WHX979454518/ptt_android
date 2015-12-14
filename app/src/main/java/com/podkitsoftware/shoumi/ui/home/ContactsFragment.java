@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.model.Person;
@@ -42,11 +43,13 @@ public class ContactsFragment extends BaseFragment<Void> {
 
     int[] accountColors;
     private final Adapter adapter = new Adapter();
+    private Broker broker;
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        broker = ((AppComponent) getActivity().getApplication()).providesBroker();
         accountColors = getResources().getIntArray(R.array.account_colors);
     }
 
@@ -72,7 +75,7 @@ public class ContactsFragment extends BaseFragment<Void> {
 
         Observable.merge(RxUtil.fromTextChanged(searchBox), Observable.just(searchBox.getText().toString()))
                 .debounce(500, TimeUnit.MILLISECONDS)
-                .flatMap(Broker.INSTANCE::getContacts)
+                .flatMap(broker::getContacts)
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(this.<List<Person>>bindToLifecycle())
                 .subscribe(adapter::setPersons);

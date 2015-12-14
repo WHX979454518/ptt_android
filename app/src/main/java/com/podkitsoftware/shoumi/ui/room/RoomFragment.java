@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.model.Group;
@@ -45,6 +46,15 @@ public class RoomFragment extends BaseFragment<RoomFragment.Callbacks> {
 
     @Bind(R.id.room_appBar)
     ViewGroup appBar;
+    
+    Broker broker;
+
+    @Override
+    public void onCreate(final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        broker = ((AppComponent) getActivity().getApplication()).providesBroker();
+    }
 
     @Nullable
     @Override
@@ -69,9 +79,9 @@ public class RoomFragment extends BaseFragment<RoomFragment.Callbacks> {
 
         final String groupId = getArguments().getString(ARG_ROOM_ID);
         Observable.combineLatest(
-                Broker.INSTANCE.getGroup(groupId),
-                Broker.INSTANCE.getGroupMembers(groupId),
-                Broker.INSTANCE.getOnlineUsers(),
+                broker.getGroup(groupId),
+                broker.getGroupMembers(groupId),
+                broker.getOnlineUsers(),
                 Triple::of)
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(this.<Triple<Group, List<Person>, Set<String>>>bindToLifecycle())

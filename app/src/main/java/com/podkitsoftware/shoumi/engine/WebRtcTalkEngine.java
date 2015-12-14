@@ -25,8 +25,10 @@ public class WebRtcTalkEngine implements TalkEngine {
     private static final int LOCAL_RTCP_PORT = 10011;
 
     private final Handler handler;
+    private final Context context;
+
     MediaEngine mediaEngine;
-    private final int[] roomIds;
+    int[] roomIds;
 
     private static final HandlerThread ENGINE_THREAD = new HandlerThread("RTCEngineThread") {
         {
@@ -34,8 +36,17 @@ public class WebRtcTalkEngine implements TalkEngine {
         }
     };
 
-    public WebRtcTalkEngine(final Context context, final Room room) {
+    public WebRtcTalkEngine(final Context context) {
         this.handler = new Handler(ENGINE_THREAD.getLooper());
+        this.context = context.getApplicationContext();
+    }
+
+    @Override
+    public void connect(final Room room) {
+        if (this.roomIds != null) {
+            throw new IllegalStateException("Engine already connected to a room before");
+        }
+
         this.roomIds = new int[] { room.getRoomId() };
 
         handler.post(() -> {

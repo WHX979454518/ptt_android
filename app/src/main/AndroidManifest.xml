@@ -26,6 +26,10 @@
         <activity
             android:theme="@style/AppTheme.Dark"
             android:name=".ui.room.RoomActivity" />
+
+        <service
+            android:name=".service.talk.TalkService"
+            android:exported="false" />
     </application>
 
 </manifest>

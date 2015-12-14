@@ -75,14 +75,14 @@ public class DevApp extends App {
         groupMembers.put(groups.get(1), Arrays.asList(persons.get(2).getId(), persons.get(4).getId()));
         groupMembers.put(groups.get(2), Arrays.asList(persons.get(0).getId(), persons.get(1).getId(), persons.get(2).getId(), persons.get(3).getId()));
 
-        Broker.INSTANCE.updatePersons(persons).subscribe();
-        Broker.INSTANCE.updateGroups(groups, groupMembers).subscribe();
-        Broker.INSTANCE.updateOnlineUsers(Arrays.asList(persons.get(0).getId(), persons.get(3).getId()));
+        providesBroker().updatePersons(persons).subscribe();
+        providesBroker().updateGroups(groups, groupMembers).subscribe();
+        providesBroker().updateOnlineUsers(Arrays.asList(persons.get(0).getId(), persons.get(3).getId()));
     }
 
     @Override
-    public OkHttpClient providesOkHttpClient() {
-        final OkHttpClient okHttpClient = super.providesOkHttpClient();
+    public OkHttpClient providesHttpClient() {
+        final OkHttpClient okHttpClient = super.providesHttpClient();
         okHttpClient.networkInterceptors().add(new StethoInterceptor());
         return okHttpClient;
     }

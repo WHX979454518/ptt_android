@@ -10,7 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.SimpleArrayMap;
 
-import com.podkitsoftware.shoumi.App;
+import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.engine.TalkEngine;
 import com.podkitsoftware.shoumi.engine.TalkEngineFactory;
 import com.podkitsoftware.shoumi.model.Room;
@@ -46,8 +46,8 @@ public class TalkService extends Service {
     @Nullable Room currRoom;
 
     private final SimpleArrayMap<String, TalkEngine> talkEngineMap = new SimpleArrayMap<>();
-    private final SignalService signalService = App.getInstance().providesSignalServer();
-    private final TalkEngineFactory talkEngineFactory = App.getInstance().providesTalkEngineFactory();
+    private SignalService signalService;
+    private TalkEngineFactory talkEngineFactory;
     private LocalBroadcastManager broadcastManager;
     private AudioManager audioManager;
 
@@ -55,18 +55,21 @@ public class TalkService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        final AppComponent appComponent = (AppComponent) getApplication();
+
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         broadcastManager = LocalBroadcastManager.getInstance(this);
+        signalService = appComponent.providesSignalService();
+        talkEngineFactory = appComponent.providesTalkEngineFactory();
     }
 
     @Override
     public void onDestroy() {
-        broadcastManager = null;
-
         for (int i = 0, count = talkEngineMap.size(); i < count; i++) {
             doDisconnect(talkEngineMap.keyAt(i), false);
         }
-        
+
+        broadcastManager = null;
         super.onDestroy();
     }
 
@@ -164,7 +167,11 @@ public class TalkService extends Service {
         currGroupId = groupId;
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTING);
 
-        talkEngineMap.put(groupId, talkEngineFactory.createEngine(this, currRoom = signalService.getRoom(groupId)));
+        final TalkEngine engine = talkEngineFactory.createEngine(this);
+        currRoom = signalService.getRoom(groupId);
+        talkEngineMap.put(groupId, engine);
+        engine.connect(currRoom);
+
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
     }
 

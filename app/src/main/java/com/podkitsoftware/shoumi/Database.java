@@ -1,6 +1,7 @@
 package com.podkitsoftware.shoumi;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -15,34 +16,38 @@ import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
 import com.squareup.sqlbrite.SqlBrite;
 
-public enum Database {
-    INSTANCE;
+import java.io.Closeable;
+import java.io.IOException;
+
+public class Database implements Closeable {
 
     private final BriteDatabase db;
+    public final String name;
 
-    Database() {
+    public Database(final Context context, final String dbName, final int dbVersion) {
+        this.name = dbName;
         db = SqlBrite
                 .create(message -> Log.d("Database", message))
-                .wrapDatabaseHelper(new SQLiteOpenHelper(App.getInstance(), Constants.DB_NAME, null, Constants.DB_VERSION) {
-            @Override
-            public void onCreate(SQLiteDatabase db) {
-                // Create tables
-                db.beginTransaction();
-                try {
-                    db.execSQL(Person.getCreateTableSql());
-                    db.execSQL(Group.getCreateTableSql());
-                    db.execSQL(GroupMember.getCreateTableSql());
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
-            }
+                .wrapDatabaseHelper(new SQLiteOpenHelper(context, dbName, null, dbVersion) {
+                    @Override
+                    public void onCreate(SQLiteDatabase db) {
+                        // Create tables
+                        db.beginTransaction();
+                        try {
+                            db.execSQL(Person.getCreateTableSql());
+                            db.execSQL(Group.getCreateTableSql());
+                            db.execSQL(GroupMember.getCreateTableSql());
+                            db.setTransactionSuccessful();
+                        } finally {
+                            db.endTransaction();
+                        }
+                    }
 
-            @Override
-            public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+                    @Override
+                    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-            }
-        });
+                    }
+                });
         db.setLoggingEnabled(BuildConfig.DEBUG);
     }
 
@@ -68,6 +73,11 @@ public enum Database {
 
     public int update(String table, ContentValues values, String whereClause, String... whereArgs) {
         return db.update(table, values, whereClause, whereArgs);
+    }
+
+    @Override
+    public void close() throws IOException {
+        db.close();
     }
 
     public void execute(String sql, Object... args) {
