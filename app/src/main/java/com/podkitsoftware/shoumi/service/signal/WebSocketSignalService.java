@@ -1,6 +1,8 @@
 package com.podkitsoftware.shoumi.service.signal;
 
+import com.podkitsoftware.shoumi.model.AuthResult;
 import com.podkitsoftware.shoumi.model.Room;
+import com.podkitsoftware.shoumi.service.auth.IAuthService;
 
 /**
  *
@@ -8,7 +10,7 @@ import com.podkitsoftware.shoumi.model.Room;
  *
  * Created by fanchao on 13/12/15.
  */
-public class WebSocketSignalService implements SignalService {
+public class WebSocketSignalService implements ISignalService, IAuthService {
     private final String endpointUrl;
     private final int endpointPort;
 
@@ -33,6 +35,16 @@ public class WebSocketSignalService implements SignalService {
 
     @Override
     public void releaseFocus(final int roomId) {
+
+    }
+
+    @Override
+    public AuthResult login(final String username, final char[] password) {
+        return null;
+    }
+
+    @Override
+    public void logout(final String token) {
 
     }
 }

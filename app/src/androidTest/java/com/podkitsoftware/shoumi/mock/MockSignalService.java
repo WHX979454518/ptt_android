@@ -1,14 +1,14 @@
 package com.podkitsoftware.shoumi.mock;
 
 import com.podkitsoftware.shoumi.model.Room;
-import com.podkitsoftware.shoumi.service.signal.SignalService;
+import com.podkitsoftware.shoumi.service.signal.ISignalService;
 
 import java.util.Map;
 
 /**
  * Created by fanchao on 13/12/15.
  */
-public class MockSignalService implements SignalService {
+public class MockSignalService implements ISignalService {
     public MockSignalService(final Map<String, RoomInfo> rooms) {
         this.rooms = rooms;
     }

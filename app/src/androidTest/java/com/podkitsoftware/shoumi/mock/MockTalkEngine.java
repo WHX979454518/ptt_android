@@ -2,7 +2,7 @@ package com.podkitsoftware.shoumi.mock;
 
 import android.content.Context;
 
-import com.podkitsoftware.shoumi.engine.TalkEngine;
+import com.podkitsoftware.shoumi.engine.ITalkEngine;
 import com.podkitsoftware.shoumi.model.Room;
 
 import rx.functions.Func1;
@@ -11,7 +11,7 @@ import rx.subjects.PublishSubject;
 /**
  * Created by fanchao on 13/12/15.
  */
-public class MockTalkEngine implements TalkEngine {
+public class MockTalkEngine implements ITalkEngine {
     private final Func1<MockTalkEngine, Void> disposeRunnable;
 
     public MockTalkEngine(final Context context, final Func1<MockTalkEngine, Void> disposeRunnable) {

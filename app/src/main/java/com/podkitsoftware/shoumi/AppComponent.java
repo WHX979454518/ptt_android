@@ -1,7 +1,8 @@
 package com.podkitsoftware.shoumi;
 
-import com.podkitsoftware.shoumi.engine.TalkEngineFactory;
-import com.podkitsoftware.shoumi.service.signal.SignalService;
+import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
+import com.podkitsoftware.shoumi.service.auth.IAuthService;
+import com.podkitsoftware.shoumi.service.signal.ISignalService;
 import com.squareup.okhttp.OkHttpClient;
 
 /**
@@ -12,8 +13,9 @@ import com.squareup.okhttp.OkHttpClient;
  */
 public interface AppComponent {
     OkHttpClient providesHttpClient();
-    SignalService providesSignalService();
-    TalkEngineFactory providesTalkEngineFactory();
+    ISignalService providesSignalService();
+    ITalkEngineFactory providesTalkEngineFactory();
     Database providesDatabase();
     Broker providesBroker();
+    IAuthService providesAuthService();
 }

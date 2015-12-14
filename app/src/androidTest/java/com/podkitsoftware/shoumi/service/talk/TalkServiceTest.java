@@ -4,11 +4,11 @@ import android.test.ServiceTestCase;
 
 import com.google.common.collect.ImmutableMap;
 import com.podkitsoftware.shoumi.App;
-import com.podkitsoftware.shoumi.engine.TalkEngineFactory;
+import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
 import com.podkitsoftware.shoumi.mock.MockSignalService;
 import com.podkitsoftware.shoumi.mock.MockTalkEngineFactory;
 import com.podkitsoftware.shoumi.model.Room;
-import com.podkitsoftware.shoumi.service.signal.SignalService;
+import com.podkitsoftware.shoumi.service.signal.ISignalService;
 
 import java.util.Map;
 
@@ -42,12 +42,12 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
 
         setApplication(new App() {
             @Override
-            public SignalService providesSignalService() {
+            public ISignalService providesSignalService() {
                 return mockSignalService;
             }
 
             @Override
-            public TalkEngineFactory providesTalkEngineFactory() {
+            public ITalkEngineFactory providesTalkEngineFactory() {
                 return mockTalkEngineFactory;
             }
         });

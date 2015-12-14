@@ -8,7 +8,7 @@ import com.podkitsoftware.shoumi.model.Room;
  *
  * Created by fanchao on 13/12/15.
  */
-public interface TalkEngine {
+public interface ITalkEngine {
     void connect(Room room);
     void dispose();
     void startSend();

@@ -11,10 +11,10 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.SimpleArrayMap;
 
 import com.podkitsoftware.shoumi.AppComponent;
-import com.podkitsoftware.shoumi.engine.TalkEngine;
-import com.podkitsoftware.shoumi.engine.TalkEngineFactory;
+import com.podkitsoftware.shoumi.engine.ITalkEngine;
+import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
 import com.podkitsoftware.shoumi.model.Room;
-import com.podkitsoftware.shoumi.service.signal.SignalService;
+import com.podkitsoftware.shoumi.service.signal.ISignalService;
 import com.podkitsoftware.shoumi.util.Logger;
 
 import org.apache.commons.lang3.StringUtils;
@@ -45,9 +45,9 @@ public class TalkService extends Service {
     @Nullable String currGroupId;
     @Nullable Room currRoom;
 
-    private final SimpleArrayMap<String, TalkEngine> talkEngineMap = new SimpleArrayMap<>();
-    private SignalService signalService;
-    private TalkEngineFactory talkEngineFactory;
+    private final SimpleArrayMap<String, ITalkEngine> talkEngineMap = new SimpleArrayMap<>();
+    private ISignalService ISignalService;
+    private ITalkEngineFactory talkEngineFactory;
     private LocalBroadcastManager broadcastManager;
     private AudioManager audioManager;
 
@@ -59,7 +59,7 @@ public class TalkService extends Service {
 
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         broadcastManager = LocalBroadcastManager.getInstance(this);
-        signalService = appComponent.providesSignalService();
+        ISignalService = appComponent.providesSignalService();
         talkEngineFactory = appComponent.providesTalkEngineFactory();
     }
 
@@ -113,27 +113,27 @@ public class TalkService extends Service {
             return;
         }
 
-        final TalkEngine talkEngine;
+        final ITalkEngine talkEngine;
         if ((roomStatus != TalkBinder.ROOM_STATUS_CONNECTED && (roomStatus != TalkBinder.ROOM_STATUS_ACTIVE)) ||
                 currRoom == null || (talkEngine = (talkEngineMap.get(groupId))) == null) {
             Logger.e(LOG_TAG, "Group %s not connected yet", groupId);
             return;
         }
 
-        if (hasFocus && signalService.requestFocus(currRoom.getRoomId())) {
+        if (hasFocus && ISignalService.requestFocus(currRoom.getRoomId())) {
             talkEngine.startSend();
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_ACTIVE);
         }
         else if (!hasFocus && (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE)) {
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
             talkEngine.stopSend();
-            signalService.releaseFocus(currRoom.getRoomId());
+            ISignalService.releaseFocus(currRoom.getRoomId());
         }
     }
 
     private void doDisconnect(final String groupId, final boolean stopIfNoConnectionLeft) {
         try {
-            final TalkEngine talkEngine = talkEngineMap.remove(groupId);
+            final ITalkEngine talkEngine = talkEngineMap.remove(groupId);
             if (talkEngine == null) {
                 Logger.w(LOG_TAG, "Room %s already disconnected", groupId);
                 return;
@@ -155,7 +155,7 @@ public class TalkService extends Service {
             }
 
             talkEngine.dispose();
-            signalService.quitRoom(groupId);
+            ISignalService.quitRoom(groupId);
         }
         finally {
             if (stopIfNoConnectionLeft && talkEngineMap.size() == 0) {
@@ -180,8 +180,8 @@ public class TalkService extends Service {
         currGroupId = groupId;
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTING);
 
-        final TalkEngine engine = talkEngineFactory.createEngine(this);
-        currRoom = signalService.joinRoom(groupId);
+        final ITalkEngine engine = talkEngineFactory.createEngine(this);
+        currRoom = ISignalService.joinRoom(groupId);
         talkEngineMap.put(groupId, engine);
         engine.connect(currRoom);
 

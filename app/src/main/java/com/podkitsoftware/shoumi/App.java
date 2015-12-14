@@ -2,9 +2,10 @@ package com.podkitsoftware.shoumi;
 
 import android.app.Application;
 
-import com.podkitsoftware.shoumi.engine.TalkEngineFactory;
+import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
 import com.podkitsoftware.shoumi.engine.WebRtcTalkEngine;
-import com.podkitsoftware.shoumi.service.signal.SignalService;
+import com.podkitsoftware.shoumi.service.auth.IAuthService;
+import com.podkitsoftware.shoumi.service.signal.ISignalService;
 import com.podkitsoftware.shoumi.service.signal.WebSocketSignalService;
 import com.podkitsoftware.shoumi.util.Lazy;
 import com.squareup.okhttp.Cache;
@@ -15,8 +16,8 @@ import com.squareup.picasso.Picasso;
 
 public class App extends Application implements AppComponent {
 
-    private final Lazy<SignalService> signalService = new Lazy<>(() -> new WebSocketSignalService("", 80));
-    private final Lazy<TalkEngineFactory> talkEngineFactory = new Lazy<>(() -> WebRtcTalkEngine::new);
+    private final Lazy<WebSocketSignalService> signalService = new Lazy<>(() -> new WebSocketSignalService("", 80));
+    private final Lazy<ITalkEngineFactory> talkEngineFactory = new Lazy<>(() -> WebRtcTalkEngine::new);
     private final Lazy<OkHttpClient> okHttpClient = new Lazy<>(() -> {
         final OkHttpClient client = new OkHttpClient();
         client.setCache(new Cache(getCacheDir(), Constants.MAX_CACHE_SIZE));
@@ -25,6 +26,7 @@ public class App extends Application implements AppComponent {
 
     private final Lazy<Database> database = new Lazy<>(() -> new Database(App.this, Constants.DB_NAME, Constants.DB_VERSION));
     private final Lazy<Broker> broker = new Lazy<>(() -> new Broker(providesDatabase()));
+    private final Lazy<IAuthService> authService = new Lazy<>(signalService::get);
 
     @Override
     public void onCreate() {
@@ -42,12 +44,12 @@ public class App extends Application implements AppComponent {
     }
 
     @Override
-    public SignalService providesSignalService() {
+    public ISignalService providesSignalService() {
         return signalService.get();
     }
 
     @Override
-    public TalkEngineFactory providesTalkEngineFactory() {
+    public ITalkEngineFactory providesTalkEngineFactory() {
         return talkEngineFactory.get();
     }
 
@@ -59,5 +61,10 @@ public class App extends Application implements AppComponent {
     @Override
     public Broker providesBroker() {
         return broker.get();
+    }
+
+    @Override
+    public IAuthService providesAuthService() {
+        return authService.get();
     }
 }
