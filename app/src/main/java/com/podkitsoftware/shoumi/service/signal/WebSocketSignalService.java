@@ -18,8 +18,12 @@ public class WebSocketSignalService implements SignalService {
     }
 
     @Override
-    public Room getRoom(final String groupId) {
+    public Room joinRoom(final String groupId) {
         return null;
+    }
+
+    @Override
+    public void quitRoom(final String groupId) {
     }
 
     @Override

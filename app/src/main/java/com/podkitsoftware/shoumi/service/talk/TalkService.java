@@ -76,25 +76,30 @@ public class TalkService extends Service {
     @Nullable
     @Override
     public IBinder onBind(final Intent intent) {
+        handleIntent(intent);
         return binder;
     }
 
     @Override
     public int onStartCommand(final Intent intent, final int flags, final int startId) {
         if (intent != null) {
-            final String action = intent.getAction();
-            if (ACTION_CONNECT.equals(action)) {
-                doConnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID));
-            } else if (ACTION_DISCONNECT.equals(action)) {
-                doDisconnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), true);
-            } else if (ACTION_EXTRA_HAS_AUDIO_FOCUS.equals(action)) {
-                doSetFocus(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), intent.getBooleanExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, false));
-            } else {
-                throw new IllegalArgumentException("Unknown intent: " + intent);
-            }
+            handleIntent(intent);
         }
 
         return START_STICKY;
+    }
+
+    private void handleIntent(final Intent intent) {
+        final String action = intent.getAction();
+        if (ACTION_CONNECT.equals(action)) {
+            doConnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID));
+        } else if (ACTION_DISCONNECT.equals(action)) {
+            doDisconnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), true);
+        } else if (ACTION_SET_FOCUS.equals(action)) {
+            doSetFocus(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), intent.getBooleanExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, false));
+        } else {
+            throw new IllegalArgumentException("Unknown intent: " + intent);
+        }
     }
 
     private void doSetFocus(final String groupId, final boolean hasFocus) {
@@ -122,34 +127,42 @@ public class TalkService extends Service {
         else if (!hasFocus && (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE)) {
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
             talkEngine.stopSend();
+            signalService.releaseFocus(currRoom.getRoomId());
         }
     }
 
     private void doDisconnect(final String groupId, final boolean stopIfNoConnectionLeft) {
-        final TalkEngine mediaEngine = talkEngineMap.remove(groupId);
-        if (mediaEngine == null) {
-            Logger.w(LOG_TAG, "Room %s already disconnected", groupId);
-            return;
+        try {
+            final TalkEngine talkEngine = talkEngineMap.remove(groupId);
+            if (talkEngine == null) {
+                Logger.w(LOG_TAG, "Room %s already disconnected", groupId);
+                return;
+            }
+
+            final boolean isCurrentRoom = StringUtils.equals(this.currGroupId, groupId);
+
+            if (isCurrentRoom) {
+                setCurrentRoomStatus(TalkBinder.ROOM_STATUS_DISCONNECTING);
+            }
+
+            Logger.d(LOG_TAG, "Disconnecting from room %s", groupId);
+
+            if (isCurrentRoom) {
+                audioManager.abandonAudioFocus(null);
+                audioManager.setMode(AudioManager.MODE_NORMAL);
+                setCurrentRoomStatus(TalkBinder.ROOM_STATUS_NOT_CONNECTED);
+                this.currGroupId = null;
+            }
+
+            talkEngine.dispose();
+            signalService.quitRoom(groupId);
+        }
+        finally {
+            if (stopIfNoConnectionLeft && talkEngineMap.size() == 0) {
+                stopSelf();
+            }
         }
 
-        final boolean isCurrentRoom = StringUtils.equals(this.currGroupId, groupId);
-
-        if (isCurrentRoom) {
-            setCurrentRoomStatus(TalkBinder.ROOM_STATUS_DISCONNECTING);
-        }
-
-        Logger.d(LOG_TAG, "Disconnecting from room %s", groupId);
-
-        if (isCurrentRoom) {
-            audioManager.abandonAudioFocus(null);
-            audioManager.setMode(AudioManager.MODE_NORMAL);
-            setCurrentRoomStatus(TalkBinder.ROOM_STATUS_NOT_CONNECTED);
-            this.currGroupId = null;
-        }
-
-        if (stopIfNoConnectionLeft && talkEngineMap.size() == 0) {
-            stopSelf();
-        }
     }
 
     private void doConnect(final @NonNull String groupId) {
@@ -168,7 +181,7 @@ public class TalkService extends Service {
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTING);
 
         final TalkEngine engine = talkEngineFactory.createEngine(this);
-        currRoom = signalService.getRoom(groupId);
+        currRoom = signalService.joinRoom(groupId);
         talkEngineMap.put(groupId, engine);
         engine.connect(currRoom);
 

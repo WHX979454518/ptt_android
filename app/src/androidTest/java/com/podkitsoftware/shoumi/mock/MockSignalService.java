@@ -5,8 +5,6 @@ import com.podkitsoftware.shoumi.service.signal.SignalService;
 
 import java.util.Map;
 
-import rx.subjects.PublishSubject;
-
 /**
  * Created by fanchao on 13/12/15.
  */
@@ -18,7 +16,8 @@ public class MockSignalService implements SignalService {
     public static class RoomInfo {
         public final Room room;
         public final boolean canHasFocus;
-        public final PublishSubject<Boolean> hasFocus = PublishSubject.create();
+        public boolean joined;
+        public boolean hasFocus;
 
         public RoomInfo(final Room room, final boolean canHasFocus) {
             this.room = room;
@@ -39,15 +38,22 @@ public class MockSignalService implements SignalService {
     }
 
     @Override
-    public Room getRoom(final String groupId) {
-        return rooms.get(groupId).room;
+    public Room joinRoom(final String groupId) {
+        final RoomInfo info = rooms.get(groupId);
+        info.joined = true;
+        return info.room;
+    }
+
+    @Override
+    public void quitRoom(final String groupId) {
+        rooms.get(groupId).joined = false;
     }
 
     @Override
     public boolean requestFocus(final int roomId) {
         final RoomInfo roomInfo = findRoomById(roomId);
         if (roomInfo.canHasFocus) {
-            roomInfo.hasFocus.onNext(true);
+            roomInfo.hasFocus = true;
             return true;
         }
 
@@ -56,6 +62,6 @@ public class MockSignalService implements SignalService {
 
     @Override
     public void releaseFocus(final int roomId) {
-        findRoomById(roomId).hasFocus.onNext(false);
+        findRoomById(roomId).hasFocus = false;
     }
 }
