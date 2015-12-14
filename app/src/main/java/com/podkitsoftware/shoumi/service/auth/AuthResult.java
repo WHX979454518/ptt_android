@@ -1,4 +1,4 @@
-package com.podkitsoftware.shoumi.model;
+package com.podkitsoftware.shoumi.service.auth;
 
 import com.bluelinelabs.logansquare.annotation.JsonField;
 import com.bluelinelabs.logansquare.annotation.JsonObject;
@@ -17,6 +17,9 @@ public class AuthResult {
 
     @JsonField(name = "token")
     String token;
+
+    public AuthResult() {
+    }
 
     public AuthResult(final String userId, final String token) {
         this.userId = userId;

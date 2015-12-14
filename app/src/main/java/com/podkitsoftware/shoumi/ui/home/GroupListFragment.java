@@ -13,7 +13,6 @@ import android.widget.TextView;
 import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.R;
-import com.podkitsoftware.shoumi.model.GroupInfo;
 import com.podkitsoftware.shoumi.ui.base.BaseFragment;
 import com.podkitsoftware.shoumi.ui.room.RoomActivity;
 
@@ -69,14 +68,14 @@ public class GroupListFragment extends BaseFragment<Void> {
 
         broker.getGroupsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
                 .observeOn(AndroidSchedulers.mainThread())
-                .compose(this.<List<GroupInfo<String>>>bindToLifecycle())
+                .compose(this.<List<Broker.GroupInfo<String>>>bindToLifecycle())
                 .subscribe(adapter::setGroups);
     }
 
     private class Adapter extends RecyclerView.Adapter<GroupItemHolder> {
-        private final ArrayList<GroupInfo<String>> groups = new ArrayList<>();
+        private final ArrayList<Broker.GroupInfo<String>> groups = new ArrayList<>();
 
-        public void setGroups(final Collection<GroupInfo<String>> newGroups) {
+        public void setGroups(final Collection<Broker.GroupInfo<String>> newGroups) {
             groups.clear();
             if (newGroups != null) {
                 groups.addAll(newGroups);
@@ -119,7 +118,7 @@ public class GroupListFragment extends BaseFragment<Void> {
             ButterKnife.bind(this, itemView);
         }
 
-        public void setGroup(final GroupInfo<String> info) {
+        public void setGroup(final Broker.GroupInfo<String> info) {
             nameView.setText(info.group.getName());
 //            Picasso.with(itemView.getContext())
 //                    .load(info.group.getImageUri())

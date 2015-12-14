@@ -1,6 +1,6 @@
 package com.podkitsoftware.shoumi.engine;
 
-import com.podkitsoftware.shoumi.model.Room;
+import com.podkitsoftware.shoumi.service.signal.Room;
 
 /**
  *

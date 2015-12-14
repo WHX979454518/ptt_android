@@ -59,11 +59,11 @@ public class DevApp extends App {
         });
 
         final List<Person> persons = Arrays.asList(
-                new Person("1", "张三", true),
-                new Person("2", "李四", true),
-                new Person("3", "王小五", true),
-                new Person("4", "李小六", true),
-                new Person("5", "不认识", false));
+                new Person("1", "张三"),
+                new Person("2", "李四"),
+                new Person("3", "王小五"),
+                new Person("4", "李小六"),
+                new Person("5", "不认识"));
 
         final List<Group> groups = Arrays.asList(
                 new Group("1", "火星自驾群"),

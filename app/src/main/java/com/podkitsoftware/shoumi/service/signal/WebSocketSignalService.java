@@ -1,7 +1,6 @@
 package com.podkitsoftware.shoumi.service.signal;
 
-import com.podkitsoftware.shoumi.model.AuthResult;
-import com.podkitsoftware.shoumi.model.Room;
+import com.podkitsoftware.shoumi.service.auth.AuthResult;
 import com.podkitsoftware.shoumi.service.auth.IAuthService;
 
 /**

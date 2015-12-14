@@ -1,4 +1,4 @@
-package com.podkitsoftware.shoumi.model;
+package com.podkitsoftware.shoumi.service.signal;
 
 import android.os.Parcel;
 import android.os.Parcelable;

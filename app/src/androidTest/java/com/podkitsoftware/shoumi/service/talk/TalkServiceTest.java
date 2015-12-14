@@ -7,8 +7,8 @@ import com.podkitsoftware.shoumi.App;
 import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
 import com.podkitsoftware.shoumi.mock.MockSignalService;
 import com.podkitsoftware.shoumi.mock.MockTalkEngineFactory;
-import com.podkitsoftware.shoumi.model.Room;
 import com.podkitsoftware.shoumi.service.signal.ISignalService;
+import com.podkitsoftware.shoumi.service.signal.Room;
 
 import java.util.Map;
 

@@ -7,8 +7,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.SimpleArrayMap;
 
 import com.podkitsoftware.shoumi.model.Group;
-import com.podkitsoftware.shoumi.model.GroupInfo;
 import com.podkitsoftware.shoumi.model.GroupMember;
+import com.podkitsoftware.shoumi.model.IContactItem;
 import com.podkitsoftware.shoumi.model.Person;
 import com.podkitsoftware.shoumi.util.CursorUtil;
 import com.podkitsoftware.shoumi.util.SqlUtil;
@@ -168,7 +168,7 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<List<Person>> getContacts(final @Nullable String searchTerm) {
+    public Observable<List<IContactItem>> getContacts(final @Nullable String searchTerm) {
         final QueryObservable query;
         if (StringUtils.isNotEmpty(searchTerm)) {
             query = db
@@ -238,4 +238,15 @@ public class Broker {
                 GroupMember.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members), groupId);
     }
 
+    public static class GroupInfo<T> {
+        public final Group group;
+        public final List<T> members;
+        public final int memberCount;
+
+        public GroupInfo(final Group group, final List<T> members, final int memberCount) {
+            this.group = group;
+            this.members = members;
+            this.memberCount = memberCount;
+        }
+    }
 }

@@ -13,13 +13,13 @@ import org.apache.commons.lang3.StringUtils;
 import rx.functions.Func1;
 
 @JsonObject
-public class Group implements Model, Cloneable {
+public class Group implements Model, Cloneable, IContactItem {
 
     public static final String TABLE_NAME = "groups";
 
-    public static final String COL_ID = "id";
-    public static final String COL_NAME = "name";
-    public static final String COL_PRIORITY = "priority";
+    public static final String COL_ID = "group_id";
+    public static final String COL_NAME = "group_name";
+    public static final String COL_PRIORITY = "group_priority";
 
     @JsonField(name = "id")
     String id;
@@ -80,7 +80,8 @@ public class Group implements Model, Cloneable {
         priority = CursorUtil.getInt(cursor, COL_PRIORITY);
     }
 
-    public Uri getImageUri() {
+    @Override
+    public Uri getImage() {
         //TODO: 生成组的图像
         return Uri.parse("http://icons.iconarchive.com/icons/hopstarter/face-avatars/256/Male-Face-F5-icon.png");
     }
@@ -89,6 +90,7 @@ public class Group implements Model, Cloneable {
         return id;
     }
 
+    @Override
     public String getName() {
         return name;
     }

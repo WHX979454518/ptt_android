@@ -1,7 +1,7 @@
 package com.podkitsoftware.shoumi.mock;
 
-import com.podkitsoftware.shoumi.model.Room;
 import com.podkitsoftware.shoumi.service.signal.ISignalService;
+import com.podkitsoftware.shoumi.service.signal.Room;
 
 import java.util.Map;
 

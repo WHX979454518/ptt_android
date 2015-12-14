@@ -4,7 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
 
-import com.podkitsoftware.shoumi.model.Room;
+import com.podkitsoftware.shoumi.service.signal.Room;
 
 import org.webrtc.autoim.MediaEngine;
 

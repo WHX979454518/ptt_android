@@ -1,7 +1,5 @@
 package com.podkitsoftware.shoumi.service.auth;
 
-import com.podkitsoftware.shoumi.model.AuthResult;
-
 /**
  * 用户鉴权接口
  *

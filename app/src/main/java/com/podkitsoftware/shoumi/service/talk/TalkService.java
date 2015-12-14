@@ -13,8 +13,8 @@ import android.support.v4.util.SimpleArrayMap;
 import com.podkitsoftware.shoumi.AppComponent;
 import com.podkitsoftware.shoumi.engine.ITalkEngine;
 import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
-import com.podkitsoftware.shoumi.model.Room;
 import com.podkitsoftware.shoumi.service.signal.ISignalService;
+import com.podkitsoftware.shoumi.service.signal.Room;
 import com.podkitsoftware.shoumi.util.Logger;
 
 import org.apache.commons.lang3.StringUtils;
