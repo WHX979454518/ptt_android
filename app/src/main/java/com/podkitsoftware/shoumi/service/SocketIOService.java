@@ -19,6 +19,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -35,9 +37,8 @@ import rx.subjects.PublishSubject;
  *
  * Created by fanchao on 13/12/15.
  */
-public class WebSocketService implements ISignalService, IAuthService, ISyncService {
+public class SocketIOService implements ISignalService, IAuthService, ISyncService {
     private final String endpointUrl;
-    private final int endpointPort;
     private Socket socket;
     final PublishSubject<Event> eventSubject = PublishSubject.create();
     final Broker broker;
@@ -45,10 +46,9 @@ public class WebSocketService implements ISignalService, IAuthService, ISyncServ
     public static final String EVENT_USER_LOGON = "userLogon";
     public static final String EVENT_CONTACTS_UPDATE = "contactsUpdate";
 
-    public WebSocketService(final Broker broker, final String endpointUrl, final int endpointPort) {
+    public SocketIOService(final Broker broker, final String endpointUrl) {
         this.broker = broker;
         this.endpointUrl = endpointUrl;
-        this.endpointPort = endpointPort;
 
         eventSubject
                 .filter(event -> EVENT_CONTACTS_UPDATE.equals(event.name))
@@ -113,16 +113,19 @@ public class WebSocketService implements ISignalService, IAuthService, ISyncServ
 
         socket.io().on(Manager.EVENT_TRANSPORT, args -> {
             final Transport transport = (Transport) args[0];
-            transport.on(Transport.EVENT_REQUEST_HEADERS, transportArgs -> ((Map<String, String>) transportArgs[0]).put("Authorization",
-                    new String(Base64.encode((username + ":" + password).getBytes(Charsets.UTF_8), Base64.NO_WRAP), Charsets.UTF_8)));
+            transport.on(Transport.EVENT_REQUEST_HEADERS, transportArgs -> ((Map<String, List<String>>) transportArgs[0]).put("Authorization",
+                    Collections.singletonList("Basic " + new String(Base64.encode((username + ":" + password).getBytes(Charsets.UTF_8), Base64.NO_WRAP), Charsets.UTF_8))));
         });
 
         socket.on(Socket.EVENT_CONNECT_ERROR, new EventListener(Socket.EVENT_CONNECT_ERROR))
-                .on(Socket.EVENT_CONNECT_TIMEOUT, new EventListener(Socket.EVENT_CONNECT_TIMEOUT));
+                .on(Socket.EVENT_ERROR, new EventListener(Socket.EVENT_ERROR))
+                .on(Socket.EVENT_CONNECT_TIMEOUT, new EventListener(Socket.EVENT_CONNECT_TIMEOUT))
+                .on(EVENT_USER_LOGON, new EventListener(EVENT_USER_LOGON))
+                .on(EVENT_CONTACTS_UPDATE, new EventListener(EVENT_CONTACTS_UPDATE));
 
         return eventSubject
                 .flatMap(event -> {
-                    if (Socket.EVENT_CONNECT_ERROR.equals(event.name)) {
+                    if (Socket.EVENT_CONNECT_ERROR.equals(event.name) || Socket.EVENT_ERROR.equals(event.name)) {
                         return Observable.error(new RuntimeException("Connection error: " + event.args[0]));
                     } else if (Socket.EVENT_CONNECT_TIMEOUT.equals(event.name)) {
                         return Observable.error(new TimeoutException());
@@ -131,7 +134,8 @@ public class WebSocketService implements ISignalService, IAuthService, ISyncServ
                     }
 
                     return Observable.empty();
-                });
+                })
+                .doOnSubscribe(socket::connect);
     }
 
     @Override

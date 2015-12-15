@@ -8,6 +8,11 @@ import com.facebook.stetho.Stetho;
 import com.facebook.stetho.okhttp.StethoInterceptor;
 import com.squareup.okhttp.OkHttpClient;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import io.socket.client.Manager;
+
 /**
  * Created by fanchao on 7/12/15.
  */
@@ -51,6 +56,11 @@ public class DevApp extends App {
                 ViewServer.get(activity).removeWindow(activity);
             }
         });
+
+        final String name = Manager.class.getName();
+        Logger.getLogger(name).setLevel(Level.ALL);
+
+        providesAuthService().login("500002", "000000").subscribe();
     }
 
     @Override
