@@ -4,9 +4,9 @@ import android.app.Application;
 
 import com.podkitsoftware.shoumi.engine.ITalkEngineFactory;
 import com.podkitsoftware.shoumi.engine.WebRtcTalkEngine;
+import com.podkitsoftware.shoumi.service.WebSocketService;
 import com.podkitsoftware.shoumi.service.auth.IAuthService;
 import com.podkitsoftware.shoumi.service.signal.ISignalService;
-import com.podkitsoftware.shoumi.service.signal.WebSocketSignalService;
 import com.podkitsoftware.shoumi.util.Lazy;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
@@ -16,7 +16,7 @@ import com.squareup.picasso.Picasso;
 
 public class App extends Application implements AppComponent {
 
-    private final Lazy<WebSocketSignalService> signalService = new Lazy<>(() -> new WebSocketSignalService("", 80));
+    private final Lazy<WebSocketService> signalService = new Lazy<>(() -> new WebSocketService(providesBroker(), "", 80));
     private final Lazy<ITalkEngineFactory> talkEngineFactory = new Lazy<>(() -> WebRtcTalkEngine::new);
     private final Lazy<OkHttpClient> okHttpClient = new Lazy<>(() -> {
         final OkHttpClient client = new OkHttpClient();

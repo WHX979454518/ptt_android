@@ -5,35 +5,42 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
-import com.bluelinelabs.logansquare.annotation.JsonField;
-import com.bluelinelabs.logansquare.annotation.JsonObject;
 import com.podkitsoftware.shoumi.R;
 import com.podkitsoftware.shoumi.util.CursorUtil;
+import com.podkitsoftware.shoumi.util.PrivilegeUtil;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import rx.functions.Func1;
 
-@JsonObject
-public class Person implements Model, IContactItem {
+public class Person implements Model, IContactItem, JSONDeserializable {
 
     public static final String TABLE_NAME = "persons";
 
     public static final String COL_ID = "person_id";
     public static final String COL_NAME = "person_name";
+    public static final String COL_PRIV = "person_priv";
+    public static final String COL_AVATAR = "person_avatar";
 
-    @JsonField(name = "id")
     String id;
-
-    @JsonField(name = "name")
     String name;
+    String avatar;
+    @Privilege int priv;
 
     public Person() {
     }
 
-    public Person(String id, String name) {
+    public Person(final String id, final String name, final String avatar, final @Privilege int priv) {
         this.id = id;
         this.name = name;
+        this.avatar = avatar;
+        this.priv = priv;
+    }
+
+    public Person(final String id, final String name) {
+        this(id, name, null, 0);
     }
 
     @Override
@@ -45,12 +52,30 @@ public class Person implements Model, IContactItem {
     public void toValues(ContentValues values) {
         values.put(COL_ID, id);
         values.put(COL_NAME, name);
+        values.put(COL_PRIV, priv);
+        values.put(COL_AVATAR, avatar);
     }
 
     @Override
     public void readFrom(Cursor cursor) {
         id = CursorUtil.getString(cursor, COL_ID);
         name = CursorUtil.getString(cursor, COL_NAME);
+        avatar = CursorUtil.getString(cursor, COL_AVATAR);
+        @Privilege int dbPriv = CursorUtil.getInt(cursor, COL_PRIV);
+        priv = dbPriv;
+    }
+
+    @Override
+    public Person readFrom(final JSONObject object) {
+        try {
+            id = object.getString("idNumber");
+            name = object.getString("name");
+            avatar = object.getString("avatar");
+            priv = PrivilegeUtil.fromJson(object.getJSONObject("privileges"));
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        return this;
     }
 
     @Override
@@ -65,6 +90,14 @@ public class Person implements Model, IContactItem {
     @Override
     public String getName() {
         return name;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public int getPriv() {
+        return priv;
     }
 
     @Override
@@ -102,7 +135,9 @@ public class Person implements Model, IContactItem {
     public static String getCreateTableSql() {
         return "CREATE TABLE " + TABLE_NAME + " (" +
                     COL_ID + " TEXT PRIMARY KEY NOT NULL, " +
-                    COL_NAME + " TEXT NOT NULL" +
+                    COL_NAME + " TEXT NOT NULL, " +
+                    COL_AVATAR + " TEXT, " +
+                    COL_PRIV + " INTEGER NOT NULL" +
                 ")";
     }
 

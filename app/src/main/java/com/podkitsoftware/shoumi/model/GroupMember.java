@@ -2,8 +2,13 @@ package com.podkitsoftware.shoumi.model;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.support.v4.util.SimpleArrayMap;
 
 import com.podkitsoftware.shoumi.util.CursorUtil;
+import com.podkitsoftware.shoumi.util.JsonUtil;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 
 public class GroupMember implements Model {
@@ -43,6 +48,19 @@ public class GroupMember implements Model {
         id = CursorUtil.getOptionalLong(cursor, COL_ID);
         groupId = CursorUtil.getString(cursor, COL_GROUP_ID);
         personId = CursorUtil.getString(cursor, COL_PERSON_ID);
+    }
+
+    public static SimpleArrayMap<String, Iterable<String>> fromJson(final JSONArray groupArray) {
+        final SimpleArrayMap<String, Iterable<String>> result = new SimpleArrayMap<>(groupArray.length());
+        try {
+            for (int i = 0, size = groupArray.length(); i < size; i++) {
+                JsonUtil.fromArray(groupArray.getJSONObject(i).getJSONArray("members"), Object::toString);
+            }
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        return result;
     }
 
     public static String getCreateTableSql() {
