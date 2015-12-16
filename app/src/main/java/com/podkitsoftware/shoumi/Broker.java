@@ -173,7 +173,7 @@ public class Broker {
         if (StringUtils.isNotEmpty(searchTerm)) {
             final String formattedSearchTerm = '%' + searchTerm + '%';
             query = db
-                    .createQuery(Person.TABLE_NAME,
+                    .createQuery(ContactItem.TABLE_NAME,
                             "SELECT * FROM " + ContactItem.TABLE_NAME + " AS CI " +
                                     "LEFT JOIN " + Person.TABLE_NAME + " AS P ON CI." + ContactItem.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
                                     "LEFT JOIN " + Group.TABLE_NAME + " AS G ON CI." + ContactItem.COL_GROUP_ID + " = G." + Group.COL_ID + " " +
@@ -183,7 +183,7 @@ public class Broker {
         }
         else {
             query = db
-                    .createQuery(Person.TABLE_NAME,
+                    .createQuery(ContactItem.TABLE_NAME,
                             "SELECT * FROM " + ContactItem.TABLE_NAME + " AS CI " +
                                     "LEFT JOIN " + Person.TABLE_NAME + " AS P ON CI." + ContactItem.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
                                     "LEFT JOIN " + Group.TABLE_NAME + " AS G ON CI." + ContactItem.COL_GROUP_ID + " = G." + Group.COL_ID);

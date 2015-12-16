@@ -14,31 +14,25 @@ import org.json.JSONObject;
 
 import rx.functions.Func1;
 
+/**
+ * 通讯录组
+ */
 public class Group implements Model, Cloneable, IContactItem, JSONDeserializable {
 
     public static final String TABLE_NAME = "groups";
 
     public static final String COL_ID = "group_id";
     public static final String COL_NAME = "group_name";
-    public static final String COL_PRIORITY = "group_priority";
     public static final String COL_DESCRIPTION = "group_desc";
-    public static final String COL_OWNER_ID = "group_owner_id";
-    public static final String COL_TYPE = "group_type";
 
     String id;
     String name;
     String description;
-    String ownerId;
-    @GroupType int type;
-    int priority;
 
-    public Group(final String id, final String name, final String description, final String ownerId, final int type, final int priority) {
+    public Group(final String id, final String name, final String description) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.ownerId = ownerId;
-        this.type = type;
-        this.priority = priority;
     }
 
     public Group() {
@@ -82,16 +76,12 @@ public class Group implements Model, Cloneable, IContactItem, JSONDeserializable
         values.put(COL_ID, id);
         values.put(COL_NAME, name);
         values.put(COL_DESCRIPTION, description);
-        values.put(COL_OWNER_ID, ownerId);
-        values.put(COL_TYPE, type);
-        values.put(COL_PRIORITY, priority);
     }
 
     @Override
     public void readFrom(Cursor cursor) {
         id = CursorUtil.getString(cursor, COL_ID);
         name = CursorUtil.getString(cursor, COL_NAME);
-        priority = CursorUtil.getInt(cursor, COL_PRIORITY);
     }
 
     @Override
@@ -100,10 +90,6 @@ public class Group implements Model, Cloneable, IContactItem, JSONDeserializable
             id = object.getString("idNumber");
             name = object.getString("name");
             description = object.getString("description");
-            ownerId = object.optString("owner");
-            final @GroupType int remoteType = object.getInt("type");
-            this.type = remoteType;
-            priority = object.getInt("priority");
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -131,18 +117,11 @@ public class Group implements Model, Cloneable, IContactItem, JSONDeserializable
         return name;
     }
 
-    public int getPriority() {
-        return priority;
-    }
-
     public static String getCreateTableSql() {
         return "CREATE TABLE " + TABLE_NAME + " (" +
                     COL_ID   + " INTEGER PRIMARY KEY NOT NULL," +
                     COL_NAME + " TEXT NOT NULL," +
-                    COL_DESCRIPTION + " TEXT, " +
-                    COL_OWNER_ID + " TEXT, " +
-                    COL_TYPE + " INTEGER NOT NULL, " +
-                    COL_PRIORITY + " INTEGER NOT NULL" +
+                    COL_DESCRIPTION + " TEXT" +
                 ")";
     }
 

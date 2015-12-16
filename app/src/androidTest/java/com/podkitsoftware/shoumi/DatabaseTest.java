@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Closeables;
 import com.podkitsoftware.shoumi.model.Group;
-import com.podkitsoftware.shoumi.model.GroupType;
 import com.podkitsoftware.shoumi.model.IContactItem;
 import com.podkitsoftware.shoumi.model.Person;
 
@@ -30,10 +29,10 @@ public class DatabaseTest extends AndroidTestCase {
     private static final Person PERSON_3 = new Person("3", "User 3");
     private static final Person PERSON_4 = new Person("4", "User 4");
     private static final Person PERSON_5 = new Person("5", "User 5");
-    private static final Group GROUP_1 = new Group("1", "Group 1", "This is a group", PERSON_1.getId(), GroupType.PRE_DEFINED, 1);
-    private static final Group GROUP_2 = new Group("2", "Group 2", "This is a group", PERSON_1.getId(), GroupType.PRE_DEFINED, 1);
-    private static final Group GROUP_3 = new Group("3", "Group 3", "This is a group", PERSON_1.getId(), GroupType.PRE_DEFINED, 1);
-    private static final Group GROUP_4 = new Group("4", "Group 4", "This is a group", PERSON_1.getId(), GroupType.PRE_DEFINED, 1);
+    private static final Group GROUP_1 = new Group("1", "Group 1", "This is a group");
+    private static final Group GROUP_2 = new Group("2", "Group 2", "This is a group");
+    private static final Group GROUP_3 = new Group("3", "Group 3", "This is a group");
+    private static final Group GROUP_4 = new Group("4", "Group 4", "This is a group");
 
     private Broker broker;
     private Database db;

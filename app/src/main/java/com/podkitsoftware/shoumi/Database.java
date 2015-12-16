@@ -10,6 +10,8 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.podkitsoftware.shoumi.model.ContactItem;
+import com.podkitsoftware.shoumi.model.Conversation;
+import com.podkitsoftware.shoumi.model.ConversationMember;
 import com.podkitsoftware.shoumi.model.Group;
 import com.podkitsoftware.shoumi.model.GroupMember;
 import com.podkitsoftware.shoumi.model.Person;
@@ -38,6 +40,8 @@ public class Database implements Closeable {
                             db.execSQL(Person.getCreateTableSql());
                             db.execSQL(Group.getCreateTableSql());
                             db.execSQL(GroupMember.getCreateTableSql());
+                            db.execSQL(Conversation.getCreateTableSql());
+                            db.execSQL(ConversationMember.getCreateTableSql());
                             db.execSQL(ContactItem.getCreateTableSql());
                             db.setTransactionSuccessful();
                         } finally {

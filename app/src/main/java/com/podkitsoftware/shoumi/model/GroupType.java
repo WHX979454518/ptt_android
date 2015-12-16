@@ -9,8 +9,8 @@ import java.lang.annotation.RetentionPolicy;
  * Created by fanchao on 15/12/15.
  */
 @Retention(RetentionPolicy.SOURCE)
-@IntDef(value = { GroupType.PRE_DEFINED, GroupType.TEMPORARY })
+@IntDef(value = { GroupType.CONTACTS, GroupType.CONVERSATION})
 public @interface GroupType {
-    int PRE_DEFINED = 1;
-    int TEMPORARY = 0;
+    int CONTACTS = 1;
+    int CONVERSATION = 0;
 }
