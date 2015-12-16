@@ -70,7 +70,7 @@ public class Person implements Model, IContactItem, JSONDeserializable {
         try {
             id = object.getString("idNumber");
             name = object.getString("name");
-            avatar = object.getString("avatar");
+            avatar = object.optString("avatar");
             priv = PrivilegeUtil.fromJson(object.getJSONObject("privileges"));
         } catch (JSONException e) {
             throw new RuntimeException(e);

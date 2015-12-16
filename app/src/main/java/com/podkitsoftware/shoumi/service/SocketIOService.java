@@ -1,8 +1,9 @@
 package com.podkitsoftware.shoumi.service;
 
+import android.support.annotation.NonNull;
 import android.util.Base64;
 
-import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.podkitsoftware.shoumi.Broker;
 import com.podkitsoftware.shoumi.model.Group;
@@ -19,6 +20,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -114,10 +116,11 @@ public class SocketIOService implements ISignalService, IAuthService, ISyncServi
         socket.io().on(Manager.EVENT_TRANSPORT, args -> {
             final Transport transport = (Transport) args[0];
             transport.on(Transport.EVENT_REQUEST_HEADERS, transportArgs -> ((Map<String, List<String>>) transportArgs[0]).put("Authorization",
-                    Collections.singletonList("Basic " + new String(Base64.encode((username + ":" + password).getBytes(Charsets.UTF_8), Base64.NO_WRAP), Charsets.UTF_8))));
+                    Collections.singletonList("Basic " + encodeCredentials(username, password))));
         });
 
         socket.on(Socket.EVENT_CONNECT_ERROR, new EventListener(Socket.EVENT_CONNECT_ERROR))
+                .on(Socket.EVENT_CONNECT, new EventListener(Socket.EVENT_CONNECT))
                 .on(Socket.EVENT_ERROR, new EventListener(Socket.EVENT_ERROR))
                 .on(Socket.EVENT_CONNECT_TIMEOUT, new EventListener(Socket.EVENT_CONNECT_TIMEOUT))
                 .on(EVENT_USER_LOGON, new EventListener(EVENT_USER_LOGON))
@@ -131,11 +134,32 @@ public class SocketIOService implements ISignalService, IAuthService, ISyncServi
                         return Observable.error(new TimeoutException());
                     } else if (EVENT_USER_LOGON.equals(event.name)) {
                         return Observable.just(new Person().readFrom((JSONObject) event.args[0]));
+                    } else if (Socket.EVENT_CONNECT.equals(event.name)) {
+                        socket.emit("syncContacts", new JSONObject(ImmutableMap.of("enterMemberVersion", 1, "enterGroupVersion", 1)));
                     }
 
                     return Observable.empty();
                 })
                 .doOnSubscribe(socket::connect);
+    }
+
+    @NonNull
+    private String encodeCredentials(final String username, final String password) {
+        return Base64.encodeToString((username + ":" + MD5(password)).getBytes(), Base64.NO_WRAP);
+    }
+
+    private static String MD5(String md5) {
+        try {
+            MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] array = md.digest(md5.getBytes());
+            final StringBuilder sb = new StringBuilder();
+            for (final byte b : array) {
+                sb.append(Integer.toHexString((b & 0xFF) | 0x100).substring(1, 3));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
