@@ -1,8 +1,11 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.neenbedankt.android-apt'
 apply plugin: 'me.tatarka.retrolambda'
+apply plugin: 'kotlin-android'
 
 buildscript {
+    ext.kotlin_version = '1.0.0-beta-3595'
+
     repositories {
         // required for this library, don't use mavenCentral()
         jcenter()
@@ -10,6 +13,7 @@ buildscript {
     dependencies {
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
         classpath 'me.tatarka:gradle-retrolambda:3.2.4'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -30,6 +34,10 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
 
     productFlavors {
@@ -82,6 +90,8 @@ dependencies {
 
     apt 'com.bluelinelabs:logansquare-compiler:1.3.4'
     compile 'com.bluelinelabs:logansquare:1.3.4'
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
 
