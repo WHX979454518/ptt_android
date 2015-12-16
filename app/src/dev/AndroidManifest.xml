@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        tools:replace="android:name"
-        android:name="com.podkitsoftware.shoumi.DevApp" />
+            tools:replace="android:name"
+            android:name="com.xianzhitech.ptt.DevApp"/>
 
 </manifest>

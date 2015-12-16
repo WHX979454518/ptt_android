@@ -20,7 +20,7 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <com.podkitsoftware.shoumi.ui.widget.PushToTalkButton
+    <com.xianzhitech.ptt.ui.widget.PushToTalkButton
         android:id="@+id/room_pushToTalkButton"
         android:layout_below="@+id/room_appBar"
         android:src="@drawable/ic_voice_large"
