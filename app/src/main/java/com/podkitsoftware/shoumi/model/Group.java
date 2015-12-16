@@ -100,7 +100,7 @@ public class Group implements Model, Cloneable, IContactItem, JSONDeserializable
             id = object.getString("idNumber");
             name = object.getString("name");
             description = object.getString("description");
-            ownerId = object.getString("owner");
+            ownerId = object.optString("owner");
             final @GroupType int remoteType = object.getInt("type");
             this.type = remoteType;
             priority = object.getInt("priority");
@@ -140,7 +140,7 @@ public class Group implements Model, Cloneable, IContactItem, JSONDeserializable
                     COL_ID   + " INTEGER PRIMARY KEY NOT NULL," +
                     COL_NAME + " TEXT NOT NULL," +
                     COL_DESCRIPTION + " TEXT, " +
-                    COL_OWNER_ID + " TEXT NOT NULL, " +
+                    COL_OWNER_ID + " TEXT, " +
                     COL_TYPE + " INTEGER NOT NULL, " +
                     COL_PRIORITY + " INTEGER NOT NULL" +
                 ")";

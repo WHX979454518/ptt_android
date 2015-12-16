@@ -9,6 +9,7 @@ import com.podkitsoftware.shoumi.util.JsonUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class GroupMember implements Model {
@@ -54,7 +55,8 @@ public class GroupMember implements Model {
         final SimpleArrayMap<String, Iterable<String>> result = new SimpleArrayMap<>(groupArray.length());
         try {
             for (int i = 0, size = groupArray.length(); i < size; i++) {
-                JsonUtil.fromArray(groupArray.getJSONObject(i).getJSONArray("members"), Object::toString);
+                final JSONObject groupObject = groupArray.getJSONObject(i);
+                result.put(groupObject.getString("idNumber"),  JsonUtil.fromArray(groupObject.getJSONArray("members"), Object::toString));
             }
         } catch (JSONException e) {
             throw new RuntimeException(e);

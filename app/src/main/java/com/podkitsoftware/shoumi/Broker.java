@@ -172,13 +172,12 @@ public class Broker {
         final QueryObservable query;
         if (StringUtils.isNotEmpty(searchTerm)) {
             final String formattedSearchTerm = '%' + searchTerm + '%';
-            //TODO: Rewrite search sql
             query = db
                     .createQuery(Person.TABLE_NAME,
                             "SELECT * FROM " + ContactItem.TABLE_NAME + " AS CI " +
                                     "LEFT JOIN " + Person.TABLE_NAME + " AS P ON CI." + ContactItem.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
                                     "LEFT JOIN " + Group.TABLE_NAME + " AS G ON CI." + ContactItem.COL_GROUP_ID + " = G." + Group.COL_ID + " " +
-                                        "AND (P." + Person.COL_NAME + " LIKE ? OR G." + Group.COL_NAME + " LIKE ? )",
+                                    "WHERE (P." + Person.COL_NAME + " LIKE ? OR G." + Group.COL_NAME + " LIKE ? )",
                             formattedSearchTerm,
                             formattedSearchTerm);
         }

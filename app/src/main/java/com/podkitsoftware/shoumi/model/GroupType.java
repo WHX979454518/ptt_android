@@ -11,6 +11,6 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.SOURCE)
 @IntDef(value = { GroupType.PRE_DEFINED, GroupType.TEMPORARY })
 public @interface GroupType {
-    int PRE_DEFINED = 0;
-    int TEMPORARY = 1;
+    int PRE_DEFINED = 1;
+    int TEMPORARY = 0;
 }
