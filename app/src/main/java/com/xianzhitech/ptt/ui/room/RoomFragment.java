@@ -9,20 +9,25 @@ import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import butterknife.Bind;
-import butterknife.ButterKnife;
+
+import com.xianzhitech.model.Group;
+import com.xianzhitech.model.Person;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
 import com.xianzhitech.ptt.ui.util.ResourceUtil;
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton;
+
 import org.apache.commons.lang3.tuple.Triple;
-import rx.Observable;
-import rx.android.schedulers.AndroidSchedulers;
 
 import java.util.List;
 import java.util.Set;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * 显示对话界面

@@ -4,22 +4,34 @@ import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.CheckResult;
 import android.support.annotation.Nullable;
-import android.support.v4.util.SimpleArrayMap;
+
 import com.google.common.collect.Iterables;
 import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
-import com.xianzhitech.model.*;
+import com.xianzhitech.model.ContactItem;
+import com.xianzhitech.model.Contacts;
+import com.xianzhitech.model.Group;
+import com.xianzhitech.model.GroupMembers;
+import com.xianzhitech.model.Person;
 import com.xianzhitech.ptt.util.CursorUtil;
 import com.xianzhitech.ptt.util.SqlUtil;
+
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executors;
+
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
-
-import java.util.*;
-import java.util.concurrent.Executors;
 
 public class Broker {
 
@@ -100,7 +112,7 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<List<Person>> getGroupMemberss(final String groupId) {
+    public Observable<List<Person>> getGroupMembers(final String groupId) {
         final String sql = "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " +
                 "LEFT JOIN " + GroupMembers.TABLE_NAME + " AS GM ON " +
                 "GM." + GroupMembers.COL_PERSON_ID + " = P." + Person.COL_ID + " " +
@@ -114,7 +126,7 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<Void> updateGroups(final Iterable<Group> groups, final SimpleArrayMap<String, ? extends Iterable<String>> groupMembers) {
+    public Observable<Void> updateGroups(final Iterable<Group> groups, final Map<String, ? extends Iterable<String>> groupMembers) {
         return updateInTransaction(() -> {
 
             // Replace all existing groups
@@ -138,8 +150,8 @@ public class Broker {
 
             // Replace all group members
             if (groupMembers != null) {
-                for (int i = 0, size = groupMembers.size(); i < size; i++) {
-                    doUpdateGroupMemberss(groupMembers.keyAt(i), groupMembers.valueAt(i));
+                for (Map.Entry<String, ? extends Iterable<String>> entry : groupMembers.entrySet()) {
+                    doUpdateGroupMembers(entry.getKey(), entry.getValue());
                 }
             }
 
@@ -148,9 +160,9 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<Void> updateGroupMemberss(final String groupId, final Iterable<String> groupMembers) {
+    public Observable<Void> updateGroupMembers(final String groupId, final Iterable<String> groupMembers) {
         return updateInTransaction(() -> {
-            doUpdateGroupMemberss(groupId, groupMembers);
+            doUpdateGroupMembers(groupId, groupMembers);
             return null;
         });
     }
@@ -208,7 +220,7 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<Void> addGroupMemberss(final Group group, final Iterable<Person> persons) {
+    public Observable<Void> addGroupMembers(final Group group, final Iterable<Person> persons) {
         return updateInTransaction(() -> {
             doAddGroupMemberss(group.getId(), Iterables.transform(persons, Person::getId));
             return null;
@@ -242,7 +254,7 @@ public class Broker {
         }
     }
 
-    private void doUpdateGroupMemberss(String groupId, Iterable<String> members) {
+    private void doUpdateGroupMembers(String groupId, Iterable<String> members) {
         doAddGroupMemberss(groupId, members);
 
         db.delete(GroupMembers.TABLE_NAME,

@@ -12,8 +12,8 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import butterknife.Bind;
-import butterknife.ButterKnife;
+
+import com.xianzhitech.model.ContactItem;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
@@ -21,11 +21,18 @@ import com.xianzhitech.ptt.ui.base.BaseFragment;
 import com.xianzhitech.ptt.ui.util.ResourceUtil;
 import com.xianzhitech.ptt.ui.util.RxUtil;
 import com.xianzhitech.ptt.util.ContactLocaleAwareComparator;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class ContactsFragment extends BaseFragment<Void> {
 
@@ -71,7 +78,7 @@ public class ContactsFragment extends BaseFragment<Void> {
                 .debounce(500, TimeUnit.MILLISECONDS)
                 .flatMap(broker::getContacts)
                 .observeOn(AndroidSchedulers.mainThread())
-                .compose(this.<List<IContactItem>>bindToLifecycle())
+                .compose(this.<List<ContactItem>>bindToLifecycle())
                 .subscribe(adapter::setPersons);
     }
 
@@ -82,9 +89,9 @@ public class ContactsFragment extends BaseFragment<Void> {
     }
 
     private class Adapter extends RecyclerView.Adapter<ContactHolder> {
-        private final ArrayList<IContactItem> contactItems = new ArrayList<>();
+        private final ArrayList<ContactItem> contactItems = new ArrayList<>();
 
-        public void setPersons(final Collection<IContactItem> newPersons) {
+        public void setPersons(final Collection<ContactItem> newPersons) {
             this.contactItems.clear();
             if (newPersons != null) {
                 this.contactItems.addAll(newPersons);
@@ -101,8 +108,8 @@ public class ContactsFragment extends BaseFragment<Void> {
 
         @Override
         public void onBindViewHolder(final ContactHolder holder, final int position) {
-            final IContactItem contactItem = contactItems.get(position);
-            holder.iconView.setColorFilter(contactItem.getTintColor(getContext()));
+            final ContactItem contactItem = contactItems.get(position);
+            holder.iconView.setColorFilter(contactItem.getTintColor());
             holder.nameView.setText(contactItem.getName());
             holder.itemView.setOnClickListener(v -> {
 

@@ -1,13 +1,14 @@
 package com.xianzhitech.ptt.service.talk;
 
 import android.test.ServiceTestCase;
+
 import com.google.common.collect.ImmutableMap;
 import com.xianzhitech.ptt.App;
 import com.xianzhitech.ptt.engine.ITalkEngineFactory;
 import com.xianzhitech.ptt.mock.MockSignalProvider;
 import com.xianzhitech.ptt.mock.MockTalkEngineFactory;
 import com.xianzhitech.ptt.service.signal.Room;
-import com.xianzhitech.ptt.service.signal.SignalProvider;
+import com.xianzhitech.service.provider.SignalProvider;
 
 import java.util.Map;
 
@@ -41,7 +42,7 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
 
         setApplication(new App() {
             @Override
-            public SignalProvider providesSignalService() {
+            public SignalProvider providesSignal() {
                 return mockSignalService;
             }
 

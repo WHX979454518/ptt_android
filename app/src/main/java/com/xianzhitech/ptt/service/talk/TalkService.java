@@ -9,12 +9,14 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.SimpleArrayMap;
+
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.engine.ITalkEngine;
 import com.xianzhitech.ptt.engine.ITalkEngineFactory;
 import com.xianzhitech.ptt.service.signal.Room;
-import com.xianzhitech.ptt.service.signal.SignalProvider;
 import com.xianzhitech.ptt.util.Logger;
+import com.xianzhitech.service.provider.SignalProvider;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -44,7 +46,7 @@ public class TalkService extends Service {
     @Nullable Room currRoom;
 
     private final SimpleArrayMap<String, ITalkEngine> talkEngineMap = new SimpleArrayMap<>();
-    private SignalProvider SignalProvider;
+    private SignalProvider signalProvider;
     private ITalkEngineFactory talkEngineFactory;
     private LocalBroadcastManager broadcastManager;
     private AudioManager audioManager;
@@ -57,7 +59,7 @@ public class TalkService extends Service {
 
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         broadcastManager = LocalBroadcastManager.getInstance(this);
-        SignalProvider = appComponent.providesSignalService();
+        signalProvider = appComponent.providesSignal();
         talkEngineFactory = appComponent.providesTalkEngineFactory();
     }
 
@@ -118,14 +120,14 @@ public class TalkService extends Service {
             return;
         }
 
-        if (hasFocus && SignalProvider.requestFocus(currRoom.getRoomId())) {
+        if (hasFocus && signalProvider.requestFocus(currRoom.getRoomId())) {
             talkEngine.startSend();
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_ACTIVE);
         }
         else if (!hasFocus && (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE)) {
             setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
             talkEngine.stopSend();
-            SignalProvider.releaseFocus(currRoom.getRoomId());
+            signalProvider.releaseFocus(currRoom.getRoomId());
         }
     }
 
@@ -153,7 +155,7 @@ public class TalkService extends Service {
             }
 
             talkEngine.dispose();
-            SignalProvider.quitRoom(groupId);
+            signalProvider.quitRoom(groupId);
         }
         finally {
             if (stopIfNoConnectionLeft && talkEngineMap.size() == 0) {
@@ -179,7 +181,7 @@ public class TalkService extends Service {
         setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTING);
 
         final ITalkEngine engine = talkEngineFactory.createEngine(this);
-        currRoom = SignalProvider.joinRoom(groupId);
+        currRoom = signalProvider.joinRoom(groupId);
         talkEngineMap.put(groupId, engine);
         engine.connect(currRoom);
 

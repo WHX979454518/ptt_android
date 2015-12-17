@@ -1,9 +1,11 @@
 package com.xianzhitech.service.provider
 
 import com.google.common.collect.ImmutableMap
+import com.google.common.collect.Iterables
 import com.xianzhitech.ext.*
 import com.xianzhitech.model.Group
 import com.xianzhitech.model.Person
+import com.xianzhitech.model.toGroupsAndMembers
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.service.signal.Room
 import io.socket.client.IO
@@ -13,7 +15,6 @@ import io.socket.engineio.client.Transport
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
-import rx.functions.Func1
 import rx.subjects.PublishSubject
 import java.util.concurrent.TimeoutException
 
@@ -31,14 +32,16 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 
     init {
         eventSubject.filter({ it.name == EVENT_CONTACTS_UPDATE })
-                .flatMap(Func1<Event, Observable<Void>> {
+                .flatMap({
                     val personBuf = Person()
                     var groupBuf = Group()
                     val persons = it.jsonObject.getJSONObject("enterpriseMembers").getJSONArray("add").transform { personBuf.readFrom(it as JSONObject) }
-                    val groups = it.jsonObject.getJSONObject("enterpriseGroups").getJSONArray("add").transform { groupBuf. }
+                    val groupJsonArray = it.jsonObject.getJSONObject("enterpriseGroups").getJSONArray("add")
+                    val groups = groupJsonArray.transform { groupBuf.readFrom(it as JSONObject) }
                     Observable.concat(
                             broker.updatePersons(persons),
-                            broker.updateGroups()
+                            broker.updateGroups(groups, groupJsonArray.toGroupsAndMembers()),
+                            broker.updateContacts(Iterables.transform(persons, { it.id }), Iterables.transform(groups, { it.id }))
                     )
                 })
                 .subscribe()

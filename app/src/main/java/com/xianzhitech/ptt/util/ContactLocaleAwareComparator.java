@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.util;
 
+import com.xianzhitech.model.ContactItem;
+
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
@@ -7,7 +9,7 @@ import java.util.Locale;
 /**
  * Created by fanchao on 15/12/15.
  */
-public class ContactLocaleAwareComparator implements Comparator<IContactItem> {
+public class ContactLocaleAwareComparator implements Comparator<ContactItem> {
     private final Collator collator;
 
     public ContactLocaleAwareComparator() {
@@ -19,7 +21,7 @@ public class ContactLocaleAwareComparator implements Comparator<IContactItem> {
     }
 
     @Override
-    public int compare(final IContactItem lhs, final IContactItem rhs) {
+    public int compare(final ContactItem lhs, final ContactItem rhs) {
         return collator.compare(lhs.getName(), rhs.getName());
     }
 }

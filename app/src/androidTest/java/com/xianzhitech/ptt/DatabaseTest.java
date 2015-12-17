@@ -1,29 +1,38 @@
 package com.xianzhitech.ptt;
 
-import android.support.v4.util.SimpleArrayMap;
+import android.support.v4.util.ArrayMap;
 import android.test.AndroidTestCase;
 import android.util.Log;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Closeables;
+import com.xianzhitech.model.ContactItem;
+import com.xianzhitech.model.Group;
+import com.xianzhitech.model.Person;
+
 import junit.framework.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by fanchao on 5/12/15.
  */
 public class DatabaseTest extends AndroidTestCase {
 
-    private static final Person PERSON_1 = new Person("1", "User 1");
-    private static final Person PERSON_2 = new Person("2", "User 2");
-    private static final Person PERSON_3 = new Person("3", "User 3");
-    private static final Person PERSON_4 = new Person("4", "User 4");
-    private static final Person PERSON_5 = new Person("5", "User 5");
-    private static final Group GROUP_1 = new Group("1", "Group 1", "This is a group");
-    private static final Group GROUP_2 = new Group("2", "Group 2", "This is a group");
-    private static final Group GROUP_3 = new Group("3", "Group 3", "This is a group");
-    private static final Group GROUP_4 = new Group("4", "Group 4", "This is a group");
+    private static final Person PERSON_1 = new Person("1", "User 1", 0);
+    private static final Person PERSON_2 = new Person("2", "User 2", 0);
+    private static final Person PERSON_3 = new Person("3", "User 3", 0);
+    private static final Person PERSON_4 = new Person("4", "User 4", 0);
+    private static final Person PERSON_5 = new Person("5", "User 5", 0);
+    private static final Group GROUP_1 = new Group("1", "Group 1");
+    private static final Group GROUP_2 = new Group("2", "Group 2");
+    private static final Group GROUP_3 = new Group("3", "Group 3");
+    private static final Group GROUP_4 = new Group("4", "Group 4");
 
     private Broker broker;
     private Database db;
@@ -54,7 +63,7 @@ public class DatabaseTest extends AndroidTestCase {
     public void testInsertGroup() throws Exception {
         final Group group = GROUP_3;
         final List<Group> groups = Collections.singletonList(group);
-        broker.updateGroups(groups, new SimpleArrayMap<>()).toBlocking().first();
+        broker.updateGroups(groups, new ArrayMap<>()).toBlocking().first();
         Assert.assertEquals(groups, broker.getGroups().toBlocking().first());
     }
 
@@ -99,7 +108,7 @@ public class DatabaseTest extends AndroidTestCase {
         final List<Group> groups = Arrays.asList(GROUP_1, GROUP_2);
 
         broker.updatePersons(persons).toBlocking().first();
-        final SimpleArrayMap<String, List<String>> groupMembers = new SimpleArrayMap<>();
+        final ArrayMap<String, List<String>> groupMembers = new ArrayMap<>();
         groupMembers.put(groups.get(0).getId(), personIds);
         broker.updateGroups(groups, groupMembers).toBlocking().first();
 
@@ -119,7 +128,7 @@ public class DatabaseTest extends AndroidTestCase {
     public void testContact() {
         final ImmutableSet<Person> persons = ImmutableSet.of(PERSON_1, PERSON_2, PERSON_3);
         final ImmutableSet<Group> groups = ImmutableSet.of(GROUP_1);
-        final SimpleArrayMap<String, List<String>> groupMembers = new SimpleArrayMap<>();
+        final ArrayMap<String, List<String>> groupMembers = new ArrayMap<>();
         groupMembers.put(GROUP_1.getId(), Arrays.asList(PERSON_1.getId(), PERSON_3.getId()));
 
         broker.updatePersons(persons).toBlocking().first();
@@ -127,7 +136,7 @@ public class DatabaseTest extends AndroidTestCase {
 
         broker.updateContacts(Iterables.transform(persons, Person::getId), Iterables.transform(groups, Group::getId)).toBlocking().first();
 
-        final ImmutableSet<IContactItem> expectedContacts = ImmutableSet.of(PERSON_1, PERSON_2, PERSON_3, GROUP_1);
+        final ImmutableSet<ContactItem> expectedContacts = ImmutableSet.of(PERSON_1, PERSON_2, PERSON_3, GROUP_1);
         assertEquals(expectedContacts, ImmutableSet.copyOf(broker.getContacts(null).toBlocking().first()));
     }
 }

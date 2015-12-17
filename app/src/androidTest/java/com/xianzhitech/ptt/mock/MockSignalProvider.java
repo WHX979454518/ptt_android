@@ -1,7 +1,7 @@
 package com.xianzhitech.ptt.mock;
 
 import com.xianzhitech.ptt.service.signal.Room;
-import com.xianzhitech.ptt.service.signal.SignalProvider;
+import com.xianzhitech.service.provider.SignalProvider;
 
 import java.util.Map;
 

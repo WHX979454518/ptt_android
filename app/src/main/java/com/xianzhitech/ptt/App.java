@@ -1,21 +1,22 @@
 package com.xianzhitech.ptt;
 
 import android.app.Application;
+
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.picasso.OkHttpDownloader;
 import com.squareup.picasso.Picasso;
 import com.xianzhitech.ptt.engine.ITalkEngineFactory;
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine;
-import com.xianzhitech.ptt.service.SocketIOProvider;
-import com.xianzhitech.ptt.service.auth.IAuthService;
-import com.xianzhitech.ptt.service.signal.SignalProvider;
 import com.xianzhitech.ptt.util.Lazy;
+import com.xianzhitech.service.provider.AuthProvider;
+import com.xianzhitech.service.provider.SignalProvider;
+import com.xianzhitech.service.provider.SocketIOProvider;
 
 
 public class App extends Application implements AppComponent {
 
-    private final Lazy<SocketIOProvider> signalService = new Lazy<>(() -> new SocketIOProvider(providesBroker(), "http://106.186.124.143:3000/"));
+    private final Lazy<SocketIOProvider> signalProvider = new Lazy<>(() -> new SocketIOProvider(providesBroker(), "http://106.186.124.143:3000/"));
     private final Lazy<ITalkEngineFactory> talkEngineFactory = new Lazy<>(() -> WebRtcTalkEngine::new);
     private final Lazy<OkHttpClient> okHttpClient = new Lazy<>(() -> {
         final OkHttpClient client = new OkHttpClient();
@@ -25,7 +26,7 @@ public class App extends Application implements AppComponent {
 
     private final Lazy<Database> database = new Lazy<>(() -> new Database(App.this, Constants.DB_NAME, Constants.DB_VERSION));
     private final Lazy<Broker> broker = new Lazy<>(() -> new Broker(providesDatabase()));
-    private final Lazy<IAuthService> authService = new Lazy<>(signalService::get);
+    private final Lazy<AuthProvider> authProvider = new Lazy<>(signalProvider::get);
 
     @Override
     public void onCreate() {
@@ -43,8 +44,8 @@ public class App extends Application implements AppComponent {
     }
 
     @Override
-    public SignalProvider providesSignalService() {
-        return signalService.get();
+    public SignalProvider providesSignal() {
+        return signalProvider.get();
     }
 
     @Override
@@ -63,7 +64,7 @@ public class App extends Application implements AppComponent {
     }
 
     @Override
-    public IAuthService providesAuthService() {
-        return authService.get();
+    public AuthProvider providesAuth() {
+        return authProvider.get();
     }
 }

@@ -12,7 +12,7 @@ class Contacts {
         public const val COL_PERSON_ID = "contact_person_id"
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
                 "$COL_GROUP_ID TEXT REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) UNIQUE ON CONFLICT IGNORE," +
-                "$COL_PERSON_ID TEXT REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID} UNIQUE ON CONFLICT IGNORE," +
+                "$COL_PERSON_ID TEXT REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
                 ")"
 
         public @JvmField val MAPPER = Func1<Cursor, ContactItem> { cursor ->

@@ -2,14 +2,16 @@ package com.xianzhitech.ptt;
 
 import android.app.Activity;
 import android.os.Bundle;
+
 import com.android.debug.hv.ViewServer;
 import com.facebook.stetho.Stetho;
 import com.facebook.stetho.okhttp.StethoInterceptor;
 import com.squareup.okhttp.OkHttpClient;
-import io.socket.client.Manager;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import io.socket.client.Manager;
 
 /**
  * Created by fanchao on 7/12/15.
@@ -58,7 +60,7 @@ public class DevApp extends App {
         final String name = Manager.class.getName();
         Logger.getLogger(name).setLevel(Level.ALL);
 
-//        providesAuthService().login("500002", "000000").subscribe();
+//        providesAuth().login("500002", "000000").subscribe();
     }
 
     @Override

@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.database.Cursor
 import com.xianzhitech.ext.getStringValue
 import com.xianzhitech.ext.optStringValue
+import org.json.JSONObject
 import rx.functions.Func1
 
 /**
@@ -54,12 +55,21 @@ class Group() : Model, ContactItem {
     override fun toValues(values: ContentValues) {
         values.put(COL_ID, id)
         values.put(COL_DESCRIPTION, description)
+        values.put(COL_NAME, name)
     }
 
     override fun from(cursor: Cursor): Group {
         id = cursor.getStringValue(COL_ID)
         description = cursor.optStringValue(COL_DESCRIPTION)
         name = cursor.getStringValue(COL_NAME)
+        return this
+    }
+
+    fun readFrom(obj : JSONObject) : Group {
+        id = obj.getString("idNumber")
+        description = obj.optString("description")
+        name = obj.getString("name")
+        avatar = obj.optString("avatar")
         return this
     }
 }
