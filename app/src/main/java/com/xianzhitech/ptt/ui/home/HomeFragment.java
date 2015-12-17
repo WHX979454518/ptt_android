@@ -33,7 +33,7 @@ import butterknife.ButterKnife;
 public class HomeFragment extends BaseFragment<HomeFragment.Callbacks> {
 
     private enum Tab {
-        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, GroupListFragment.class),
+        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, ConversationListFragment.class),
         Contacts(R.string.tab_contacts, R.drawable.ic_people, ContactsFragment.class),
         Person(R.string.tab_me, R.drawable.ic_person, PersonFragment.class),
         ;

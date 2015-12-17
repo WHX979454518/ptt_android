@@ -5,6 +5,7 @@ import android.database.Cursor
 import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
+import rx.functions.Func1
 
 /**
  *
@@ -30,6 +31,8 @@ class Conversation() : Model {
                 "$COL_OWNER_ID TEXT NOT NULL REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID})," +
                 "$COL_IMPORTANT INTEGER NOT NULL" +
                 ")"
+
+        public @JvmStatic val MAPPER = Func1<Cursor, Conversation> { Conversation().from(it) }
     }
 
     var id: String = ""

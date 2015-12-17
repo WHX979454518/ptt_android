@@ -10,6 +10,8 @@ import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
 import com.xianzhitech.ptt.model.ContactItem;
 import com.xianzhitech.ptt.model.Contacts;
+import com.xianzhitech.ptt.model.Conversation;
+import com.xianzhitech.ptt.model.ConversationMembers;
 import com.xianzhitech.ptt.model.Group;
 import com.xianzhitech.ptt.model.GroupMembers;
 import com.xianzhitech.ptt.model.Person;
@@ -84,7 +86,7 @@ public class Broker {
     }
 
     @CheckResult
-    public Observable<List<GroupInfo<String>>> getGroupsWithMemberNames(int maxMember) {
+    public Observable<List<AggregateInfo<Group, String>>> getGroupsWithMemberNames(int maxMember) {
         return db
                 .createQuery(Arrays.asList(Group.TABLE_NAME, Person.TABLE_NAME, GroupMembers.TABLE_NAME),
                         "SELECT * FROM " + Group.TABLE_NAME)
@@ -105,9 +107,37 @@ public class Broker {
                                         "LIMIT " + maxMember,
                                 group.getId()), cursor -> cursor.getString(0));
 
-                        ((List) groups).set(i, new GroupInfo<>(group, Collections.unmodifiableList(persons), memberCount));
+                        ((List) groups).set(i, new AggregateInfo<>(group, Collections.unmodifiableList(persons), memberCount));
                     }
                     return (List) groups;
+                });
+    }
+
+    @CheckResult
+    public Observable<List<AggregateInfo<Conversation, String>>> getConversationsWithMemberNames(int maxMember) {
+        return db
+                .createQuery(Arrays.asList(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME),
+                        "SELECT * FROM " + Conversation.TABLE_NAME)
+                .mapToList(Conversation.MAPPER)
+                .subscribeOn(queryScheduler)
+                .map(conversations -> {
+                    for (int i = 0, groupsSize = conversations.size(); i < groupsSize; i++) {
+                        final Conversation conversation = conversations.get(i);
+
+                        // Count member
+                        final int memberCount = CursorUtil.countAndClose(db.query(
+                                "SELECT COUNT(" + ConversationMembers.COL_PERSON_ID + ") FROM " + ConversationMembers.TABLE_NAME + " WHERE " + ConversationMembers.COL_CONVERSATION_ID + " = ?",
+                                conversation.getId()), 0);
+
+                        // Get members
+                        final List<String> persons = CursorUtil.mapCursorAndClose(db.query("SELECT P." + Person.COL_NAME + " FROM " + Person.TABLE_NAME + " AS P " +
+                                        "INNER JOIN " + ConversationMembers.TABLE_NAME + " AS GM ON GM." + ConversationMembers.COL_PERSON_ID + " = P." + Person.COL_ID + " AND " + ConversationMembers.COL_CONVERSATION_ID + " = ? " +
+                                        "LIMIT " + maxMember,
+                                conversation.getId()), cursor -> cursor.getString(0));
+
+                        ((List) conversations).set(i, new AggregateInfo<>(conversation, Collections.unmodifiableList(persons), memberCount));
+                    }
+                    return (List) conversations;
                 });
     }
 
@@ -262,12 +292,12 @@ public class Broker {
                         GroupMembers.COL_PERSON_ID + " NOT IN " + SqlUtil.toSqlSet(members), groupId);
     }
 
-    public static class GroupInfo<T> {
-        public final Group group;
-        public final List<T> members;
+    public static class AggregateInfo<T1, T2> {
+        public final T1 group;
+        public final List<T2> members;
         public final int memberCount;
 
-        public GroupInfo(final Group group, final List<T> members, final int memberCount) {
+        public AggregateInfo(final T1 group, final List<T2> members, final int memberCount) {
             this.group = group;
             this.members = members;
             this.memberCount = memberCount;

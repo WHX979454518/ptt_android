@@ -9,24 +9,28 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import butterknife.Bind;
-import butterknife.ButterKnife;
+
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
+import com.xianzhitech.ptt.model.Conversation;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
 import com.xianzhitech.ptt.ui.room.RoomActivity;
+
 import org.apache.commons.lang3.StringUtils;
-import rx.android.schedulers.AndroidSchedulers;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import rx.android.schedulers.AndroidSchedulers;
+
 /**
  * 显示会话列表(Group)的界面
  */
-public class GroupListFragment extends BaseFragment<Void> {
+public class ConversationListFragment extends BaseFragment<Void> {
 
     private static final int MAX_MEMBER_TO_DISPLAY = 3;
 
@@ -63,42 +67,42 @@ public class GroupListFragment extends BaseFragment<Void> {
     public void onStart() {
         super.onStart();
 
-        broker.getGroupsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
+        broker.getConversationsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
                 .observeOn(AndroidSchedulers.mainThread())
-                .compose(this.<List<Broker.GroupInfo<String>>>bindToLifecycle())
-                .subscribe(adapter::setGroups);
+                .compose(this.<List<Broker.AggregateInfo<Conversation, String>>>bindToLifecycle())
+                .subscribe(adapter::setConversations);
     }
 
-    private class Adapter extends RecyclerView.Adapter<GroupItemHolder> {
-        private final ArrayList<Broker.GroupInfo<String>> groups = new ArrayList<>();
+    private class Adapter extends RecyclerView.Adapter<ConversationItemHolder> {
+        private final ArrayList<Broker.AggregateInfo<Conversation, String>> conversations = new ArrayList<>();
 
-        public void setGroups(final Collection<Broker.GroupInfo<String>> newGroups) {
-            groups.clear();
+        public void setConversations(final Collection<Broker.AggregateInfo<Conversation, String>> newGroups) {
+            conversations.clear();
             if (newGroups != null) {
-                groups.addAll(newGroups);
+                conversations.addAll(newGroups);
             }
             notifyDataSetChanged();
         }
 
 
         @Override
-        public GroupItemHolder onCreateViewHolder(final ViewGroup parent, final int viewType) {
-            return new GroupItemHolder(parent);
+        public ConversationItemHolder onCreateViewHolder(final ViewGroup parent, final int viewType) {
+            return new ConversationItemHolder(parent);
         }
 
         @Override
-        public void onBindViewHolder(final GroupItemHolder holder, final int position) {
-            holder.setGroup(groups.get(position));
-            holder.itemView.setOnClickListener(v -> startActivity(RoomActivity.builder(getContext(), groups.get(position).group.getId())));
+        public void onBindViewHolder(final ConversationItemHolder holder, final int position) {
+            holder.setGroup(conversations.get(position));
+            holder.itemView.setOnClickListener(v -> startActivity(RoomActivity.builder(getContext(), conversations.get(position).group.getId())));
         }
 
         @Override
         public int getItemCount() {
-            return groups.size();
+            return conversations.size();
         }
     }
 
-    static class GroupItemHolder extends RecyclerView.ViewHolder {
+    static class ConversationItemHolder extends RecyclerView.ViewHolder {
 
         @Bind(R.id.groupListItem_members)
         TextView memberView;
@@ -109,13 +113,13 @@ public class GroupListFragment extends BaseFragment<Void> {
         @Bind(R.id.groupListItem_icon)
         ImageView iconView;
 
-        public GroupItemHolder(final ViewGroup container) {
+        public ConversationItemHolder(final ViewGroup container) {
             super(LayoutInflater.from(container.getContext()).inflate(R.layout.view_group_list_item, container, false));
 
             ButterKnife.bind(this, itemView);
         }
 
-        public void setGroup(final Broker.GroupInfo<String> info) {
+        public void setGroup(final Broker.AggregateInfo<Conversation, String> info) {
             nameView.setText(info.group.getName());
 //            Picasso.with(itemView.getContext())
 //                    .load(info.group.getImageUri())
