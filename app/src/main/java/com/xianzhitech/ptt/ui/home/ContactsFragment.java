@@ -17,7 +17,6 @@ import butterknife.ButterKnife;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
-import com.xianzhitech.ptt.model.IContactItem;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
 import com.xianzhitech.ptt.ui.util.ResourceUtil;
 import com.xianzhitech.ptt.ui.util.RxUtil;

@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.service.auth;
 
-import com.xianzhitech.ptt.model.Person;
 import rx.Observable;
 
 /**

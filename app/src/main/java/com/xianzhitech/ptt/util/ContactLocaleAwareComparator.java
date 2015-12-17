@@ -1,7 +1,5 @@
 package com.xianzhitech.ptt.util;
 
-import com.xianzhitech.ptt.model.IContactItem;
-
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
