@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.engine;
 
-import com.xianzhitech.ptt.service.signal.Room;
+
+import com.xianzhitech.ptt.model.Room;
 
 /**
  *

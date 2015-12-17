@@ -274,6 +274,16 @@ public class Broker {
         });
     }
 
+    @CheckResult
+    public Observable<Conversation> saveConversation(final Conversation conversation) {
+        return updateInTransaction(() -> {
+            final ContentValues values = new ContentValues();
+            conversation.toValues(values);
+            db.insert(Conversation.TABLE_NAME, values, SQLiteDatabase.CONFLICT_REPLACE);
+            return conversation;
+        });
+    }
+
     private void doAddGroupMemberss(final String groupId, final Iterable<String> members) {
         final ContentValues values = new ContentValues(2);
 

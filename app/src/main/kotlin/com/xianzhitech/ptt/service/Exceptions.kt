@@ -7,4 +7,4 @@ package com.xianzhitech.ptt.service
  * Created by fanchao on 17/12/15.
  */
 
-class ServerException(val serverMsg : String) : RuntimeException()
+class ServerException(val serverMsg : String) : RuntimeException(serverMsg)

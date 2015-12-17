@@ -15,6 +15,7 @@ import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.model.Conversation;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
+import com.xianzhitech.ptt.ui.room.OpenRoomRequest;
 import com.xianzhitech.ptt.ui.room.RoomActivity;
 
 import org.apache.commons.lang3.StringUtils;
@@ -93,7 +94,8 @@ public class ConversationListFragment extends BaseFragment<Void> {
         @Override
         public void onBindViewHolder(final ConversationItemHolder holder, final int position) {
             holder.setGroup(conversations.get(position));
-            holder.itemView.setOnClickListener(v -> startActivity(RoomActivity.builder(getContext(), conversations.get(position).group.getId())));
+            holder.itemView.setOnClickListener(v -> startActivity(RoomActivity.builder(getContext(),
+                    OpenRoomRequest.ofRoom(conversations.get(position).group.getId()))));
         }
 
         @Override

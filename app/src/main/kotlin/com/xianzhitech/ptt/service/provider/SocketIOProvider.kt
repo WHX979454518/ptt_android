@@ -6,7 +6,6 @@ import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.ServerException
-import com.xianzhitech.ptt.service.signal.Room
 import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -33,6 +32,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 
         public const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
         public const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"
+        public const val EVENT_CLIENT_JOIN_ROOM = "c_join_room"
     }
 
     private val hasInitializedSocket = AtomicBoolean(false)
@@ -44,7 +44,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return socketSubject.flatMap({it.sendEvent(
                 EVENT_CLIENT_CREATE_ROOM,
                 { Conversation().readFrom(it as JSONObject) },
-                arrayOf(requests.toJSONArray { it.toJSON() })) ?: Observable.error(IllegalStateException("Not logon"))
+                requests.toJSONArray { it.toJSON() }) ?: Observable.error(IllegalStateException("Not logon"))
         })
     }
 
@@ -53,7 +53,11 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     }
 
     override fun joinConversation(conversationId: String): Observable<Room> {
-        return Observable.empty()
+        return socketSubject.flatMap({ it.sendEvent(
+                EVENT_CLIENT_JOIN_ROOM,
+                { (it as JSONObject).toRoom() },
+                ImmutableMap.of("roomId", conversationId).toJSONObject())
+        })
     }
 
     override fun quitConversation(conversationId: String) : Observable<Void> {
@@ -171,6 +175,13 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
     ownerId = obj.getString("owner")
     important = obj.getBoolean("important")
     return this
+}
+
+internal fun JSONObject.toRoom() : Room {
+    val server = getJSONObject("server")
+    return Room(getJSONObject("roomInfo").getInt("idNumber"),
+            getJSONArray("activeMembers").toStringList(), optString("speaker"), server.getString("host"),
+            server.getInt("port"), server.getString("protocol"))
 }
 
 @Privilege

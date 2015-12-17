@@ -3,7 +3,7 @@ package com.xianzhitech.ptt.service.provider
 import android.support.annotation.CheckResult
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.service.signal.Room
+import com.xianzhitech.ptt.model.Room
 import rx.Observable
 
 /**
@@ -14,12 +14,12 @@ data class CreateConversationRequest private constructor(val personId : String?,
         /**
          * 从一个联系人创建
          */
-        fun fromPerson(personId : String) = CreateConversationRequest(personId, null)
+        public @JvmStatic fun fromPerson(personId : String) = CreateConversationRequest(personId, null)
 
         /**
          * 从一个联系人组创建
          */
-        fun fromGroup(groupId : String) = CreateConversationRequest(null, groupId)
+        public @JvmStatic fun fromGroup(groupId : String) = CreateConversationRequest(null, groupId)
     }
 }
 

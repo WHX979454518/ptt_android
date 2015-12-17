@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ui.room;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 
@@ -13,7 +14,7 @@ import com.xianzhitech.ptt.ui.base.BaseActivity;
  */
 public class RoomActivity extends BaseActivity implements RoomFragment.Callbacks {
 
-    public static final String EXTRA_ROOM_ID = "extra_room_id";
+    public static final String EXTRA_ROOM_REQUEST = "extra_room_request";
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -34,12 +35,12 @@ public class RoomActivity extends BaseActivity implements RoomFragment.Callbacks
 
     private void handleIntent(final Intent intent) {
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.room_content, RoomFragment.create(intent.getStringExtra(EXTRA_ROOM_ID)))
+                .replace(R.id.room_content, RoomFragment.create(intent.getParcelableExtra(EXTRA_ROOM_REQUEST)))
                 .commit();
     }
 
-    public static Intent builder(final Context context, final String roomId) {
+    public static Intent builder(final Context context, final OpenRoomRequest roomRequest) {
         return new Intent(context, RoomActivity.class)
-                .putExtra(EXTRA_ROOM_ID, roomId);
+                .putExtra(EXTRA_ROOM_REQUEST, roomRequest);
     }
 }

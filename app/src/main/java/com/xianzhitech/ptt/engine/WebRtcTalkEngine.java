@@ -4,7 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
 
-import com.xianzhitech.ptt.service.signal.Room;
+import com.xianzhitech.ptt.model.Room;
 
 import org.webrtc.autoim.MediaEngine;
 
@@ -47,20 +47,20 @@ public class WebRtcTalkEngine implements TalkEngine {
             throw new IllegalStateException("Engine already connected to a room before");
         }
 
-        this.roomIds = new int[] { room.getRoomId() };
+        this.roomIds = new int[] { room.getId() };
 
         handler.post(() -> {
             mediaEngine = new MediaEngine(context, false);
-            mediaEngine.setLocalSSRC(room.getLocalUserId());
-            mediaEngine.setRemoteIp(room.getRemoteServer());
-            mediaEngine.setAudioTxPort(room.getRemotePort());
+            mediaEngine.setLocalSSRC(room.getId());
+            mediaEngine.setRemoteIp(room.getServerHost());
+            mediaEngine.setAudioTxPort(room.getSeverPort());
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT);
             mediaEngine.setAgc(true);
             mediaEngine.setNs(true);
             mediaEngine.setEc(true);
             mediaEngine.setSpeaker(false);
             mediaEngine.setAudio(true);
-            mediaEngine.start(room.getRoomId());
+            mediaEngine.start(room.getId());
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds);
 
             scheduleHeartbeat();

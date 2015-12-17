@@ -18,9 +18,11 @@ import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.model.ContactItem;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
+import com.xianzhitech.ptt.ui.room.OpenRoomRequest;
+import com.xianzhitech.ptt.ui.room.RoomActivity;
 import com.xianzhitech.ptt.ui.util.ResourceUtil;
 import com.xianzhitech.ptt.ui.util.RxUtil;
-import com.xianzhitech.ptt.util.ContactLocaleAwareComparator;
+import com.xianzhitech.ptt.util.ContactComparator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -95,7 +97,7 @@ public class ContactsFragment extends BaseFragment<Void> {
             this.contactItems.clear();
             if (newPersons != null) {
                 this.contactItems.addAll(newPersons);
-                Collections.sort(this.contactItems, new ContactLocaleAwareComparator(Locale.CHINESE));
+                Collections.sort(this.contactItems, new ContactComparator(Locale.CHINESE));
             }
 
             notifyDataSetChanged();
@@ -112,7 +114,7 @@ public class ContactsFragment extends BaseFragment<Void> {
             holder.iconView.setColorFilter(contactItem.getTintColor());
             holder.nameView.setText(contactItem.getName());
             holder.itemView.setOnClickListener(v -> {
-
+                startActivity(RoomActivity.builder(getContext(), OpenRoomRequest.ofContact(contactItem)));
             });
         }
 

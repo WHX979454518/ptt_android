@@ -13,8 +13,8 @@ import android.support.v4.util.SimpleArrayMap;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.engine.TalkEngine;
 import com.xianzhitech.ptt.engine.TalkEngineFactory;
+import com.xianzhitech.ptt.model.Room;
 import com.xianzhitech.ptt.service.provider.SignalProvider;
-import com.xianzhitech.ptt.service.signal.Room;
 import com.xianzhitech.ptt.util.Logger;
 
 import org.apache.commons.lang3.StringUtils;
@@ -48,7 +48,8 @@ public class TalkService extends Service {
     @RoomStatus int roomStatus = TalkServiceBinder.ROOM_STATUS_NOT_CONNECTED;
 
     @Nullable String currConversationId;
-    @Nullable Room currRoom;
+    @Nullable
+    Room currRoom;
 
     private final SimpleArrayMap<String, TalkEngine> talkEngineMap = new SimpleArrayMap<>();
     private SignalProvider signalProvider;
@@ -135,7 +136,7 @@ public class TalkService extends Service {
         cancelRequestFocus();
 
         if (hasFocus) {
-            requestFocusSubscription = signalProvider.requestFocus(currRoom.getRoomId())
+            requestFocusSubscription = signalProvider.requestFocus(currRoom.getId())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new PrivateSubscriber<Boolean>() {
                         @Override
@@ -150,7 +151,7 @@ public class TalkService extends Service {
         else if (roomStatus == TalkServiceBinder.ROOM_STATUS_ACTIVE) {
             setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_CONNECTED);
             talkEngine.stopSend();
-            signalProvider.releaseFocus(currRoom.getRoomId())
+            signalProvider.releaseFocus(currRoom.getId())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new PrivateSubscriber<>());
         }
