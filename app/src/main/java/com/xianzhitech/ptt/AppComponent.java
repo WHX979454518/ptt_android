@@ -1,7 +1,7 @@
 package com.xianzhitech.ptt;
 
 import com.squareup.okhttp.OkHttpClient;
-import com.xianzhitech.ptt.engine.ITalkEngineFactory;
+import com.xianzhitech.ptt.engine.TalkEngineFactory;
 import com.xianzhitech.service.provider.AuthProvider;
 import com.xianzhitech.service.provider.SignalProvider;
 
@@ -15,7 +15,7 @@ public interface AppComponent {
     OkHttpClient providesHttpClient();
 
     SignalProvider providesSignal();
-    ITalkEngineFactory providesTalkEngineFactory();
+    TalkEngineFactory providesTalkEngineFactory();
     Database providesDatabase();
     Broker providesBroker();
     AuthProvider providesAuth();

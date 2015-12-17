@@ -8,7 +8,7 @@ import com.xianzhitech.ptt.service.signal.Room;
  *
  * Created by fanchao on 13/12/15.
  */
-public interface ITalkEngine {
+public interface TalkEngine {
     void connect(Room room);
     void dispose();
     void startSend();

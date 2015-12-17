@@ -1,9 +1,15 @@
 package com.xianzhitech.ptt.mock;
 
+import com.xianzhitech.model.Conversation;
 import com.xianzhitech.ptt.service.signal.Room;
+import com.xianzhitech.service.provider.CreateConversationRequest;
 import com.xianzhitech.service.provider.SignalProvider;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Map;
+
+import rx.Observable;
 
 /**
  * Created by fanchao on 13/12/15.
@@ -38,30 +44,45 @@ public class MockSignalProvider implements SignalProvider {
     }
 
     @Override
-    public Room joinRoom(final String groupId) {
+    public Observable<Room> joinConversation(final String groupId) {
         final RoomInfo info = rooms.get(groupId);
         info.joined = true;
-        return info.room;
+        return Observable.just(info.room);
     }
 
     @Override
-    public void quitRoom(final String groupId) {
+    public Observable<Void> quitConversation(final String groupId) {
         rooms.get(groupId).joined = false;
+        return Observable.just(null);
     }
 
     @Override
-    public boolean requestFocus(final int roomId) {
+    public Observable<Boolean> requestFocus(final int roomId) {
         final RoomInfo roomInfo = findRoomById(roomId);
         if (roomInfo.canHasFocus) {
             roomInfo.hasFocus = true;
-            return true;
+            return Observable.just(true);
         }
 
-        return false;
+        return Observable.just(true);
     }
 
     @Override
-    public void releaseFocus(final int roomId) {
+    public Observable<Void> releaseFocus(final int roomId) {
         findRoomById(roomId).hasFocus = false;
+        return Observable.just(null);
+    }
+
+    @NotNull @Override
+    public Observable<Conversation> createConversation(@NotNull final Iterable<? extends CreateConversationRequest> requests) {
+        //TODO:
+        return Observable.empty();
+    }
+
+    @NotNull
+    @Override
+    public Observable<Void> deleteConversation(@NotNull final String conversationId) {
+        //TODO:
+        return Observable.empty();
     }
 }

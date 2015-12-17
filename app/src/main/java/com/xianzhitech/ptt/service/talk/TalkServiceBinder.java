@@ -1,13 +1,11 @@
 package com.xianzhitech.ptt.service.talk;
 
-import android.os.IBinder;
-
 /**
  * 获取对讲服务中房间信息的接口
  *
  * Created by fanchao on 13/12/15.
  */
-public interface TalkBinder extends IBinder {
+public interface TalkServiceBinder {
     int ROOM_STATUS_NOT_CONNECTED = 0;
     int ROOM_STATUS_ERROR = 1;
     int ROOM_STATUS_CONNECTING = 2;

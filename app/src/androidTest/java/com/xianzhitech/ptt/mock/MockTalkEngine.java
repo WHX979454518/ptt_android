@@ -1,15 +1,17 @@
 package com.xianzhitech.ptt.mock;
 
 import android.content.Context;
-import com.xianzhitech.ptt.engine.ITalkEngine;
+
+import com.xianzhitech.ptt.engine.TalkEngine;
 import com.xianzhitech.ptt.service.signal.Room;
+
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
 /**
  * Created by fanchao on 13/12/15.
  */
-public class MockTalkEngine implements ITalkEngine {
+public class MockTalkEngine implements TalkEngine {
     private final Func1<MockTalkEngine, Void> disposeRunnable;
 
     public MockTalkEngine(final Context context, final Func1<MockTalkEngine, Void> disposeRunnable) {

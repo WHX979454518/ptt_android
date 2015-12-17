@@ -1,8 +1,9 @@
 package com.xianzhitech.ptt.mock;
 
 import android.content.Context;
-import com.xianzhitech.ptt.engine.ITalkEngine;
-import com.xianzhitech.ptt.engine.ITalkEngineFactory;
+
+import com.xianzhitech.ptt.engine.TalkEngine;
+import com.xianzhitech.ptt.engine.TalkEngineFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,11 +11,11 @@ import java.util.List;
 /**
  * Created by fanchao on 13/12/15.
  */
-public class MockTalkEngineFactory implements ITalkEngineFactory {
+public class MockTalkEngineFactory implements TalkEngineFactory {
     public final List<MockTalkEngine> aliveEngines = new ArrayList<>();
 
     @Override
-    public ITalkEngine createEngine(final Context context) {
+    public TalkEngine createEngine(final Context context) {
         final MockTalkEngine engine = new MockTalkEngine(context, talkEngine -> {
             aliveEngines.remove(talkEngine);
             return null;

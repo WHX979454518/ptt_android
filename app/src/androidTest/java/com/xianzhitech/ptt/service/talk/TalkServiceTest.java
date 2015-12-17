@@ -4,7 +4,7 @@ import android.test.ServiceTestCase;
 
 import com.google.common.collect.ImmutableMap;
 import com.xianzhitech.ptt.App;
-import com.xianzhitech.ptt.engine.ITalkEngineFactory;
+import com.xianzhitech.ptt.engine.TalkEngineFactory;
 import com.xianzhitech.ptt.mock.MockSignalProvider;
 import com.xianzhitech.ptt.mock.MockTalkEngineFactory;
 import com.xianzhitech.ptt.service.signal.Room;
@@ -47,34 +47,34 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
             }
 
             @Override
-            public ITalkEngineFactory providesTalkEngineFactory() {
+            public TalkEngineFactory providesTalkEngineFactory() {
                 return mockTalkEngineFactory;
             }
         });
     }
 
     public void testJoinRoom() {
-        final TalkBinder binder = (TalkBinder) bindService(TalkService.buildConnectIntent(GROUP_ID_1));
-        assertEquals(TalkBinder.ROOM_STATUS_CONNECTED, binder.getCurrRoomStatus());
+        final TalkServiceBinder binder = (TalkServiceBinder) bindService(TalkService.buildConnectIntent(GROUP_ID_1));
+        assertEquals(TalkServiceBinder.ROOM_STATUS_CONNECTED, binder.getCurrRoomStatus());
         assertEquals(rooms.get(GROUP_ID_1).room, mockTalkEngineFactory.aliveEngines.get(0).room);
         assertTrue(mockSignalService.rooms.get(GROUP_ID_1).joined);
     }
 
     public void testQuitRoom() {
-        final TalkBinder binder = (TalkBinder) bindService(TalkService.buildConnectIntent(GROUP_ID_1));
+        final TalkServiceBinder binder = (TalkServiceBinder) bindService(TalkService.buildConnectIntent(GROUP_ID_1));
         startService(TalkService.buildDisconnectIntent(GROUP_ID_1));
-        assertEquals(TalkBinder.ROOM_STATUS_NOT_CONNECTED, binder.getCurrRoomStatus());
+        assertEquals(TalkServiceBinder.ROOM_STATUS_NOT_CONNECTED, binder.getCurrRoomStatus());
         assertTrue(mockTalkEngineFactory.aliveEngines.isEmpty());
         assertFalse(mockSignalService.rooms.get(GROUP_ID_1).joined);
     }
 
     public void testRequestFocus() {
-        final TalkBinder binder = (TalkBinder) bindService(TalkService.buildConnectIntent(GROUP_ID_2));
+        final TalkServiceBinder binder = (TalkServiceBinder) bindService(TalkService.buildConnectIntent(GROUP_ID_2));
         startService(TalkService.buildSetAudioFocusIntent(GROUP_ID_2, true));
-        assertEquals(TalkBinder.ROOM_STATUS_ACTIVE, binder.getCurrRoomStatus());
+        assertEquals(TalkServiceBinder.ROOM_STATUS_ACTIVE, binder.getCurrRoomStatus());
         assertTrue(mockSignalService.rooms.get(GROUP_ID_2).hasFocus);
         startService(TalkService.buildSetAudioFocusIntent(GROUP_ID_2, false));
-        assertNotSame(TalkBinder.ROOM_STATUS_ACTIVE, binder.getCurrRoomStatus());
+        assertNotSame(TalkServiceBinder.ROOM_STATUS_ACTIVE, binder.getCurrRoomStatus());
         assertFalse(mockSignalService.rooms.get(GROUP_ID_2).hasFocus);
     }
 }

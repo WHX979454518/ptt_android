@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.database.Cursor
 import com.xianzhitech.ext.getStringValue
 import com.xianzhitech.ext.optStringValue
-import org.json.JSONObject
 import rx.functions.Func1
 
 /**
@@ -28,14 +27,10 @@ class Group() : Model, ContactItem {
     }
 
     var id: String = ""
-        private set
     var description: String? = null
-        private set
     override val tintColor: Int = 0
     override var name = ""
-        private set
     override var avatar: String? = null
-        private set
 
     constructor(id: String, name: String) : this() {
         this.id = id
@@ -62,14 +57,6 @@ class Group() : Model, ContactItem {
         id = cursor.getStringValue(COL_ID)
         description = cursor.optStringValue(COL_DESCRIPTION)
         name = cursor.getStringValue(COL_NAME)
-        return this
-    }
-
-    fun readFrom(obj : JSONObject) : Group {
-        id = obj.getString("idNumber")
-        description = obj.optString("description")
-        name = obj.getString("name")
-        avatar = obj.optString("avatar")
         return this
     }
 }

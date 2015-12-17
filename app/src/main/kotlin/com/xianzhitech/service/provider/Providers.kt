@@ -1,20 +1,83 @@
 package com.xianzhitech.service.provider
 
+import android.support.annotation.CheckResult
+import com.xianzhitech.model.Conversation
 import com.xianzhitech.model.Person
 import com.xianzhitech.ptt.service.signal.Room
+import rx.Observable
 
 /**
- * Created by fanchao on 17/12/15.
+ * 创建房间的参数
  */
+data class CreateConversationRequest private constructor(val personId : String?, val groupId : String?) {
+    companion object {
+        /**
+         * 从一个联系人创建
+         */
+        fun fromPerson(personId : String) = CreateConversationRequest(personId, null)
 
-interface SignalProvider {
-    fun joinRoom(groupId: String): Room
-    fun quitRoom(groupId: String)
-    fun requestFocus(roomId: Int): Boolean
-    fun releaseFocus(roomId: Int)
+        /**
+         * 从一个联系人组创建
+         */
+        fun fromGroup(groupId : String) = CreateConversationRequest(null, groupId)
+    }
 }
 
+/**
+ * 信号服务器的接口
+ */
+interface SignalProvider {
+
+    /**
+     * 创建一个会话
+     */
+    @CheckResult
+    fun createConversation(requests: Iterable<CreateConversationRequest>) : Observable<Conversation>
+
+    /**
+     * 删除一个会话
+     */
+    @CheckResult
+    fun deleteConversation(conversationId : String) : Observable<Void>
+
+    /**
+     * 加入会话（进入对讲房间）
+     */
+    @CheckResult
+    fun joinConversation(conversationId: String) : Observable<Room>
+
+    /**
+     * 退出会话（退出对讲房间）
+     */
+    @CheckResult
+    fun quitConversation(conversationId: String) : Observable<Void>
+
+    /**
+     * 抢麦
+     */
+    @CheckResult
+    fun requestFocus(roomId: Int): Observable<Boolean>
+
+    /**
+     * 释放麦
+     */
+    @CheckResult
+    fun releaseFocus(roomId: Int) : Observable<Void>
+}
+
+/**
+ * 提供鉴权服务
+ */
 interface AuthProvider {
-    fun login(username: String, password: String): Person
-    fun logout()
+    /**
+     * 登陆
+     */
+    @CheckResult
+    fun login(username: String, password: String): Observable<Person>
+
+    /**
+     * 登出
+     */
+    @CheckResult
+    fun logout() : Observable<Void>
 }

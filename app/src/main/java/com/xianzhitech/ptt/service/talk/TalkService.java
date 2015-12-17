@@ -11,13 +11,18 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.SimpleArrayMap;
 
 import com.xianzhitech.ptt.AppComponent;
-import com.xianzhitech.ptt.engine.ITalkEngine;
-import com.xianzhitech.ptt.engine.ITalkEngineFactory;
+import com.xianzhitech.ptt.engine.TalkEngine;
+import com.xianzhitech.ptt.engine.TalkEngineFactory;
 import com.xianzhitech.ptt.service.signal.Room;
 import com.xianzhitech.ptt.util.Logger;
 import com.xianzhitech.service.provider.SignalProvider;
 
 import org.apache.commons.lang3.StringUtils;
+
+import hugo.weaving.DebugLog;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  *
@@ -36,20 +41,23 @@ public class TalkService extends Service {
     public static final String ACTION_DISCONNECT = "action_disconnect";
     public static final String ACTION_SET_FOCUS = "action_request_focus";
 
-    public static final String ACTION_EXTRA_GROUP_ID = "extra_group_id";
+    public static final String ACTION_EXTRA_CONVERSATION_ID = "extra_conv_id";
     public static final String ACTION_EXTRA_HAS_AUDIO_FOCUS = "action_extra_has_audio_focus";
 
-    private final IBinder binder = new LocalBinder();
-    @RoomStatus int roomStatus = TalkBinder.ROOM_STATUS_NOT_CONNECTED;
+    private final IBinder binder = new LocalServiceBinder();
+    @RoomStatus int roomStatus = TalkServiceBinder.ROOM_STATUS_NOT_CONNECTED;
 
-    @Nullable String currGroupId;
+    @Nullable String currConversationId;
     @Nullable Room currRoom;
 
-    private final SimpleArrayMap<String, ITalkEngine> talkEngineMap = new SimpleArrayMap<>();
+    private final SimpleArrayMap<String, TalkEngine> talkEngineMap = new SimpleArrayMap<>();
     private SignalProvider signalProvider;
-    private ITalkEngineFactory talkEngineFactory;
+    private TalkEngineFactory talkEngineFactory;
     private LocalBroadcastManager broadcastManager;
     private AudioManager audioManager;
+
+    private Subscription requestFocusSubscription;
+    private Subscription connectSubscription;
 
     @Override
     public void onCreate() {
@@ -70,6 +78,8 @@ public class TalkService extends Service {
         }
 
         broadcastManager = null;
+        cancelRequestFocus();
+        cancelConnect();
         super.onDestroy();
     }
 
@@ -89,60 +99,84 @@ public class TalkService extends Service {
         return START_STICKY;
     }
 
+    @DebugLog
     private void handleIntent(final Intent intent) {
         final String action = intent.getAction();
         if (ACTION_CONNECT.equals(action)) {
-            doConnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID));
+            doConnect(intent.getStringExtra(ACTION_EXTRA_CONVERSATION_ID));
         } else if (ACTION_DISCONNECT.equals(action)) {
-            doDisconnect(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), true);
+            doDisconnect(intent.getStringExtra(ACTION_EXTRA_CONVERSATION_ID), true);
         } else if (ACTION_SET_FOCUS.equals(action)) {
-            doSetFocus(intent.getStringExtra(ACTION_EXTRA_GROUP_ID), intent.getBooleanExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, false));
+            doSetFocus(intent.getStringExtra(ACTION_EXTRA_CONVERSATION_ID), intent.getBooleanExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, false));
         } else {
             throw new IllegalArgumentException("Unknown intent: " + intent);
         }
     }
 
+    @DebugLog
     private void doSetFocus(final String groupId, final boolean hasFocus) {
-        if (!StringUtils.equals(groupId, currGroupId)) {
-            Logger.w(LOG_TAG, "Requesting focus %s for group %s, but current group is %s. Ignored.", hasFocus, groupId, currGroupId);
+        if (!StringUtils.equals(groupId, currConversationId)) {
+            Logger.w(LOG_TAG, "Requesting focus %s for group %s, but current group is %s. Ignored.", hasFocus, groupId, currConversationId);
             return;
         }
 
-        if (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE && hasFocus) {
+        if (roomStatus == TalkServiceBinder.ROOM_STATUS_ACTIVE && hasFocus) {
             Logger.w(LOG_TAG, "Group %s already has focus. Ignored.");
             return;
         }
 
-        final ITalkEngine talkEngine;
-        if ((roomStatus != TalkBinder.ROOM_STATUS_CONNECTED && (roomStatus != TalkBinder.ROOM_STATUS_ACTIVE)) ||
+        final TalkEngine talkEngine;
+        if ((roomStatus != TalkServiceBinder.ROOM_STATUS_CONNECTED && (roomStatus != TalkServiceBinder.ROOM_STATUS_ACTIVE)) ||
                 currRoom == null || (talkEngine = (talkEngineMap.get(groupId))) == null) {
             Logger.e(LOG_TAG, "Group %s not connected yet", groupId);
             return;
         }
 
-        if (hasFocus && signalProvider.requestFocus(currRoom.getRoomId())) {
-            talkEngine.startSend();
-            setCurrentRoomStatus(TalkBinder.ROOM_STATUS_ACTIVE);
+        cancelRequestFocus();
+
+        if (hasFocus) {
+            requestFocusSubscription = signalProvider.requestFocus(currRoom.getRoomId())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new PrivateSubscriber<Boolean>() {
+                        @Override
+                        public void onNext(final Boolean success) {
+                            if (success) {
+                                talkEngine.startSend();
+                                setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_ACTIVE);
+                            }
+                        }
+                    });
         }
-        else if (!hasFocus && (roomStatus == TalkBinder.ROOM_STATUS_ACTIVE)) {
-            setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
+        else if (roomStatus == TalkServiceBinder.ROOM_STATUS_ACTIVE) {
+            setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_CONNECTED);
             talkEngine.stopSend();
-            signalProvider.releaseFocus(currRoom.getRoomId());
+            signalProvider.releaseFocus(currRoom.getRoomId())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new PrivateSubscriber<>());
         }
     }
 
+    @DebugLog
+    private void cancelRequestFocus() {
+        if (requestFocusSubscription != null) {
+            requestFocusSubscription.unsubscribe();
+            requestFocusSubscription = null;
+        }
+    }
+
+    @DebugLog
     private void doDisconnect(final String groupId, final boolean stopIfNoConnectionLeft) {
         try {
-            final ITalkEngine talkEngine = talkEngineMap.remove(groupId);
+            final TalkEngine talkEngine = talkEngineMap.remove(groupId);
             if (talkEngine == null) {
                 Logger.w(LOG_TAG, "Room %s already disconnected", groupId);
                 return;
             }
 
-            final boolean isCurrentRoom = StringUtils.equals(this.currGroupId, groupId);
+            final boolean isCurrentRoom = StringUtils.equals(this.currConversationId, groupId);
 
             if (isCurrentRoom) {
-                setCurrentRoomStatus(TalkBinder.ROOM_STATUS_DISCONNECTING);
+                setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_DISCONNECTING);
             }
 
             Logger.d(LOG_TAG, "Disconnecting from room %s", groupId);
@@ -150,55 +184,73 @@ public class TalkService extends Service {
             if (isCurrentRoom) {
                 audioManager.abandonAudioFocus(null);
                 audioManager.setMode(AudioManager.MODE_NORMAL);
-                setCurrentRoomStatus(TalkBinder.ROOM_STATUS_NOT_CONNECTED);
-                this.currGroupId = null;
+                setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_NOT_CONNECTED);
+                this.currConversationId = null;
             }
 
             talkEngine.dispose();
-            signalProvider.quitRoom(groupId);
+            signalProvider.quitConversation(groupId)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new PrivateSubscriber<>());
         }
         finally {
             if (stopIfNoConnectionLeft && talkEngineMap.size() == 0) {
                 stopSelf();
             }
         }
-
     }
 
-    private void doConnect(final @NonNull String groupId) {
-        if (StringUtils.equals(currGroupId, groupId)) {
-            Logger.d(LOG_TAG, "Group %s already connected", groupId);
+    @DebugLog
+    private void doConnect(final @NonNull String conversationId) {
+        if (StringUtils.equals(currConversationId, conversationId)) {
+            Logger.d(LOG_TAG, "Group %s already connected", conversationId);
             return;
         }
 
-        if (currGroupId != null) {
-            doDisconnect(currGroupId, true);
+        if (currConversationId != null) {
+            doDisconnect(currConversationId, true);
         }
 
-        Logger.d(LOG_TAG, "Connecting to room %s", groupId);
+        Logger.d(LOG_TAG, "Connecting to room %s", conversationId);
 
-        currGroupId = groupId;
-        setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTING);
+        currConversationId = conversationId;
+        setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_CONNECTING);
 
-        final ITalkEngine engine = talkEngineFactory.createEngine(this);
-        currRoom = signalProvider.joinRoom(groupId);
-        talkEngineMap.put(groupId, engine);
-        engine.connect(currRoom);
+        cancelConnect();
 
-        setCurrentRoomStatus(TalkBinder.ROOM_STATUS_CONNECTED);
+        connectSubscription = signalProvider.joinConversation(conversationId)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new PrivateSubscriber<Room>() {
+                    @Override
+                    public void onNext(final Room room) {
+                        final TalkEngine engine = talkEngineFactory.createEngine(TalkService.this);
+                        currRoom = room;
+                        talkEngineMap.put(conversationId, engine);
+                        engine.connect(currRoom);
+
+                        setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_CONNECTED);
+                    }
+                });
+    }
+
+    private void cancelConnect() {
+        if (connectSubscription != null) {
+            connectSubscription.unsubscribe();
+            connectSubscription = null;
+        }
     }
 
     public static Intent buildConnectIntent(final String groupId) {
-        return new Intent(ACTION_CONNECT).putExtra(ACTION_EXTRA_GROUP_ID, groupId);
+        return new Intent(ACTION_CONNECT).putExtra(ACTION_EXTRA_CONVERSATION_ID, groupId);
     }
 
     public static Intent buildDisconnectIntent(final String groupId) {
-        return new Intent(ACTION_DISCONNECT).putExtra(ACTION_EXTRA_GROUP_ID, groupId);
+        return new Intent(ACTION_DISCONNECT).putExtra(ACTION_EXTRA_CONVERSATION_ID, groupId);
     }
 
     public static Intent buildSetAudioFocusIntent(final String groupId, final boolean hasAudioFocus) {
         return new Intent(ACTION_SET_FOCUS)
-                .putExtra(ACTION_EXTRA_GROUP_ID, groupId)
+                .putExtra(ACTION_EXTRA_CONVERSATION_ID, groupId)
                 .putExtra(ACTION_EXTRA_HAS_AUDIO_FOCUS, hasAudioFocus);
     }
 
@@ -206,12 +258,24 @@ public class TalkService extends Service {
         if (this.roomStatus != newRoomStatus) {
             this.roomStatus = newRoomStatus;
             broadcastManager.sendBroadcast(new Intent(ACTION_ROOM_STATUS_CHANGED)
-                    .putExtra(ACTION_EXTRA_GROUP_ID, currGroupId)
+                    .putExtra(ACTION_EXTRA_CONVERSATION_ID, currConversationId)
                     .putExtra(ACTION_EXTRA_ROOM_STATUS, newRoomStatus));
         }
     }
 
-    private class LocalBinder extends Binder implements TalkBinder {
+    private class PrivateSubscriber<T> extends Subscriber<T> {
+
+        @Override
+        public void onCompleted() {}
+
+        @Override
+        public void onError(final Throwable e) {}
+
+        @Override
+        public void onNext(final T t) {}
+    }
+
+    private class LocalServiceBinder extends Binder implements TalkServiceBinder {
 
         @Override
         public int getCurrRoomStatus() {
@@ -220,7 +284,7 @@ public class TalkService extends Service {
 
         @Override
         public String getCurrGroupId() {
-            return currGroupId;
+            return currConversationId;
         }
     }
 

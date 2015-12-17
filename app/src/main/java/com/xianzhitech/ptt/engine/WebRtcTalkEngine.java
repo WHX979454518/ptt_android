@@ -3,7 +3,9 @@ package com.xianzhitech.ptt.engine;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
+
 import com.xianzhitech.ptt.service.signal.Room;
+
 import org.webrtc.autoim.MediaEngine;
 
 /**
@@ -12,7 +14,7 @@ import org.webrtc.autoim.MediaEngine;
  *
  * Created by fanchao on 13/12/15.
  */
-public class WebRtcTalkEngine implements ITalkEngine {
+public class WebRtcTalkEngine implements TalkEngine {
     private static final short RTP_EXT_PROTO_JOIN_ROOM = 300;
     private static final short RTP_EXT_PROTO_QUIT_ROOM = 301;
     private static final short RTP_EXT_PROTO_HEARTBEAT = 302;

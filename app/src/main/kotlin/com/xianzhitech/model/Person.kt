@@ -5,10 +5,10 @@ import android.database.Cursor
 import com.xianzhitech.ext.getIntValue
 import com.xianzhitech.ext.getStringValue
 import com.xianzhitech.ext.optStringValue
-import org.json.JSONObject
 import rx.functions.Func1
+import java.io.Serializable
 
-class Person() : Model, ContactItem {
+class Person() : Model, ContactItem, Serializable {
     companion object {
         public const val TABLE_NAME = "persons"
 
@@ -27,19 +27,10 @@ class Person() : Model, ContactItem {
     }
 
     var id: String = ""
-        private set
-
     override var name = ""
-        private set
-
     override var avatar: String? = ""
-        private set
-
     override var tintColor: Int = 0
-        private set
-
     var privilege: Int = 0
-        private set
 
     constructor(id: String, name: String, privilege: Int) : this() {
         this.id = id
@@ -71,13 +62,4 @@ class Person() : Model, ContactItem {
         privilege = cursor.getIntValue(COL_PRIV)
         return this
     }
-
-    fun readFrom(obj: JSONObject): Person {
-        id = obj.getString("idNumber")
-        name = obj.getString("name")
-        avatar = obj.optString("avatar")
-        privilege = obj.optJSONObject("privileges").toPrivilege()
-        return this
-    }
-
 }

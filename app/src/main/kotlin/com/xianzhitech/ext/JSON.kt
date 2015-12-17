@@ -32,3 +32,16 @@ fun <T> JSONArray?.transform(map: (Any) -> T): Iterable<T> {
 
 fun <K, V> Map<K, V>.toJSONObject() = JSONObject(this)
 
+inline fun <T> Iterable<T>?.toJSONArray(mapper : (T) -> Any) : JSONArray {
+    var result = JSONArray()
+    if (this == null) {
+        return result
+    }
+
+    for (obj in this) {
+        result.put(mapper(obj))
+    }
+
+    return result
+}
+

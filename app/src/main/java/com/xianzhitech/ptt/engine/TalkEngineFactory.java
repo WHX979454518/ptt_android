@@ -7,6 +7,6 @@ import android.content.Context;
  *
  * Created by fanchao on 13/12/15.
  */
-public interface ITalkEngineFactory {
-    ITalkEngine createEngine(final Context context);
+public interface TalkEngineFactory {
+    TalkEngine createEngine(final Context context);
 }
