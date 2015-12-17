@@ -1,7 +1,7 @@
-package com.xianzhitech.model
+package com.xianzhitech.ptt.model
 
 import android.database.Cursor
-import com.xianzhitech.ext.optStringValue
+import com.xianzhitech.ptt.ext.optStringValue
 import rx.functions.Func1
 
 class Contacts {

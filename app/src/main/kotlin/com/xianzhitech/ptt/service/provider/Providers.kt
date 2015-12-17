@@ -1,8 +1,8 @@
-package com.xianzhitech.service.provider
+package com.xianzhitech.ptt.service.provider
 
 import android.support.annotation.CheckResult
-import com.xianzhitech.model.Conversation
-import com.xianzhitech.model.Person
+import com.xianzhitech.ptt.model.Conversation
+import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.signal.Room
 import rx.Observable
 

@@ -8,10 +8,10 @@ import com.squareup.picasso.OkHttpDownloader;
 import com.squareup.picasso.Picasso;
 import com.xianzhitech.ptt.engine.TalkEngineFactory;
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine;
+import com.xianzhitech.ptt.service.provider.AuthProvider;
+import com.xianzhitech.ptt.service.provider.SignalProvider;
+import com.xianzhitech.ptt.service.provider.SocketIOProvider;
 import com.xianzhitech.ptt.util.Lazy;
-import com.xianzhitech.service.provider.AuthProvider;
-import com.xianzhitech.service.provider.SignalProvider;
-import com.xianzhitech.service.provider.SocketIOProvider;
 
 import java.util.concurrent.Executors;
 

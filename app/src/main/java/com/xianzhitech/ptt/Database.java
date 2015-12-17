@@ -8,10 +8,16 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.support.annotation.CheckResult;
 import android.support.annotation.NonNull;
 import android.util.Log;
+
 import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
 import com.squareup.sqlbrite.SqlBrite;
-import com.xianzhitech.model.*;
+import com.xianzhitech.ptt.model.Contacts;
+import com.xianzhitech.ptt.model.Conversation;
+import com.xianzhitech.ptt.model.ConversationMembers;
+import com.xianzhitech.ptt.model.Group;
+import com.xianzhitech.ptt.model.GroupMembers;
+import com.xianzhitech.ptt.model.Person;
 
 import java.io.Closeable;
 import java.io.IOException;

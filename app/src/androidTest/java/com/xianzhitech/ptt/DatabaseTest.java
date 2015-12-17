@@ -7,9 +7,9 @@ import android.util.Log;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Closeables;
-import com.xianzhitech.model.ContactItem;
-import com.xianzhitech.model.Group;
-import com.xianzhitech.model.Person;
+import com.xianzhitech.ptt.model.ContactItem;
+import com.xianzhitech.ptt.model.Group;
+import com.xianzhitech.ptt.model.Person;
 
 import junit.framework.Assert;
 

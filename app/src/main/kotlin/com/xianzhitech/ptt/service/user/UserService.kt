@@ -1,4 +1,4 @@
-package com.xianzhitech.service.user
+package com.xianzhitech.ptt.service.user
 
 import android.app.Notification
 import android.app.Service
@@ -6,11 +6,11 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.support.v4.app.NotificationCompat
-import com.xianzhitech.model.Person
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.service.provider.AuthProvider
-import com.xianzhitech.service.provider.SignalProvider
+import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.service.provider.AuthProvider
+import com.xianzhitech.ptt.service.provider.SignalProvider
 import hugo.weaving.DebugLog
 import rx.Subscriber
 import rx.Subscription

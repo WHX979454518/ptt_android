@@ -1,6 +1,6 @@
 package com.xianzhitech.ptt.util;
 
-import com.xianzhitech.model.ContactItem;
+import com.xianzhitech.ptt.model.ContactItem;
 
 import java.text.Collator;
 import java.util.Comparator;

@@ -1,7 +1,7 @@
-package com.xianzhitech.model
+package com.xianzhitech.ptt.model
 
 import android.support.v4.util.ArrayMap
-import com.xianzhitech.ext.toStringList
+import com.xianzhitech.ptt.ext.toStringList
 import org.json.JSONArray
 
 /**

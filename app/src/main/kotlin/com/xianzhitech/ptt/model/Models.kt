@@ -1,4 +1,4 @@
-package com.xianzhitech.model
+package com.xianzhitech.ptt.model
 
 import android.content.ContentValues
 import android.database.Cursor

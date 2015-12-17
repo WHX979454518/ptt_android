@@ -1,4 +1,4 @@
-package com.xianzhitech.service
+package com.xianzhitech.ptt.service
 
 /**
  *

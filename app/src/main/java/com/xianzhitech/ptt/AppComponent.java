@@ -2,8 +2,8 @@ package com.xianzhitech.ptt;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.xianzhitech.ptt.engine.TalkEngineFactory;
-import com.xianzhitech.service.provider.AuthProvider;
-import com.xianzhitech.service.provider.SignalProvider;
+import com.xianzhitech.ptt.service.provider.AuthProvider;
+import com.xianzhitech.ptt.service.provider.SignalProvider;
 
 /**
  *

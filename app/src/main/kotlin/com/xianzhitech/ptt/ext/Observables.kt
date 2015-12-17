@@ -1,4 +1,4 @@
-package com.xianzhitech.ext
+package com.xianzhitech.ptt.ext
 
 import rx.Observable
 

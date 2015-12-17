@@ -13,9 +13,9 @@ import android.support.v4.util.SimpleArrayMap;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.engine.TalkEngine;
 import com.xianzhitech.ptt.engine.TalkEngineFactory;
+import com.xianzhitech.ptt.service.provider.SignalProvider;
 import com.xianzhitech.ptt.service.signal.Room;
 import com.xianzhitech.ptt.util.Logger;
-import com.xianzhitech.service.provider.SignalProvider;
 
 import org.apache.commons.lang3.StringUtils;
 

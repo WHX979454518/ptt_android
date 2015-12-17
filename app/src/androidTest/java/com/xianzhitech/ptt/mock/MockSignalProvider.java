@@ -1,9 +1,9 @@
 package com.xianzhitech.ptt.mock;
 
-import com.xianzhitech.model.Conversation;
+import com.xianzhitech.ptt.model.Conversation;
+import com.xianzhitech.ptt.service.provider.CreateConversationRequest;
+import com.xianzhitech.ptt.service.provider.SignalProvider;
 import com.xianzhitech.ptt.service.signal.Room;
-import com.xianzhitech.service.provider.CreateConversationRequest;
-import com.xianzhitech.service.provider.SignalProvider;
 
 import org.jetbrains.annotations.NotNull;
 

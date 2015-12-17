@@ -8,11 +8,11 @@ import android.support.annotation.Nullable;
 import com.google.common.collect.Iterables;
 import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
-import com.xianzhitech.model.ContactItem;
-import com.xianzhitech.model.Contacts;
-import com.xianzhitech.model.Group;
-import com.xianzhitech.model.GroupMembers;
-import com.xianzhitech.model.Person;
+import com.xianzhitech.ptt.model.ContactItem;
+import com.xianzhitech.ptt.model.Contacts;
+import com.xianzhitech.ptt.model.Group;
+import com.xianzhitech.ptt.model.GroupMembers;
+import com.xianzhitech.ptt.model.Person;
 import com.xianzhitech.ptt.util.CursorUtil;
 import com.xianzhitech.ptt.util.SqlUtil;
 

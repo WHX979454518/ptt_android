@@ -7,8 +7,8 @@ import com.xianzhitech.ptt.App;
 import com.xianzhitech.ptt.engine.TalkEngineFactory;
 import com.xianzhitech.ptt.mock.MockSignalProvider;
 import com.xianzhitech.ptt.mock.MockTalkEngineFactory;
+import com.xianzhitech.ptt.service.provider.SignalProvider;
 import com.xianzhitech.ptt.service.signal.Room;
-import com.xianzhitech.service.provider.SignalProvider;
 
 import java.util.Map;
 

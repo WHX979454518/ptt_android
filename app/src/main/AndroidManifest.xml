@@ -30,6 +30,11 @@
         <service
             android:name=".service.talk.TalkService"
             android:exported="false" />
+
+        <service
+            android:name=".service.user.UserService"
+            android:exported="false" />
+
     </application>
 
 </manifest>

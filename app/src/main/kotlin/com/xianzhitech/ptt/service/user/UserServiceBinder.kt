@@ -1,6 +1,6 @@
-package com.xianzhitech.service.user
+package com.xianzhitech.ptt.service.user
 
-import com.xianzhitech.model.Person
+import com.xianzhitech.ptt.model.Person
 
 /**
  *

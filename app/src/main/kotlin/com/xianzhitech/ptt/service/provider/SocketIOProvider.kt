@@ -1,16 +1,12 @@
-package com.xianzhitech.service.provider
+package com.xianzhitech.ptt.service.provider
 
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
-import com.xianzhitech.ext.*
-import com.xianzhitech.model.Conversation
-import com.xianzhitech.model.Group
-import com.xianzhitech.model.Person
-import com.xianzhitech.model.toGroupsAndMembers
 import com.xianzhitech.ptt.Broker
-import com.xianzhitech.ptt.model.Privilege
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.signal.Room
-import com.xianzhitech.service.ServerException
 import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
