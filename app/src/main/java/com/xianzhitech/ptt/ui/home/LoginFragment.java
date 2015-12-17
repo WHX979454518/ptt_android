@@ -8,16 +8,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.service.user.LoginStatus;
 import com.xianzhitech.ptt.service.user.UserService;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
 import com.xianzhitech.ptt.ui.util.RxUtil;
-
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
 import rx.android.schedulers.AndroidSchedulers;
 
 /**
@@ -101,7 +99,7 @@ public class LoginFragment extends BaseFragment<LoginFragment.Callbacks> {
 
     @OnClick(R.id.login_loginBtn)
     void doLogin() {
-        getContext().startService(UserService.buildLoginIntent(getContext(), nameEdit.getText().toString(), passwordEdit.getText().toString()));
+        getContext().startService(UserService.buildLogin(getContext(), nameEdit.getText().toString(), passwordEdit.getText().toString()));
         progressBar.setVisibility(View.VISIBLE);
         setInputEnabled(false);
     }

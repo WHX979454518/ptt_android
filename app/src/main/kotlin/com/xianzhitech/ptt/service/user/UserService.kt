@@ -10,15 +10,35 @@ import android.preference.PreferenceManager
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.SignalProvider
-import com.xianzhitech.ptt.ui.util.RxUtil
 import hugo.weaving.DebugLog
-import rx.Observable
-import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+
+
+/**
+ *
+ * 与用户鉴权服务的绑定接口
+ *
+ * Created by fanchao on 17/12/15.
+ */
+interface UserServiceBinder {
+
+    /**
+     * 当前已经登陆的用户
+     */
+    val logonUser: Person?
+
+    /**
+     * 当前登陆的状态
+     */
+    @LoginStatus
+    val loginStatus: Int
+}
 
 /**
  *
@@ -27,43 +47,63 @@ import rx.android.schedulers.AndroidSchedulers
  * Created by fanchao on 17/12/15.
  */
 
-class UserService() : Service() {
+class UserService() : Service(), UserServiceBinder {
     companion object {
+
+        // ------------ 以下为接受的请求 -------------
+        /**
+         * 请求登陆. 用户名密码通过extra传入
+         */
         public const val ACTION_LOGIN = "action_login"
-        public const val ACTION_LOGOUT = "action_logout";
-
-        public const val ACTION_LOGIN_STATUS_CHANGED = "action_lsc"
-
-        public const val ACTION_USER_LOGON_FAILED = "action_user_logon_failed"
-
         public const val EXTRA_LOGIN_USERNAME = "extra_name"
         public const val EXTRA_LOGIN_PASSWORD = "extra_pass"
 
-        public const val EXTRA_LOGON_USER = "extra_user"
-        public const val EXTRA_LOGIN_STATUS = "extra_login_status"
+        /**
+         * 请求登出
+         */
+        public const val ACTION_LOGOUT = "action_logout";
+
+        // ------------- 以下为发出的消息 -------------
+        /**
+         * 登陆状态发生变化的事件
+         */
+        public const val ACTION_LOGIN_STATUS_CHANGED = "action_lsc"
+
+        /**
+         * 登陆时出错的事件
+         */
+        public const val ACTION_USER_LOGON_FAILED = "action_user_logon_failed"
+
+        /**
+         * 出错的原因字符串
+         */
         public const val EXTRA_LOGON_FAILED_REASON = "extra_failed_reason"
 
         private const val NOTIFICATION_ID = 1
 
-        public @JvmStatic fun buildEmptyIntent(context : Context) = Intent(context, UserService::class.java)
+        // -------------- 以下为辅助函数 ----------------
+        public @JvmStatic fun buildEmpty(context: Context) = Intent(context, UserService::class.java)
 
-        public @JvmStatic fun buildLoginIntent(context : Context, name : String, password : String) =
-                buildEmptyIntent(context)
+        public @JvmStatic fun buildLogin(context: Context, name: String, password: String) =
+                buildEmpty(context)
                         .setAction(ACTION_LOGIN)
                         .putExtra(EXTRA_LOGIN_USERNAME, name).putExtra(EXTRA_LOGIN_PASSWORD, password)
 
-        public @JvmStatic fun buildLogoutIntent(context : Context) =
-                buildEmptyIntent(context)
+        public @JvmStatic fun buildLogout(context: Context) =
+                buildEmpty(context)
                         .setAction(ACTION_LOGOUT)
 
-        public @JvmStatic fun getLoginStatus(context: Context) = Observable.merge(
-                RxUtil.fromBroadcast(context, ACTION_LOGIN_STATUS_CHANGED).map { it.getIntExtra(EXTRA_LOGIN_STATUS, LoginStatus.IDLE) },
-                RxUtil.fromService<UserServiceBinder>(context, buildEmptyIntent(context), Context.BIND_AUTO_CREATE).map { it.loginStatus })
+        public @JvmStatic fun getLoginStatus(context: Context) =
+                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.loginStatus }, ACTION_LOGIN_STATUS_CHANGED)
+
+        public @JvmStatic fun getLogonUser(context: Context) =
+                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.logonUser }, ACTION_LOGIN_STATUS_CHANGED)
+                        .distinctUntilChanged()
     }
 
-    private val binder = lazy { LocalUserServiceBinder(this) }
+    private var binder: IBinder? = null
 
-    var logonUser : Person? = null
+    override var logonUser: Person? = null
     var loginSubscription : Subscription? = null
     private lateinit var signalProvider : SignalProvider
     private lateinit var authProvider : AuthProvider
@@ -89,7 +129,11 @@ class UserService() : Service() {
 
     override fun onBind(intent: Intent?): IBinder? {
         handleIntent(intent);
-        return binder.value
+        if (binder == null) {
+            binder = LocalUserServiceBinder(this)
+        }
+
+        return binder
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -136,7 +180,7 @@ class UserService() : Service() {
 
         loginSubscription = authProvider.login(userName, password)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : UserServiceSubscriber<Person>() {
+                .subscribe(object : GlobalSubscriber<Person>() {
                     override fun onNext(t: Person) {
                         logonUser = t
 
@@ -177,11 +221,11 @@ class UserService() : Service() {
     }
 
     fun notifyLoginStatusChanged() {
-        sendBroadcast(Intent(ACTION_LOGIN_STATUS_CHANGED).putExtra(EXTRA_LOGIN_STATUS, loginStatus).putExtra(EXTRA_LOGON_USER, logonUser))
+        sendBroadcast(Intent(ACTION_LOGIN_STATUS_CHANGED))
     }
 
     @LoginStatus
-    val loginStatus : Int
+    override val loginStatus: Int
         get() = when {
             logonUser != null -> LoginStatus.LOGGED_ON
             loginSubscription != null -> LoginStatus.LOGIN_IN_PROGRESS
@@ -189,21 +233,5 @@ class UserService() : Service() {
         }
 }
 
-private open class UserServiceSubscriber<T>() : Subscriber<T>() {
-    override fun onError(e: Throwable?) {
-    }
-
-    override fun onCompleted() {
-    }
-
-    override fun onNext(t: T) {
-    }
-}
-
-private class LocalUserServiceBinder(private val service : UserService) : Binder(), UserServiceBinder {
-    override val logonUser : Person?
-            get() = service.logonUser
-
-    override val loginStatus : Int
-            get() = service.loginStatus
+private class LocalUserServiceBinder(private val service: UserService) : Binder(), UserServiceBinder by service {
 }

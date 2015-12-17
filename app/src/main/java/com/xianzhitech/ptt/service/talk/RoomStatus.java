@@ -9,11 +9,19 @@ import java.lang.annotation.RetentionPolicy;
  * Created by fanchao on 13/12/15.
  */
 @Retention(RetentionPolicy.SOURCE)
-@IntDef({TalkServiceBinder.ROOM_STATUS_NOT_CONNECTED,
-        TalkServiceBinder.ROOM_STATUS_CONNECTING,
-        TalkServiceBinder.ROOM_STATUS_ERROR,
-        TalkServiceBinder.ROOM_STATUS_CONNECTED,
-        TalkServiceBinder.ROOM_STATUS_ACTIVE,
-        TalkServiceBinder.ROOM_STATUS_DISCONNECTING})
+@IntDef({RoomStatus.NOT_CONNECTED,
+        RoomStatus.CONNECTING,
+        RoomStatus.CONNECTED,
+        RoomStatus.REQUESTING_MIC,
+        RoomStatus.ACTIVE,
+        RoomStatus.RELEASING_MIC,
+        RoomStatus.DISCONNECTING})
 public @interface RoomStatus {
+    int NOT_CONNECTED = 0;
+    int CONNECTING = 1;
+    int CONNECTED = 2;
+    int REQUESTING_MIC = 3;
+    int ACTIVE = 4;
+    int RELEASING_MIC = 5;
+    int DISCONNECTING = 6;
 }
