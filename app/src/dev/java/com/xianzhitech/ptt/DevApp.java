@@ -2,16 +2,20 @@ package com.xianzhitech.ptt;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.android.debug.hv.ViewServer;
 import com.facebook.stetho.Stetho;
 import com.facebook.stetho.okhttp.StethoInterceptor;
 import com.squareup.okhttp.OkHttpClient;
+import com.xianzhitech.model.Person;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.socket.client.Manager;
+import rx.Observable;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by fanchao on 7/12/15.
@@ -60,7 +64,11 @@ public class DevApp extends App {
         final String name = Manager.class.getName();
         Logger.getLogger(name).setLevel(Level.ALL);
 
-//        providesAuth().login("500002", "000000").subscribe();
+        Observable.defer(() -> {
+            final Person person = providesAuth().login("500002", "000000");
+            Log.d("DevApp", "Logon person: " + person);
+            return Observable.just(null);
+        }).subscribeOn(Schedulers.io()).subscribe();
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.xianzhitech.model.Person
 import com.xianzhitech.model.toGroupsAndMembers
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.service.signal.Room
+import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
@@ -23,29 +24,14 @@ import java.util.concurrent.TimeoutException
  */
 class SocketIOProvider(private val broker: Broker, private val endpoint: String) : SignalProvider, AuthProvider {
     companion object {
-        public const val EVENT_USER_LOGON = "userLogon"
-        public const val EVENT_CONTACTS_UPDATE = "contactsUpdate"
+        public const val EVENT_SERVER_USER_LOGON = "s_logon"
+
+        public const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
+        public const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"
     }
 
     private var socket: Socket? = null
     private val eventSubject = PublishSubject.create<Event>()
-
-    init {
-        eventSubject.filter({ it.name == EVENT_CONTACTS_UPDATE })
-                .flatMap({
-                    val personBuf = Person()
-                    var groupBuf = Group()
-                    val persons = it.jsonObject.getJSONObject("enterpriseMembers").getJSONArray("add").transform { personBuf.readFrom(it as JSONObject) }
-                    val groupJsonArray = it.jsonObject.getJSONObject("enterpriseGroups").getJSONArray("add")
-                    val groups = groupJsonArray.transform { groupBuf.readFrom(it as JSONObject) }
-                    Observable.concat(
-                            broker.updatePersons(persons),
-                            broker.updateGroups(groups, groupJsonArray.toGroupsAndMembers()),
-                            broker.updateContacts(Iterables.transform(persons, { it.id }), Iterables.transform(groups, { it.id }))
-                    )
-                })
-                .subscribe()
-    }
 
     override fun joinRoom(groupId: String): Room {
         throw UnsupportedOperationException()
@@ -69,16 +55,19 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         }
 
         socket = IO.socket(endpoint).let {
-            it.on(Manager.EVENT_TRANSPORT, { args: Array<Any> ->
+            it.io().on(Manager.EVENT_TRANSPORT, { args: Array<Any> ->
                 val arg = args[0] as Transport
                 arg.on(Transport.EVENT_REQUEST_HEADERS, {
-                    (it[0] as MutableMap<String, List<String>>).put("Authorization", listOf("Basic ${password.toMD5()}".toBase64()))
+                    (it[0] as MutableMap<String, List<String>>).put("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))
                 })
             })
 
-            it.subscribeTo(Socket.EVENT_CONNECT, Socket.EVENT_CONNECT_ERROR,
-                    Socket.EVENT_CONNECT_TIMEOUT, Socket.EVENT_ERROR,
-                    EVENT_CONTACTS_UPDATE, EVENT_USER_LOGON)
+            it.subscribeTo(
+                    Socket.EVENT_CONNECT,
+                    Socket.EVENT_CONNECT_ERROR,
+                    Socket.EVENT_CONNECT_TIMEOUT,
+                    Socket.EVENT_ERROR,
+                    EVENT_SERVER_USER_LOGON)
             it
         }
 
@@ -88,10 +77,10 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                         Socket.EVENT_ERROR, Socket.EVENT_CONNECT_ERROR -> Observable.error<Person>(RuntimeException("Connection error: " + event.args))
                         Socket.EVENT_CONNECT_TIMEOUT -> Observable.error<Person>(TimeoutException())
                         Socket.EVENT_CONNECT -> {
-                            socket?.emit("syncContacts", ImmutableMap.of("enterMemberVersion", 1, "enterGroupVersion", 1).toJSONObject())
+                            syncContacts()
                             Observable.empty<Person>()
                         }
-                        EVENT_USER_LOGON -> Observable.just<Person>(Person().readFrom(event.jsonObject))
+                        EVENT_SERVER_USER_LOGON -> Observable.just<Person>(Person().readFrom(event.jsonObject))
                         else -> Observable.empty<Person>()
                     }
                 })
@@ -101,6 +90,24 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 
     override fun logout() {
         throw UnsupportedOperationException()
+    }
+
+    fun syncContacts() {
+        socket?.emit(EVENT_CLIENT_SYNC_CONTACTS,
+                arrayOf(ImmutableMap.of("enterMemberVersion", 1, "enterGroupVersion", 1).toJSONObject()),
+                Ack {
+                    val result : JSONObject = it[0] as JSONObject
+                    val personBuf = Person()
+                    var groupBuf = Group()
+                    val persons = result.getJSONObject("enterpriseMembers").getJSONArray("add").transform { personBuf.readFrom(it as JSONObject) }
+                    val groupJsonArray = result.getJSONObject("enterpriseGroups").getJSONArray("add")
+                    val groups = groupJsonArray.transform { groupBuf.readFrom(it as JSONObject) }
+                    Observable.concat(
+                            broker.updatePersons(persons),
+                            broker.updateGroups(groups, groupJsonArray.toGroupsAndMembers()),
+                            broker.updateContacts(Iterables.transform(persons, { it.id }), Iterables.transform(groups, { it.id })))
+                    .subscribe()
+                })
     }
 
     fun Socket.subscribeTo(vararg events: String): Socket {

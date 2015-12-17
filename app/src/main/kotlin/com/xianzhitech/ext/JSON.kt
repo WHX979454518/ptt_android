@@ -17,13 +17,18 @@ fun <T> JSONArray?.transform(map: (Any) -> T): Iterable<T> {
     return object : Iterable<T> {
         override fun iterator(): Iterator<T> {
             return object : Iterator<T> {
-                val index: Int = -1
-                override fun next() = map(get(index.inc()))
+                var index: Int = -1
+                override fun next() : T  {
+                    index += 1
+                    return map(get(index))
+                }
+
                 override fun hasNext() = index < length() - 1
             }
         }
     }
 }
+
 
 fun <K, V> Map<K, V>.toJSONObject() = JSONObject(this)
 
