@@ -10,4 +10,7 @@ import com.xianzhitech.ptt.model.Person
  */
 interface UserServiceBinder {
     val logonUser : Person?
+
+    @LoginStatus
+    val loginStatus : Int
 }

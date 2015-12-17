@@ -9,4 +9,9 @@
     <string name="contact_search_hint">搜索联系人</string>
     <string name="room_title">%1$s (%2$d/%3$d)</string>
     <string name="user_logon">用户已登陆</string>
+    <string name="login_title">用户登陆</string>
+    <string name="user_name_hint">输入用户名</string>
+    <string name="user_password_hint">输入密码</string>
+    <string name="login">登陆</string>
+    <string name="login_failed">登陆失败</string>
 </resources>

@@ -90,6 +90,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
             it
         }
 
+        socketSubject.onNext(socket)
+
         return eventSubject
                 .flatMap({ event: Event ->
                     when (event.name) {
@@ -100,7 +102,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                         }
                         EVENT_SERVER_USER_LOGON -> {
                             logonUserSubject.onNext(Person().readFrom(event.jsonObject))
-                            syncContacts()
+                            syncContacts().subscribe()
                             logonUserSubject
                         }
                         else -> Observable.empty<Person>()
