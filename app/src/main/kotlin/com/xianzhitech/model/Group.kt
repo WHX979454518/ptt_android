@@ -23,7 +23,7 @@ class Group() : Model, ContactItem {
                 "$COL_DESCRIPTION TEXT" +
                 ")"
 
-        public val MAPPER = Func1<Cursor, Group> { Group().from(it) }
+        public @JvmField val MAPPER = Func1<Cursor, Group> { Group().from(it) }
     }
 
     var id: String = ""

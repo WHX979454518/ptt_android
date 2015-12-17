@@ -7,15 +7,15 @@ import com.squareup.picasso.OkHttpDownloader;
 import com.squareup.picasso.Picasso;
 import com.xianzhitech.ptt.engine.ITalkEngineFactory;
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine;
-import com.xianzhitech.ptt.service.SocketIOService;
+import com.xianzhitech.ptt.service.SocketIOProvider;
 import com.xianzhitech.ptt.service.auth.IAuthService;
-import com.xianzhitech.ptt.service.signal.ISignalService;
+import com.xianzhitech.ptt.service.signal.SignalProvider;
 import com.xianzhitech.ptt.util.Lazy;
 
 
 public class App extends Application implements AppComponent {
 
-    private final Lazy<SocketIOService> signalService = new Lazy<>(() -> new SocketIOService(providesBroker(), "http://106.186.124.143:3000/"));
+    private final Lazy<SocketIOProvider> signalService = new Lazy<>(() -> new SocketIOProvider(providesBroker(), "http://106.186.124.143:3000/"));
     private final Lazy<ITalkEngineFactory> talkEngineFactory = new Lazy<>(() -> WebRtcTalkEngine::new);
     private final Lazy<OkHttpClient> okHttpClient = new Lazy<>(() -> {
         final OkHttpClient client = new OkHttpClient();
@@ -43,7 +43,7 @@ public class App extends Application implements AppComponent {
     }
 
     @Override
-    public ISignalService providesSignalService() {
+    public SignalProvider providesSignalService() {
         return signalService.get();
     }
 

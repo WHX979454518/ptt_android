@@ -4,10 +4,10 @@ import android.test.ServiceTestCase;
 import com.google.common.collect.ImmutableMap;
 import com.xianzhitech.ptt.App;
 import com.xianzhitech.ptt.engine.ITalkEngineFactory;
-import com.xianzhitech.ptt.mock.MockSignalService;
+import com.xianzhitech.ptt.mock.MockSignalProvider;
 import com.xianzhitech.ptt.mock.MockTalkEngineFactory;
-import com.xianzhitech.ptt.service.signal.ISignalService;
 import com.xianzhitech.ptt.service.signal.Room;
+import com.xianzhitech.ptt.service.signal.SignalProvider;
 
 import java.util.Map;
 
@@ -20,9 +20,9 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
     private static final String GROUP_ID_2 = "GroupId_2";
     private static final String GROUP_ID_3 = "GroupId_3";
 
-    private MockSignalService mockSignalService;
+    private MockSignalProvider mockSignalService;
     private MockTalkEngineFactory mockTalkEngineFactory;
-    private Map<String, MockSignalService.RoomInfo> rooms;
+    private Map<String, MockSignalProvider.RoomInfo> rooms;
 
     public TalkServiceTest() {
         super(TalkService.class);
@@ -32,16 +32,16 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
         super.setUp();
 
         rooms = ImmutableMap.of(
-                GROUP_ID_1, new MockSignalService.RoomInfo(new Room(1, 2, "localhost", 8000), true),
-                GROUP_ID_2, new MockSignalService.RoomInfo(new Room(2, 2, "localhost", 8000), true),
-                GROUP_ID_3, new MockSignalService.RoomInfo(new Room(3, 2, "localhost", 8000), false)
+                GROUP_ID_1, new MockSignalProvider.RoomInfo(new Room(1, 2, "localhost", 8000), true),
+                GROUP_ID_2, new MockSignalProvider.RoomInfo(new Room(2, 2, "localhost", 8000), true),
+                GROUP_ID_3, new MockSignalProvider.RoomInfo(new Room(3, 2, "localhost", 8000), false)
         );
-        mockSignalService = new MockSignalService(rooms);
+        mockSignalService = new MockSignalProvider(rooms);
         mockTalkEngineFactory = new MockTalkEngineFactory();
 
         setApplication(new App() {
             @Override
-            public ISignalService providesSignalService() {
+            public SignalProvider providesSignalService() {
                 return mockSignalService;
             }
 

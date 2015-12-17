@@ -3,7 +3,7 @@ package com.xianzhitech.ptt;
 import com.squareup.okhttp.OkHttpClient;
 import com.xianzhitech.ptt.engine.ITalkEngineFactory;
 import com.xianzhitech.ptt.service.auth.IAuthService;
-import com.xianzhitech.ptt.service.signal.ISignalService;
+import com.xianzhitech.ptt.service.signal.SignalProvider;
 
 /**
  *
@@ -13,7 +13,8 @@ import com.xianzhitech.ptt.service.signal.ISignalService;
  */
 public interface AppComponent {
     OkHttpClient providesHttpClient();
-    ISignalService providesSignalService();
+
+    SignalProvider providesSignalService();
     ITalkEngineFactory providesTalkEngineFactory();
     Database providesDatabase();
     Broker providesBroker();

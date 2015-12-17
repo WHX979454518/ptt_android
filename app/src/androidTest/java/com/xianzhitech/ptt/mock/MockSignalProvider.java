@@ -1,15 +1,15 @@
 package com.xianzhitech.ptt.mock;
 
-import com.xianzhitech.ptt.service.signal.ISignalService;
 import com.xianzhitech.ptt.service.signal.Room;
+import com.xianzhitech.ptt.service.signal.SignalProvider;
 
 import java.util.Map;
 
 /**
  * Created by fanchao on 13/12/15.
  */
-public class MockSignalService implements ISignalService {
-    public MockSignalService(final Map<String, RoomInfo> rooms) {
+public class MockSignalProvider implements SignalProvider {
+    public MockSignalProvider(final Map<String, RoomInfo> rooms) {
         this.rooms = rooms;
     }
 

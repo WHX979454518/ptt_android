@@ -23,7 +23,7 @@ class Person() : Model, ContactItem {
                 "$COL_PRIV INTEGER NOT NULL" +
                 ")"
 
-        public val MAPPER = Func1<Cursor, Person> { Person().from(it) }
+        public @JvmField val MAPPER = Func1<Cursor, Person> { Person().from(it) }
     }
 
     var id: String = ""
@@ -72,12 +72,12 @@ class Person() : Model, ContactItem {
         return this
     }
 
-    fun readFrom(obj: JSONObject) = {
+    fun readFrom(obj: JSONObject): Person {
         id = obj.getString("idNumber")
         name = obj.getString("name")
         avatar = obj.optString("avatar")
         privilege = obj.optJSONObject("privileges").toPrivilege()
-        this
+        return this
     }
 
 }

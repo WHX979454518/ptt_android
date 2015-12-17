@@ -11,7 +11,7 @@ import android.util.Log;
 import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
 import com.squareup.sqlbrite.SqlBrite;
-import com.xianzhitech.ptt.model.*;
+import com.xianzhitech.model.*;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,12 +31,12 @@ public class Database implements Closeable {
                         // Create tables
                         db.beginTransaction();
                         try {
-                            db.execSQL(Person.getCreateTableSql());
-                            db.execSQL(Group.getCreateTableSql());
-                            db.execSQL(GroupMember.getCreateTableSql());
-                            db.execSQL(Conversation.getCreateTableSql());
-                            db.execSQL(ConversationMember.getCreateTableSql());
-                            db.execSQL(ContactItem.getCreateTableSql());
+                            db.execSQL(Person.CREATE_TABLE_SQL);
+                            db.execSQL(Group.CREATE_TABLE_SQL);
+                            db.execSQL(GroupMembers.CREATE_TABLE_SQL);
+                            db.execSQL(Conversation.CREATE_TABLE_SQL);
+                            db.execSQL(ConversationMembers.CREATE_TABLE_SQL);
+                            db.execSQL(Contacts.CREATE_TABLE_SQL);
                             db.setTransactionSuccessful();
                         } finally {
                             db.endTransaction();

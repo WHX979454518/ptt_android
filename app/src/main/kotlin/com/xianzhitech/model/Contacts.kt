@@ -6,7 +6,7 @@ import rx.functions.Func1
 
 class Contacts {
     companion object {
-        const val TABLE_NAME = "contacts";
+        public const val TABLE_NAME = "contacts";
 
         public const val COL_GROUP_ID = "contact_group_id"
         public const val COL_PERSON_ID = "contact_person_id"
@@ -15,7 +15,7 @@ class Contacts {
                 "$COL_PERSON_ID TEXT REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID} UNIQUE ON CONFLICT IGNORE," +
                 ")"
 
-        public val MAPPER = Func1<Cursor, ContactItem> { cursor ->
+        public @JvmField val MAPPER = Func1<Cursor, ContactItem> { cursor ->
             if (cursor?.optStringValue(COL_GROUP_ID).isNullOrEmpty().not()) {
                 Group.MAPPER.call(cursor)
             } else if (cursor?.optStringValue(COL_PERSON_ID).isNullOrEmpty().not()) {

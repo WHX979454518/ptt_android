@@ -4,10 +4,12 @@ import android.support.annotation.NonNull;
 import android.util.Base64;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.xianzhitech.model.Group;
+import com.xianzhitech.model.Person;
 import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.service.auth.IAuthService;
-import com.xianzhitech.ptt.service.signal.ISignalService;
 import com.xianzhitech.ptt.service.signal.Room;
+import com.xianzhitech.ptt.service.signal.SignalProvider;
 import com.xianzhitech.ptt.service.sync.ISyncService;
 import com.xianzhitech.ptt.util.JsonUtil;
 import io.socket.client.IO;
@@ -33,7 +35,7 @@ import java.util.concurrent.TimeoutException;
  *
  * Created by fanchao on 13/12/15.
  */
-public class SocketIOService implements ISignalService, IAuthService, ISyncService {
+public class SocketIOProvider implements SignalProvider, IAuthService, ISyncService {
     private final String endpointUrl;
     private Socket socket;
     final PublishSubject<Event> eventSubject = PublishSubject.create();
@@ -42,7 +44,7 @@ public class SocketIOService implements ISignalService, IAuthService, ISyncServi
     public static final String EVENT_USER_LOGON = "userLogon";
     public static final String EVENT_CONTACTS_UPDATE = "contactsUpdate";
 
-    public SocketIOService(final Broker broker, final String endpointUrl) {
+    public SocketIOProvider(final Broker broker, final String endpointUrl) {
         this.broker = broker;
         this.endpointUrl = endpointUrl;
 
@@ -55,12 +57,12 @@ public class SocketIOService implements ISignalService, IAuthService, ISyncServi
                     try {
                         //TODO: Version control
                         final JSONArray groupJsonArray = object.getJSONObject("enterpriseGroups").getJSONArray("add");
-                        final Iterable<Group> groups = JsonUtil.<JSONObject, Group>fromArray(groupJsonArray, group::readFrom);
+                        final Iterable<Group> groups = JsonUtil.<JSONObject, Group>fromArray(groupJsonArray, group::from);
                         final Iterable<Person> persons = JsonUtil.<JSONObject, Person>fromArray(object.getJSONObject("enterpriseMembers").getJSONArray("add"), person::readFrom);
 
                         return Observable.concat(
                                 broker.updatePersons(persons),
-                                broker.updateGroups(groups, GroupMember.fromJson(groupJsonArray)),
+                                broker.updateGroups(groups, GroupMembers.fromJson(groupJsonArray)),
                                 broker.updateContacts(Iterables.transform(persons, Person::getId), Iterables.transform(groups, Group::getId))
                         );
                     } catch (JSONException e) {
