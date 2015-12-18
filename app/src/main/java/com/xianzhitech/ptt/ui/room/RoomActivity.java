@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.xianzhitech.ptt.R;
+import com.xianzhitech.ptt.service.provider.ConversationRequest;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 
 /**
@@ -35,11 +36,11 @@ public class RoomActivity extends BaseActivity implements RoomFragment.Callbacks
 
     private void handleIntent(final Intent intent) {
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.room_content, RoomFragment.create(intent.getParcelableExtra(EXTRA_ROOM_REQUEST)))
+                .replace(R.id.room_content, RoomFragment.create((ConversationRequest) intent.getSerializableExtra(EXTRA_ROOM_REQUEST)))
                 .commit();
     }
 
-    public static Intent builder(final Context context, final OpenRoomRequest roomRequest) {
+    public static Intent builder(final Context context, final ConversationRequest roomRequest) {
         return new Intent(context, RoomActivity.class)
                 .putExtra(EXTRA_ROOM_REQUEST, roomRequest);
     }

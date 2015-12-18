@@ -1,13 +1,11 @@
 package com.xianzhitech.ptt.service
 
+import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableSet
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.ext.toObservable
-import com.xianzhitech.ptt.model.Conversation
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.provider.*
 import rx.Observable
 import java.util.*
@@ -18,7 +16,28 @@ import java.util.concurrent.atomic.AtomicReference
  * Created by fanchao on 18/12/15.
  */
 
+object MockPersons {
+    val PERSON_1 = Person("1", "person 1", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
+    val PERSON_2 = Person("2", "person 2", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
+    val PERSON_3 = Person("3", "person 3", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
+    val PERSON_4 = Person("4", "person 4", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
+    val PERSON_5 = Person("5", "person 5", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
 
+    val ALL = listOf(PERSON_1, PERSON_2, PERSON_3, PERSON_4, PERSON_5)
+}
+
+object MockGroups {
+    val GROUP_1 = Group("1", "Group 1")
+    val GROUP_2 = Group("2", "Group 1")
+    val GROUP_3 = Group("3", "Group 1")
+
+    val GROUP_MEMBERS = ImmutableMap.of(
+            GROUP_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_2.id),
+            GROUP_2.id, listOf(MockPersons.PERSON_3.id, MockPersons.PERSON_4.id),
+            GROUP_3.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_4.id, MockPersons.PERSON_5.id))
+
+    val ALL = listOf(GROUP_1, GROUP_2, GROUP_3)
+}
 
 class MockSignalProvider(val currentUser: Person,
                          val persons: List<Person>,
@@ -79,7 +98,7 @@ class MockSignalProvider(val currentUser: Person,
     override fun joinConversation(conversationId: String): Observable<Room> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
         roomInfo.activeMembers += currentUser.id
-        return Room(roomInfo.conversation.id.toInt(), roomInfo.activeMembers.toList(), roomInfo.speaker.get(), "host", 80, "tcp").toObservable()
+        return Room(roomInfo.conversation.id, roomInfo.activeMembers.toList(), roomInfo.speaker.get(), "host", 80, "tcp").toObservable()
     }
 
     override fun quitConversation(conversationId: String): Observable<Void> {
@@ -148,16 +167,15 @@ class MockTalkEngineProvider : TalkEngineProvider {
 }
 
 class MockAuthProvider : AuthProvider {
-    companion object {
-        public const val CORRECT_USERNAME = "username"
-        public const val CORRECT_PASSWORD = "username"
-    }
+    var logonUser: Person? = null
 
     override fun login(username: String, password: String) =
-        (username == CORRECT_USERNAME && password == CORRECT_PASSWORD).toObservable()
+            (MockPersons.ALL.firstOrNull { it.name == username }?.toObservable() ?: Observable.error(IllegalArgumentException()))
+                    .doOnNext { logonUser = it }
 
     override fun logout(): Observable<Void> {
-        throw UnsupportedOperationException()
+        logonUser = null
+        return Observable.just(null)
     }
 
 }

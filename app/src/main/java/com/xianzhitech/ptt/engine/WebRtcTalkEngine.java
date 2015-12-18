@@ -48,11 +48,12 @@ public class WebRtcTalkEngine implements TalkEngine {
             throw new IllegalStateException("Engine already connected to a room before");
         }
 
-        this.roomIds = new int[] { room.getId() };
+        final int roomId = Integer.parseInt(room.getId());
+        this.roomIds = new int[]{roomId};
 
         handler.post(() -> {
             mediaEngine = new MediaEngine(context, false);
-            mediaEngine.setLocalSSRC(room.getId());
+            mediaEngine.setLocalSSRC(roomId);
             mediaEngine.setRemoteIp(room.getServerHost());
             mediaEngine.setAudioTxPort(room.getSeverPort());
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT);
@@ -61,7 +62,7 @@ public class WebRtcTalkEngine implements TalkEngine {
             mediaEngine.setEc(true);
             mediaEngine.setSpeaker(false);
             mediaEngine.setAudio(true);
-            mediaEngine.start(room.getId());
+            mediaEngine.start(roomId);
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds);
 
             scheduleHeartbeat();

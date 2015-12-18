@@ -2,6 +2,7 @@ package com.xianzhitech.ptt;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 
 import com.android.debug.hv.ViewServer;
 import com.facebook.stetho.Stetho;
@@ -61,6 +62,7 @@ public class DevApp extends App {
         Logger.getLogger(name).setLevel(Level.ALL);
     }
 
+    @NonNull
     @Override
     public OkHttpClient providesHttpClient() {
         final OkHttpClient okHttpClient = super.providesHttpClient();

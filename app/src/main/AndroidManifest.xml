@@ -28,7 +28,7 @@
             android:name=".ui.room.RoomActivity" />
 
         <service
-            android:name=".service.talk.TalkService"
+            android:name=".service.room.RoomService"
             android:exported="false" />
 
         <service

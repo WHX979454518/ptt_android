@@ -17,8 +17,11 @@ import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.model.ContactItem;
+import com.xianzhitech.ptt.model.Group;
+import com.xianzhitech.ptt.model.Person;
+import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest;
+import com.xianzhitech.ptt.service.provider.CreatePersonConversationRequest;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
-import com.xianzhitech.ptt.ui.room.OpenRoomRequest;
 import com.xianzhitech.ptt.ui.room.RoomActivity;
 import com.xianzhitech.ptt.ui.util.ResourceUtil;
 import com.xianzhitech.ptt.ui.util.RxUtil;
@@ -114,7 +117,8 @@ public class ContactsFragment extends BaseFragment<Void> {
             holder.iconView.setColorFilter(contactItem.getTintColor());
             holder.nameView.setText(contactItem.getName());
             holder.itemView.setOnClickListener(v -> {
-                startActivity(RoomActivity.builder(getContext(), OpenRoomRequest.ofContact(contactItem)));
+                startActivity(RoomActivity.builder(getContext(),
+                        contactItem instanceof Person ? new CreatePersonConversationRequest(((Person) contactItem).getId()) : new CreateGroupConversationRequest(((Group) contactItem).getId())));
             });
         }
 

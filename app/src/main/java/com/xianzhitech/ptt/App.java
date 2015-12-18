@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt;
 
 import android.app.Application;
+import android.support.annotation.NonNull;
 
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.OkHttpClient;
@@ -44,31 +45,37 @@ public class App extends Application implements AppComponent {
                         .build());
     }
 
+    @NonNull
     @Override
     public OkHttpClient providesHttpClient() {
         return okHttpClient.get();
     }
 
+    @NonNull
     @Override
     public SignalProvider providesSignal() {
         return signalProvider.get();
     }
 
+    @NonNull
     @Override
     public TalkEngineProvider providesTalkEngine() {
         return talkEngineFactory.get();
     }
 
+    @NonNull
     @Override
     public Database providesDatabase() {
         return database.get();
     }
 
+    @NonNull
     @Override
     public Broker providesBroker() {
         return broker.get();
     }
 
+    @NonNull
     @Override
     public AuthProvider providesAuth() {
         return authProvider.get();

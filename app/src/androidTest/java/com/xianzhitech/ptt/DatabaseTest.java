@@ -112,7 +112,7 @@ public class DatabaseTest extends AndroidTestCase {
         groupMembers.put(groups.get(0).getId(), personIds);
         broker.updateGroups(groups, groupMembers).toBlocking().first();
 
-        List<Broker.AggregateInfo<String>> result = broker.getGroupsWithMemberNames(1).toBlocking().first();
+        List<Broker.AggregateInfo<Group, String>> result = broker.getGroupsWithMemberNames(1).toBlocking().first();
         Assert.assertEquals(2, result.size());
         Assert.assertEquals(groups.get(0), result.get(0).group);
         Assert.assertEquals(groups.get(1), result.get(1).group);

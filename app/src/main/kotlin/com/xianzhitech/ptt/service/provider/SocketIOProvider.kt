@@ -185,7 +185,7 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
 
 internal fun JSONObject.toRoom() : Room {
     val server = getJSONObject("server")
-    return Room(getJSONObject("roomInfo").getInt("idNumber"),
+    return Room(getJSONObject("roomInfo").getString("idNumber"),
             ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"), server.getString("host"),
             server.getInt("port"), server.getString("protocol"))
 }

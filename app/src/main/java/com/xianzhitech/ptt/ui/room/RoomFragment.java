@@ -16,7 +16,9 @@ import com.xianzhitech.ptt.Broker;
 import com.xianzhitech.ptt.R;
 import com.xianzhitech.ptt.model.Conversation;
 import com.xianzhitech.ptt.model.Room;
+import com.xianzhitech.ptt.service.provider.ConversationRequest;
 import com.xianzhitech.ptt.service.provider.CreateConversationRequest;
+import com.xianzhitech.ptt.service.provider.ExistingConversationRequest;
 import com.xianzhitech.ptt.service.provider.SignalProvider;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
 import com.xianzhitech.ptt.ui.util.ResourceUtil;
@@ -85,30 +87,21 @@ public class RoomFragment extends BaseFragment<RoomFragment.Callbacks> {
     public void onStart() {
         super.onStart();
 
-        final OpenRoomRequest request = getArguments().getParcelable(ARG_ROOM_REQUEST);
+        final ConversationRequest request = (ConversationRequest) getArguments().getSerializable(ARG_ROOM_REQUEST);
 
         if (request != null) {
             Observable<String> conversationIdObservable;
 
-            if (request.conversationId == null) {
+            if (request instanceof CreateConversationRequest) {
                 // 没有会话id, 向服务器请求
-                final CreateConversationRequest createRequest;
-                if (request.groupId != null) {
-                    createRequest = CreateConversationRequest.fromGroup(request.groupId);
-                }
-                else if (request.personId != null) {
-                    createRequest = CreateConversationRequest.fromPerson(request.personId);
-                }
-                else {
-                    throw new IllegalArgumentException();
-                }
-
-                conversationIdObservable = signalProvider.createConversation(Collections.singleton(createRequest))
+                conversationIdObservable = signalProvider.createConversation(Collections.singleton((CreateConversationRequest) request))
                         .flatMap(broker::saveConversation)
                         .map(Conversation::getId);
+            } else if (request instanceof ExistingConversationRequest) {
+                conversationIdObservable = Observable.just(((ExistingConversationRequest) request).getConversationId());
             }
             else {
-                conversationIdObservable = Observable.just(request.conversationId);
+                throw new IllegalArgumentException("Unknown request " + request);
             }
 
             conversationIdObservable
@@ -141,10 +134,10 @@ public class RoomFragment extends BaseFragment<RoomFragment.Callbacks> {
         }
     }
 
-    public static Fragment create(final OpenRoomRequest request) {
+    public static Fragment create(final ConversationRequest request) {
         final RoomFragment fragment = new RoomFragment();
         final Bundle args = new Bundle(1);
-        args.putParcelable(ARG_ROOM_REQUEST, request);
+        args.putSerializable(ARG_ROOM_REQUEST, request);
         fragment.setArguments(args);
         return fragment;
     }
