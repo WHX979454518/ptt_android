@@ -4,36 +4,21 @@ import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.CheckResult;
 import android.support.annotation.Nullable;
-
 import com.google.common.collect.Iterables;
 import com.squareup.sqlbrite.BriteDatabase;
 import com.squareup.sqlbrite.QueryObservable;
-import com.xianzhitech.ptt.model.ContactItem;
-import com.xianzhitech.ptt.model.Contacts;
-import com.xianzhitech.ptt.model.Conversation;
-import com.xianzhitech.ptt.model.ConversationMembers;
-import com.xianzhitech.ptt.model.Group;
-import com.xianzhitech.ptt.model.GroupMembers;
-import com.xianzhitech.ptt.model.Person;
+import com.xianzhitech.ptt.model.*;
 import com.xianzhitech.ptt.util.CursorUtil;
 import com.xianzhitech.ptt.util.SqlUtil;
-
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
-
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
+
+import java.util.*;
+import java.util.concurrent.Executors;
 
 public class Broker {
 
@@ -198,6 +183,22 @@ public class Broker {
     }
 
     @CheckResult
+    public Observable<Void> updateConversationMembers(final String conversationId, final Iterable<String> groupMembers) {
+        return updateInTransaction(() -> {
+            db.delete(ConversationMembers.TABLE_NAME, "1");
+
+            final ContentValues values = new ContentValues(2);
+            values.put(ConversationMembers.COL_CONVERSATION_ID, conversationId);
+            for (String memberId : groupMembers) {
+                values.put(ConversationMembers.COL_PERSON_ID, memberId);
+                db.insert(ConversationMembers.TABLE_NAME, values);
+            }
+
+            return null;
+        });
+    }
+
+    @CheckResult
     public Observable<List<ContactItem>> getContacts(final @Nullable String searchTerm) {
         final QueryObservable query;
         if (StringUtils.isNotEmpty(searchTerm)) {
@@ -252,7 +253,7 @@ public class Broker {
     @CheckResult
     public Observable<Void> addGroupMembers(final Group group, final Iterable<Person> persons) {
         return updateInTransaction(() -> {
-            doAddGroupMemberss(group.getId(), Iterables.transform(persons, Person::getId));
+            doAddGroupMembers(group.getId(), Iterables.transform(persons, Person::getId));
             return null;
         });
     }
@@ -284,7 +285,7 @@ public class Broker {
         });
     }
 
-    private void doAddGroupMemberss(final String groupId, final Iterable<String> members) {
+    private void doAddGroupMembers(final String groupId, final Iterable<String> members) {
         final ContentValues values = new ContentValues(2);
 
         for (String memberId : members) {
@@ -295,7 +296,7 @@ public class Broker {
     }
 
     private void doUpdateGroupMembers(String groupId, Iterable<String> members) {
-        doAddGroupMemberss(groupId, members);
+        doAddGroupMembers(groupId, members);
 
         db.delete(GroupMembers.TABLE_NAME,
                 GroupMembers.COL_GROUP_ID + " = ? AND " +

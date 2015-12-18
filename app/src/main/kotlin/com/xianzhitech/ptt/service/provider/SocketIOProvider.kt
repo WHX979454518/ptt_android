@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.service.provider
 
+import android.support.v4.util.ArrayMap
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.xianzhitech.ptt.Broker
@@ -41,11 +43,14 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     private val eventSubject = PublishSubject.create<Event>()
 
     override fun createConversation(requests: Iterable<CreateConversationRequest>): Observable<Conversation> {
-        return socketSubject.flatMap({it.sendEvent(
-                EVENT_CLIENT_CREATE_ROOM,
-                { Conversation().readFrom(it as JSONObject) },
-                requests.toJSONArray { it.toJSON() }) ?: Observable.error(IllegalStateException("Not logon"))
-        })
+        return socketSubject
+                .flatMap({ it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it as JSONObject }, requests.toJSONArray { it.toJSON() }) ?: Observable.error(IllegalStateException("Not logon")) })
+                .flatMap {
+                    val conversation = Conversation().readFrom(it)
+                    val members = it.getJSONArray("members").toStringList()
+
+                    broker.updateConversationMembers(conversation.id, members).map { conversation }
+                }
     }
 
     override fun deleteConversation(conversationId: String) : Observable<Void> {
@@ -56,7 +61,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return socketSubject.flatMap({ it.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
                 { (it as JSONObject).toRoom() },
-                ImmutableMap.of("roomId", conversationId).toJSONObject())
+                JSONObject().put("roomId", conversationId))
         })
     }
 
@@ -146,11 +151,12 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 }
 
 internal fun CreateConversationRequest.toJSON() : JSONObject {
-    val result = JSONObject()
     // 0代表通讯组 1代表联系人
-    result.put("srcType", if (personId.isNullOrEmpty()) 0 else 1)
-    result.put("srcData", if (personId.isNullOrEmpty()) groupId else personId)
-    return result
+    return when (this) {
+        is CreatePersonConversationRequest -> JSONObject().put("srcType", 1).put("srcData", personId)
+        is CreateGroupConversationRequest -> JSONObject().put("srcType", 0).put("srcData", groupId)
+        else -> throw IllegalArgumentException("Unknown request type: " + this)
+    }
 }
 
 internal fun Group.readFrom(obj : JSONObject) : Group {
@@ -180,9 +186,25 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
 internal fun JSONObject.toRoom() : Room {
     val server = getJSONObject("server")
     return Room(getJSONObject("roomInfo").getInt("idNumber"),
-            getJSONArray("activeMembers").toStringList(), optString("speaker"), server.getString("host"),
+            ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"), server.getString("host"),
             server.getInt("port"), server.getString("protocol"))
 }
+
+internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
+    if (this == null) {
+        return emptyMap()
+    }
+
+    val size = length()
+    val result = ArrayMap<String, Iterable<String>>(size)
+    for (i in 1..size - 1) {
+        val groupObject = getJSONObject(i)
+        result.put(groupObject.getString("idNumber"), groupObject.optJSONArray("members").toStringList())
+    }
+
+    return result
+}
+
 
 @Privilege
 internal fun JSONObject?.toPrivilege(): Int {

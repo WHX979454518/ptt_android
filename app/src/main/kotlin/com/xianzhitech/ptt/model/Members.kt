@@ -1,9 +1,5 @@
 package com.xianzhitech.ptt.model
 
-import android.support.v4.util.ArrayMap
-import com.xianzhitech.ptt.ext.toStringList
-import org.json.JSONArray
-
 /**
  * Created by fanchao on 17/12/15.
  */
@@ -36,20 +32,3 @@ class ConversationMembers {
                 ")"
     }
 }
-
-public fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
-    if (this == null) {
-        return emptyMap()
-    }
-
-    val size = length()
-    val result = ArrayMap<String, Iterable<String>>(size)
-    for (i in 1..size - 1) {
-        val groupObject = getJSONObject(i)
-        result.put(groupObject.getString("idNumber"), groupObject.optJSONArray("members").toStringList())
-    }
-
-    return result
-}
-
-public fun JSONArray?.toConversationsAndMembers() = toGroupsAndMembers()

@@ -5,23 +5,32 @@ import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.model.Room
 import rx.Observable
+import java.io.Serializable
 
 /**
- * 创建房间的参数
+ * 请求会话的参数
  */
-data class CreateConversationRequest private constructor(val personId : String?, val groupId : String?) {
-    companion object {
-        /**
-         * 从一个联系人创建
-         */
-        public @JvmStatic fun fromPerson(personId : String) = CreateConversationRequest(personId, null)
+interface ConversationRequest : Serializable
 
-        /**
-         * 从一个联系人组创建
-         */
-        public @JvmStatic fun fromGroup(groupId : String) = CreateConversationRequest(null, groupId)
-    }
-}
+/**
+ * 从已有的会话发起会话
+ */
+data class ExistingConversationRequest(val conversationId: String) : ConversationRequest
+
+/**
+ * 新建一个会话的请求
+ */
+interface CreateConversationRequest : ConversationRequest
+
+/**
+ * 从一个联系人创建会话请求
+ */
+data class CreatePersonConversationRequest(val personId: String) : CreateConversationRequest
+
+/**
+ * 从一个组创建会话请求
+ */
+data class CreateGroupConversationRequest(val groupId: String) : CreateConversationRequest
 
 /**
  * 信号服务器的接口

@@ -1,12 +1,11 @@
 package com.xianzhitech.ptt.service.talk;
 
 import android.test.ServiceTestCase;
-
 import com.google.common.collect.ImmutableMap;
 import com.xianzhitech.ptt.App;
-import com.xianzhitech.ptt.engine.TalkEngineFactory;
+import com.xianzhitech.ptt.engine.TalkEngineProvider;
 import com.xianzhitech.ptt.mock.MockSignalProvider;
-import com.xianzhitech.ptt.mock.MockTalkEngineFactory;
+import com.xianzhitech.ptt.mock.MockTalkEngineProvider;
 import com.xianzhitech.ptt.service.provider.SignalProvider;
 import com.xianzhitech.ptt.service.signal.Room;
 
@@ -22,7 +21,7 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
     private static final String GROUP_ID_3 = "GroupId_3";
 
     private MockSignalProvider mockSignalService;
-    private MockTalkEngineFactory mockTalkEngineFactory;
+    private MockTalkEngineProvider mockTalkEngineFactory;
     private Map<String, MockSignalProvider.RoomInfo> rooms;
 
     public TalkServiceTest() {
@@ -38,7 +37,7 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
                 GROUP_ID_3, new MockSignalProvider.RoomInfo(new Room(3, 2, "localhost", 8000), false)
         );
         mockSignalService = new MockSignalProvider(rooms);
-        mockTalkEngineFactory = new MockTalkEngineFactory();
+        mockTalkEngineFactory = new MockTalkEngineProvider();
 
         setApplication(new App() {
             @Override
@@ -47,7 +46,7 @@ public class TalkServiceTest extends ServiceTestCase<TalkService> {
             }
 
             @Override
-            public TalkEngineFactory providesTalkEngineFactory() {
+            public TalkEngineProvider providesTalkEngine() {
                 return mockTalkEngineFactory;
             }
         });

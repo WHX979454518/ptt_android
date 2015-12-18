@@ -6,6 +6,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import rx.Observable
 import rx.Subscriber
+import rx.android.schedulers.AndroidSchedulers
 
 /**
  * Created by fanchao on 17/12/15.
@@ -33,3 +34,7 @@ open class GlobalSubscriber<T>(val context: Context? = null) : Subscriber<T>() {
     override fun onCompleted() {
     }
 }
+
+fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
+
+fun <T> T.toObservable() = Observable.just(this)
