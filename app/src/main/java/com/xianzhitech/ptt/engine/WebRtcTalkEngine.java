@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.engine;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.support.annotation.NonNull;
 
 import com.xianzhitech.ptt.model.Room;
 
@@ -42,7 +43,7 @@ public class WebRtcTalkEngine implements TalkEngine {
     }
 
     @Override
-    public void connect(final Room room) {
+    public void connect(final @NonNull Room room) {
         if (this.roomIds != null) {
             throw new IllegalStateException("Engine already connected to a room before");
         }

@@ -1,6 +1,6 @@
 package com.xianzhitech.ptt.engine;
 
-import android.content.Context;
+import android.support.annotation.NonNull;
 
 /**
  * 创建语音引擎的工厂类
@@ -8,5 +8,5 @@ import android.content.Context;
  * Created by fanchao on 13/12/15.
  */
 public interface TalkEngineProvider {
-    TalkEngine createEngine(final Context context);
+    @NonNull TalkEngine createEngine();
 }

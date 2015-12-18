@@ -69,11 +69,11 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
-    override fun requestFocus(roomId: Int): Observable<Boolean> {
+    override fun requestMic(conversationId: String): Observable<Boolean> {
         return Observable.empty()
     }
 
-    override fun releaseFocus(roomId: Int) : Observable<Void> {
+    override fun releaseMic(conversationId: String) : Observable<Void> {
         return Observable.empty()
     }
 

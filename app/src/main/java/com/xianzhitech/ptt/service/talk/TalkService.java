@@ -9,14 +9,17 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.SimpleArrayMap;
+
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.engine.TalkEngine;
 import com.xianzhitech.ptt.engine.TalkEngineProvider;
 import com.xianzhitech.ptt.model.Room;
 import com.xianzhitech.ptt.service.provider.SignalProvider;
 import com.xianzhitech.ptt.util.Logger;
-import hugo.weaving.DebugLog;
+
 import org.apache.commons.lang3.StringUtils;
+
+import hugo.weaving.DebugLog;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -133,7 +136,7 @@ public class TalkService extends Service {
         cancelRequestFocus();
 
         if (hasFocus) {
-            requestFocusSubscription = signalProvider.requestFocus(currRoom.getId())
+            requestFocusSubscription = signalProvider.requestMic(currRoom.getId())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new PrivateSubscriber<Boolean>() {
                         @Override
@@ -148,7 +151,7 @@ public class TalkService extends Service {
         else if (roomStatus == TalkServiceBinder.ROOM_STATUS_ACTIVE) {
             setCurrentRoomStatus(TalkServiceBinder.ROOM_STATUS_CONNECTED);
             talkEngine.stopSend();
-            signalProvider.releaseFocus(currRoom.getId())
+            signalProvider.releaseMic(currRoom.getId())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new PrivateSubscriber<>());
         }
@@ -221,7 +224,7 @@ public class TalkService extends Service {
                 .subscribe(new PrivateSubscriber<Room>() {
                     @Override
                     public void onNext(final Room room) {
-                        final TalkEngine engine = talkEngineProvider.createEngine(TalkService.this);
+                        final TalkEngine engine = talkEngineProvider.createEngine();
                         currRoom = room;
                         talkEngineMap.put(conversationId, engine);
                         engine.connect(currRoom);

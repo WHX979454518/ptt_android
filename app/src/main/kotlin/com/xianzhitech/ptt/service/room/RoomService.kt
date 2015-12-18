@@ -248,7 +248,7 @@ class RoomService() : Service(), RoomServiceBinder {
                     override fun onNext(t: Room) {
                         currentRoom = t
                         if (currentTalkEngine == null) {
-                            currentTalkEngine = talkEngineProvider.createEngine(this@RoomService).apply { connect(t) }
+                            currentTalkEngine = talkEngineProvider.createEngine().apply { connect(t) }
                         }
                         roomStatus = RoomStatus.CONNECTED
                     }
@@ -279,7 +279,7 @@ class RoomService() : Service(), RoomServiceBinder {
             if (roomStatus == RoomStatus.CONNECTED && currentUser != null) {
                 roomStatus = RoomStatus.REQUESTING_MIC
 
-                signalProvider.requestFocus(it.id)
+                signalProvider.requestMic(it.id)
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<Boolean>(this) {
                             override fun onError(e: Throwable?) {
@@ -303,7 +303,7 @@ class RoomService() : Service(), RoomServiceBinder {
             val currentUser = currentUserSubject.value
             if (roomStatus == RoomStatus.ACTIVE && currentUser != null && currentSpeakerId == currentUser.id) {
                 currentTalkEngine?.stopSend()
-                signalProvider.releaseFocus(it.id)
+                signalProvider.releaseMic(it.id)
                         .observeOnMainThread()
                         .subscribe(GlobalSubscriber<Void>(this))
 

@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.engine;
 
 
+import android.support.annotation.NonNull;
+
 import com.xianzhitech.ptt.model.Room;
 
 /**
@@ -10,7 +12,7 @@ import com.xianzhitech.ptt.model.Room;
  * Created by fanchao on 13/12/15.
  */
 public interface TalkEngine {
-    void connect(Room room);
+    void connect(@NonNull  Room room);
     void dispose();
     void startSend();
     void stopSend();

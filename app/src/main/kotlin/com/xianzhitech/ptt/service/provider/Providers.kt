@@ -65,13 +65,13 @@ interface SignalProvider {
      * 抢麦
      */
     @CheckResult
-    fun requestFocus(roomId: Int): Observable<Boolean>
+    fun requestMic(conversationId: String): Observable<Boolean>
 
     /**
      * 释放麦
      */
     @CheckResult
-    fun releaseFocus(roomId: Int) : Observable<Void>
+    fun releaseMic(conversationId: String) : Observable<Void>
 }
 
 /**
