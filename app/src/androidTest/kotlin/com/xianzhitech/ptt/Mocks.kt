@@ -1,11 +1,13 @@
 package com.xianzhitech.ptt
 
+import com.google.common.collect.ImmutableSet
 import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.CreateConversationRequest
+import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest
 import com.xianzhitech.ptt.service.provider.CreatePersonConversationRequest
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import rx.Observable
@@ -39,7 +41,14 @@ class MockSignalProvider(val currentUser: Person,
 
                 // 新建一个会话
                 val conv = Conversation(idSeq.incrementAndGet().toString(), "Conversation $idSeq", "Conversation description", currentUser.id, false)
-                conversations.put(conv, )
+                conversations.put(conv, RoomInfo(arrayListOf(), null))
+            }
+
+            is CreateGroupConversationRequest -> {
+                val members = groupMembers.get(request.groupId) ?: return Observable.error(IllegalArgumentException("Group ${request.groupId} does not exist"))
+
+                val setToFind = ImmutableSet.copyOf(members)
+                conversations.entries.firstOrNull { it.value.members.toHashSet() == setToFind }
             }
         }
     }
@@ -49,6 +58,7 @@ class MockSignalProvider(val currentUser: Person,
     }
 
     override fun joinConversation(conversationId: String): Observable<Room> {
+
         throw UnsupportedOperationException()
     }
 
