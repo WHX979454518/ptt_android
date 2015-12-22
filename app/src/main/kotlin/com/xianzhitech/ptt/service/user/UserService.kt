@@ -94,10 +94,10 @@ class UserService() : Service(), UserServiceBinder {
                         .setAction(ACTION_LOGOUT)
 
         public @JvmStatic fun getLoginStatus(context: Context) =
-                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.loginStatus }, ACTION_LOGIN_STATUS_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.loginStatus }, AndroidSchedulers.mainThread(), ACTION_LOGIN_STATUS_CHANGED)
 
         public @JvmStatic fun getLogonUser(context: Context) =
-                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.logonUser }, ACTION_LOGIN_STATUS_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.logonUser }, AndroidSchedulers.mainThread(), ACTION_LOGIN_STATUS_CHANGED)
                         .distinctUntilChanged()
     }
 

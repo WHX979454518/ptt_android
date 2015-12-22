@@ -116,22 +116,22 @@ class RoomService() : Service(), RoomServiceBinder {
                 buildEmpty(context).setAction(if (hasFocus) ACTION_REQUEST_FOCUS else ACTION_RELEASE_FOCUS)
 
         /**
-         * 监听组成员的变化
+         * 监听房间成员的变化
          */
         public @JvmStatic fun getMemberIds(context: Context): Observable<List<String>> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.memberIds }, ACTION_MEMBER_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.memberIds }, AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
 
         /**
          * 监听房间状态的变化
          */
         public @JvmStatic fun getRoomStatus(context: Context): Observable<Int> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.roomStatus }, ACTION_ROOM_STATUS_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.roomStatus }, AndroidSchedulers.mainThread(), ACTION_ROOM_STATUS_CHANGED)
 
         /**
          * 监听当前正在讲话的用户的变化
          */
         public @JvmStatic fun getCurrentSpeakerId(context: Context): Observable<String?> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.currentSpeakerId }, ACTION_CURRENT_SPEAKER_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.currentSpeakerId }, AndroidSchedulers.mainThread(), ACTION_CURRENT_SPEAKER_CHANGED)
 
     }
 
@@ -157,6 +157,7 @@ class RoomService() : Service(), RoomServiceBinder {
         set(value) {
             if (field != value) {
                 field = value
+                logd("Roomstatus changed to $value")
                 sendBroadcast(Intent(ACTION_ROOM_STATUS_CHANGED))
             }
         }

@@ -8,14 +8,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+
 import com.xianzhitech.ptt.R;
+import com.xianzhitech.ptt.ext.ServicesKt;
 import com.xianzhitech.ptt.service.user.LoginStatus;
 import com.xianzhitech.ptt.service.user.UserService;
 import com.xianzhitech.ptt.ui.base.BaseFragment;
-import com.xianzhitech.ptt.ui.util.RxUtil;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import rx.android.schedulers.AndroidSchedulers;
 
 /**
@@ -72,7 +74,7 @@ public class LoginFragment extends BaseFragment<LoginFragment.Callbacks> {
                     }
                 });
 
-        RxUtil.fromBroadcast(getContext(), UserService.ACTION_USER_LOGON_FAILED)
+        ServicesKt.receiveBroadcasts(getContext(), UserService.ACTION_USER_LOGON_FAILED)
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(this.<Intent>bindToLifecycle())
                 .subscribe(intent -> new AlertDialog.Builder(getContext())
