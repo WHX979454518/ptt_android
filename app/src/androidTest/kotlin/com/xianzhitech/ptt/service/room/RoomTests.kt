@@ -12,6 +12,7 @@ import rx.android.plugins.RxAndroidPlugins
 import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.test.assertNotEquals
 
 /**
  * Created by fanchao on 18/12/15.
@@ -27,11 +28,12 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
     private lateinit var conversation: Conversation
     private lateinit var talkEngineProvider: MockTalkEngineProvider
     private lateinit var signalProvider: MockSignalProvider
+    private lateinit var authProvider: MockAuthProvider
 
     override fun setUp() {
         super.setUp()
 
-        val authProvider = MockAuthProvider()
+        authProvider = MockAuthProvider()
         logonUser = authProvider.login(MockPersons.PERSON_1.name, "123").toBlockingFirst()
         signalProvider = MockSignalProvider(logonUser, MockPersons.ALL, MockGroups.ALL, MockGroups.GROUP_MEMBERS)
         talkEngineProvider = MockTalkEngineProvider()
@@ -71,9 +73,20 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
 
         assertEquals(RoomStatus.ACTIVE, conn.roomStatus)
         assertEquals(true, talkEngineProvider.createdEngines[0].sending)
+        assertEquals(authProvider.logonUser?.id, conn.currentSpeakerId)
 
         startService(RoomService.buildRequestFocus(context, false))
         assertEquals(false, talkEngineProvider.createdEngines[0].sending)
         assertEquals(RoomStatus.CONNECTED, conn.roomStatus)
+    }
+
+    fun testRequestFocusFail() {
+        signalProvider.conversations[conversation.id]?.speaker?.set(MockPersons.PERSON_5.id)
+        val conn = bindService(RoomService.buildConnect(context, conversation.id)) as RoomServiceBinder
+        assertEquals(MockPersons.PERSON_5.id, conn.currentSpeakerId)
+
+        startService(RoomService.buildRequestFocus(context, true))
+        assertEquals(MockPersons.PERSON_5.id, conn.currentSpeakerId)
+        assertNotEquals(RoomStatus.ACTIVE, conn.roomStatus)
     }
 }
