@@ -163,7 +163,9 @@ class MockTalkEngine : TalkEngine {
 }
 
 class MockTalkEngineProvider : TalkEngineProvider {
-    override fun createEngine() = MockTalkEngine()
+    val createdEngines: MutableList<MockTalkEngine> = arrayListOf()
+
+    override fun createEngine() = MockTalkEngine().let { createdEngines += it; it }
 }
 
 class MockAuthProvider : AuthProvider {
@@ -172,6 +174,8 @@ class MockAuthProvider : AuthProvider {
     override fun login(username: String, password: String) =
             (MockPersons.ALL.firstOrNull { it.name == username }?.toObservable() ?: Observable.error(IllegalArgumentException()))
                     .doOnNext { logonUser = it }
+
+    override fun getLogonPersonId() = logonUser?.id
 
     override fun logout(): Observable<Void> {
         logonUser = null

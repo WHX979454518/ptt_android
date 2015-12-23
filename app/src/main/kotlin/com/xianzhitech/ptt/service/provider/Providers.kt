@@ -85,6 +85,11 @@ interface AuthProvider {
     fun login(username: String, password: String): Observable<Person>
 
     /**
+     * 获取当前登陆的用户ID
+     */
+    fun getLogonPersonId(): String?
+
+    /**
      * 登出
      */
     @CheckResult

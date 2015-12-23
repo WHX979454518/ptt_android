@@ -12,16 +12,13 @@ import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.retrieveServiceValue
-import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import com.xianzhitech.ptt.service.talk.RoomStatus
-import com.xianzhitech.ptt.service.user.UserService
 import hugo.weaving.DebugLog
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import rx.subjects.ReplaySubject
 
 /**
  * 提供房间服务的查询接口
@@ -38,7 +35,7 @@ interface RoomServiceBinder {
  *
  * 提供房间/对讲支持
  *
- * Created by fanchao on 18/12/15.
+ * Created by fanchao on 18/12/15.d
  */
 class RoomService() : Service(), RoomServiceBinder {
     companion object {
@@ -112,7 +109,7 @@ class RoomService() : Service(), RoomServiceBinder {
         /**
          * 求/放麦
          */
-        public @JvmStatic fun requestFocus(context: Context, hasFocus: Boolean) =
+        public @JvmStatic fun buildRequestFocus(context: Context, hasFocus: Boolean) =
                 buildEmpty(context).setAction(if (hasFocus) ACTION_REQUEST_FOCUS else ACTION_RELEASE_FOCUS)
 
         /**
@@ -165,8 +162,7 @@ class RoomService() : Service(), RoomServiceBinder {
     lateinit var signalProvider: SignalProvider
     lateinit var talkEngineProvider: TalkEngineProvider
 
-    val currentUserSubject = ReplaySubject.createWithSize<Person>(1)
-    lateinit var currentUserSubscription: Subscription
+    lateinit var logonUserId: String
     var currentConversationId: String? = null
     var currentTalkEngine: TalkEngine? = null
     var currentRoom: Room? = null
@@ -185,12 +181,11 @@ class RoomService() : Service(), RoomServiceBinder {
         val appComponent = application as AppComponent
         signalProvider = appComponent.providesSignal()
         talkEngineProvider = appComponent.providesTalkEngine()
-        currentUserSubscription = UserService.getLogonUser(this).subscribe(currentUserSubject)
+        logonUserId = appComponent.providesAuth().getLogonPersonId() ?: throw IllegalArgumentException("No logon user")
     }
 
     override fun onDestroy() {
         doDisconnect()
-        currentUserSubscription.unsubscribe()
         super.onDestroy()
     }
 
@@ -239,7 +234,7 @@ class RoomService() : Service(), RoomServiceBinder {
 
         currentConversationId = conversationId
         connectSubscription = signalProvider.joinConversation(conversationId)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<Room>(this) {
                     override fun onError(e: Throwable?) {
                         sendBroadcast(Intent(ACTION_CONNECT_ERROR))
@@ -264,7 +259,7 @@ class RoomService() : Service(), RoomServiceBinder {
             cancelConnect()
 
             signalProvider.quitConversation(it)
-                    .observeOn(AndroidSchedulers.mainThread())
+                    .observeOnMainThread()
                     .subscribe(GlobalSubscriber<Void>(this))
 
             roomStatus = RoomStatus.NOT_CONNECTED
@@ -276,11 +271,10 @@ class RoomService() : Service(), RoomServiceBinder {
     @DebugLog
     private fun doRequestFocus() {
         currentRoom?.let {
-            val currentUser = currentUserSubject.value
-            if (roomStatus == RoomStatus.CONNECTED && currentUser != null) {
+            if (roomStatus == RoomStatus.CONNECTED) {
                 roomStatus = RoomStatus.REQUESTING_MIC
 
-                signalProvider.requestMic(it.id)
+                requestFocusSubscription = signalProvider.requestMic(it.id)
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<Boolean>(this) {
                             override fun onError(e: Throwable?) {
@@ -289,8 +283,9 @@ class RoomService() : Service(), RoomServiceBinder {
 
                             override fun onNext(t: Boolean) {
                                 if (t) {
-                                    currentSpeakerId = currentUser.id
+                                    currentSpeakerId = logonUserId
                                     currentTalkEngine?.startSend()
+                                    roomStatus = RoomStatus.ACTIVE
                                 }
                             }
                         })
@@ -301,8 +296,7 @@ class RoomService() : Service(), RoomServiceBinder {
     @DebugLog
     private fun doReleaseFocus() {
         currentRoom?.let {
-            val currentUser = currentUserSubject.value
-            if (roomStatus == RoomStatus.ACTIVE && currentUser != null && currentSpeakerId == currentUser.id) {
+            if (roomStatus == RoomStatus.ACTIVE && currentSpeakerId == logonUserId) {
                 currentTalkEngine?.stopSend()
                 signalProvider.releaseMic(it.id)
                         .observeOnMainThread()

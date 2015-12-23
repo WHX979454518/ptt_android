@@ -57,6 +57,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
+    override fun getLogonPersonId() = logonUserSubject.value?.id
+
     override fun joinConversation(conversationId: String): Observable<Room> {
         return socketSubject.flatMap({ it.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
