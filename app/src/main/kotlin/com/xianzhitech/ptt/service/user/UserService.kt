@@ -161,6 +161,8 @@ class UserService() : Service(), UserServiceBinder {
         if (logonUser != null) {
             stopForeground(true)
         }
+
+        stopSelf()
     }
 
     @DebugLog

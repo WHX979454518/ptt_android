@@ -266,6 +266,7 @@ class RoomService() : Service(), RoomServiceBinder {
         }
 
         currentConversationId = null
+        stopSelf()
     }
 
     @DebugLog
