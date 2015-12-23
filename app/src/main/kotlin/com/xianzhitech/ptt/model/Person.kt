@@ -2,11 +2,11 @@ package com.xianzhitech.ptt.model
 
 import android.content.ContentValues
 import android.database.Cursor
-import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
 import rx.functions.Func1
 import java.io.Serializable
+import java.util.*
 
 class Person() : Model, ContactItem, Serializable {
     companion object {
@@ -30,12 +30,12 @@ class Person() : Model, ContactItem, Serializable {
     override var name = ""
     override var avatar: String? = ""
     override var tintColor: Int = 0
-    var privilege: Int = 0
+    var privileges = EnumSet.noneOf(Privilege::class.java)
 
-    constructor(id: String, name: String, privilege: Int) : this() {
+    constructor(id: String, name: String, privileges: EnumSet<Privilege>) : this() {
         this.id = id
         this.name = name
-        this.privilege = privilege
+        this.privileges = privileges
     }
 
     override fun equals(other: Any?): Boolean {
@@ -52,14 +52,14 @@ class Person() : Model, ContactItem, Serializable {
         values.put(COL_ID, id)
         values.put(COL_AVATAR, avatar)
         values.put(COL_NAME, name)
-        values.put(COL_PRIV, privilege)
+        values.put(COL_PRIV, privileges.toDatabaseString())
     }
 
     override fun from(cursor: Cursor): Person {
         id = cursor.getStringValue(COL_ID)
         avatar = cursor.optStringValue(COL_AVATAR)
         name = cursor.getStringValue(COL_NAME)
-        privilege = cursor.getIntValue(COL_PRIV)
+        privileges = cursor.getStringValue(COL_PRIV).toPrivileges()
         return this
     }
 }

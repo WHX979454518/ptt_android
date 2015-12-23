@@ -36,8 +36,7 @@ interface UserServiceBinder {
     /**
      * 当前登陆的状态
      */
-    @LoginStatus
-    val loginStatus: Int
+    val loginStatus: LoginStatus
 }
 
 /**
@@ -118,13 +117,19 @@ class UserService() : Service(), UserServiceBinder {
         super.onCreate()
 
         val appComponent = application as AppComponent
-        signalProvider = appComponent.providesSignal()
-        authProvider = appComponent.providesAuth()
+        signalProvider = appComponent.signalProvider
+        authProvider = appComponent.authProvider
 
         val savedUserCredentials = getSavedUserCredentials()
         if (savedUserCredentials != null) {
             doLogin(savedUserCredentials.first, savedUserCredentials.second)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        cancelLogin()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -226,8 +231,7 @@ class UserService() : Service(), UserServiceBinder {
         sendBroadcast(Intent(ACTION_LOGIN_STATUS_CHANGED))
     }
 
-    @LoginStatus
-    override val loginStatus: Int
+    override val loginStatus: LoginStatus
         get() = when {
             logonUser != null -> LoginStatus.LOGGED_ON
             loginSubscription != null -> LoginStatus.LOGIN_IN_PROGRESS

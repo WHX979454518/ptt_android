@@ -19,6 +19,7 @@ import rx.Observable
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import rx.subjects.ReplaySubject
+import java.util.*
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -173,7 +174,7 @@ internal fun Person.readFrom(obj: JSONObject): Person {
     id = obj.getString("idNumber")
     name = obj.getString("name")
     avatar = obj.optString("avatar")
-    privilege = obj.optJSONObject("privileges").toPrivilege()
+    privileges = obj.optJSONObject("privileges").toPrivilege()
     return this
 }
 
@@ -208,28 +209,25 @@ internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
 }
 
 
-@Privilege
-internal fun JSONObject?.toPrivilege(): Int {
-    @Privilege var result = 0
+internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
+    val result = EnumSet.noneOf(Privilege::class.java)
 
-    if (this == null) {
-        return result
-    }
+    this?.let {
+        if (hasPrivilege("call")) {
+            result += Privilege.MAKE_CALL
+        }
 
-    if (hasPrivilege("call")) {
-        result = result or Privilege.MAKE_CALL
-    }
+        if (hasPrivilege("group")) {
+            result += Privilege.CREATE_GROUP
+        }
 
-    if (hasPrivilege("group")) {
-        result = result or Privilege.CREATE_GROUP
-    }
+        if (hasPrivilege("recvCall")) {
+            result += Privilege.RECEIVE_CALL
+        }
 
-    if (hasPrivilege("recvCall")) {
-        result = result or Privilege.RECEIVE_CALL
-    }
-
-    if (hasPrivilege("recvGroup")) {
-        result = result or Privilege.RECEIVE_GROUP
+        if (hasPrivilege("recvGroup")) {
+            result += Privilege.RECEIVE_GROUP
+        }
     }
 
     return result

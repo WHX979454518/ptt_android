@@ -27,8 +27,7 @@ interface RoomServiceBinder {
     val currentSpeakerId: String?
     val memberIds: List<String>
 
-    @RoomStatus
-    val roomStatus: Int
+    val roomStatus: RoomStatus
 }
 
 /**
@@ -121,7 +120,7 @@ class RoomService() : Service(), RoomServiceBinder {
         /**
          * 监听房间状态的变化
          */
-        public @JvmStatic fun getRoomStatus(context: Context): Observable<Int> =
+        public @JvmStatic fun getRoomStatus(context: Context): Observable<RoomStatus> =
                 context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.roomStatus }, AndroidSchedulers.mainThread(), ACTION_ROOM_STATUS_CHANGED)
 
         /**
@@ -179,9 +178,9 @@ class RoomService() : Service(), RoomServiceBinder {
         super.onCreate()
 
         val appComponent = application as AppComponent
-        signalProvider = appComponent.providesSignal()
-        talkEngineProvider = appComponent.providesTalkEngine()
-        logonUserId = appComponent.providesAuth().getLogonPersonId() ?: throw IllegalArgumentException("No logon user")
+        signalProvider = appComponent.signalProvider
+        talkEngineProvider = appComponent.talkEngineProvider
+        logonUserId = appComponent.authProvider.getLogonPersonId() ?: throw IllegalArgumentException("No logon user")
     }
 
     override fun onDestroy() {

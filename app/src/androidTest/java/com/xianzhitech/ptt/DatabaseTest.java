@@ -55,7 +55,7 @@ public class DatabaseTest extends AndroidTestCase {
 
         Log.d("DatabaseTest", "Deleting test database");
         Closeables.close(db, true);
-        getContext().deleteDatabase(db.name);
+        getContext().deleteDatabase(db.getName());
         db = null;
         broker = null;
     }
@@ -114,15 +114,15 @@ public class DatabaseTest extends AndroidTestCase {
 
         List<Broker.AggregateInfo<Group, String>> result = broker.getGroupsWithMemberNames(1).toBlocking().first();
         Assert.assertEquals(2, result.size());
-        Assert.assertEquals(groups.get(0), result.get(0).group);
-        Assert.assertEquals(groups.get(1), result.get(1).group);
-        Assert.assertEquals(personNames.subList(0, 1), result.get(0).members);
-        Assert.assertEquals(3, result.get(0).memberCount);
+        Assert.assertEquals(groups.get(0), result.get(0).getGroup());
+        Assert.assertEquals(groups.get(1), result.get(1).getGroup());
+        Assert.assertEquals(personNames.subList(0, 1), result.get(0).getMembers());
+        Assert.assertEquals(3, result.get(0).getMemberCount());
 
         result = broker.getGroupsWithMemberNames(100).toBlocking().first();
-        Assert.assertEquals(groups.get(0), result.get(0).group);
-        Assert.assertEquals(personNames, result.get(0).members);
-        Assert.assertEquals(3, result.get(0).memberCount);
+        Assert.assertEquals(groups.get(0), result.get(0).getGroup());
+        Assert.assertEquals(personNames, result.get(0).getMembers());
+        Assert.assertEquals(3, result.get(0).getMemberCount());
     }
 
     public void testContact() {

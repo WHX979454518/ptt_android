@@ -2,12 +2,9 @@ package com.xianzhitech.ptt;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 
 import com.android.debug.hv.ViewServer;
 import com.facebook.stetho.Stetho;
-import com.facebook.stetho.okhttp.StethoInterceptor;
-import com.squareup.okhttp.OkHttpClient;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,13 +57,5 @@ public class DevApp extends App {
 
         final String name = Manager.class.getName();
         Logger.getLogger(name).setLevel(Level.ALL);
-    }
-
-    @NonNull
-    @Override
-    public OkHttpClient providesHttpClient() {
-        final OkHttpClient okHttpClient = super.providesHttpClient();
-        okHttpClient.networkInterceptors().add(new StethoInterceptor());
-        return okHttpClient;
     }
 }

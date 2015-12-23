@@ -14,7 +14,19 @@ fun Cursor.getStringValue(columnName: String): String = getString(getColumnIndex
 
 fun Cursor.optStringValue(columnName: String): String? = getString(getColumnIndex(columnName))
 
-fun Cursor.countAndClose(index: Int): Int = this.use { moveToNext(); getInt(index) }
+inline fun <T> Cursor.forEach(func: (Cursor) -> T) {
+    while (moveToNext()) {
+        func(this)
+    }
+}
+
+fun Cursor.countAndClose(countIndex: Int = 0) = this.use { moveToNext(); getInt(countIndex) }
+fun <T> Cursor.mapAndClose(mapper: (Cursor) -> T): List<T> = this.use { cursor ->
+    ArrayList<T>(count).let { list ->
+        cursor.forEach { list += mapper(it) }
+        list
+    }
+}
 
 inline fun <T> Cursor.mapToList(mapper: (Cursor) -> T): List<T> = this.use {
     val result = ArrayList<T>(count)

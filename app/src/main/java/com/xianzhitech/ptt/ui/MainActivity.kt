@@ -1,0 +1,52 @@
+package com.xianzhitech.ptt.ui
+
+import android.os.Bundle
+import android.support.v4.app.Fragment
+import android.support.v7.widget.Toolbar
+import butterknife.Bind
+import butterknife.ButterKnife
+import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.service.user.LoginStatus
+import com.xianzhitech.ptt.service.user.UserService
+import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.home.HomeFragment
+import com.xianzhitech.ptt.ui.home.LoginFragment
+
+class MainActivity : BaseActivity(), LoginFragment.Callbacks {
+
+    @Bind(R.id.main_toolbar)
+    internal lateinit var toolbar: Toolbar
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContentView(R.layout.activity_main)
+        ButterKnife.bind(this)
+        setSupportActionBar(toolbar)
+
+        UserService.getLoginStatus(this)
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribe { status ->
+                    val fragmentToDisplay: Class<out Fragment>
+                    if (status == LoginStatus.LOGGED_ON) {
+                        fragmentToDisplay = HomeFragment::class.java
+                    } else {
+                        fragmentToDisplay = LoginFragment::class.java
+                    }
+
+                    val currFragment = supportFragmentManager.findFragmentById(R.id.main_content)
+                    val currFragmentClazz = currFragment?.javaClass
+
+                    if (fragmentToDisplay != currFragmentClazz) {
+                        val transaction = supportFragmentManager.beginTransaction()
+                        if (currFragment != null) {
+                            transaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                        }
+
+                        transaction.replace(R.id.main_content, Fragment.instantiate(this@MainActivity, fragmentToDisplay.name)).commit()
+                    }
+                }
+    }
+}
