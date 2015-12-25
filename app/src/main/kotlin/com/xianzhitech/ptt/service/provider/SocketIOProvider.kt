@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.xianzhitech.ptt.Broker
+import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.ServerException
@@ -189,8 +190,10 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
 internal fun JSONObject.toRoom() : Room {
     val server = getJSONObject("server")
     return Room(getJSONObject("roomInfo").getString("idNumber"),
-            ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"), server.getString("host"),
-            server.getInt("port"), server.getString("protocol"))
+            ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"),
+            ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host"),
+                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port"),
+                    WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
 }
 
 internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {

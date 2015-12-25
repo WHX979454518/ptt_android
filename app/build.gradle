@@ -34,6 +34,7 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
+        dev.java.srcDirs += 'src/dev/kotlin'
         androidTest.java.srcDirs += 'src/androidTest/kotlin'
     }
 

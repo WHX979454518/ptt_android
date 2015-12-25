@@ -13,6 +13,9 @@ import rx.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.Executors
 
+/**
+ * 提供数据库操作层
+ */
 class Broker(internal val db: Database) {
 
     private val queryScheduler = Schedulers.computation()
@@ -147,7 +150,7 @@ class Broker(internal val db: Database) {
     fun getContacts(searchTerm: String?): Observable<List<ContactItem>> {
         return if (searchTerm.isNullOrEmpty()) {
             db.createQuery(Contacts.TABLE_NAME,
-                    "SELECT * FROM " + Contacts.TABLE_NAME + " AS CI " + "LEFT JOIN " + Person.TABLE_NAME + " AS P ON CI." + Contacts.COL_PERSON_ID + " = P." + Person.COL_ID + " " + "LEFT JOIN " + Group.TABLE_NAME + " AS G ON CI." + Contacts.COL_GROUP_ID + " = G." + Group.COL_ID)
+                    "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${Person.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${Person.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID}")
         } else {
             val formattedSearchTerm = "%$searchTerm%"
             db.createQuery(Contacts.TABLE_NAME,
