@@ -15,7 +15,6 @@ import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import com.xianzhitech.ptt.service.talk.RoomStatus
-import hugo.weaving.DebugLog
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -215,7 +214,7 @@ class RoomService() : Service(), RoomServiceBinder {
         }
     }
 
-    @DebugLog
+
     private fun doConnect(conversationId: String) {
         if (conversationId == currentConversationId) {
             logd("Conversation $conversationId already connected")
@@ -250,7 +249,7 @@ class RoomService() : Service(), RoomServiceBinder {
                 })
     }
 
-    @DebugLog
+
     private fun doDisconnect() {
         currentConversationId?.let {
             disposeTalkEngine()
@@ -268,7 +267,7 @@ class RoomService() : Service(), RoomServiceBinder {
         stopSelf()
     }
 
-    @DebugLog
+
     private fun doRequestFocus() {
         currentRoom?.let {
             if (roomStatus == RoomStatus.CONNECTED) {
@@ -293,7 +292,7 @@ class RoomService() : Service(), RoomServiceBinder {
         }
     }
 
-    @DebugLog
+
     private fun doReleaseFocus() {
         currentRoom?.let {
             if (roomStatus == RoomStatus.ACTIVE && currentSpeakerId == logonUserId) {

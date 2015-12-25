@@ -9,18 +9,17 @@ import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import butterknife.Bind
-import butterknife.ButterKnife
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.ConversationRequest
 import com.xianzhitech.ptt.service.provider.CreateConversationRequest
 import com.xianzhitech.ptt.service.provider.ExistingConversationRequest
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.util.ResourceUtil
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import rx.Observable
 import rx.Subscriber
@@ -33,19 +32,11 @@ import rx.android.schedulers.AndroidSchedulers
  */
 class RoomFragment : BaseFragment<RoomFragment.Callbacks>() {
 
-    @Bind(R.id.room_toolbar)
-    internal lateinit var toolbar: Toolbar
-
-    @Bind(R.id.room_pushToTalkButton)
-    internal lateinit var pttBtn: PushToTalkButton
-
-    @Bind(R.id.room_appBar)
-    internal lateinit var appBar: ViewGroup
-
-    @Bind(R.id.room_progress)
-    internal lateinit var progressBar: View
-
-    internal lateinit var broker: Broker
+    private lateinit var toolbar: Toolbar
+    private lateinit var pttBtn: PushToTalkButton
+    private lateinit var appBar: ViewGroup
+    private lateinit var progressBar: View
+    private lateinit var broker: Broker
 
     internal lateinit var signalProvider: SignalProvider
 
@@ -58,17 +49,16 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>() {
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_room, container, false)
-        ButterKnife.bind(this, view)
-        toolbar.navigationIcon = ResourceUtil.getTintedDrawable(context, R.drawable.ic_arrow_back, Color.WHITE)
-        toolbar.setNavigationOnClickListener { v -> activity.finish() }
-        ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + resources.getDimension(R.dimen.divider_normal))
-        return view
-    }
+        return inflater?.inflate(R.layout.fragment_room, container, false)?.apply {
+            toolbar = findView(R.id.room_toolbar)
+            pttBtn = findView(R.id.room_pushToTalkButton)
+            appBar = findView(R.id.room_appBar)
+            progressBar = findView(R.id.room_progress)
 
-    override fun onDestroyView() {
-        ButterKnife.unbind(this)
-        super.onDestroyView()
+            toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
+            toolbar.setNavigationOnClickListener { v -> activity.finish() }
+            ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + resources.getDimension(R.dimen.divider_normal))
+        }
     }
 
     override fun onStart() {

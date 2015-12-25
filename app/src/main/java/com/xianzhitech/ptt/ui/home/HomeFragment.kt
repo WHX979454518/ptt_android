@@ -11,13 +11,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import butterknife.Bind
-import butterknife.BindColor
-import butterknife.ButterKnife
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.util.ResourceUtil
-import org.apache.commons.lang3.ArrayUtils
 
 /**
 
@@ -36,59 +33,49 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
     }
 
 
-    @Bind(R.id.home_viewPager)
     internal lateinit var viewPager: ViewPager
-
-    @Bind(R.id.home_tabContainer)
     internal lateinit var tabContainer: ViewGroup
-
-    @BindColor(R.color.primary)
     internal var selectedTintColor: Int = 0
-
-    @BindColor(R.color.secondary_text)
     internal var normalTintColor: Int = 0
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_home, container, false)
-        ButterKnife.bind(this, view)
+        return inflater?.inflate(R.layout.fragment_home, container, false)?.apply {
+            viewPager = findView(R.id.home_viewPager)
+            tabContainer = findView(R.id.home_tabContainer)
 
-        val values = Tab.values()
-        for (tab in values) {
-            val tabView = inflater.inflate(R.layout.view_tab, tabContainer, false) as TextView
-            val drawable = DrawableCompat.wrap(ResourceUtil.getDrawable(context, tab.drawableRes))
-            DrawableCompat.setTint(drawable, normalTintColor)
-            tabView.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null)
-            tabView.setText(tab.labelRes)
-            tabView.setOnClickListener { v -> viewPager.setCurrentItem(ArrayUtils.indexOf(values, tab), true) }
-            tabContainer.addView(tabView)
-        }
-
-        viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
-            override fun getItem(position: Int): Fragment {
-                return Fragment.instantiate(context, Tab.values()[position].fragmentClazz.name)
+            Tab.values.forEachIndexed { i, tab ->
+                val tabView = inflater.inflate(R.layout.view_tab, tabContainer, false) as TextView
+                tabView.setCompoundDrawablesWithIntrinsicBounds(null, context.getTintedDrawable(tab.drawableRes, normalTintColor), null, null)
+                tabView.setText(tab.labelRes)
+                tabView.setOnClickListener { v -> viewPager.setCurrentItem(i, true) }
+                tabContainer.addView(tabView)
             }
 
-            override fun getCount(): Int {
-                return Tab.values().size()
-            }
-        }
+            viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
+                override fun getItem(position: Int): Fragment {
+                    return Fragment.instantiate(context, Tab.values[position].fragmentClazz.name)
+                }
 
-        viewPager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
-            override fun onPageSelected(position: Int) {
-                var i = 0
-                val childCount = tabContainer.childCount
-                while (i < childCount) {
-                    setTabItemSelected(i, i == position)
-                    i++
+                override fun getCount(): Int {
+                    return Tab.values().size()
                 }
             }
-        })
 
-        if (savedInstanceState == null) {
-            setTabItemSelected(0, true)
+            viewPager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
+                override fun onPageSelected(position: Int) {
+                    var i = 0
+                    val childCount = tabContainer.childCount
+                    while (i < childCount) {
+                        setTabItemSelected(i, i == position)
+                        i++
+                    }
+                }
+            })
+
+            if (savedInstanceState == null) {
+                setTabItemSelected(0, true)
+            }
         }
-
-        return view
     }
 
     private fun setTabItemSelected(position: Int, selected: Boolean) {

@@ -17,19 +17,20 @@ import java.util.concurrent.atomic.AtomicReference
  */
 
 object MockPersons {
-    val PERSON_1 = Person("1", "person 1", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
-    val PERSON_2 = Person("2", "person 2", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
-    val PERSON_3 = Person("3", "person 3", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
-    val PERSON_4 = Person("4", "person 4", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
-    val PERSON_5 = Person("5", "person 5", Privilege.CREATE_GROUP or Privilege.MAKE_CALL)
+    val PERSON_1 = Person("1", "person 1", EnumSet.of(Privilege.CREATE_GROUP, Privilege.MAKE_CALL))
+    val PERSON_2 = Person("2", "person 2", EnumSet.of(Privilege.CREATE_GROUP, Privilege.MAKE_CALL))
+    val PERSON_3 = Person("3", "person 3", EnumSet.of(Privilege.CREATE_GROUP, Privilege.MAKE_CALL))
+    val PERSON_4 = Person("4", "person 4", EnumSet.of(Privilege.CREATE_GROUP, Privilege.MAKE_CALL))
+    val PERSON_5 = Person("5", "person 5", EnumSet.of(Privilege.CREATE_GROUP, Privilege.MAKE_CALL))
 
     val ALL = listOf(PERSON_1, PERSON_2, PERSON_3, PERSON_4, PERSON_5)
 }
 
 object MockGroups {
     val GROUP_1 = Group("1", "Group 1")
-    val GROUP_2 = Group("2", "Group 1")
-    val GROUP_3 = Group("3", "Group 1")
+    val GROUP_2 = Group("2", "Group 2")
+    val GROUP_3 = Group("3", "Group 3")
+    val GROUP_4 = Group("4", "Group 4")
 
     val GROUP_MEMBERS = ImmutableMap.of(
             GROUP_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_2.id),

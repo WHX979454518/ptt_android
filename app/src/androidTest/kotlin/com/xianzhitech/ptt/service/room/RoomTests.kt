@@ -26,19 +26,19 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
 
     private lateinit var logonUser: Person
     private lateinit var conversation: Conversation
-    private lateinit var talkEngineProvider: MockTalkEngineProvider
-    private lateinit var signalProvider: MockSignalProvider
-    private lateinit var authProvider: MockAuthProvider
+    private lateinit var mockTalkEngineProvider: MockTalkEngineProvider
+    private lateinit var mockSignalProvider: MockSignalProvider
+    private lateinit var mockAuthProvider: MockAuthProvider
 
     override fun setUp() {
         super.setUp()
 
-        authProvider = MockAuthProvider()
-        logonUser = authProvider.login(MockPersons.PERSON_1.name, "123").toBlockingFirst()
-        signalProvider = MockSignalProvider(logonUser, MockPersons.ALL, MockGroups.ALL, MockGroups.GROUP_MEMBERS)
-        talkEngineProvider = MockTalkEngineProvider()
+        mockAuthProvider = MockAuthProvider()
+        logonUser = mockAuthProvider.login(MockPersons.PERSON_1.name, "123").toBlockingFirst()
+        mockSignalProvider = MockSignalProvider(logonUser, MockPersons.ALL, MockGroups.ALL, MockGroups.GROUP_MEMBERS)
+        mockTalkEngineProvider = MockTalkEngineProvider()
 
-        conversation = signalProvider.createConversation(listOf(CreateGroupConversationRequest(MockGroups.GROUP_1.id))).toBlockingFirst()
+        conversation = mockSignalProvider.createConversation(listOf(CreateGroupConversationRequest(MockGroups.GROUP_1.id))).toBlockingFirst()
 
         if (rxInitialized.compareAndSet(false, true)) {
             RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
@@ -47,16 +47,16 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
         }
 
         application = object : App() {
-            override fun providesAuth() = authProvider
-            override fun providesSignal() = signalProvider
-            override fun providesTalkEngine() = talkEngineProvider
+            override val signalProvider = mockSignalProvider
+            override val authProvider = mockAuthProvider
+            override val talkEngineProvider = mockTalkEngineProvider
         }
     }
 
     fun testConnect() {
         val conn = bindService(RoomService.buildConnect(context, conversation.id)) as RoomServiceBinder
         assertEquals(RoomStatus.CONNECTED, conn.roomStatus)
-        assertEquals(signalProvider.conversations.entries.firstOrNull()?.value?.conversation?.id, talkEngineProvider.createdEngines[0].connectedRoom?.id)
+        assertEquals(mockSignalProvider.conversations.entries.firstOrNull()?.value?.conversation?.id, mockTalkEngineProvider.createdEngines[0].connectedRoom?.id)
     }
 
     fun testDisconnect() {
@@ -64,7 +64,7 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
         startService(RoomService.buildDisconnect(context))
 
         assertEquals(RoomStatus.NOT_CONNECTED, conn.roomStatus)
-        assertEquals(true, talkEngineProvider.createdEngines[0].disposed)
+        assertEquals(true, mockTalkEngineProvider.createdEngines[0].disposed)
     }
 
     fun testFocus() {
@@ -72,16 +72,16 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
         startService(RoomService.buildRequestFocus(context, true))
 
         assertEquals(RoomStatus.ACTIVE, conn.roomStatus)
-        assertEquals(true, talkEngineProvider.createdEngines[0].sending)
-        assertEquals(authProvider.logonUser?.id, conn.currentSpeakerId)
+        assertEquals(true, mockTalkEngineProvider.createdEngines[0].sending)
+        assertEquals(mockAuthProvider.logonUser?.id, conn.currentSpeakerId)
 
         startService(RoomService.buildRequestFocus(context, false))
-        assertEquals(false, talkEngineProvider.createdEngines[0].sending)
+        assertEquals(false, mockTalkEngineProvider.createdEngines[0].sending)
         assertEquals(RoomStatus.CONNECTED, conn.roomStatus)
     }
 
     fun testRequestFocusFail() {
-        signalProvider.conversations[conversation.id]?.speaker?.set(MockPersons.PERSON_5.id)
+        mockSignalProvider.conversations[conversation.id]?.speaker?.set(MockPersons.PERSON_5.id)
         val conn = bindService(RoomService.buildConnect(context, conversation.id)) as RoomServiceBinder
         assertEquals(MockPersons.PERSON_5.id, conn.currentSpeakerId)
 

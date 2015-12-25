@@ -8,11 +8,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import butterknife.Bind
-import butterknife.ButterKnife
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.service.provider.ExistingConversationRequest
@@ -26,8 +25,7 @@ import java.util.*
  */
 class ConversationListFragment : BaseFragment<Void>() {
 
-    @Bind(R.id.groupList_recyclerView)
-    internal lateinit var listView: RecyclerView
+    private lateinit var listView: RecyclerView
     private val adapter = Adapter()
     private lateinit var broker: Broker
 
@@ -38,17 +36,11 @@ class ConversationListFragment : BaseFragment<Void>() {
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_group_list, container, false)
-        ButterKnife.bind(this, view)
-
-        listView.layoutManager = LinearLayoutManager(context)
-        listView.adapter = adapter
-        return view
-    }
-
-    override fun onDestroyView() {
-        ButterKnife.unbind(this)
-        super.onDestroyView()
+        return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
+            listView = findView(R.id.conversationList_recyclerView)
+            listView.layoutManager = LinearLayoutManager(context)
+            listView.adapter = adapter
+        }
     }
 
     override fun onStart() {
@@ -91,17 +83,14 @@ class ConversationListFragment : BaseFragment<Void>() {
 
     internal class ConversationItemHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_group_list_item, container, false)) {
 
-        @Bind(R.id.groupListItem_members)
-        lateinit var memberView: TextView
-
-        @Bind(R.id.groupListItem_name)
-        lateinit var nameView: TextView
-
-        @Bind(R.id.groupListItem_icon)
-        lateinit var iconView: ImageView
+        var memberView: TextView
+        var nameView: TextView
+        var iconView: ImageView
 
         init {
-            ButterKnife.bind(this, itemView)
+            memberView = itemView.findView(R.id.groupListItem_members)
+            nameView = itemView.findView(R.id.groupListItem_name)
+            iconView = itemView.findView(R.id.groupListItem_icon)
         }
 
         fun setGroup(info: Broker.AggregateInfo<Conversation, String>) {
@@ -118,7 +107,6 @@ class ConversationListFragment : BaseFragment<Void>() {
     }
 
     companion object {
-
-        private val MAX_MEMBER_TO_DISPLAY = 3
+        private const val MAX_MEMBER_TO_DISPLAY = 3
     }
 }

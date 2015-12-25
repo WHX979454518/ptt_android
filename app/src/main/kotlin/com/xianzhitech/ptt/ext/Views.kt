@@ -1,7 +1,10 @@
 package com.xianzhitech.ptt.ext
 
+import android.app.Activity
+import android.support.annotation.IdRes
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.EditText
 import rx.Observable
 import rx.subscriptions.Subscriptions
@@ -24,3 +27,6 @@ fun EditText.fromTextChanged() = Observable.create<String> {
 
     it.add(Subscriptions.create { removeTextChangedListener(watcher) })
 }
+
+inline fun <reified T : View> Activity.findView(@IdRes id: Int) = findViewById(id) as T
+inline fun <reified T : View> View.findView(@IdRes id: Int) = findViewById(id) as T

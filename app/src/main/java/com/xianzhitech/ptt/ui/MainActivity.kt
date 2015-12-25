@@ -3,9 +3,8 @@ package com.xianzhitech.ptt.ui
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.Toolbar
-import butterknife.Bind
-import butterknife.ButterKnife
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.service.user.LoginStatus
 import com.xianzhitech.ptt.service.user.UserService
@@ -15,14 +14,13 @@ import com.xianzhitech.ptt.ui.home.LoginFragment
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks {
 
-    @Bind(R.id.main_toolbar)
-    internal lateinit var toolbar: Toolbar
+    private lateinit var toolbar: Toolbar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-        ButterKnife.bind(this)
+        toolbar = findView(R.id.main_toolbar)
         setSupportActionBar(toolbar)
 
         UserService.getLoginStatus(this)

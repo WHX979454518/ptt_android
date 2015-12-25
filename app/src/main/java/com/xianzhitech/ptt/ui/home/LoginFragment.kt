@@ -7,10 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import butterknife.Bind
-import butterknife.ButterKnife
-import butterknife.OnClick
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.service.user.LoginStatus
@@ -26,17 +24,10 @@ import rx.android.schedulers.AndroidSchedulers
  */
 class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
 
-    @Bind(R.id.login_nameField)
-    internal lateinit var nameEdit: EditText
-
-    @Bind(R.id.login_passwordField)
-    internal lateinit var passwordEdit: EditText
-
-    @Bind(R.id.login_loginBtn)
-    internal lateinit var loginBtn: View
-
-    @Bind(R.id.login_progress)
-    internal lateinit var progressBar: View
+    private lateinit var nameEdit: EditText
+    private lateinit var passwordEdit: EditText
+    private lateinit var loginBtn: View
+    private lateinit var progressBar: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +36,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
     override fun onStart() {
         super.onStart()
 
-        callbacks!!.setTitle(getText(R.string.login_title))
+        callbacks?.setTitle(getText(R.string.login_title))
 
         UserService.getLoginStatus(context)
                 .observeOnMainThread()
@@ -78,13 +69,18 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_login, container, false)
-        ButterKnife.bind(this, view)
-        return view
+        return inflater?.inflate(R.layout.fragment_login, container, false)?.apply {
+            nameEdit = findView(R.id.login_nameField)
+            passwordEdit = findView(R.id.login_passwordField)
+            loginBtn = findView(R.id.login_loginBtn)
+            progressBar = findView(R.id.login_progress)
+
+            loginBtn.setOnClickListener { doLogin() }
+        }
     }
 
-    @OnClick(R.id.login_loginBtn)
-    internal fun doLogin() {
+
+    fun doLogin() {
         context.startService(UserService.buildLogin(context, nameEdit.text.toString(), passwordEdit.text.toString()))
         progressBar.visibility = View.VISIBLE
         setInputEnabled(false)

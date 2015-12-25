@@ -19,7 +19,7 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
         return AlertDialog.Builder(context).setTitle(arguments.getCharSequence(ARG_TITLE)).setMessage(arguments.getCharSequence(ARG_MESSAGE)).setPositiveButton(arguments.getCharSequence(ARG_BTN_POSITIVE), this).setNegativeButton(arguments.getCharSequence(ARG_BTN_NEGATIVE), this).setNeutralButton(arguments.getCharSequence(ARG_BTN_NEUTRAL), this).create()
     }
 
-    private fun <T> getParentAs(clazz: Class<T>): T? {
+    private inline fun <reified T> getParentAs(clazz: Class<T>): T? {
         if (clazz.isInstance(parentFragment)) {
             return parentFragment as T
         } else if (clazz.isInstance(activity)) {

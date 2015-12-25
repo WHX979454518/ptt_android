@@ -15,7 +15,6 @@ import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.SignalProvider
-import hugo.weaving.DebugLog
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 
@@ -158,7 +157,7 @@ class UserService() : Service(), UserServiceBinder {
         }
     }
 
-    @DebugLog
+
     private fun doLogout() {
         cancelLogin()
         clearUserCredentials()
@@ -170,13 +169,13 @@ class UserService() : Service(), UserServiceBinder {
         stopSelf()
     }
 
-    @DebugLog
+
     private fun cancelLogin() {
         loginSubscription?.unsubscribe()
         loginSubscription = null
     }
 
-    @DebugLog
+
     private fun doLogin(userName: String, password: String) {
         cancelLogin()
 

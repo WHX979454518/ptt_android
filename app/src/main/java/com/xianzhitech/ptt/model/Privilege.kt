@@ -18,4 +18,3 @@ fun String?.toPrivileges(): EnumSet<Privilege> {
 }
 
 fun Iterable<Privilege>?.toDatabaseString() = this?.joinToString(separator = "|")
-

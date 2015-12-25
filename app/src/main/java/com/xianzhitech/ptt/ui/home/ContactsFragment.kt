@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
-import android.support.v4.graphics.drawable.DrawableCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -10,14 +9,10 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import butterknife.Bind
-import butterknife.ButterKnife
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.fromTextChanged
-import com.xianzhitech.ptt.ext.getString
-import com.xianzhitech.ptt.ext.toObservable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
@@ -25,7 +20,6 @@ import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest
 import com.xianzhitech.ptt.service.provider.CreatePersonConversationRequest
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
-import com.xianzhitech.ptt.ui.util.ResourceUtil
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
@@ -34,13 +28,10 @@ import java.util.concurrent.TimeUnit
 
 class ContactsFragment : BaseFragment<Void>() {
 
-    @Bind(R.id.contacts_list)
-    internal lateinit var recyclerView: RecyclerView
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var searchBox: EditText
 
-    @Bind(R.id.contacts_searchBox)
-    internal lateinit var searchBox: EditText
-
-    internal lateinit var accountColors: IntArray
+    private lateinit var accountColors: IntArray
     private val adapter = Adapter()
     private lateinit var broker: Broker
 
@@ -52,17 +43,15 @@ class ContactsFragment : BaseFragment<Void>() {
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_contacts, container, false)
-        ButterKnife.bind(this, view)
+        return inflater?.inflate(R.layout.fragment_contacts, container, false)?.apply {
+            recyclerView = findView(R.id.contacts_list)
+            searchBox = findView(R.id.contacts_searchBox)
+            recyclerView.layoutManager = LinearLayoutManager(context)
+            recyclerView.adapter = adapter
 
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = adapter
-
-        val searchIcon = DrawableCompat.wrap(ResourceUtil.getDrawable(context, R.drawable.ic_search))
-        DrawableCompat.setTint(searchIcon, ResourceUtil.getColor(context, R.color.secondary_text))
-        searchBox.setCompoundDrawablesWithIntrinsicBounds(searchIcon, null, null, null)
-
-        return view
+            searchBox.setCompoundDrawablesWithIntrinsicBounds(
+                    context.getTintedDrawable(R.drawable.ic_search, context.getColorCompat(R.color.secondary_text)), null, null, null)
+        }
     }
 
     override fun onStart() {
@@ -75,13 +64,9 @@ class ContactsFragment : BaseFragment<Void>() {
                 .flatMap { broker.getContacts(it) }
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(bindToLifecycle())
-                .subscribe({ adapter.setPersons(it) })
+                .subscribe { adapter.setPersons(it) }
     }
 
-    override fun onDestroyView() {
-        ButterKnife.unbind(this)
-        super.onDestroyView()
-    }
 
     private inner class Adapter : RecyclerView.Adapter<ContactHolder>() {
         private val contactItems = ArrayList<ContactItem>()
@@ -116,14 +101,12 @@ class ContactsFragment : BaseFragment<Void>() {
     }
 
     internal class ContactHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false)) {
-        @Bind(R.id.contactItem_icon)
         lateinit var iconView: ImageView
-
-        @Bind(R.id.contactItem_name)
         lateinit var nameView: TextView
 
         init {
-            ButterKnife.bind(this, itemView)
+            iconView = itemView.findView(R.id.contactItem_icon)
+            nameView = itemView.findView(R.id.contactItem_name)
         }
     }
 }
