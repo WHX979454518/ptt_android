@@ -10,9 +10,14 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.SignalProvider
+import rx.Observable
+import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
+import kotlin.collections.listOf
 
 /**
  * 提供房间服务的查询接口

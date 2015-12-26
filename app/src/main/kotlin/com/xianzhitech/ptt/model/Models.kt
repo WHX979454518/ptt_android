@@ -9,6 +9,7 @@ import com.xianzhitech.ptt.ext.optStringValue
 import rx.functions.Func1
 import java.io.Serializable
 import java.util.*
+import kotlin.text.isNullOrEmpty
 
 /**
  * Created by fanchao on 17/12/15.

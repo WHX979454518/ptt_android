@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,9 +12,7 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.fromTextChanged
-import com.xianzhitech.ptt.ext.getString
-import com.xianzhitech.ptt.ext.toObservable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
@@ -21,8 +21,11 @@ import com.xianzhitech.ptt.service.provider.CreatePersonConversationRequest
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.ContactComparator
+import rx.Observable
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.arrayListOf
+import kotlin.collections.sortWith
 
 class ContactsFragment : BaseFragment<Void>() {
 
@@ -67,13 +70,13 @@ class ContactsFragment : BaseFragment<Void>() {
 
 
     private inner class Adapter : RecyclerView.Adapter<ContactHolder>() {
-        private val contactItems = ArrayList<ContactItem>()
+        private val contactItems = arrayListOf<ContactItem>()
 
         fun setPersons(newPersons: Collection<ContactItem>?) {
             this.contactItems.clear()
             if (newPersons != null) {
                 this.contactItems.addAll(newPersons)
-                Collections.sort(this.contactItems, ContactComparator(Locale.CHINESE))
+                this.contactItems.sortWith(ContactComparator(Locale.CHINESE))
             }
 
             notifyDataSetChanged()

@@ -7,13 +7,18 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.preference.PreferenceManager
+import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.SignalProvider
+import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
+import kotlin.text.isNullOrEmpty
 
 
 /**

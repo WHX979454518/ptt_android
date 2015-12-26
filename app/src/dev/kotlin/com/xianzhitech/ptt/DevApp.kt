@@ -3,6 +3,8 @@ package com.xianzhitech.ptt
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import com.android.debug.hv.ViewServer
+import com.facebook.stetho.Stetho
 
 /**
  * Created by fanchao on 7/12/15.

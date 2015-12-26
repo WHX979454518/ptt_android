@@ -2,12 +2,19 @@ package com.xianzhitech.ptt.ui.room
 
 import android.graphics.Color
 import android.os.Bundle
+import android.support.v4.app.Fragment
+import android.support.v4.view.ViewCompat
+import android.support.v7.app.AlertDialog
+import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.ConversationRequest
 import com.xianzhitech.ptt.service.provider.CreateConversationRequest
@@ -15,6 +22,9 @@ import com.xianzhitech.ptt.service.provider.ExistingConversationRequest
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
+import rx.Observable
+import rx.Subscriber
+import kotlin.collections.setOf
 
 /**
  * 显示对话界面

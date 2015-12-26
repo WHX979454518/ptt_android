@@ -15,6 +15,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import kotlin.collections.forEachIndexed
 
 /**
 
