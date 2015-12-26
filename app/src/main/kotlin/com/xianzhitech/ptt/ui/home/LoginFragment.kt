@@ -2,19 +2,14 @@ package com.xianzhitech.ptt.ui.home
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.service.user.LoginStatus
 import com.xianzhitech.ptt.service.user.UserService
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import rx.android.schedulers.AndroidSchedulers
 
 /**
 
@@ -59,7 +54,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
                     }
                 }
 
-        context.receiveBroadcasts(UserService.ACTION_USER_LOGON_FAILED).observeOn(AndroidSchedulers.mainThread()).compose(this.bindToLifecycle<Intent>()).subscribe { intent -> AlertDialog.Builder(context).setTitle(R.string.login_failed).setMessage((intent.getSerializableExtra(UserService.EXTRA_LOGON_FAILED_REASON) as Throwable).message).create().show() }
+        context.receiveBroadcasts(UserService.ACTION_USER_LOGON_FAILED).observeOnMainThread().compose(this.bindToLifecycle<Intent>()).subscribe { intent -> AlertDialog.Builder(context).setTitle(R.string.login_failed).setMessage((intent.getSerializableExtra(UserService.EXTRA_LOGON_FAILED_REASON) as Throwable).message).create().show() }
     }
 
     private fun setInputEnabled(enabled: Boolean) {

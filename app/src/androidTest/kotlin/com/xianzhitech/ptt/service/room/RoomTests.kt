@@ -2,17 +2,11 @@ package com.xianzhitech.ptt.service.room
 
 import android.test.ServiceTestCase
 import com.xianzhitech.ptt.App
-import com.xianzhitech.ptt.ext.toBlockingFirst
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest
-import com.xianzhitech.ptt.service.talk.RoomStatus
-import rx.android.plugins.RxAndroidPlugins
-import rx.android.plugins.RxAndroidSchedulersHook
-import rx.schedulers.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.test.assertNotEquals
 
 /**
  * Created by fanchao on 18/12/15.

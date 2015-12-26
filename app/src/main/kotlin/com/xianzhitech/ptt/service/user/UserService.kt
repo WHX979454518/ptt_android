@@ -7,7 +7,6 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.preference.PreferenceManager
-import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.GlobalSubscriber
@@ -15,8 +14,6 @@ import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.SignalProvider
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 
 
 /**
@@ -185,7 +182,7 @@ class UserService() : Service(), UserServiceBinder {
         startForeground(NOTIFICATION_ID, foregroundNotification)
 
         loginSubscription = authProvider.login(userName, password)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<Person>() {
                     override fun onNext(t: Person) {
                         logonUser = t
@@ -239,4 +236,10 @@ class UserService() : Service(), UserServiceBinder {
 }
 
 private class LocalUserServiceBinder(private val service: UserService) : Binder(), UserServiceBinder by service {
+}
+
+enum class LoginStatus {
+    IDLE,
+    LOGIN_IN_PROGRESS,
+    LOGGED_ON,
 }

@@ -1,8 +1,6 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,7 +10,9 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.fromTextChanged
+import com.xianzhitech.ptt.ext.getString
+import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
@@ -21,8 +21,6 @@ import com.xianzhitech.ptt.service.provider.CreatePersonConversationRequest
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.ContactComparator
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -62,7 +60,7 @@ class ContactsFragment : BaseFragment<Void>() {
                 searchBox.getString().toObservable())
                 .debounce(500, TimeUnit.MILLISECONDS)
                 .flatMap { broker.getContacts(it) }
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe { adapter.setPersons(it) }
     }

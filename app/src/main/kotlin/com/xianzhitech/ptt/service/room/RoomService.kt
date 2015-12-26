@@ -10,23 +10,48 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
-import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.retrieveServiceValue
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.provider.SignalProvider
-import com.xianzhitech.ptt.service.talk.RoomStatus
-import rx.Observable
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 
 /**
  * 提供房间服务的查询接口
  */
 interface RoomServiceBinder {
     val currentSpeakerId: String?
-    val memberIds: List<String>
+    val activeMemberIds: List<String>
 
     val roomStatus: RoomStatus
+}
+
+/**
+ * 房间的当前状态
+ */
+enum class RoomStatus {
+    /**
+     * 房间未连接
+     */
+    NOT_CONNECTED,
+
+    /**
+     * 正在连接到房间
+     */
+    CONNECTING,
+
+    /**
+     * 房间已连接
+     */
+    CONNECTED,
+
+    /**
+     * 正在求Mic
+     */
+    REQUESTING_MIC,
+
+    /**
+     * 房间处于有人讲话的状态（不一定是本人）
+     */
+    ACTIVE,
 }
 
 /**
@@ -37,6 +62,7 @@ interface RoomServiceBinder {
  */
 class RoomService() : Service(), RoomServiceBinder {
     companion object {
+
         // --------- 以下是本服务接收的事件 -------------
 
         /**
@@ -59,13 +85,14 @@ class RoomService() : Service(), RoomServiceBinder {
          */
         public const val ACTION_REQUEST_FOCUS = "action_request_focus"
 
+
         /**
          * 请求释麦
          */
         public const val ACTION_RELEASE_FOCUS = "action_release_focus"
 
-
         // --------- 以下是本服务发出的事件 -------------
+
         /**
          * 当前持麦人发生变化时发出的事件
          */
@@ -80,13 +107,13 @@ class RoomService() : Service(), RoomServiceBinder {
          * 房间连接状态发生改变时发出的事件
          */
         public const val ACTION_ROOM_STATUS_CHANGED = "action_room_status_changed"
-
         /**
          * 房间出错时发出的事件
          */
         public const val ACTION_CONNECT_ERROR = "action_connect_error"
-        public const val ACTION_REQUEST_FOCUS_ERROR = "action_request_focus_error"
 
+
+        public const val ACTION_REQUEST_FOCUS_ERROR = "action_request_focus_error"
 
         // ---------- 以下是辅助函数 --------------------
         public @JvmStatic fun buildEmpty(context: Context) = Intent(context, RoomService::class.java)
@@ -97,12 +124,12 @@ class RoomService() : Service(), RoomServiceBinder {
         public @JvmStatic fun buildConnect(context: Context, conversationId: String) =
                 buildEmpty(context).setAction(ACTION_CONNECT).putExtra(EXTRA_CONVERSATION_ID, conversationId)
 
+
         /**
          * 请求断开会话
          */
         public @JvmStatic fun buildDisconnect(context: Context) =
                 buildEmpty(context).setAction(ACTION_DISCONNECT)
-
 
         /**
          * 求/放麦
@@ -114,7 +141,7 @@ class RoomService() : Service(), RoomServiceBinder {
          * 监听房间成员的变化
          */
         public @JvmStatic fun getMemberIds(context: Context): Observable<List<String>> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.memberIds }, AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds }, AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
 
         /**
          * 监听房间状态的变化
@@ -140,14 +167,14 @@ class RoomService() : Service(), RoomServiceBinder {
                 roomStatus = if (value == null) RoomStatus.CONNECTED else RoomStatus.ACTIVE
             }
         }
-
-    override var memberIds: List<String> = listOf()
+    override var activeMemberIds: List<String> = listOf()
         set(value) {
             if (field != value) {
                 field = value
                 sendBroadcast(Intent(ACTION_MEMBER_CHANGED))
             }
         }
+
     override var roomStatus = RoomStatus.NOT_CONNECTED
         set(value) {
             if (field != value) {
@@ -156,21 +183,21 @@ class RoomService() : Service(), RoomServiceBinder {
                 sendBroadcast(Intent(ACTION_ROOM_STATUS_CHANGED))
             }
         }
-
     lateinit var signalProvider: SignalProvider
-    lateinit var talkEngineProvider: TalkEngineProvider
 
+    lateinit var talkEngineProvider: TalkEngineProvider
     lateinit var logonUserId: String
     var currentConversationId: String? = null
     var currentTalkEngine: TalkEngine? = null
+
     var currentRoom: Room? = null
         set(value) {
             field = value
             currentSpeakerId = value?.speaker
-            memberIds = value?.members ?: listOf()
+            activeMemberIds = value?.members ?: listOf()
         }
-
     var connectSubscription: Subscription? = null
+
     var requestFocusSubscription: Subscription? = null
 
     override fun onCreate() {
@@ -200,6 +227,7 @@ class RoomService() : Service(), RoomServiceBinder {
         handleIntent(intent)
         return START_NOT_STICKY
     }
+
 
     private fun handleIntent(intent: Intent?) {
         if (intent == null) {
@@ -292,7 +320,6 @@ class RoomService() : Service(), RoomServiceBinder {
         }
     }
 
-
     private fun doReleaseFocus() {
         currentRoom?.let {
             if (roomStatus == RoomStatus.ACTIVE && currentSpeakerId == logonUserId) {
@@ -319,12 +346,12 @@ class RoomService() : Service(), RoomServiceBinder {
         requestFocusSubscription?.unsubscribe()
         requestFocusSubscription = null
     }
-
     private fun cancelConnect() {
         connectSubscription?.unsubscribe()
         connectSubscription = null
     }
-}
 
+}
 private class LocalRoomServiceBinder(val service: RoomService) : Binder(), RoomServiceBinder by service {
+
 }
