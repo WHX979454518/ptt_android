@@ -23,6 +23,10 @@ import rx.subjects.ReplaySubject
 import java.util.*
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.emptyMap
+import kotlin.collections.firstOrNull
+import kotlin.collections.listOf
+import kotlin.collections.plusAssign
 
 /**
  *
@@ -108,7 +112,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return eventSubject
                 .flatMap({ event: Event ->
                     when (event.name) {
-                        Socket.EVENT_ERROR, Socket.EVENT_CONNECT_ERROR -> Observable.error<Person>(RuntimeException("Connection error: " + event.args))
+                        Socket.EVENT_ERROR, Socket.EVENT_CONNECT_ERROR -> Observable.error<Person>(RuntimeException("Connection error: " + event.args.firstOrNull()))
                         Socket.EVENT_CONNECT_TIMEOUT -> Observable.error<Person>(TimeoutException())
                         Socket.EVENT_CONNECT -> {
                             Observable.empty<Person>()

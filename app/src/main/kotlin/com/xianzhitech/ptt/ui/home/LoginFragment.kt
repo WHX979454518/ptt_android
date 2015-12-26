@@ -66,6 +66,9 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
                             .setMessage((intent.getSerializableExtra(UserService.EXTRA_LOGON_FAILED_REASON) as Throwable).message)
                             .create()
                             .show()
+
+                    setInputEnabled(true)
+                    progressBar.visibility = View.GONE
                 }
     }
 
