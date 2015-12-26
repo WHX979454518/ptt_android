@@ -266,7 +266,7 @@ class RoomService() : Service(), RoomServiceBinder {
         currentConversationId = conversationId
         connectSubscription = signalProvider.joinConversation(conversationId)
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Room>(this) {
+                .subscribe(object : GlobalSubscriber<Room>(this@RoomService) {
                     override fun onError(e: Throwable?) {
                         sendBroadcast(Intent(ACTION_CONNECT_ERROR))
                         roomStatus = RoomStatus.NOT_CONNECTED
@@ -308,7 +308,7 @@ class RoomService() : Service(), RoomServiceBinder {
 
                 requestFocusSubscription = signalProvider.requestMic(it.id)
                         .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<Boolean>(this) {
+                        .subscribe(object : GlobalSubscriber<Boolean>(this@RoomService) {
                             override fun onError(e: Throwable?) {
                                 sendBroadcast(Intent(ACTION_REQUEST_FOCUS_ERROR))
                             }

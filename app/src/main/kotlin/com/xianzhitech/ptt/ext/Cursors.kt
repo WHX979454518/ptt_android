@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ext
 
 import android.database.Cursor
 import java.util.*
+import kotlin.collections.plusAssign
 
 /**
  * Created by fanchao on 17/12/15.
@@ -14,7 +15,7 @@ fun Cursor.getStringValue(columnName: String): String = getString(getColumnIndex
 
 fun Cursor.optStringValue(columnName: String): String? = getString(getColumnIndex(columnName))
 
-inline fun <T> Cursor.forEach(func: (Cursor) -> T) {
+inline fun <T> Cursor.forEach(func: (Cursor) -> T) = this.use {
     while (moveToNext()) {
         func(this)
     }

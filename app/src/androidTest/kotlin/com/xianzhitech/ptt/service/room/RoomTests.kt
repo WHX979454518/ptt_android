@@ -2,11 +2,17 @@ package com.xianzhitech.ptt.service.room
 
 import android.test.ServiceTestCase
 import com.xianzhitech.ptt.App
+import com.xianzhitech.ptt.ext.toBlockingFirst
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest
+import rx.android.plugins.RxAndroidPlugins
+import rx.android.plugins.RxAndroidSchedulersHook
+import rx.schedulers.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.firstOrNull
+import kotlin.collections.listOf
 
 /**
  * Created by fanchao on 18/12/15.
@@ -81,6 +87,6 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
 
         startService(RoomService.buildRequestFocus(context, true))
         assertEquals(MockPersons.PERSON_5.id, conn.currentSpeakerId)
-        assertNotEquals(RoomStatus.ACTIVE, conn.roomStatus)
+        assertNotSame(RoomStatus.ACTIVE, conn.roomStatus)
     }
 }

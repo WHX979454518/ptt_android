@@ -11,6 +11,7 @@ import rx.Observable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.collections.*
 
 /**
  * Created by fanchao on 18/12/15.
@@ -99,7 +100,7 @@ class MockSignalProvider(val currentUser: Person,
     override fun joinConversation(conversationId: String): Observable<Room> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
         roomInfo.activeMembers += currentUser.id
-        return Room(roomInfo.conversation.id, roomInfo.activeMembers.toList(), roomInfo.speaker.get(), "host", 80, "tcp").toObservable()
+        return Room(roomInfo.conversation.id, roomInfo.activeMembers.toList(), roomInfo.speaker.get(), emptyMap()).toObservable()
     }
 
     override fun quitConversation(conversationId: String): Observable<Void> {

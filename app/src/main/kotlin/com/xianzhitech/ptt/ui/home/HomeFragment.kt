@@ -44,7 +44,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
             viewPager = findView(R.id.home_viewPager)
             tabContainer = findView(R.id.home_tabContainer)
 
-            Tab.values.forEachIndexed { i, tab ->
+            Tab.values().forEachIndexed { i, tab ->
                 val tabView = inflater.inflate(R.layout.view_tab, tabContainer, false) as TextView
                 tabView.setCompoundDrawablesWithIntrinsicBounds(null, context.getTintedDrawable(tab.drawableRes, normalTintColor), null, null)
                 tabView.setText(tab.labelRes)
@@ -54,7 +54,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
 
             viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
                 override fun getItem(position: Int): Fragment {
-                    return Fragment.instantiate(context, Tab.values[position].fragmentClazz.name)
+                    return Fragment.instantiate(context, Tab.values()[position].fragmentClazz.name)
                 }
 
                 override fun getCount(): Int {

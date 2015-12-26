@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.model
 
 import android.content.ContentValues
 import android.database.Cursor
-import android.support.annotation.ColorInt
 import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
@@ -21,7 +20,7 @@ interface Model {
 }
 
 interface ContactItem {
-    @ColorInt val tintColor: Int
+    val tintColor: Int
     val name: CharSequence
     val avatar: String?
 }
