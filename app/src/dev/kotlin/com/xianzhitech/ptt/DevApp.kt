@@ -6,7 +6,6 @@ import android.os.Bundle
 import com.android.debug.hv.ViewServer
 import com.facebook.stetho.Stetho
 import com.xianzhitech.ptt.engine.TalkEngineProvider
-import com.xianzhitech.ptt.service.provider.AuthProvider
 
 /**
  * Created by fanchao on 7/12/15.
@@ -46,8 +45,8 @@ class DevApp : App() {
 
     }
 
+
     override val talkEngineProvider: TalkEngineProvider
         get() = super.talkEngineProvider
-    override val authProvider: AuthProvider
-        get() = super.authProvider
+    override val authProvider by lazy { DevAuthProvider() }
 }

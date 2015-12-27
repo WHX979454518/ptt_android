@@ -216,7 +216,7 @@ class UserService() : Service(), UserServiceBinder {
     }
 
     fun saveLoginToken(token: Serializable) {
-        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("loginToken", token.toBase64()).apply()
+        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("loginToken", token.serializeToBase64()).apply()
     }
 
     fun clearLoginToken() {

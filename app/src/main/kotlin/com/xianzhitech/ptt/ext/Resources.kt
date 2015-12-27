@@ -14,9 +14,9 @@ import android.support.v4.graphics.drawable.DrawableCompat
  * Created by fanchao on 25/12/15.
  */
 
-fun Context.getDrawableCompat(@DrawableRes drawable: Int) =
-        if (Build.VERSION.SDK_INT >= 21) getDrawable(drawable)
-        else resources.getDrawable(drawable)
+fun Context.getDrawableCompat(@DrawableRes drawableRes: Int) =
+        if (Build.VERSION.SDK_INT >= 21) getDrawable(drawableRes)
+        else resources.getDrawable(drawableRes)
 
 fun Context.getTintedDrawable(@DrawableRes drawableRes: Int, @ColorInt tintColor: Int) =
         DrawableCompat.wrap(getDrawableCompat(drawableRes)).apply {

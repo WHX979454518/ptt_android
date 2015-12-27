@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.ext
 
 import android.util.Base64
+import android.util.Base64InputStream
+import android.util.Base64OutputStream
 import java.io.*
 import kotlin.collections.toString
 import kotlin.text.substring
@@ -23,21 +25,25 @@ fun String.toMD5(): String {
 fun String.toBase64() = Base64.encodeToString(toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
 fun String.decodeBase64() = Base64.decode(toByteArray(), Base64.NO_WRAP).toString(Charsets.UTF_8)
 
-fun Serializable.toBase64(): String {
-    ByteArrayOutputStream().use { byteStream ->
-        ObjectOutputStream(byteStream).use { objectStream ->
-            objectStream.writeObject(this)
+fun Serializable.serializeToBase64(): String {
+    ByteArrayOutputStream().use { rawStream ->
+        Base64OutputStream(rawStream, Base64.NO_WRAP).use { encodingStream ->
+            ObjectOutputStream(encodingStream).use { objectStream ->
+                objectStream.writeObject(this)
+            }
         }
 
-        return Base64.encodeToString(byteStream.toByteArray(), Base64.NO_WRAP)
+        return rawStream.toByteArray().toString(Charsets.UTF_8)
     }
 }
 
 fun String?.fromBase64ToSerializable(): Serializable? {
     return this?.let {
-        StringBufferInputStream(it).use { strBuffer ->
-            ObjectInputStream(strBuffer).use {
-                return it.readObject() as Serializable?
+        StringBufferInputStream(it).use { rawStream ->
+            Base64InputStream(rawStream, Base64.NO_WRAP).use { decodedStream ->
+                ObjectInputStream(decodedStream).use {
+                    return it.readObject() as Serializable?
+                }
             }
         }
     }
