@@ -75,14 +75,25 @@ interface SignalProvider {
 }
 
 /**
+ * 登陆结果
+ */
+data class LoginResult(val person: Person, val token: Serializable?)
+
+/**
  * 提供鉴权服务
  */
 interface AuthProvider {
     /**
-     * 登陆
+     * 使用用户名和密码登陆
      */
     @CheckResult
-    fun login(username: String, password: String): Observable<Person>
+    fun login(username: String, password: String): Observable<LoginResult>
+
+    /**
+     * 使用下发的Token登陆
+     */
+    @CheckResult
+    fun resumeLogin(token: Serializable): Observable<LoginResult>
 
     /**
      * 获取当前登陆的用户ID

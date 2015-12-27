@@ -34,7 +34,7 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
         super.setUp()
 
         mockAuthProvider = MockAuthProvider()
-        logonUser = mockAuthProvider.login(MockPersons.PERSON_1.name, "123").toBlockingFirst()
+        logonUser = mockAuthProvider.login(MockPersons.PERSON_1.name, "123").toBlockingFirst().person
         mockSignalProvider = MockSignalProvider(logonUser, MockPersons.ALL, MockGroups.ALL, MockGroups.GROUP_MEMBERS)
         mockTalkEngineProvider = MockTalkEngineProvider()
 

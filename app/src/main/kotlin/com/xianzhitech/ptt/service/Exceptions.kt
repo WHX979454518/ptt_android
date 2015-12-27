@@ -8,3 +8,5 @@ package com.xianzhitech.ptt.service
  */
 
 class ServerException(val serverMsg : String) : RuntimeException(serverMsg)
+
+class InvalidSavedTokenException : RuntimeException()

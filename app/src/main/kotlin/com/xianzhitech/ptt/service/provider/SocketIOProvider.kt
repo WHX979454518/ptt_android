@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.service.InvalidSavedTokenException
 import com.xianzhitech.ptt.service.ServerException
 import io.socket.client.Ack
 import io.socket.client.IO
@@ -20,9 +21,11 @@ import rx.Observable
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import rx.subjects.ReplaySubject
+import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.regex.Pattern
 import kotlin.collections.emptyMap
 import kotlin.collections.firstOrNull
 import kotlin.collections.listOf
@@ -85,7 +88,22 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
-    override fun login(username: String, password: String): Observable<Person> {
+    override fun resumeLogin(token: Serializable): Observable<LoginResult> {
+        if (token is String) {
+            val matcher = Pattern.compile("(.+?):(.+?)").matcher(token)
+            if (matcher.matches()) {
+                return login(matcher.group(1).decodeBase64(), matcher.group(2).decodeBase64())
+            }
+        }
+
+        return Observable.error(InvalidSavedTokenException())
+    }
+
+    override fun login(username: String, password: String) = doLogin {
+        it.put("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))
+    }.map { LoginResult(it, "${username.toBase64()}:${password.toBase64()}") }
+
+    private fun doLogin(headerOperator: (MutableMap<String, List<String>>) -> Unit): Observable<Person> {
         if (!hasInitializedSocket.compareAndSet(false, true)) {
             return logonUserSubject;
         }
@@ -94,7 +112,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
             it.io().on(Manager.EVENT_TRANSPORT, { args: Array<Any> ->
                 val arg = args[0] as Transport
                 arg.on(Transport.EVENT_REQUEST_HEADERS, {
-                    (it[0] as MutableMap<String, List<String>>).put("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))
+                    headerOperator(it[0] as MutableMap<String, List<String>>)
                 })
             })
 
@@ -157,6 +175,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     }
 
 }
+
 
 internal fun CreateConversationRequest.toJSON() : JSONObject {
     // 0代表通讯组 1代表联系人

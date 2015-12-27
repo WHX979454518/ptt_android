@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.provider.*
 import rx.Observable
+import java.io.Serializable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -174,8 +175,12 @@ class MockAuthProvider : AuthProvider {
     var logonUser: Person? = null
 
     override fun login(username: String, password: String) =
-            (MockPersons.ALL.firstOrNull { it.name == username }?.toObservable() ?: Observable.error(IllegalArgumentException()))
-                    .doOnNext { logonUser = it }
+            (MockPersons.ALL.firstOrNull { it.name == username }?.toObservable()?.map { LoginResult(it, null) } ?: Observable.error(IllegalArgumentException()))
+                    .doOnNext { logonUser = it.person }
+
+    override fun resumeLogin(token: Serializable): Observable<LoginResult> {
+        throw UnsupportedOperationException()
+    }
 
     override fun getLogonPersonId() = logonUser?.id
 

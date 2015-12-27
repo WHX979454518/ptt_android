@@ -10,14 +10,15 @@ import android.preference.PreferenceManager
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.retrieveServiceValue
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.provider.AuthProvider
+import com.xianzhitech.ptt.service.provider.LoginResult
 import com.xianzhitech.ptt.service.provider.SignalProvider
+import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import java.io.Serializable
 import kotlin.text.isNullOrEmpty
 
 
@@ -121,9 +122,8 @@ class UserService() : Service(), UserServiceBinder {
         signalProvider = appComponent.signalProvider
         authProvider = appComponent.authProvider
 
-        val savedUserCredentials = getSavedUserCredentials()
-        if (savedUserCredentials != null) {
-            doLogin(savedUserCredentials.first, savedUserCredentials.second)
+        getSavedUserCredentials()?.let {
+            doLogin(authProvider.resumeLogin(it))
         }
     }
 
@@ -153,7 +153,7 @@ class UserService() : Service(), UserServiceBinder {
         }
 
         when (intent.action) {
-            ACTION_LOGIN -> doLogin(intent.getStringExtra(EXTRA_LOGIN_USERNAME), intent.getStringExtra(EXTRA_LOGIN_PASSWORD))
+            ACTION_LOGIN -> doLogin(authProvider.login(intent.getStringExtra(EXTRA_LOGIN_USERNAME), intent.getStringExtra(EXTRA_LOGIN_PASSWORD)))
             ACTION_LOGOUT -> doLogout()
             else -> throw IllegalArgumentException("Unknown action ${intent.action}")
         }
@@ -162,7 +162,7 @@ class UserService() : Service(), UserServiceBinder {
 
     private fun doLogout() {
         cancelLogin()
-        clearUserCredentials()
+        clearLoginToken()
 
         if (logonUser != null) {
             stopForeground(true)
@@ -178,7 +178,7 @@ class UserService() : Service(), UserServiceBinder {
     }
 
 
-    private fun doLogin(userName: String, password: String) {
+    private fun doLogin(loginResult: Observable<LoginResult>) {
         cancelLogin()
 
         NotificationCompat.Builder(this)
@@ -186,20 +186,24 @@ class UserService() : Service(), UserServiceBinder {
 
         startForeground(NOTIFICATION_ID, foregroundNotification)
 
-        loginSubscription = authProvider.login(userName, password)
+        loginSubscription = loginResult
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Person>() {
-                    override fun onNext(t: Person) {
-                        logonUser = t
+                .subscribe(object : GlobalSubscriber<LoginResult>() {
+                    override fun onNext(t: LoginResult) {
+                        logonUser = t.person
 
-                        saveUserCredentials(userName, password)
+                        if (t.token != null) {
+                            saveLoginToken(t.token)
+                        } else {
+                            clearLoginToken()
+                        }
 
                         notifyLoginStatusChanged()
                     }
 
                     override fun onError(e: Throwable?) {
                         logonUser = null
-                        clearUserCredentials()
+                        clearLoginToken()
                         sendBroadcast(Intent(ACTION_USER_LOGON_FAILED).putExtra(EXTRA_LOGON_FAILED_REASON, e))
                         stopForeground(true)
                     }
@@ -211,22 +215,19 @@ class UserService() : Service(), UserServiceBinder {
                 })
     }
 
-    //TODO: 加密用户数据
-    fun saveUserCredentials(userName: String, password: String) {
-        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("username", userName).putString("password", password).apply()
+    fun saveLoginToken(token: Serializable) {
+        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("loginToken", token.toBase64()).apply()
     }
 
-    fun clearUserCredentials() {
-        PreferenceManager.getDefaultSharedPreferences(this).edit().remove("username").remove("password").apply()
+    fun clearLoginToken() {
+        PreferenceManager.getDefaultSharedPreferences(this).edit().remove("loginToken").apply()
     }
 
-    fun getSavedUserCredentials() : Pair<String, String>?{
-        val pref = PreferenceManager.getDefaultSharedPreferences(this)
-        if (!pref.contains("username") || !pref.contains("password")) {
-            return null
-        }
-        return Pair(pref.getString("username", null), pref.getString("password", null))
-    }
+    fun getSavedUserCredentials() =
+            PreferenceManager.getDefaultSharedPreferences(this)
+                    .getString("loginToken", null)
+                    .fromBase64ToSerializable()
+
 
     fun notifyLoginStatusChanged() {
         sendBroadcast(Intent(ACTION_LOGIN_STATUS_CHANGED))
