@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.LoginFragment
 
-class MainActivity : BaseActivity(), LoginFragment.Callbacks {
+class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
 
     private lateinit var toolbar: Toolbar
 

@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getColorCompat
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import kotlin.collections.forEachIndexed
@@ -43,8 +44,11 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
         return inflater?.inflate(R.layout.fragment_home, container, false)?.apply {
             viewPager = findView(R.id.home_viewPager)
             tabContainer = findView(R.id.home_tabContainer)
+            normalTintColor = context.getColorCompat(R.color.secondary_text)
+            selectedTintColor = context.getColorCompat(R.color.primary)
 
-            Tab.values().forEachIndexed { i, tab ->
+            val tabs = Tab.values()
+            tabs.forEachIndexed { i, tab ->
                 val tabView = inflater.inflate(R.layout.view_tab, tabContainer, false) as TextView
                 tabView.setCompoundDrawablesWithIntrinsicBounds(null, context.getTintedDrawable(tab.drawableRes, normalTintColor), null, null)
                 tabView.setText(tab.labelRes)
@@ -54,11 +58,11 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
 
             viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
                 override fun getItem(position: Int): Fragment {
-                    return Fragment.instantiate(context, Tab.values()[position].fragmentClazz.name)
+                    return Fragment.instantiate(context, tabs[position].fragmentClazz.name)
                 }
 
                 override fun getCount(): Int {
-                    return Tab.values().size()
+                    return tabs.size
                 }
             }
 
@@ -77,6 +81,12 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
                 setTabItemSelected(0, true)
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        callbacks?.setTitle(getString(R.string.app_name))
     }
 
     private fun setTabItemSelected(position: Int, selected: Boolean) {
