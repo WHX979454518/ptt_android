@@ -16,15 +16,14 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
 import com.xianzhitech.ptt.service.provider.ConversationRequest
 import com.xianzhitech.ptt.service.provider.CreateConversationRequest
-import com.xianzhitech.ptt.service.provider.ExistingConversationRequest
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import rx.Observable
 import rx.Subscriber
-import kotlin.collections.setOf
 
 /**
  * 显示对话界面
@@ -72,10 +71,10 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>() {
 
             if (request is CreateConversationRequest) {
                 // 没有会话id, 向服务器请求
-                conversationIdObservable = signalProvider.createConversation(setOf(request))
+                conversationIdObservable = signalProvider.createConversation(request)
                         .flatMap({ broker.saveConversation(it) })
                         .map({ it.id })
-            } else if (request is ExistingConversationRequest) {
+            } else if (request is ConversationFromExisiting) {
                 conversationIdObservable = Observable.just(request.conversationId)
             } else {
                 throw IllegalArgumentException("Unknown request " + request)

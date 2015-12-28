@@ -155,7 +155,6 @@ class UserService() : Service(), UserServiceBinder {
         when (intent.action) {
             ACTION_LOGIN -> doLogin(authProvider.login(intent.getStringExtra(EXTRA_LOGIN_USERNAME), intent.getStringExtra(EXTRA_LOGIN_PASSWORD)))
             ACTION_LOGOUT -> doLogout()
-            else -> throw IllegalArgumentException("Unknown action ${intent.action}")
         }
     }
 
@@ -198,6 +197,8 @@ class UserService() : Service(), UserServiceBinder {
                             clearLoginToken()
                         }
 
+                        // Keep service running
+                        startService(buildEmpty(this@UserService))
                         notifyLoginStatusChanged()
                     }
 

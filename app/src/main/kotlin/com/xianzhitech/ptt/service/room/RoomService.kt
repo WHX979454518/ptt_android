@@ -291,7 +291,7 @@ class RoomService() : Service(), RoomServiceBinder {
 
             signalProvider.quitConversation(it)
                     .observeOnMainThread()
-                    .subscribe(GlobalSubscriber<Void>(this))
+                    .subscribe(GlobalSubscriber<Unit>(this))
 
             roomStatus = RoomStatus.NOT_CONNECTED
         }
@@ -331,7 +331,7 @@ class RoomService() : Service(), RoomServiceBinder {
                 currentTalkEngine?.stopSend()
                 signalProvider.releaseMic(it.id)
                         .observeOnMainThread()
-                        .subscribe(GlobalSubscriber<Void>(this))
+                        .subscribe(GlobalSubscriber<Unit>(this))
 
                 currentSpeakerId = null
                 roomStatus = RoomStatus.CONNECTED

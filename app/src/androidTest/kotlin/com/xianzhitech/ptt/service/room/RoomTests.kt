@@ -6,7 +6,7 @@ import com.xianzhitech.ptt.ext.toBlockingFirst
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.service.*
-import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest
+import com.xianzhitech.ptt.service.provider.CreateConversationFromGroup
 import rx.android.plugins.RxAndroidPlugins
 import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
@@ -38,7 +38,7 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
         mockSignalProvider = MockSignalProvider(logonUser, MockPersons.ALL, MockGroups.ALL, MockGroups.GROUP_MEMBERS)
         mockTalkEngineProvider = MockTalkEngineProvider()
 
-        conversation = mockSignalProvider.createConversation(listOf(CreateGroupConversationRequest(MockGroups.GROUP_1.id))).toBlockingFirst()
+        conversation = mockSignalProvider.createConversation(listOf(CreateConversationFromGroup(MockGroups.GROUP_1.id))).toBlockingFirst()
 
         if (rxInitialized.compareAndSet(false, true)) {
             RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {

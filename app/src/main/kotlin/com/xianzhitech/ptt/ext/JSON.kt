@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ext
 
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.collections.emptyList
 
 /**
  * Created by fanchao on 17/12/15.

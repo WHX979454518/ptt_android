@@ -51,9 +51,9 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     private val logonUserSubject = ReplaySubject.createWithSize<Person>(1)
     private val eventSubject = PublishSubject.create<Event>()
 
-    override fun createConversation(requests: Iterable<CreateConversationRequest>): Observable<Conversation> {
+    override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         return socketSubject
-                .flatMap({ it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it as JSONObject }, requests.toJSONArray { it.toJSON() }) ?: Observable.error(IllegalStateException("Not logon")) })
+                .flatMap({ it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it as JSONObject }, request.toJSON()) ?: Observable.error(IllegalStateException("Not logon")) })
                 .flatMap {
                     val conversation = Conversation().readFrom(it)
                     val members = it.getJSONArray("members").toStringList()
@@ -62,7 +62,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 }
     }
 
-    override fun deleteConversation(conversationId: String) : Observable<Void> {
+    override fun deleteConversation(conversationId: String): Observable<Unit> {
         return Observable.empty()
     }
 
@@ -76,7 +76,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         })
     }
 
-    override fun quitConversation(conversationId: String) : Observable<Void> {
+    override fun quitConversation(conversationId: String): Observable<Unit> {
         return Observable.empty()
     }
 
@@ -84,7 +84,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
-    override fun releaseMic(conversationId: String) : Observable<Void> {
+    override fun releaseMic(conversationId: String): Observable<Unit> {
         return Observable.empty()
     }
 
@@ -146,7 +146,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 .doOnSubscribe { socket?.connect() }
     }
 
-    override fun logout() : Observable<Void> {
+    override fun logout(): Observable<Unit> {
         return Observable.empty()
     }
 
@@ -177,11 +177,11 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 }
 
 
-internal fun CreateConversationRequest.toJSON() : JSONObject {
+internal fun CreateConversationRequest.toJSON(): JSONArray {
     // 0代表通讯组 1代表联系人
     return when (this) {
-        is CreatePersonConversationRequest -> JSONObject().put("srcType", 1).put("srcData", personId)
-        is CreateGroupConversationRequest -> JSONObject().put("srcType", 0).put("srcData", groupId)
+        is CreateConversationFromPerson -> JSONArray().put(JSONObject().put("srcType", 1).put("srcData", personId))
+        is CreateConversationFromGroup -> JSONArray().put(JSONObject().put("srcType", 0).put("srcData", groupId))
         else -> throw IllegalArgumentException("Unknown request type: " + this)
     }
 }

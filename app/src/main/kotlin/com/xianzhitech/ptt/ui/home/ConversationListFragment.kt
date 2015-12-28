@@ -14,7 +14,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Conversation
-import com.xianzhitech.ptt.service.provider.ExistingConversationRequest
+import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.apache.commons.lang3.StringUtils
@@ -72,7 +72,7 @@ class ConversationListFragment : BaseFragment<Void>() {
             holder.setGroup(conversations[position])
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        ExistingConversationRequest(conversations[position].group.id)))
+                        ConversationFromExisiting(conversations[position].group.id)))
             }
         }
 

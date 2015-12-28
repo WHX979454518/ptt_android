@@ -51,11 +51,11 @@ class MockSignalProvider(val currentUser: Person,
 
     val conversations = HashMap<String, RoomInfo>()
 
-    override fun createConversation(requests: Iterable<CreateConversationRequest>): Observable<Conversation> {
-        val request = requests.iterator().next()
+    override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
+        val request = request.iterator().next()
 
         when (request) {
-            is CreatePersonConversationRequest -> {
+            is CreateConversationFromPerson -> {
                 // 寻找已有的会话
                 val setToFind = hashSetOf(currentUser.id, request.personId)
                 var foundEntry = conversations.entries.firstOrNull { it.value.members.toHashSet() == setToFind }
@@ -69,7 +69,7 @@ class MockSignalProvider(val currentUser: Person,
                 return conv.toObservable()
             }
 
-            is CreateGroupConversationRequest -> {
+            is CreateConversationFromGroup -> {
                 val members = groupMembers.get(request.groupId) ?: return Observable.error(IllegalArgumentException("Group ${request.groupId} does not exist"))
 
                 val setToFind = ImmutableSet.copyOf(members)
@@ -87,7 +87,7 @@ class MockSignalProvider(val currentUser: Person,
         }
     }
 
-    override fun deleteConversation(conversationId: String): Observable<Void> {
+    override fun deleteConversation(conversationId: String): Observable<Unit> {
         val roomInfo = conversations[conversationId] ?: return Observable.just(null)
 
         if (roomInfo.conversation.ownerId != currentUser.id) {
@@ -104,7 +104,7 @@ class MockSignalProvider(val currentUser: Person,
         return Room(roomInfo.conversation.id, roomInfo.activeMembers.toList(), roomInfo.speaker.get(), emptyMap()).toObservable()
     }
 
-    override fun quitConversation(conversationId: String): Observable<Void> {
+    override fun quitConversation(conversationId: String): Observable<Unit> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
         roomInfo.activeMembers -= currentUser.id
         return Observable.just(null)
@@ -115,7 +115,7 @@ class MockSignalProvider(val currentUser: Person,
         return roomInfo.speaker.compareAndSet(null, currentUser.id).toObservable()
     }
 
-    override fun releaseMic(conversationId: String): Observable<Void> {
+    override fun releaseMic(conversationId: String): Observable<Unit> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
         roomInfo.speaker.compareAndSet(currentUser.id, null)
         return Observable.just(null)
@@ -184,7 +184,7 @@ class MockAuthProvider : AuthProvider {
 
     override fun getLogonPersonId() = logonUser?.id
 
-    override fun logout(): Observable<Void> {
+    override fun logout(): Observable<Unit> {
         logonUser = null
         return Observable.just(null)
     }

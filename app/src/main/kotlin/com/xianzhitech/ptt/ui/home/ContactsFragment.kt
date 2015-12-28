@@ -16,8 +16,8 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.service.provider.CreateGroupConversationRequest
-import com.xianzhitech.ptt.service.provider.CreatePersonConversationRequest
+import com.xianzhitech.ptt.service.provider.CreateConversationFromGroup
+import com.xianzhitech.ptt.service.provider.CreateConversationFromPerson
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.ContactComparator
@@ -92,7 +92,7 @@ class ContactsFragment : BaseFragment<Void>() {
             holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        if (contactItem is Person) CreatePersonConversationRequest(contactItem.id) else CreateGroupConversationRequest((contactItem as Group).id)))
+                        if (contactItem is Person) CreateConversationFromPerson(contactItem.id) else CreateConversationFromGroup((contactItem as Group).id)))
             }
         }
 
