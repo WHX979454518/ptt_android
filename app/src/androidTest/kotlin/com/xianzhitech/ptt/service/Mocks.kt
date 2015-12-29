@@ -49,7 +49,7 @@ class MockSignalProvider(val currentUser: Person,
 
     private val idSeq = AtomicInteger(0)
 
-    val conversations = HashMap<String, RoomInfo>()
+    val conversations = HashMap<String, ActiveRoomInfo>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         when (request) {
@@ -63,7 +63,7 @@ class MockSignalProvider(val currentUser: Person,
 
                 // 新建一个会话
                 val conv = Conversation(idSeq.incrementAndGet().toString(), "Conversation $idSeq", "Conversation description", currentUser.id, false)
-                conversations.put(conv.id, RoomInfo(conv, setToFind))
+                conversations.put(conv.id, ActiveRoomInfo(conv, setToFind))
                 return conv.toObservable()
             }
 
@@ -77,7 +77,7 @@ class MockSignalProvider(val currentUser: Person,
                 }
 
                 val conv = Conversation(idSeq.incrementAndGet().toString(), "Conversation $idSeq", "Conversation description", currentUser.id, false)
-                conversations.put(conv.id, RoomInfo(conv, members.toHashSet()))
+                conversations.put(conv.id, ActiveRoomInfo(conv, members.toHashSet()))
                 return conv.toObservable()
             }
 
@@ -96,10 +96,10 @@ class MockSignalProvider(val currentUser: Person,
         return Observable.just(null)
     }
 
-    override fun joinConversation(conversationId: String): Observable<Room> {
+    override fun joinConversation(conversationId: String): Observable<RoomInfo> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
         roomInfo.activeMembers += currentUser.id
-        return Room(roomInfo.conversation.id, roomInfo.conversation.id, roomInfo.activeMembers.toList(),
+        return RoomInfo(roomInfo.conversation.id, roomInfo.conversation.id, roomInfo.activeMembers.toList(),
                 roomInfo.speaker.get(), emptyMap()).toObservable()
     }
 
@@ -120,30 +120,30 @@ class MockSignalProvider(val currentUser: Person,
         return Observable.just(null)
     }
 
-    class RoomInfo(val conversation : Conversation,
-                   val members: MutableSet<String> = hashSetOf(),
-                   val activeMembers: MutableSet<String> = hashSetOf(),
-                   var speaker: AtomicReference<String> = AtomicReference<String>(null))
+    class ActiveRoomInfo(val conversation: Conversation,
+                         val members: MutableSet<String> = hashSetOf(),
+                         val activeMembers: MutableSet<String> = hashSetOf(),
+                         var speaker: AtomicReference<String> = AtomicReference<String>(null))
 
 
 }
 
 
 class MockTalkEngine : TalkEngine {
-    var connectedRoom : Room? = null
+    var connectedRoomInfo: RoomInfo? = null
     var disposed = false
     var sending = false;
 
-    override fun connect(room: Room) {
+    override fun connect(roomInfo: RoomInfo) {
         if (disposed) {
             throw IllegalStateException("Already disposed")
         }
-        connectedRoom = room
+        connectedRoomInfo = roomInfo
     }
 
     override fun dispose() {
         disposed = true;
-        connectedRoom = null
+        connectedRoomInfo = null
     }
 
     override fun startSend() {
@@ -181,7 +181,8 @@ class MockAuthProvider : AuthProvider {
         throw UnsupportedOperationException()
     }
 
-    override fun getLogonPersonId() = logonUser?.id
+    override val currentLogonUserId: String?
+        get() = logonUser?.id
 
     override fun logout(): Observable<Unit> {
         logonUser = null

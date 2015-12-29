@@ -1,7 +1,7 @@
 package com.xianzhitech.ptt.engine
 
 
-import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.RoomInfo
 
 /**
 
@@ -10,7 +10,7 @@ import com.xianzhitech.ptt.model.Room
  * Created by fanchao on 13/12/15.
  */
 interface TalkEngine {
-    fun connect(room: Room)
+    fun connect(roomInfo: RoomInfo)
     fun dispose()
     fun startSend()
     fun stopSend()

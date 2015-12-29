@@ -12,7 +12,6 @@ import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.firstOrNull
-import kotlin.collections.listOf
 
 /**
  * Created by fanchao on 18/12/15.
@@ -38,7 +37,7 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
         mockSignalProvider = MockSignalProvider(logonUser, MockPersons.ALL, MockGroups.ALL, MockGroups.GROUP_MEMBERS)
         mockTalkEngineProvider = MockTalkEngineProvider()
 
-        conversation = mockSignalProvider.createConversation(listOf(CreateConversationFromGroup(MockGroups.GROUP_1.id))).toBlockingFirst()
+        conversation = mockSignalProvider.createConversation(CreateConversationFromGroup(MockGroups.GROUP_1.id)).toBlockingFirst()
 
         if (rxInitialized.compareAndSet(false, true)) {
             RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
@@ -56,7 +55,7 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
     fun testConnect() {
         val conn = bindService(RoomService.buildConnect(context, conversation.id)) as RoomServiceBinder
         assertEquals(RoomStatus.CONNECTED, conn.roomStatus)
-        assertEquals(mockSignalProvider.conversations.entries.firstOrNull()?.value?.conversation?.id, mockTalkEngineProvider.createdEngines[0].connectedRoom?.id)
+        assertEquals(mockSignalProvider.conversations.entries.firstOrNull()?.value?.conversation?.id, mockTalkEngineProvider.createdEngines[0].connectedRoomInfo?.id)
     }
 
     fun testDisconnect() {

@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.retrieveServiceValue
-import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.RoomInfo
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import rx.Observable
 import rx.Subscription
@@ -196,7 +196,7 @@ class RoomService() : Service(), RoomServiceBinder {
     var currentConversationId: String? = null
     var currentTalkEngine: TalkEngine? = null
 
-    var currentRoom: Room? = null
+    var currentRoomInfo: RoomInfo? = null
         set(value) {
             field = value
             currentSpeakerId = value?.speaker
@@ -267,14 +267,14 @@ class RoomService() : Service(), RoomServiceBinder {
         currentConversationId = conversationId
         connectSubscription = signalProvider.joinConversation(conversationId)
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Room>(this@RoomService) {
+                .subscribe(object : GlobalSubscriber<RoomInfo>(this@RoomService) {
                     override fun onError(e: Throwable) {
                         sendBroadcast(Intent(ACTION_CONNECT_ERROR))
                         roomStatus = RoomStatus.NOT_CONNECTED
                     }
 
-                    override fun onNext(t: Room) {
-                        currentRoom = t
+                    override fun onNext(t: RoomInfo) {
+                        currentRoomInfo = t
                         if (currentTalkEngine == null) {
                             currentTalkEngine = talkEngineProvider.createEngine().apply { connect(t) }
                         }
@@ -303,7 +303,7 @@ class RoomService() : Service(), RoomServiceBinder {
 
 
     private fun doRequestFocus() {
-        currentRoom?.let {
+        currentRoomInfo?.let {
             if (roomStatus == RoomStatus.CONNECTED) {
                 roomStatus = RoomStatus.REQUESTING_MIC
 
@@ -327,7 +327,7 @@ class RoomService() : Service(), RoomServiceBinder {
     }
 
     private fun doReleaseFocus() {
-        currentRoom?.let {
+        currentRoomInfo?.let {
             if ((roomStatus == RoomStatus.ACTIVE && currentSpeakerId == logonUserId) ||
                     roomStatus == RoomStatus.REQUESTING_MIC) {
                 cancelRequestFocus()

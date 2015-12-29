@@ -3,7 +3,7 @@ package com.xianzhitech.ptt.service.provider
 import android.support.annotation.CheckResult
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.RoomInfo
 import rx.Observable
 import java.io.Serializable
 
@@ -53,10 +53,10 @@ interface SignalProvider {
     fun deleteConversation(conversationId: String): Observable<Unit>
 
     /**
-     * 加入会话（进入对讲房间）
+     * 加入会话（进入对讲房间）. 房间信息将会持续分发.
      */
     @CheckResult
-    fun joinConversation(conversationId: String) : Observable<Room>
+    fun joinConversation(conversationId: String): Observable<RoomInfo>
 
     /**
      * 退出会话（退出对讲房间）

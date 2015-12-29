@@ -68,7 +68,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     override val currentLogonUserId: String?
         get() = logonUser.get()?.id
 
-    override fun joinConversation(conversationId: String): Observable<Room> {
+    override fun joinConversation(conversationId: String): Observable<RoomInfo> {
         return socketSubject.flatMap({ it.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
                 { (it as JSONObject).toRoom(conversationId) },
@@ -207,9 +207,9 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
     return this
 }
 
-internal fun JSONObject.toRoom(conversationId: String): Room {
+internal fun JSONObject.toRoom(conversationId: String): RoomInfo {
     val server = getJSONObject("server")
-    return Room(getJSONObject("roomInfo").getString("idNumber"), conversationId,
+    return RoomInfo(getJSONObject("roomInfo").getString("idNumber"), conversationId,
             ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"),
             ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host"),
                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port"),

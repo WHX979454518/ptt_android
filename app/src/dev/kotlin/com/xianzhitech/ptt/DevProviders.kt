@@ -4,14 +4,20 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.*
-import com.xianzhitech.ptt.service.provider.*
+import com.xianzhitech.ptt.service.provider.AuthProvider
+import com.xianzhitech.ptt.service.provider.CreateConversationRequest
+import com.xianzhitech.ptt.service.provider.LoginResult
+import com.xianzhitech.ptt.service.provider.SignalProvider
 import rx.Observable
+import rx.subjects.BehaviorSubject
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.collections.*
+import kotlin.collections.emptyMap
+import kotlin.collections.hashSetOf
+import kotlin.collections.listOf
+import kotlin.collections.mapOf
 
 /**
  * Created by fanchao on 27/12/15.
@@ -24,7 +30,7 @@ internal val DEV_UESRS = listOf<Person>(
         Person("4", "用户4", EnumSet.allOf(Privilege::class.java)),
         Person("5", "用户5", EnumSet.allOf(Privilege::class.java)),
         Person("6", "用户6", EnumSet.allOf(Privilege::class.java)),
-        Person("7", "用户7", EnumSet.allOf(Privilege::class.java))
+        Person("7", "回声用户7", EnumSet.allOf(Privilege::class.java))
 )
 
 internal val DEV_GROUPS = listOf<Group>(
@@ -53,16 +59,20 @@ internal val DEV_CONVERSATIONS = listOf(
         Conversation("5", "会话5", null, DEV_UESRS[0].id, false)
 )
 
-internal data class RoomInfo(val conversation: Conversation) {
+internal data class ActiveRoomInfo(val conversation: Conversation) {
     val members: MutableCollection<String> = hashSetOf()
     val currSpeaker = AtomicReference<String>()
 }
 
 
 class DevProvider(private val broker: Broker) : AuthProvider, SignalProvider {
-    private val rooms = hashMapOf<String, RoomInfo>()
-    private val conversationIdSeq = AtomicInteger(0)
+    private val room = ActiveRoomInfo(Conversation("1", "回声会话", null, DEV_UESRS[0].id, false))
     private val logonUser = AtomicReference<Person>()
+    private val roomInfoSubject = BehaviorSubject.create<RoomInfo>()
+
+    init {
+        room.members.add(DEV_UESRS[6].id)
+    }
 
     @Synchronized
     override fun login(username: String, password: String): Observable<LoginResult> {
@@ -83,94 +93,38 @@ class DevProvider(private val broker: Broker) : AuthProvider, SignalProvider {
     private val ensuredLogonUserId: String
         get() = currentLogonUserId ?: throw IllegalStateException("Not logon")
 
-    private fun ensureRoom(conversationId: String) = rooms[conversationId] ?: throw IllegalStateException("No room info for $conversationId")
-
     override fun logout(): Observable<Unit> {
         logonUser.set(null)
         return Observable.just(null)
     }
 
-    override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
-        when (request) {
-            is CreateConversationFromGroup -> {
-                val group = DEV_GROUPS.first { it.id == request.groupId }
-                val convMembers = DEV_GROUP_MEMBERS[group.id]?.toMutableSet() ?: hashSetOf()
-                convMembers += ensuredLogonUserId
-                val conversation = Conversation(conversationIdSeq.incrementAndGet().toString(),
-                        request.name ?: group.name,
-                        null,
-                        ensuredLogonUserId,
-                        false)
+    override fun createConversation(request: CreateConversationRequest) = room.conversation.toObservable()
+    override fun deleteConversation(conversationId: String) = Observable.empty<Unit>()
 
-                rooms[conversation.id] = RoomInfo(conversation)
-                return conversation.toObservable()
-            }
-
-            is CreateConversationFromPerson -> {
-                val person = DEV_UESRS.first { it.id == request.personId }
-                if (person.id == ensuredLogonUserId) {
-                    throw IllegalArgumentException("Can't create group for just one person")
-                }
-
-                val convMembers = hashSetOf(ensuredLogonUserId, person.id)
-                val conversation = Conversation(conversationIdSeq.incrementAndGet().toString(),
-                        request.name ?: "",
-                        null,
-                        ensuredLogonUserId,
-                        false)
-                rooms[conversation.id] = RoomInfo(conversation)
-                return conversation.toObservable()
-            }
-
-            else -> {
-                throw IllegalArgumentException("Unknown request: $request")
-            }
-        }
-
-    }
-
-    override fun deleteConversation(conversationId: String): Observable<Unit> {
-        ensureRoom(conversationId).apply {
-            if (conversation.ownerId == ensuredLogonUserId) {
-                rooms.remove(conversationId)
-            }
-        }
-
-        return Observable.empty()
-    }
-
-    override fun joinConversation(conversationId: String) = ensureRoom(conversationId).let {
-        it.members += currentLogonUserId ?: throw IllegalStateException()
-        Room(conversationId, conversationId, it.members, it.currSpeaker.get(), emptyMap()).toObservable()
+    override fun joinConversation(conversationId: String) = room.members.add(ensuredLogonUserId).let {
+        roomInfoSubject.onNext(RoomInfo(conversationId, conversationId, room.members, room.currSpeaker.get(), emptyMap()))
+        roomInfoSubject
     }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
-        ensureRoom(conversationId).let {
-            it.members.remove(ensuredLogonUserId)
-        }
-
+        room.members.remove(ensuredLogonUserId)
         return Observable.empty()
     }
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
         return Observable.timer(1, TimeUnit.SECONDS).map {
-            ensureRoom(conversationId).let {
-                it.currSpeaker.compareAndSet(null, ensuredLogonUserId)
-            }
+            room.currSpeaker.compareAndSet(null, ensuredLogonUserId)
         }
     }
 
     override fun releaseMic(conversationId: String): Observable<Unit> {
-        ensureRoom(conversationId).let {
-            it.currSpeaker.compareAndSet(ensuredLogonUserId, null)
-        }
-
+        room.currSpeaker.compareAndSet(ensuredLogonUserId, null)
         return Observable.empty()
     }
 }
 
 class DevTalkEngine : TalkEngine {
-    override fun connect(room: Room) {
+    override fun connect(roomInfo: RoomInfo) {
     }
 
     override fun dispose() {

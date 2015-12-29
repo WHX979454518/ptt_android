@@ -3,7 +3,7 @@ package com.xianzhitech.ptt.engine
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
-import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.RoomInfo
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry
 import java.util.concurrent.atomic.AtomicBoolean
@@ -32,19 +32,19 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         }
     }
 
-    override fun connect(room: Room) {
+    override fun connect(roomInfo: RoomInfo) {
         if (this.roomIds != null) {
             throw IllegalStateException("Engine already connected to a room before")
         }
 
-        val roomId = room.id.toInt()
+        val roomId = roomInfo.id.toInt()
         this.roomIds = intArrayOf(roomId)
 
         handler.post {
-            mediaEngine = MediaEngine(context, room.getProperty<String>(PROPERTY_PROTOCOL)?.equals("tcp") ?: false)
+            mediaEngine = MediaEngine(context, roomInfo.getProperty<String>(PROPERTY_PROTOCOL)?.equals("tcp") ?: false)
             mediaEngine.setLocalSSRC(roomId)
-            mediaEngine.setRemoteIp(room.getProperty<String>(PROPERTY_REMOTE_SERVER_IP) ?: throw IllegalArgumentException("No server ip specified"))
-            mediaEngine.setAudioTxPort(room.getProperty<Int>(PROPERTY_REMOTE_SERVER_PORT) ?: throw IllegalArgumentException("No report port specified"))
+            mediaEngine.setRemoteIp(roomInfo.getProperty<String>(PROPERTY_REMOTE_SERVER_IP) ?: throw IllegalArgumentException("No server ip specified"))
+            mediaEngine.setAudioTxPort(roomInfo.getProperty<Int>(PROPERTY_REMOTE_SERVER_PORT) ?: throw IllegalArgumentException("No report port specified"))
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT)
             mediaEngine.setAgc(true)
             mediaEngine.setNs(true)
