@@ -52,8 +52,6 @@ class MockSignalProvider(val currentUser: Person,
     val conversations = HashMap<String, RoomInfo>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
-        val request = request.iterator().next()
-
         when (request) {
             is CreateConversationFromPerson -> {
                 // 寻找已有的会话
@@ -101,7 +99,8 @@ class MockSignalProvider(val currentUser: Person,
     override fun joinConversation(conversationId: String): Observable<Room> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
         roomInfo.activeMembers += currentUser.id
-        return Room(roomInfo.conversation.id, roomInfo.activeMembers.toList(), roomInfo.speaker.get(), emptyMap()).toObservable()
+        return Room(roomInfo.conversation.id, roomInfo.conversation.id, roomInfo.activeMembers.toList(),
+                roomInfo.speaker.get(), emptyMap()).toObservable()
     }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {

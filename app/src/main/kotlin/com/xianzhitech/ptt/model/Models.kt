@@ -1,7 +1,9 @@
 package com.xianzhitech.ptt.model
 
 import android.content.ContentValues
+import android.content.Context
 import android.database.Cursor
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
@@ -11,6 +13,9 @@ import java.util.*
 import kotlin.text.isNullOrEmpty
 
 /**
+ *
+ * 所有的数据库相关模型
+ *
  * Created by fanchao on 17/12/15.
  */
 
@@ -20,7 +25,8 @@ interface Model {
 }
 
 interface ContactItem {
-    val tintColor: Int
+    fun getTintColor(context: Context): Int
+
     val name: CharSequence
     val avatar: String?
 }
@@ -138,13 +144,16 @@ class Group() : Model, ContactItem {
 
     var id: String = ""
     var description: String? = null
-    override val tintColor: Int = 0
     override var name = ""
     override var avatar: String? = null
 
     constructor(id: String, name: String) : this() {
         this.id = id
         this.name = name
+    }
+
+    override fun getTintColor(context: Context) = context.resources.getIntArray(R.array.account_colors).let {
+        it[hashCode() % it.size]
     }
 
     override fun equals(other: Any?): Boolean {
@@ -188,13 +197,16 @@ class Person() : Model, ContactItem, Serializable {
     var id: String = ""
     override var name = ""
     override var avatar: String? = ""
-    override var tintColor: Int = 0
     var privileges = EnumSet.noneOf(Privilege::class.java)
 
     constructor(id: String, name: String, privileges: EnumSet<Privilege>) : this() {
         this.id = id
         this.name = name
         this.privileges = privileges
+    }
+
+    override fun getTintColor(context: Context) = context.resources.getIntArray(R.array.account_colors).let {
+        it[hashCode() % it.size]
     }
 
     override fun equals(other: Any?): Boolean {
@@ -222,10 +234,6 @@ class Person() : Model, ContactItem, Serializable {
         return this
     }
 }
-
-/**
- * Created by fanchao on 17/12/15.
- */
 
 class GroupMembers {
     companion object {

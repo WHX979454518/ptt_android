@@ -7,7 +7,8 @@ package com.xianzhitech.ptt.model
  * Created by fanchao on 18/12/15.
  */
 data class Room(val id: String,
-                val members: List<String>,
+                val conversationId: String,
+                val members: Collection<String>,
                 val speaker: String?,
                 val properties: Map<String, Any>) {
     inline fun <reified T> getProperty(name: String) = properties[name] as T?

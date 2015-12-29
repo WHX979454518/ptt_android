@@ -14,13 +14,13 @@ import rx.android.schedulers.AndroidSchedulers
 
 fun <T> Observable<T>.toBlockingFirst() = toBlocking().first()
 
-open class GlobalSubscriber<T>(val context: Context? = null) : Subscriber<T>() {
+open class GlobalSubscriber<T>(private val context: Context? = null) : Subscriber<T>() {
     companion object {
         public const val FRAG_ERROR_DIALOG = "frag_error_dialog"
     }
 
-    override fun onError(e: Throwable?) {
-        if (context is FragmentActivity && e != null) {
+    override fun onError(e: Throwable) {
+        if (context is FragmentActivity) {
             AlertDialogFragment.Builder()
                     .setTitle(context.getString(R.string.error_title))
                     .setMessage(context.getString(R.string.error_content, e.message))

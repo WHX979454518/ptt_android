@@ -20,11 +20,10 @@ import org.json.JSONObject
 import rx.Observable
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
-import rx.subjects.ReplaySubject
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 import kotlin.collections.emptyMap
 import kotlin.collections.firstOrNull
@@ -46,9 +45,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         public const val EVENT_CLIENT_JOIN_ROOM = "c_join_room"
     }
 
-    private val hasInitializedSocket = AtomicBoolean(false)
     private val socketSubject = BehaviorSubject.create<Socket>()
-    private val logonUserSubject = ReplaySubject.createWithSize<Person>(1)
+    private val logonUser = AtomicReference<Person>()
     private val eventSubject = PublishSubject.create<Event>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
@@ -58,6 +56,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                     val conversation = Conversation().readFrom(it)
                     val members = it.getJSONArray("members").toStringList()
 
+                    broker.saveConversation(conversation)
                     broker.updateConversationMembers(conversation.id, members).map { conversation }
                 }
     }
@@ -66,12 +65,13 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
-    override fun getLogonPersonId() = logonUserSubject.value?.id
+    override val currentLogonUserId: String?
+        get() = logonUser.get()?.id
 
     override fun joinConversation(conversationId: String): Observable<Room> {
         return socketSubject.flatMap({ it.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
-                { (it as JSONObject).toRoom() },
+                { (it as JSONObject).toRoom(conversationId) },
                 JSONObject().put("roomId", conversationId))
         })
     }
@@ -104,10 +104,6 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     }.map { LoginResult(it, "${username.toBase64()}:${password.toBase64()}") }
 
     private fun doLogin(headerOperator: (MutableMap<String, List<String>>) -> Unit): Observable<Person> {
-        if (!hasInitializedSocket.compareAndSet(false, true)) {
-            return logonUserSubject;
-        }
-
         val socket = IO.socket(endpoint).let {
             it.io().on(Manager.EVENT_TRANSPORT, { args: Array<Any> ->
                 val arg = args[0] as Transport
@@ -136,9 +132,9 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                             Observable.empty<Person>()
                         }
                         EVENT_SERVER_USER_LOGON -> {
-                            logonUserSubject.onNext(Person().readFrom(event.jsonObject))
+                            logonUser.set(Person().readFrom(event.jsonObject))
                             syncContacts().subscribe()
-                            logonUserSubject
+                            logonUser.get().toObservable()
                         }
                         else -> Observable.empty<Person>()
                     }
@@ -147,6 +143,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     }
 
     override fun logout(): Observable<Unit> {
+        logonUser.set(null)
         return Observable.empty()
     }
 
@@ -210,9 +207,9 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
     return this
 }
 
-internal fun JSONObject.toRoom() : Room {
+internal fun JSONObject.toRoom(conversationId: String): Room {
     val server = getJSONObject("server")
-    return Room(getJSONObject("roomInfo").getString("idNumber"),
+    return Room(getJSONObject("roomInfo").getString("idNumber"), conversationId,
             ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"),
             ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host"),
                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port"),

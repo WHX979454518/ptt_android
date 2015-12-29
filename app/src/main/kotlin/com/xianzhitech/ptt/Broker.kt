@@ -12,6 +12,10 @@ import rx.Observable
 import rx.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.Executors
+import kotlin.collections.forEach
+import kotlin.collections.listOf
+import kotlin.collections.plusAssign
+import kotlin.text.isNullOrEmpty
 
 /**
  * 提供数据库操作层
@@ -135,8 +139,6 @@ class Broker(internal val db: Database) {
     @CheckResult
     fun updateConversationMembers(conversationId: String, groupMembers: Iterable<String>): Observable<Unit> {
         return updateInTransaction({
-            db.delete(ConversationMembers.TABLE_NAME, "1")
-
             val values = ContentValues(2)
             values.put(ConversationMembers.COL_CONVERSATION_ID, conversationId)
             groupMembers.forEach { memberId ->

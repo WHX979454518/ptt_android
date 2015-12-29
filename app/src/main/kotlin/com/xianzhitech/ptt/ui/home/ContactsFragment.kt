@@ -88,7 +88,7 @@ class ContactsFragment : BaseFragment<Void>() {
 
         override fun onBindViewHolder(holder: ContactHolder, position: Int) {
             val contactItem = contactItems[position]
-            holder.iconView.setColorFilter(contactItem.tintColor)
+            holder.iconView.setColorFilter(contactItem.getTintColor(holder.itemView.context))
             holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,

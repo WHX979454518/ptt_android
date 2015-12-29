@@ -8,11 +8,14 @@ import android.view.ViewGroup
 import android.widget.EditText
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getString
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.service.user.LoginStatus
 import com.xianzhitech.ptt.service.user.UserService
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import kotlin.text.isNullOrBlank
+import kotlin.text.isNullOrEmpty
 
 /**
 
@@ -86,11 +89,25 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
             progressBar = findView(R.id.login_progress)
 
             loginBtn.setOnClickListener { doLogin() }
+            passwordEdit.setOnEditorActionListener({ v, actionId, event -> doLogin(); true })
         }
     }
 
 
     fun doLogin() {
+        if (nameEdit.getString().isNullOrBlank()) {
+            nameEdit.error = getString(R.string.error_input_name)
+            return
+        }
+
+        if (passwordEdit.getString().isNullOrEmpty()) {
+            passwordEdit.error = getString(R.string.error_input_password)
+            return
+        }
+
+        nameEdit.error = null
+        passwordEdit.error = null
+
         context.startService(UserService.buildLogin(context, nameEdit.text.toString(), passwordEdit.text.toString()))
         progressBar.visibility = View.VISIBLE
         setInputEnabled(false)

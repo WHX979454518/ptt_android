@@ -24,7 +24,7 @@ import kotlin.collections.listOf
  */
 interface RoomServiceBinder {
     val currentSpeakerId: String?
-    val activeMemberIds: List<String>
+    val activeMemberIds: Collection<String>
 
     val roomStatus: RoomStatus
 }
@@ -145,8 +145,9 @@ class RoomService() : Service(), RoomServiceBinder {
         /**
          * 监听房间成员的变化
          */
-        public @JvmStatic fun getMemberIds(context: Context): Observable<List<String>> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds }, AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
+        public @JvmStatic fun getMemberIds(context: Context): Observable<Collection<String>> =
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds },
+                        AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
 
         /**
          * 监听房间状态的变化
@@ -172,7 +173,7 @@ class RoomService() : Service(), RoomServiceBinder {
                 roomStatus = if (value == null) RoomStatus.CONNECTED else RoomStatus.ACTIVE
             }
         }
-    override var activeMemberIds: List<String> = listOf()
+    override var activeMemberIds: Collection<String> = listOf()
         set(value) {
             if (field != value) {
                 field = value
@@ -211,7 +212,7 @@ class RoomService() : Service(), RoomServiceBinder {
         val appComponent = application as AppComponent
         signalProvider = appComponent.signalProvider
         talkEngineProvider = appComponent.talkEngineProvider
-        logonUserId = appComponent.authProvider.getLogonPersonId() ?: throw IllegalArgumentException("No logon user")
+        logonUserId = appComponent.authProvider.currentLogonUserId ?: throw IllegalArgumentException("No logon user")
     }
 
     override fun onDestroy() {
@@ -267,7 +268,7 @@ class RoomService() : Service(), RoomServiceBinder {
         connectSubscription = signalProvider.joinConversation(conversationId)
                 .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<Room>(this@RoomService) {
-                    override fun onError(e: Throwable?) {
+                    override fun onError(e: Throwable) {
                         sendBroadcast(Intent(ACTION_CONNECT_ERROR))
                         roomStatus = RoomStatus.NOT_CONNECTED
                     }
@@ -309,7 +310,7 @@ class RoomService() : Service(), RoomServiceBinder {
                 requestFocusSubscription = signalProvider.requestMic(it.id)
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<Boolean>(this@RoomService) {
-                            override fun onError(e: Throwable?) {
+                            override fun onError(e: Throwable) {
                                 sendBroadcast(Intent(ACTION_REQUEST_FOCUS_ERROR))
                             }
 
@@ -327,7 +328,9 @@ class RoomService() : Service(), RoomServiceBinder {
 
     private fun doReleaseFocus() {
         currentRoom?.let {
-            if (roomStatus == RoomStatus.ACTIVE && currentSpeakerId == logonUserId) {
+            if ((roomStatus == RoomStatus.ACTIVE && currentSpeakerId == logonUserId) ||
+                    roomStatus == RoomStatus.REQUESTING_MIC) {
+                cancelRequestFocus()
                 currentTalkEngine?.stopSend()
                 signalProvider.releaseMic(it.id)
                         .observeOnMainThread()

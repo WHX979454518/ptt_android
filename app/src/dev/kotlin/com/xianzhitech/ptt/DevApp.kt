@@ -5,6 +5,7 @@ import android.app.Application
 import android.os.Bundle
 import com.android.debug.hv.ViewServer
 import com.facebook.stetho.Stetho
+import com.xianzhitech.ptt.engine.TalkEngineProvider
 
 /**
  * Created by fanchao on 7/12/15.
@@ -44,7 +45,9 @@ class DevApp : App() {
 
     }
 
-    //    override val talkEngineProvider: TalkEngineProvider
-    //        get() = super.talkEngineProvider
-    //    override val authProvider by lazy { DevAuthProvider(broker) }
+    override val authProvider by lazy { DevProvider(broker) }
+    override val signalProvider by lazy { authProvider }
+    override val talkEngineProvider = object : TalkEngineProvider {
+        override fun createEngine() = DevTalkEngine()
+    }
 }

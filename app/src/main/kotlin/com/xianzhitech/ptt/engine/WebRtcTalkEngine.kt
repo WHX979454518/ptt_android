@@ -3,10 +3,11 @@ package com.xianzhitech.ptt.engine
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
-
 import com.xianzhitech.ptt.model.Room
-
 import org.webrtc.autoim.MediaEngine
+import org.webrtc.autoim.NativeWebRtcContextRegistry
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.text.toInt
 
 /**
 
@@ -25,6 +26,10 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
     init {
         this.handler = Handler(ENGINE_THREAD.looper)
         this.context = context.applicationContext
+
+        if (hasRegisteredWebRtc.compareAndSet(false, true)) {
+            NativeWebRtcContextRegistry().register(context.applicationContext)
+        }
     }
 
     override fun connect(room: Room) {
@@ -36,7 +41,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         this.roomIds = intArrayOf(roomId)
 
         handler.post {
-            mediaEngine = MediaEngine(context, room.getProperty<String>(PROPERTY_PROTOCOL)?.equals("tcp", true) ?: false)
+            mediaEngine = MediaEngine(context, room.getProperty<String>(PROPERTY_PROTOCOL)?.equals("tcp") ?: false)
             mediaEngine.setLocalSSRC(roomId)
             mediaEngine.setRemoteIp(room.getProperty<String>(PROPERTY_REMOTE_SERVER_IP) ?: throw IllegalArgumentException("No server ip specified"))
             mediaEngine.setAudioTxPort(room.getProperty<Int>(PROPERTY_REMOTE_SERVER_PORT) ?: throw IllegalArgumentException("No report port specified"))
@@ -90,10 +95,16 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         private val LOCAL_RTP_PORT = 10010
         private val LOCAL_RTCP_PORT = 10011
 
+        private val hasRegisteredWebRtc = AtomicBoolean(false)
+
         private val ENGINE_THREAD = object : HandlerThread("RTCEngineThread") {
             init {
                 start()
             }
+        }
+
+        init {
+            System.loadLibrary("autoim_jni")
         }
     }
 }

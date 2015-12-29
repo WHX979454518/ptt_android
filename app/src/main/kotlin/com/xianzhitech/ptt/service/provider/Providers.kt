@@ -101,7 +101,7 @@ interface AuthProvider {
     /**
      * 获取当前登陆的用户ID
      */
-    fun getLogonPersonId(): String?
+    val currentLogonUserId: String?
 
     /**
      * 登出

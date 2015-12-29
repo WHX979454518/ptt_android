@@ -202,7 +202,7 @@ class UserService() : Service(), UserServiceBinder {
                         notifyLoginStatusChanged()
                     }
 
-                    override fun onError(e: Throwable?) {
+                    override fun onError(e: Throwable) {
                         logonUser = null
                         clearLoginToken()
                         sendBroadcast(Intent(ACTION_USER_LOGON_FAILED).putExtra(EXTRA_LOGON_FAILED_REASON, e))
