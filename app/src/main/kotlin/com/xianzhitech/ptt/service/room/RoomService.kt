@@ -3,9 +3,14 @@ package com.xianzhitech.ptt.service.room
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.SoundPool
 import android.os.Binder
 import android.os.IBinder
+import android.os.Vibrator
+import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.ext.*
@@ -159,7 +164,6 @@ class RoomService() : Service(), RoomServiceBinder {
         public @JvmStatic fun getCurrentSpeakerId(context: Context): Observable<String?> =
                 context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.currentSpeakerId }, true,
                         AndroidSchedulers.mainThread(), ACTION_CURRENT_SPEAKER_CHANGED)
-
     }
 
     private var binder: IBinder? = null
@@ -202,8 +206,9 @@ class RoomService() : Service(), RoomServiceBinder {
             activeMemberIds = value?.members ?: listOf()
         }
     var connectSubscription: Subscription? = null
-
     var requestFocusSubscription: Subscription? = null
+    var soundPool: Pair<SoundPool, SparseIntArray> = Pair(SoundPool(1, AudioManager.STREAM_RING, 0), SparseIntArray())
+    var vibrator: Vibrator? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -212,10 +217,19 @@ class RoomService() : Service(), RoomServiceBinder {
         signalProvider = appComponent.signalProvider
         talkEngineProvider = appComponent.talkEngineProvider
         logonUserId = appComponent.authProvider.currentLogonUserId ?: throw IllegalArgumentException("No logon user")
+
+        soundPool.second.put(R.raw.incoming, soundPool.first.load(this, R.raw.incoming, 0))
+        soundPool.second.put(R.raw.outgoing, soundPool.first.load(this, R.raw.outgoing, 0))
+        soundPool.second.put(R.raw.over, soundPool.first.load(this, R.raw.over, 0))
+        soundPool.second.put(R.raw.pttup, soundPool.first.load(this, R.raw.pttup, 0))
+        soundPool.second.put(R.raw.pttup_offline, soundPool.first.load(this, R.raw.pttup_offline, 0))
+
+        vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
     }
 
     override fun onDestroy() {
         doDisconnect()
+        soundPool.first.release()
         super.onDestroy()
     }
 
@@ -235,15 +249,13 @@ class RoomService() : Service(), RoomServiceBinder {
 
 
     private fun handleIntent(intent: Intent?) {
-        if (intent == null) {
-            return;
-        }
-
-        when (intent.action) {
-            ACTION_CONNECT -> doConnect(intent.getStringExtra(EXTRA_CONVERSATION_ID))
-            ACTION_DISCONNECT -> doDisconnect()
-            ACTION_REQUEST_FOCUS -> doRequestFocus()
-            ACTION_RELEASE_FOCUS -> doReleaseFocus()
+        intent?.apply {
+            when (action) {
+                ACTION_CONNECT -> doConnect(getStringExtra(EXTRA_CONVERSATION_ID))
+                ACTION_DISCONNECT -> doDisconnect()
+                ACTION_REQUEST_FOCUS -> doRequestFocus()
+                ACTION_RELEASE_FOCUS -> doReleaseFocus()
+            }
         }
     }
 
@@ -318,6 +330,8 @@ class RoomService() : Service(), RoomServiceBinder {
                                     currentSpeakerId = logonUserId
                                     currentTalkEngine?.startSend()
                                     roomStatus = RoomStatus.ACTIVE
+                                    soundPool.first.play(soundPool.second[R.raw.outgoing], 1f, 1f, 1, 0, 1f)
+                                    vibrator?.vibrate(100)
                                 }
                             }
                         })
@@ -334,6 +348,8 @@ class RoomService() : Service(), RoomServiceBinder {
                 signalProvider.releaseMic(it.id)
                         .observeOnMainThread()
                         .subscribe(GlobalSubscriber<Unit>(this))
+
+                soundPool.first.play(soundPool.second[R.raw.over], 1f, 1f, 1, 0, 1f)
 
                 currentSpeakerId = null
                 roomStatus = RoomStatus.CONNECTED
@@ -353,6 +369,7 @@ class RoomService() : Service(), RoomServiceBinder {
         requestFocusSubscription?.unsubscribe()
         requestFocusSubscription = null
     }
+
     private fun cancelConnect() {
         connectSubscription?.unsubscribe()
         connectSubscription = null
