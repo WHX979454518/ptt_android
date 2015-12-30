@@ -23,6 +23,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
+
         </android.support.design.widget.AppBarLayout>
 
         <com.xianzhitech.ptt.ui.widget.PushToTalkButton

@@ -8,6 +8,7 @@ import android.media.SoundPool
 import android.os.Binder
 import android.os.IBinder
 import android.os.Vibrator
+import android.support.annotation.RawRes
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
@@ -27,7 +28,7 @@ import kotlin.collections.listOf
  */
 interface RoomServiceBinder {
     val currentSpeakerId: String?
-    val activeMemberIds: Collection<String>
+    val memberIds: Collection<String>
 
     val roomStatus: RoomStatus
 }
@@ -149,7 +150,7 @@ class RoomService() : Service(), RoomServiceBinder {
          * 监听房间成员的变化
          */
         public @JvmStatic fun getMemberIds(context: Context): Observable<Collection<String>> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds }, true,
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.memberIds }, true,
                         AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
 
         /**
@@ -169,15 +170,26 @@ class RoomService() : Service(), RoomServiceBinder {
 
     private var binder: IBinder? = null
 
+    private val isCurrentSpeakerNotLogonUser: Boolean
+        get() = currentSpeakerId != null && currentSpeakerId != logonUserId
+
     override var currentSpeakerId: String? = null
         set(value) {
             if (field != value) {
+                val wasCurrentSpeakerNotLogonUser = isCurrentSpeakerNotLogonUser
                 field = value
+                if (isCurrentSpeakerNotLogonUser) {
+                    // 其他对讲用户语音开始
+                    playSound(R.raw.incoming)
+                } else if (value == null && wasCurrentSpeakerNotLogonUser) {
+                    // 其他对讲用户语音结束
+                    playSound(R.raw.over)
+                }
                 sendLocalBroadcast(Intent(ACTION_CURRENT_SPEAKER_CHANGED))
                 roomStatus = if (value == null) RoomStatus.CONNECTED else RoomStatus.ACTIVE
             }
         }
-    override var activeMemberIds: Collection<String> = listOf()
+    override var memberIds: Collection<String> = listOf()
         set(value) {
             if (field != value) {
                 field = value
@@ -203,7 +215,7 @@ class RoomService() : Service(), RoomServiceBinder {
         set(value) {
             field = value
             currentSpeakerId = value?.speaker
-            activeMemberIds = value?.members ?: listOf()
+            memberIds = value?.members ?: listOf()
         }
     var connectSubscription: Subscription? = null
     var requestFocusSubscription: Subscription? = null
@@ -259,6 +271,9 @@ class RoomService() : Service(), RoomServiceBinder {
         }
     }
 
+    private fun playSound(@RawRes soundRes: Int) {
+        soundPool.first.play(soundPool.second[soundRes], 1f, 1f, 1, 0, 1f)
+    }
 
     private fun doConnect(conversationId: String) {
         if (conversationId == currentConversationId) {
@@ -338,7 +353,7 @@ class RoomService() : Service(), RoomServiceBinder {
                                     currentSpeakerId = logonUserId
                                     currentTalkEngine?.startSend()
                                     roomStatus = RoomStatus.ACTIVE
-                                    soundPool.first.play(soundPool.second[R.raw.outgoing], 1f, 1f, 1, 0, 1f)
+                                    playSound(R.raw.outgoing)
                                     vibrator?.vibrate(100)
                                 }
                             }
@@ -357,7 +372,7 @@ class RoomService() : Service(), RoomServiceBinder {
                         .observeOnMainThread()
                         .subscribe(GlobalSubscriber<Unit>(this))
 
-                soundPool.first.play(soundPool.second[R.raw.over], 1f, 1f, 1, 0, 1f)
+                playSound(R.raw.pttup)
 
                 currentSpeakerId = null
                 roomStatus = RoomStatus.CONNECTED

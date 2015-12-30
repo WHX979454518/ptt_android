@@ -164,7 +164,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 
                         EVENT_SERVER_SPEAKER_CHANGED -> {
                             activeSpeakerSubjects[event.jsonObject.getString("roomId")]?.
-                                    onNext(event.jsonObject.optString("speaker"))
+                                    onNext(event.jsonObject.let { if (it.isNull("speaker")) null else it.getString("speaker") })
                             Observable.empty<Person>()
                         }
 
