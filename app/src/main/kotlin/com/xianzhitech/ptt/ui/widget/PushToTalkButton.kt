@@ -2,10 +2,14 @@ package com.xianzhitech.ptt.ui.widget
 
 import android.annotation.TargetApi
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.ImageButton
+import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.toColorValue
 import com.xianzhitech.ptt.service.room.RoomStatus
 
 /**
@@ -20,9 +24,14 @@ class PushToTalkButton : ImageButton {
         callbacks.requestFocus()
     }
     var roomStatus = RoomStatus.NOT_CONNECTED
-        set(value) {
-            applyRoomStatus()
+        set(newStatus) {
+            if (field != newStatus) {
+                field = newStatus
+                applyRoomStatus()
+            }
         }
+
+    var paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     constructor(context: Context) : super(context) {
         init(context)
@@ -43,10 +52,27 @@ class PushToTalkButton : ImageButton {
 
     private fun init(context: Context) {
         applyRoomStatus()
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
     }
 
     private fun applyRoomStatus() {
         isEnabled = roomStatus == RoomStatus.CONNECTED
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas?) {
+        super.onDraw(canvas)
+
+        paint.color = when (roomStatus) {
+            RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
+            RoomStatus.ACTIVE -> android.R.color.holo_red_dark
+            RoomStatus.CONNECTED -> android.R.color.holo_green_dark
+            RoomStatus.CONNECTING -> android.R.color.darker_gray
+            RoomStatus.NOT_CONNECTED -> android.R.color.holo_purple
+        }.toColorValue(context)
+
+        canvas?.drawCircle(width / 2f, height / 2f, width / 2f, paint)
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {

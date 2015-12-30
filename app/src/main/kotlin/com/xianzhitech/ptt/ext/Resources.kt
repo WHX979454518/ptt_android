@@ -26,3 +26,5 @@ fun Context.getTintedDrawable(@DrawableRes drawableRes: Int, @ColorInt tintColor
 fun Context.getColorCompat(@ColorRes colorRes: Int) =
         if (Build.VERSION.SDK_INT >= 23) getColor(colorRes)
         else resources.getColor(colorRes)
+
+fun Int.toColorValue(context: Context) = context.getColorCompat(this)

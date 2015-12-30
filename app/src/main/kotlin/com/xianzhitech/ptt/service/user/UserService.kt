@@ -95,10 +95,12 @@ class UserService() : Service(), UserServiceBinder {
                         .setAction(ACTION_LOGOUT)
 
         public @JvmStatic fun getLoginStatus(context: Context) =
-                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.loginStatus }, AndroidSchedulers.mainThread(), ACTION_LOGIN_STATUS_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.loginStatus }, true,
+                        AndroidSchedulers.mainThread(), ACTION_LOGIN_STATUS_CHANGED)
 
         public @JvmStatic fun getLogonUser(context: Context) =
-                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.logonUser }, AndroidSchedulers.mainThread(), ACTION_LOGIN_STATUS_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: UserServiceBinder -> binder.logonUser }, true,
+                        AndroidSchedulers.mainThread(), ACTION_LOGIN_STATUS_CHANGED)
                         .distinctUntilChanged()
     }
 
@@ -205,7 +207,7 @@ class UserService() : Service(), UserServiceBinder {
                     override fun onError(e: Throwable) {
                         logonUser = null
                         clearLoginToken()
-                        sendBroadcast(Intent(ACTION_USER_LOGON_FAILED).putExtra(EXTRA_LOGON_FAILED_REASON, e))
+                        sendLocalBroadcast(Intent(ACTION_USER_LOGON_FAILED).putExtra(EXTRA_LOGON_FAILED_REASON, e))
                         stopForeground(true)
                     }
 
@@ -231,7 +233,7 @@ class UserService() : Service(), UserServiceBinder {
 
 
     fun notifyLoginStatusChanged() {
-        sendBroadcast(Intent(ACTION_LOGIN_STATUS_CHANGED))
+        sendLocalBroadcast(Intent(ACTION_LOGIN_STATUS_CHANGED))
     }
 
     override val loginStatus: LoginStatus

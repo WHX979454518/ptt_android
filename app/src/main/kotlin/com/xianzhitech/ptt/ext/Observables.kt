@@ -5,6 +5,7 @@ import android.support.v4.app.FragmentActivity
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import rx.Observable
+import rx.Scheduler
 import rx.Subscriber
 import rx.android.schedulers.AndroidSchedulers
 
@@ -35,6 +36,8 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
     }
 }
 
+fun <T> Observable<T>.subscribeOnOptional(scheduler: Scheduler?): Observable<T> = scheduler?.let { subscribeOn(it) } ?: this
+
 fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
 
-fun <T> T.toObservable() = Observable.just(this)
+fun <T> T?.toObservable(): Observable<T> = Observable.just(this)

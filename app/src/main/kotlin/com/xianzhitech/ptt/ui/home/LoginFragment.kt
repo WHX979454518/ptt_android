@@ -60,7 +60,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>() {
                     }
                 }
 
-        context.receiveBroadcasts(UserService.ACTION_USER_LOGON_FAILED)
+        context.receiveBroadcasts(true, UserService.ACTION_USER_LOGON_FAILED)
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe { intent ->

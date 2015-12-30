@@ -8,10 +8,7 @@ import android.os.IBinder
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.logd
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.retrieveServiceValue
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.RoomInfo
 import com.xianzhitech.ptt.service.provider.SignalProvider
 import rx.Observable
@@ -146,20 +143,22 @@ class RoomService() : Service(), RoomServiceBinder {
          * 监听房间成员的变化
          */
         public @JvmStatic fun getMemberIds(context: Context): Observable<Collection<String>> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds },
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds }, true,
                         AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
 
         /**
          * 监听房间状态的变化
          */
         public @JvmStatic fun getRoomStatus(context: Context): Observable<RoomStatus> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.roomStatus }, AndroidSchedulers.mainThread(), ACTION_ROOM_STATUS_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.roomStatus }, true,
+                        AndroidSchedulers.mainThread(), ACTION_ROOM_STATUS_CHANGED)
 
         /**
          * 监听当前正在讲话的用户的变化
          */
         public @JvmStatic fun getCurrentSpeakerId(context: Context): Observable<String?> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.currentSpeakerId }, AndroidSchedulers.mainThread(), ACTION_CURRENT_SPEAKER_CHANGED)
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.currentSpeakerId }, true,
+                        AndroidSchedulers.mainThread(), ACTION_CURRENT_SPEAKER_CHANGED)
 
     }
 
@@ -169,7 +168,7 @@ class RoomService() : Service(), RoomServiceBinder {
         set(value) {
             if (field != value) {
                 field = value
-                sendBroadcast(Intent(ACTION_CURRENT_SPEAKER_CHANGED))
+                sendLocalBroadcast(Intent(ACTION_CURRENT_SPEAKER_CHANGED))
                 roomStatus = if (value == null) RoomStatus.CONNECTED else RoomStatus.ACTIVE
             }
         }
@@ -177,7 +176,7 @@ class RoomService() : Service(), RoomServiceBinder {
         set(value) {
             if (field != value) {
                 field = value
-                sendBroadcast(Intent(ACTION_MEMBER_CHANGED))
+                sendLocalBroadcast(Intent(ACTION_MEMBER_CHANGED))
             }
         }
 
@@ -185,8 +184,8 @@ class RoomService() : Service(), RoomServiceBinder {
         set(value) {
             if (field != value) {
                 field = value
-                logd("Roomstatus changed to $value")
-                sendBroadcast(Intent(ACTION_ROOM_STATUS_CHANGED))
+                logd("RoomStatus changed to $value")
+                sendLocalBroadcast(Intent(ACTION_ROOM_STATUS_CHANGED))
             }
         }
     lateinit var signalProvider: SignalProvider

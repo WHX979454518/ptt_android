@@ -12,10 +12,7 @@ import android.view.ViewGroup
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
 import com.xianzhitech.ptt.service.provider.ConversationRequest
 import com.xianzhitech.ptt.service.provider.CreateConversationRequest
@@ -88,6 +85,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
                     .compose(bindToLifecycle())
                     .subscribe(object : GlobalSubscriber<RoomStatus>(context) {
                         override fun onNext(t: RoomStatus) {
+                            logd("$this@RoomFragment received status $t")
                             pttBtn.roomStatus = t
                         }
                     })
