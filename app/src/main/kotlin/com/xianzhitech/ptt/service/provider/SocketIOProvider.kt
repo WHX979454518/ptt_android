@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.service.provider
 
 import android.support.v4.util.ArrayMap
+import android.support.v4.util.SimpleArrayMap
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
@@ -18,16 +19,14 @@ import io.socket.engineio.client.Transport
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
-import kotlin.collections.emptyMap
-import kotlin.collections.firstOrNull
-import kotlin.collections.listOf
-import kotlin.collections.plusAssign
+import kotlin.collections.*
 
 /**
  *
@@ -38,6 +37,9 @@ import kotlin.collections.plusAssign
 class SocketIOProvider(private val broker: Broker, private val endpoint: String) : SignalProvider, AuthProvider {
     companion object {
         public const val EVENT_SERVER_USER_LOGON = "s_logon"
+        public const val EVENT_SERVER_ROOM_MEMBER_UPDATED = "s_member_update"
+        public const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
+        public const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
 
         public const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
         public const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"
@@ -50,13 +52,18 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     private lateinit var socket: Socket
     private val logonUser = AtomicReference<Person>()
     private val eventSubject = PublishSubject.create<Event>()
+    private val conversationMembersSubjects = SimpleArrayMap<String, BehaviorSubject<Collection<String>>>()
+    private val activeSpeakerSubjects = SimpleArrayMap<String, BehaviorSubject<String?>>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         return socket
                 .sendEvent(EVENT_CLIENT_CREATE_ROOM, { it as JSONObject }, request.toJSON())
                 .flatMap {
                     val conversation = Conversation().readFrom(it)
-                    val members = it.getJSONArray("members").toStringList()
+                    val members = it.getJSONArray("members").toStringIterable()
+
+                    conversationMembersSubjects.put(conversation.id, BehaviorSubject.create())
+                    activeSpeakerSubjects.put(conversation.id, BehaviorSubject.create())
 
                     broker.saveConversation(conversation)
                     broker.updateConversationMembers(conversation.id, members).map { conversation }
@@ -75,10 +82,22 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 EVENT_CLIENT_JOIN_ROOM,
                 { (it as JSONObject).toRoomInfo(conversationId) },
                 JSONObject().put("roomId", conversationId))
+                .doOnNext {
+                    conversationMembersSubjects[conversationId]?.onNext(it.members)
+                    activeSpeakerSubjects[conversationId]?.onNext(it.speaker)
+                }
     }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
         return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM, {}, JSONObject().put("roomId", conversationId))
+    }
+
+    override fun getConversationMemberIds(conversationId: String): Observable<Collection<String>> {
+        return conversationMembersSubjects[conversationId] ?: Observable.error<Collection<String>>(IllegalStateException())
+    }
+
+    override fun getActiveSpeakerId(conversationId: String): Observable<String?> {
+        return activeSpeakerSubjects[conversationId] ?: Observable.just<String>(null)
     }
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
@@ -119,6 +138,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                     Socket.EVENT_CONNECT_ERROR,
                     Socket.EVENT_CONNECT_TIMEOUT,
                     Socket.EVENT_ERROR,
+                    EVENT_SERVER_ROOM_MEMBER_UPDATED,
+                    EVENT_SERVER_SPEAKER_CHANGED,
                     EVENT_SERVER_USER_LOGON)
             it
         }
@@ -131,6 +152,22 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                         Socket.EVENT_CONNECT -> {
                             Observable.empty<Person>()
                         }
+
+                        EVENT_SERVER_ROOM_MEMBER_UPDATED -> {
+                            val conversationId = event.jsonObject.getString("roomId")
+                            val members = event.jsonObject.getJSONArray("activeMembers").toStringIterable().toList()
+                            conversationMembersSubjects[conversationId]?.onNext(members)
+                            broker.updateConversationMembers(conversationId, members)
+
+                            Observable.empty<Person>()
+                        }
+
+                        EVENT_SERVER_SPEAKER_CHANGED -> {
+                            activeSpeakerSubjects[event.jsonObject.getString("roomId")]?.
+                                    onNext(event.jsonObject.optString("speaker"))
+                            Observable.empty<Person>()
+                        }
+
                         EVENT_SERVER_USER_LOGON -> {
                             logonUser.set(Person().readFrom(event.jsonObject))
                             syncContacts().subscribe()
@@ -208,7 +245,7 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
 internal fun JSONObject.toRoomInfo(conversationId: String): RoomInfo {
     val server = getJSONObject("server")
     return RoomInfo(getJSONObject("roomInfo").getString("idNumber"), conversationId,
-            ImmutableList.copyOf(getJSONArray("activeMembers").toStringList()), optString("speaker"),
+            ImmutableList.copyOf(getJSONArray("activeMembers").toStringIterable()), optString("speaker"),
             ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host"),
                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port"),
                     WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
@@ -223,7 +260,7 @@ internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
     val result = ArrayMap<String, Iterable<String>>(size)
     for (i in 1..size - 1) {
         val groupObject = getJSONObject(i)
-        result.put(groupObject.getString("idNumber"), groupObject.optJSONArray("members").toStringList())
+        result.put(groupObject.getString("idNumber"), groupObject.optJSONArray("members").toStringIterable())
     }
 
     return result

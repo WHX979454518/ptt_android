@@ -19,6 +19,7 @@ import com.xianzhitech.ptt.service.provider.SignalProvider
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import rx.subscriptions.CompositeSubscription
 import kotlin.collections.listOf
 
 /**
@@ -56,7 +57,7 @@ enum class RoomStatus {
     REQUESTING_MIC,
 
     /**
-     * 房间处于有人讲话的状态（不一定是本人）
+     * 房间处于有别人讲话的状态
      */
     ACTIVE,
 }
@@ -193,7 +194,6 @@ class RoomService() : Service(), RoomServiceBinder {
             }
         }
     lateinit var signalProvider: SignalProvider
-
     lateinit var talkEngineProvider: TalkEngineProvider
     lateinit var logonUserId: String
     var currentConversationId: String? = null
@@ -276,22 +276,30 @@ class RoomService() : Service(), RoomServiceBinder {
         roomStatus = RoomStatus.CONNECTING
 
         currentConversationId = conversationId
-        connectSubscription = signalProvider.joinConversation(conversationId)
-                .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<RoomInfo>(this@RoomService) {
-                    override fun onError(e: Throwable) {
-                        sendBroadcast(Intent(ACTION_CONNECT_ERROR))
-                        roomStatus = RoomStatus.NOT_CONNECTED
-                    }
-
-                    override fun onNext(t: RoomInfo) {
-                        currentRoomInfo = t
-                        if (currentTalkEngine == null) {
-                            currentTalkEngine = talkEngineProvider.createEngine().apply { connect(t) }
+        connectSubscription = CompositeSubscription().apply {
+            add(signalProvider.joinConversation(conversationId)
+                    .observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<RoomInfo>(this@RoomService) {
+                        override fun onError(e: Throwable) {
+                            sendBroadcast(Intent(ACTION_CONNECT_ERROR))
+                            roomStatus = RoomStatus.NOT_CONNECTED
                         }
-                        roomStatus = RoomStatus.CONNECTED
-                    }
-                })
+
+                        override fun onNext(t: RoomInfo) {
+                            currentRoomInfo = t
+                            if (currentTalkEngine == null) {
+                                currentTalkEngine = talkEngineProvider.createEngine().apply { connect(t) }
+                            }
+                            roomStatus = RoomStatus.CONNECTED
+                        }
+                    }))
+
+            add(signalProvider.getActiveSpeakerId(conversationId)
+                    .observeOnMainThread()
+                    .subscribe {
+                        currentSpeakerId = it
+                    })
+        }
     }
 
 

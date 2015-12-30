@@ -19,7 +19,6 @@
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/contacts_list"
-        android:layout_marginTop="@dimen/unit_one"
         android:layout_weight="1"
         android:layout_width="match_parent"
         android:layout_height="0dip"

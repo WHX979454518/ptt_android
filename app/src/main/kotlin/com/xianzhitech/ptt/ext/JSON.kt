@@ -8,7 +8,7 @@ import kotlin.collections.emptyList
  * Created by fanchao on 17/12/15.
  */
 
-fun JSONArray?.toStringList(): Iterable<String> = transform { it.toString() }
+fun JSONArray?.toStringIterable(): Iterable<String> = transform { it.toString() }
 
 fun <T> JSONArray?.transform(map: (Any) -> T): Iterable<T> {
     if (this == null) {

@@ -53,10 +53,20 @@ interface SignalProvider {
     fun deleteConversation(conversationId: String): Observable<Unit>
 
     /**
-     * 加入会话（进入对讲房间）. 房间信息将会持续分发.
+     * 加入会话（进入对讲房间）
      */
     @CheckResult
     fun joinConversation(conversationId: String): Observable<RoomInfo>
+
+    /**
+     * 获取房间成员（以及更新）
+     */
+    fun getConversationMemberIds(conversationId: String): Observable<Collection<String>>
+
+    /**
+     * 获取正在发言的成员
+     */
+    fun getActiveSpeakerId(conversationId: String): Observable<String?>
 
     /**
      * 退出会话（退出对讲房间）

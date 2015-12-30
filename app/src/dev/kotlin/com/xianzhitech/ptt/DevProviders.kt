@@ -121,6 +121,14 @@ class DevProvider(private val broker: Broker) : AuthProvider, SignalProvider {
         room.currSpeaker.compareAndSet(ensuredLogonUserId, null)
         return Observable.empty()
     }
+
+    override fun getConversationMemberIds(conversationId: String): Observable<Collection<String>> {
+        throw UnsupportedOperationException()
+    }
+
+    override fun getActiveSpeakerId(conversationId: String): Observable<String?> {
+        throw UnsupportedOperationException()
+    }
 }
 
 class DevTalkEngine : TalkEngine {

@@ -139,6 +139,8 @@ class Broker(internal val db: Database) {
     @CheckResult
     fun updateConversationMembers(conversationId: String, groupMembers: Iterable<String>): Observable<Unit> {
         return updateInTransaction({
+            db.delete(ConversationMembers.TABLE_NAME, "${ConversationMembers.COL_CONVERSATION_ID} = ?", conversationId)
+
             val values = ContentValues(2)
             values.put(ConversationMembers.COL_CONVERSATION_ID, conversationId)
             groupMembers.forEach { memberId ->

@@ -3,14 +3,17 @@ package com.xianzhitech.ptt.model
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
+import android.graphics.drawable.Drawable
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
+import com.xianzhitech.ptt.ui.widget.TextDrawable
 import rx.functions.Func1
 import java.io.Serializable
 import java.util.*
 import kotlin.text.isNullOrEmpty
+import kotlin.text.substring
 
 /**
  *
@@ -26,6 +29,7 @@ interface Model {
 
 interface ContactItem {
     fun getTintColor(context: Context): Int
+    fun getIcon(context: Context): Drawable
 
     val name: CharSequence
     val avatar: String?
@@ -156,6 +160,8 @@ class Group() : Model, ContactItem {
         it[hashCode() % it.size]
     }
 
+    override fun getIcon(context: Context) = TextDrawable(name.substring(0, 1), getTintColor(context))
+
     override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
@@ -208,6 +214,8 @@ class Person() : Model, ContactItem, Serializable {
     override fun getTintColor(context: Context) = context.resources.getIntArray(R.array.account_colors).let {
         it[hashCode() % it.size]
     }
+
+    override fun getIcon(context: Context) = TextDrawable(name.substring(0, 1), getTintColor(context))
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
