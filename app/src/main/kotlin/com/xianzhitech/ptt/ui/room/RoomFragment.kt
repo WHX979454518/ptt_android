@@ -9,19 +9,20 @@ import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
-import com.xianzhitech.ptt.service.provider.ConversationRequest
-import com.xianzhitech.ptt.service.provider.CreateConversationRequest
-import com.xianzhitech.ptt.service.provider.SignalProvider
+import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.Privilege
+import com.xianzhitech.ptt.service.provider.*
 import com.xianzhitech.ptt.service.room.RoomService
 import com.xianzhitech.ptt.service.room.RoomStatus
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import rx.Observable
+import java.util.*
 
 /**
  * 显示对话界面
@@ -34,9 +35,11 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
     private lateinit var pttBtn: PushToTalkButton
     private lateinit var appBar: ViewGroup
     private lateinit var progressBar: View
+    private lateinit var roomStatusView: TextView
     private lateinit var broker: Broker
 
     internal lateinit var signalProvider: SignalProvider
+    internal lateinit var authProvider: AuthProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +47,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
         val component = activity.application as AppComponent
         broker = component.broker
         signalProvider = component.signalProvider
+        authProvider = component.authProvider
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -52,6 +56,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
             pttBtn = findView(R.id.room_pushToTalkButton)
             appBar = findView(R.id.room_appBar)
             progressBar = findView(R.id.room_progress)
+            roomStatusView = findView(R.id.room_status)
 
             toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
             toolbar.setNavigationOnClickListener { v -> activity.finish() }
@@ -71,8 +76,8 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
             if (request is CreateConversationRequest) {
                 // 没有会话id, 向服务器请求
                 conversationIdObservable = signalProvider.createConversation(request)
-                        .flatMap({ broker.saveConversation(it) })
-                        .map({ it.id })
+                        .flatMap { broker.saveConversation(it) }
+                        .map { it.id }
             } else if (request is ConversationFromExisiting) {
                 conversationIdObservable = Observable.just(request.conversationId)
             } else {
@@ -89,6 +94,32 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
                             pttBtn.roomStatus = t
                         }
                     })
+
+            // 绑定当前对讲用户状态
+            // 这个临时变量只是用来保持下面一个async call chain的整洁
+            val logonPersonObj = authProvider.currentLogonUserId?.let { Person(it, "", EnumSet.noneOf(Privilege::class.java)) }
+
+            RoomService.getCurrentSpeakerId(context)
+                    .flatMap {
+                        when (it) {
+                            null -> Observable.just(null)
+                            authProvider.currentLogonUserId -> logonPersonObj.toObservable()
+                            else -> broker.getPerson(it)
+                        }
+                    }
+                    .observeOnMainThread()
+                    .compose(bindToLifecycle())
+                    .subscribe {
+                        if (it == null) {
+                            roomStatusView.animate().alpha(0f).start()
+                        } else if (authProvider.currentLogonUserId == it.id) {
+                            roomStatusView.animate().alpha(1f).start()
+                            roomStatusView.text = R.string.room_talking.toFormattedString(context)
+                        } else {
+                            roomStatusView.animate().alpha(1f).start()
+                            roomStatusView.text = R.string.room_other_is_talking.toFormattedString(context, it.name)
+                        }
+                    }
 
             // 请求连接房间
             conversationIdObservable

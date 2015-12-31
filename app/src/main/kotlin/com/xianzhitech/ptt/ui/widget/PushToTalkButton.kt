@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.service.room.RoomStatus
  */
 class PushToTalkButton : ImageButton {
     public lateinit var callbacks: Callbacks
+
     private val requestFocusRunnable = Runnable {
         callbacks.requestFocus()
     }
@@ -31,7 +32,7 @@ class PushToTalkButton : ImageButton {
             }
         }
 
-    var paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     constructor(context: Context) : super(context) {
         init(context)
@@ -91,5 +92,6 @@ class PushToTalkButton : ImageButton {
     interface Callbacks {
         fun requestFocus()
         fun releaseFocus()
+
     }
 }

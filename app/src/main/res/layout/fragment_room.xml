@@ -23,6 +23,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
+            <TextView
+                android:id="@+id/room_status"
+                style="@style/Text.Caption"
+                android:alpha="0"
+                android:background="@drawable/bg_room_status"
+                android:padding="@dimen/unit_half"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
 
         </android.support.design.widget.AppBarLayout>
 

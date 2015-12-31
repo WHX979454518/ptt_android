@@ -64,6 +64,7 @@ fun <T, S> Context.retrieveServiceValue(intent: Intent,
                 receiveBroadcasts(useLocalBroadcast, *broadcastActions).subscribeOnOptional(scheduler).mergeWith(null.toObservable()),
                 { serviceBinder, intent -> serviceBinder })
                 .map { valueRetriever(it) }
+                .distinctUntilChanged()
 
 fun <T> Context.connectToService(intent: Intent, flags: Int): Observable<T> {
     return Observable.create {

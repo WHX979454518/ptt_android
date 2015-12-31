@@ -197,7 +197,9 @@ class Person() : Model, ContactItem, Serializable {
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID TEXT PRIMARY KEY NOT NULL, $COL_NAME TEXT NOT NULL, $COL_AVATAR TEXT, $COL_PRIV INTEGER NOT NULL)"
 
-        public @JvmField val MAPPER = Func1<Cursor, Person> { Person().from(it) }
+        public @JvmField val MAPPER = Func1<Cursor, Person> {
+            Person().from(it)
+        }
     }
 
     var id: String = ""

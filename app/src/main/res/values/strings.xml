@@ -14,6 +14,8 @@
     <string name="user_password_hint">输入密码</string>
     <string name="login">登陆</string>
     <string name="login_failed">登陆失败</string>
+    <string name="room_talking">请讲话</string>
+    <string name="room_other_is_talking">%1$s 正在讲话</string>
 
     <string name="error_title">出错啦</string>
     <string name="error_content">错误原因: %1$s</string>

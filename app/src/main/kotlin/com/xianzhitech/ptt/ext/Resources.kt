@@ -28,3 +28,5 @@ fun Context.getColorCompat(@ColorRes colorRes: Int) =
         else resources.getColor(colorRes)
 
 fun Int.toColorValue(context: Context) = context.getColorCompat(this)
+
+fun Int.toFormattedString(context: Context, vararg args: Any?) = context.getString(this, *args)
