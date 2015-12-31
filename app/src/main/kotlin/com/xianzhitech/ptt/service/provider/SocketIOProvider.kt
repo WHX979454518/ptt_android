@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.service.provider
 
 import android.support.v4.util.ArrayMap
-import android.support.v4.util.SimpleArrayMap
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
@@ -52,8 +51,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     private lateinit var socket: Socket
     private val logonUser = AtomicReference<Person>()
     private val eventSubject = PublishSubject.create<Event>()
-    private val conversationMembersSubjects = SimpleArrayMap<String, BehaviorSubject<Collection<String>>>()
-    private val activeSpeakerSubjects = SimpleArrayMap<String, BehaviorSubject<String?>>()
+    private val conversationMembersSubjects = ArrayMap<String, BehaviorSubject<Collection<String>>>()
+    private val activeSpeakerSubjects = ArrayMap<String, BehaviorSubject<String?>>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         return socket
@@ -61,9 +60,6 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 .flatMap {
                     val conversation = Conversation().readFrom(it)
                     val members = it.getJSONArray("members").toStringIterable()
-
-                    conversationMembersSubjects.put(conversation.id, BehaviorSubject.create())
-                    activeSpeakerSubjects.put(conversation.id, BehaviorSubject.create())
 
                     broker.saveConversation(conversation)
                     broker.updateConversationMembers(conversation.id, members).map { conversation }
@@ -74,6 +70,15 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
+    private fun ensureConversationMembersSubject(convId: String) = synchronized(conversationMembersSubjects, {
+        conversationMembersSubjects.getOrPut(convId, { BehaviorSubject.create() })
+    })
+
+    private fun ensureActiveSpeakerSubject(convId: String) = synchronized(activeSpeakerSubjects, {
+        activeSpeakerSubjects.getOrPut(convId, { BehaviorSubject.create() })
+    })
+
+
     override val currentLogonUserId: String?
         get() = logonUser.get()?.id
 
@@ -83,26 +88,25 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 { (it as JSONObject).toRoomInfo(conversationId) },
                 JSONObject().put("roomId", conversationId))
                 .doOnNext {
-                    conversationMembersSubjects[conversationId]?.onNext(it.members)
-                    activeSpeakerSubjects[conversationId]?.onNext(it.speaker)
+                    ensureConversationMembersSubject(conversationId).onNext(it.members)
+                    ensureActiveSpeakerSubject(conversationId).onNext(it.speaker)
                 }
     }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
         return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM, {}, JSONObject().put("roomId", conversationId))
+                .doOnNext {
+                    conversationMembersSubjects.remove(conversationId)
+                    activeSpeakerSubjects.remove(conversationId)
+                }
     }
 
-    override fun getConversationMemberIds(conversationId: String): Observable<Collection<String>> {
-        return conversationMembersSubjects[conversationId] ?: Observable.error<Collection<String>>(IllegalStateException())
-    }
-
-    override fun getActiveSpeakerId(conversationId: String): Observable<String?> {
-        return activeSpeakerSubjects[conversationId] ?: Observable.just<String>(null)
-    }
+    override fun getConversationMemberIds(conversationId: String) = ensureConversationMembersSubject(conversationId)
+    override fun getActiveSpeakerId(conversationId: String) = ensureActiveSpeakerSubject(conversationId)
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
         return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == logonUser.get().id } },
-                    JSONObject().put("roomId", conversationId))
+                JSONObject().put("roomId", conversationId))
     }
 
     override fun releaseMic(conversationId: String): Observable<Unit> {

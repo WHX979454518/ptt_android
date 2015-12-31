@@ -49,6 +49,13 @@ class Broker(internal val db: Database) {
                 .subscribeOn(queryScheduler)
     }
 
+    @CheckResult
+    fun getConversation(id: String): Observable<Conversation> {
+        return db.createQuery(Conversation.TABLE_NAME, "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ? LIMIT 1", id)
+                .mapToOne(Conversation.MAPPER)
+                .subscribeOn(queryScheduler)
+    }
+
     val groups: Observable<List<Group>>
         @CheckResult
         get() = db.createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME}")

@@ -14,6 +14,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.service.provider.*
@@ -123,17 +124,19 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
 
             // 请求连接房间
             conversationIdObservable
+                    .flatMap { broker.getConversation(it) }
                     .observeOnMainThread()
                     .compose(bindToLifecycle())
-                    .subscribe(object : GlobalSubscriber<String>(context) {
+                    .subscribe(object : GlobalSubscriber<Conversation>(context) {
                         override fun onError(e: Throwable) {
                             AlertDialog.Builder(context).setMessage("Joined room failed: " + e.message).create().show()
                             progressBar.visibility = View.GONE
                         }
 
-                        override fun onNext(t: String) {
+                        override fun onNext(t: Conversation) {
                             progressBar.visibility = View.GONE
-                            context.startService(RoomService.buildConnect(context, t))
+                            context.startService(RoomService.buildConnect(context, t.id))
+                            toolbar.setTitle(t.name)
                         }
                     })
 
