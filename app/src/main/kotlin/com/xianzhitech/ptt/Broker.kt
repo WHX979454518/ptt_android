@@ -43,6 +43,13 @@ class Broker(internal val db: Database) {
     }
 
     @CheckResult
+    fun getPersons(ids: Iterable<String>): Observable<List<Person>> {
+        return db.createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME} WHERE ${Person.COL_ID} IN ${ids.toSqlSet()}")
+                .mapToList(Person.MAPPER)
+                .subscribeOn(queryScheduler)
+    }
+
+    @CheckResult
     fun getGroup(id: String): Observable<Group> {
         return db.createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} = ? LIMIT 1", id)
                 .mapToOne(Group.MAPPER)
@@ -53,6 +60,14 @@ class Broker(internal val db: Database) {
     fun getConversation(id: String): Observable<Conversation> {
         return db.createQuery(Conversation.TABLE_NAME, "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ? LIMIT 1", id)
                 .mapToOne(Conversation.MAPPER)
+                .subscribeOn(queryScheduler)
+    }
+
+    @CheckResult
+    fun getConversationMembers(id: String): Observable<out Collection<Person>> {
+        return db.createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME),
+                "SELECT P.* FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS CM ON CM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} WHERE CM.${ConversationMembers.COL_CONVERSATION_ID} = ?", id)
+                .mapToList(Person.MAPPER)
                 .subscribeOn(queryScheduler)
     }
 

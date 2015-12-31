@@ -14,10 +14,7 @@ import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.collections.emptyMap
-import kotlin.collections.hashSetOf
-import kotlin.collections.listOf
-import kotlin.collections.mapOf
+import kotlin.collections.*
 
 /**
  * Created by fanchao on 27/12/15.
@@ -102,7 +99,7 @@ class DevProvider(private val broker: Broker) : AuthProvider, SignalProvider {
     override fun deleteConversation(conversationId: String) = Observable.empty<Unit>()
 
     override fun joinConversation(conversationId: String) = room.members.add(ensuredLogonUserId).let {
-        roomInfoSubject.onNext(RoomInfo(conversationId, conversationId, room.members, room.currSpeaker.get(), emptyMap()))
+        roomInfoSubject.onNext(RoomInfo(conversationId, conversationId, room.members, emptyList(), room.currSpeaker.get(), emptyMap()))
         roomInfoSubject
     }
 
@@ -122,7 +119,7 @@ class DevProvider(private val broker: Broker) : AuthProvider, SignalProvider {
         return Observable.empty()
     }
 
-    override fun getConversationMemberIds(conversationId: String): Observable<Collection<String>> {
+    override fun getConversationActiveMemberIds(conversationId: String): Observable<Collection<String>> {
         throw UnsupportedOperationException()
     }
 

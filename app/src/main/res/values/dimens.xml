@@ -9,4 +9,5 @@
     <dimen name="room_dark_height">180dp</dimen>
     <dimen name="push_button">180dp</dimen>
     <dimen name="button_stroke">4dp</dimen>
+    <dimen name="member_highlight_stroke">2dp</dimen>
 </resources>

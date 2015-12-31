@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.service.provider
 
 import android.support.v4.util.ArrayMap
-import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.xianzhitech.ptt.Broker
@@ -36,7 +35,7 @@ import kotlin.collections.*
 class SocketIOProvider(private val broker: Broker, private val endpoint: String) : SignalProvider, AuthProvider {
     companion object {
         public const val EVENT_SERVER_USER_LOGON = "s_logon"
-        public const val EVENT_SERVER_ROOM_MEMBER_UPDATED = "s_member_update"
+        public const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
         public const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
         public const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
 
@@ -51,7 +50,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     private lateinit var socket: Socket
     private val logonUser = AtomicReference<Person>()
     private val eventSubject = PublishSubject.create<Event>()
-    private val conversationMembersSubjects = ArrayMap<String, BehaviorSubject<Collection<String>>>()
+    private val conversationActiveMembersSubjects = ArrayMap<String, BehaviorSubject<Collection<String>>>()
     private val activeSpeakerSubjects = ArrayMap<String, BehaviorSubject<String?>>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
@@ -70,8 +69,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         return Observable.empty()
     }
 
-    private fun ensureConversationMembersSubject(convId: String) = synchronized(conversationMembersSubjects, {
-        conversationMembersSubjects.getOrPut(convId, { BehaviorSubject.create() })
+    private fun ensureConversationActiveMembersSubject(convId: String) = synchronized(conversationActiveMembersSubjects, {
+        conversationActiveMembersSubjects.getOrPut(convId, { BehaviorSubject.create() })
     })
 
     private fun ensureActiveSpeakerSubject(convId: String) = synchronized(activeSpeakerSubjects, {
@@ -88,7 +87,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 { (it as JSONObject).toRoomInfo(conversationId) },
                 JSONObject().put("roomId", conversationId))
                 .doOnNext {
-                    ensureConversationMembersSubject(conversationId).onNext(it.members)
+                    broker.updateConversationMembers(conversationId, it.members)
+                    ensureConversationActiveMembersSubject(conversationId).onNext(it.activeMembers)
                     ensureActiveSpeakerSubject(conversationId).onNext(it.speaker)
                 }
     }
@@ -96,12 +96,12 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     override fun quitConversation(conversationId: String): Observable<Unit> {
         return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM, {}, JSONObject().put("roomId", conversationId))
                 .doOnNext {
-                    conversationMembersSubjects.remove(conversationId)
+                    conversationActiveMembersSubjects.remove(conversationId)
                     activeSpeakerSubjects.remove(conversationId)
                 }
     }
 
-    override fun getConversationMemberIds(conversationId: String) = ensureConversationMembersSubject(conversationId)
+    override fun getConversationActiveMemberIds(conversationId: String) = ensureConversationActiveMembersSubject(conversationId)
     override fun getActiveSpeakerId(conversationId: String) = ensureActiveSpeakerSubject(conversationId)
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
@@ -142,8 +142,9 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                     Socket.EVENT_CONNECT_ERROR,
                     Socket.EVENT_CONNECT_TIMEOUT,
                     Socket.EVENT_ERROR,
-                    EVENT_SERVER_ROOM_MEMBER_UPDATED,
+                    EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED,
                     EVENT_SERVER_SPEAKER_CHANGED,
+                    EVENT_SERVER_ROOM_INFO_CHANGED,
                     EVENT_SERVER_USER_LOGON)
             it
         }
@@ -157,18 +158,21 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                             Observable.empty<Person>()
                         }
 
-                        EVENT_SERVER_ROOM_MEMBER_UPDATED -> {
+                        EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED -> {
                             val conversationId = event.jsonObject.getString("roomId")
                             val members = event.jsonObject.getJSONArray("activeMembers").toStringIterable().toList()
-                            conversationMembersSubjects[conversationId]?.onNext(members)
-                            broker.updateConversationMembers(conversationId, members)
-
+                            ensureConversationActiveMembersSubject(conversationId).onNext(members)
                             Observable.empty<Person>()
                         }
 
                         EVENT_SERVER_SPEAKER_CHANGED -> {
-                            activeSpeakerSubjects[event.jsonObject.getString("roomId")]?.
-                                    onNext(event.jsonObject.let { if (it.isNull("speaker")) null else it.getString("speaker") })
+                            ensureActiveSpeakerSubject(event.jsonObject.getString("roomId"))
+                                    .onNext(event.jsonObject.let { if (it.isNull("speaker")) null else it.getString("speaker") })
+                            Observable.empty<Person>()
+                        }
+
+                        EVENT_SERVER_ROOM_INFO_CHANGED -> {
+                            broker.updateConversationMembers(event.jsonObject.getString("idNumber"), event.jsonObject.getJSONArray("members").toStringIterable().toList())
                             Observable.empty<Person>()
                         }
 
@@ -177,6 +181,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                             syncContacts().subscribe()
                             logonUser.get().toObservable()
                         }
+
+
                         else -> Observable.empty<Person>()
                     }
                 })
@@ -248,8 +254,10 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
 
 internal fun JSONObject.toRoomInfo(conversationId: String): RoomInfo {
     val server = getJSONObject("server")
-    return RoomInfo(getJSONObject("roomInfo").getString("idNumber"), conversationId,
-            ImmutableList.copyOf(getJSONArray("activeMembers").toStringIterable()), optString("speaker"),
+    val roomInfoObject = getJSONObject("roomInfo")
+    return RoomInfo(roomInfoObject.getString("idNumber"), conversationId,
+            roomInfoObject.getJSONArray("members").toStringIterable().toList(),
+            getJSONArray("activeMembers").toStringIterable().toList(), optString("speaker"),
             ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host"),
                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port"),
                     WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))

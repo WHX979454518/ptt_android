@@ -9,6 +9,7 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Person
@@ -19,6 +20,7 @@ import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
+import kotlin.collections.listOf
 import kotlin.text.isNullOrEmpty
 
 
@@ -110,6 +112,7 @@ class UserService() : Service(), UserServiceBinder {
     var loginSubscription : Subscription? = null
     private lateinit var signalProvider : SignalProvider
     private lateinit var authProvider : AuthProvider
+    private lateinit var broker: Broker
     val foregroundNotification : Notification by lazy {
         NotificationCompat.Builder(this)
                 .setContentTitle(getText(R.string.app_name))
@@ -123,6 +126,7 @@ class UserService() : Service(), UserServiceBinder {
         val appComponent = application as AppComponent
         signalProvider = appComponent.signalProvider
         authProvider = appComponent.authProvider
+        broker = appComponent.broker
 
         getSavedUserCredentials()?.let {
             doLogin(authProvider.resumeLogin(it))
@@ -192,6 +196,8 @@ class UserService() : Service(), UserServiceBinder {
                 .subscribe(object : GlobalSubscriber<LoginResult>() {
                     override fun onNext(t: LoginResult) {
                         logonUser = t.person
+
+                        broker.updatePersons(listOf(t.person))
 
                         if (t.token != null) {
                             saveLoginToken(t.token)

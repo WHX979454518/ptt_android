@@ -61,7 +61,7 @@ interface SignalProvider {
     /**
      * 获取房间成员（以及更新）
      */
-    fun getConversationMemberIds(conversationId: String): Observable<Collection<String>>
+    fun getConversationActiveMemberIds(conversationId: String): Observable<Collection<String>>
 
     /**
      * 获取正在发言的成员

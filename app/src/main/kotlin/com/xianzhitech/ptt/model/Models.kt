@@ -160,7 +160,7 @@ class Group() : Model, ContactItem {
         it[hashCode() % it.size]
     }
 
-    override fun getIcon(context: Context) = TextDrawable(name.substring(0, 1), getTintColor(context))
+    override fun getIcon(context: Context) = TextDrawable(context, name.substring(0, 1), getTintColor(context))
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
@@ -217,7 +217,7 @@ class Person() : Model, ContactItem, Serializable {
         it[hashCode() % it.size]
     }
 
-    override fun getIcon(context: Context) = TextDrawable(name.substring(0, 1), getTintColor(context))
+    override fun getIcon(context: Context) = TextDrawable(context, name.substring(0, 1), getTintColor(context))
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {

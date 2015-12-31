@@ -9,6 +9,7 @@ package com.xianzhitech.ptt.model
 data class RoomInfo(val id: String,
                     val conversationId: String,
                     val members: Collection<String>,
+                    val activeMembers: Collection<String>,
                     val speaker: String?,
                     val properties: Map<String, Any>) {
     inline fun <reified T> getProperty(name: String) = properties[name] as T?

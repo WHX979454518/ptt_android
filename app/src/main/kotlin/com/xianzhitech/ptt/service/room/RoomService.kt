@@ -21,15 +21,12 @@ import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.CompositeSubscription
-import kotlin.collections.listOf
 
 /**
  * 提供房间服务的查询接口
  */
 interface RoomServiceBinder {
     val currentSpeakerId: String?
-    val memberIds: Collection<String>
-
     val roomStatus: RoomStatus
 }
 
@@ -108,11 +105,6 @@ class RoomService() : Service(), RoomServiceBinder {
         public const val ACTION_CURRENT_SPEAKER_CHANGED = "action_current_speaker_changed"
 
         /**
-         * 房间成员变化时发出的事件
-         */
-        public const val ACTION_MEMBER_CHANGED = "action_member_changed"
-
-        /**
          * 房间连接状态发生改变时发出的事件
          */
         public const val ACTION_ROOM_STATUS_CHANGED = "action_room_status_changed"
@@ -145,13 +137,6 @@ class RoomService() : Service(), RoomServiceBinder {
          */
         public @JvmStatic fun buildRequestFocus(context: Context, hasFocus: Boolean) =
                 buildEmpty(context).setAction(if (hasFocus) ACTION_REQUEST_FOCUS else ACTION_RELEASE_FOCUS)
-
-        /**
-         * 监听房间成员的变化
-         */
-        public @JvmStatic fun getMemberIds(context: Context): Observable<Collection<String>> =
-                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.memberIds }, true,
-                        AndroidSchedulers.mainThread(), ACTION_MEMBER_CHANGED)
 
         /**
          * 监听房间状态的变化
@@ -189,13 +174,6 @@ class RoomService() : Service(), RoomServiceBinder {
                 roomStatus = if (value == null) RoomStatus.CONNECTED else RoomStatus.ACTIVE
             }
         }
-    override var memberIds: Collection<String> = listOf()
-        set(value) {
-            if (field != value) {
-                field = value
-                sendLocalBroadcast(Intent(ACTION_MEMBER_CHANGED))
-            }
-        }
 
     override var roomStatus = RoomStatus.NOT_CONNECTED
         set(value) {
@@ -215,7 +193,6 @@ class RoomService() : Service(), RoomServiceBinder {
         set(value) {
             field = value
             currentSpeakerId = value?.speaker
-            memberIds = value?.members ?: listOf()
         }
     var connectSubscription: Subscription? = null
     var requestFocusSubscription: Subscription? = null
