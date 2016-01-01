@@ -128,7 +128,7 @@ class Broker(internal val db: Database) {
     }
 
     @CheckResult
-    fun updateGroups(groups: Iterable<Group>?, groupMembers: Map<String, Iterable<String>>?): Observable<Unit> {
+    fun updateAllGroups(groups: Iterable<Group>?, groupMembers: Map<String, Iterable<String>>?): Observable<Unit> {
         return updateInTransaction({
 
             // Replace all existing groups
@@ -195,7 +195,7 @@ class Broker(internal val db: Database) {
 
 
     @CheckResult
-    fun updateContacts(persons: Iterable<String>?, groups: Iterable<String>?): Observable<Unit> {
+    fun updateAllContacts(persons: Iterable<String>?, groups: Iterable<String>?): Observable<Unit> {
         return updateInTransaction({
             db.execute("DELETE FROM ${Contacts.TABLE_NAME} WHERE 1")
             val values = ContentValues()
@@ -221,7 +221,7 @@ class Broker(internal val db: Database) {
     }
 
     @CheckResult
-    fun updatePersons(persons: Iterable<Person>): Observable<Unit> {
+    fun updateAllPersons(persons: Iterable<Person>): Observable<Unit> {
         return updateInTransaction({
             db.delete(Person.TABLE_NAME, "")
 

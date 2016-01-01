@@ -72,7 +72,7 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
 
         assertEquals(RoomStatus.ACTIVE, conn.roomStatus)
         assertEquals(true, mockTalkEngineProvider.createdEngines[0].sending)
-        assertEquals(mockAuthProvider.logonUser?.id, conn.currentSpeakerId)
+        assertEquals(mockAuthProvider.logonUser?.id, mockSignalProvider.peekCurrentSpeakerId(conversation.id))
 
         startService(RoomService.buildRequestFocus(context, false))
         assertEquals(false, mockTalkEngineProvider.createdEngines[0].sending)
@@ -80,12 +80,12 @@ class RoomServiceTest : ServiceTestCase<RoomService>(RoomService::class.java) {
     }
 
     fun testRequestFocusFail() {
-        mockSignalProvider.conversations[conversation.id]?.speaker?.set(MockPersons.PERSON_5.id)
+        mockSignalProvider.ensureCurrentSpeakerSubject(conversation.id).onNext(MockPersons.PERSON_5.id)
         val conn = bindService(RoomService.buildConnect(context, conversation.id)) as RoomServiceBinder
-        assertEquals(MockPersons.PERSON_5.id, conn.currentSpeakerId)
+        assertEquals(MockPersons.PERSON_5.id, mockSignalProvider.peekCurrentSpeakerId(conversation.id))
 
         startService(RoomService.buildRequestFocus(context, true))
-        assertEquals(MockPersons.PERSON_5.id, conn.currentSpeakerId)
+        assertEquals(MockPersons.PERSON_5.id, mockSignalProvider.peekCurrentSpeakerId(conversation.id))
         assertNotSame(RoomStatus.ACTIVE, conn.roomStatus)
     }
 }

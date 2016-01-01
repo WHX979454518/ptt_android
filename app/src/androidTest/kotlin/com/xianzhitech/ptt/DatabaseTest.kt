@@ -36,24 +36,24 @@ class DatabaseTest : AndroidTestCase() {
 
     fun testInsertGroup() {
         val groups = listOf(MockGroups.GROUP_3)
-        broker.updateGroups(groups, emptyMap()).toBlocking().first()
+        broker.updateAllGroups(groups, emptyMap()).toBlocking().first()
         Assert.assertEquals(groups, broker.groups.toBlocking().first())
     }
 
     fun testReplaceGroup() {
-        broker.updateGroups(listOf(MockGroups.GROUP_4, MockGroups.GROUP_1), null).toBlocking().first()
+        broker.updateAllGroups(listOf(MockGroups.GROUP_4, MockGroups.GROUP_1), null).toBlocking().first()
 
         val secondGroupList = setOf(MockGroups.GROUP_2, MockGroups.GROUP_1)
-        broker.updateGroups(secondGroupList, null).toBlocking().first()
+        broker.updateAllGroups(secondGroupList, null).toBlocking().first()
         Assert.assertEquals(secondGroupList, broker.groups.toBlocking().first().toSet())
     }
 
     fun testInsertGroupMembers() {
         val groups = listOf(MockGroups.GROUP_1, MockGroups.GROUP_2)
-        broker.updateGroups(groups, null).toBlocking().first()
+        broker.updateAllGroups(groups, null).toBlocking().first()
 
         val persons = listOf(MockPersons.PERSON_1, MockPersons.PERSON_2)
-        broker.updatePersons(persons).toBlocking().first()
+        broker.updateAllPersons(persons).toBlocking().first()
         broker.addGroupMembers(groups[0], persons).toBlocking().first()
 
         Assert.assertEquals(persons, broker.getGroupMembers(groups[0].id).toBlocking().first())
@@ -83,10 +83,10 @@ class DatabaseTest : AndroidTestCase() {
 
         val groups = listOf(MockGroups.GROUP_1, MockGroups.GROUP_2)
 
-        broker.updatePersons(persons).toBlocking().first()
+        broker.updateAllPersons(persons).toBlocking().first()
         val groupMembers = ArrayMap<String, List<String>>()
         groupMembers.put(groups[0].id, personIds)
-        broker.updateGroups(groups, groupMembers).toBlocking().first()
+        broker.updateAllGroups(groups, groupMembers).toBlocking().first()
 
         var result: List<Broker.AggregateInfo<Group, String>> = broker.getGroupsWithMemberNames(1).toBlocking().first()
         Assert.assertEquals(2, result.size)
@@ -107,10 +107,10 @@ class DatabaseTest : AndroidTestCase() {
         val groupMembers = ArrayMap<String, List<String>>()
         groupMembers.put(MockGroups.GROUP_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_3.id))
 
-        broker.updatePersons(persons).toBlocking().first()
-        broker.updateGroups(groups, groupMembers).toBlocking().first()
+        broker.updateAllPersons(persons).toBlocking().first()
+        broker.updateAllGroups(groups, groupMembers).toBlocking().first()
 
-        broker.updateContacts(persons.transform { it.id }, groups.transform { it.id }).toBlocking().first()
+        broker.updateAllContacts(persons.transform { it.id }, groups.transform { it.id }).toBlocking().first()
 
         val expectedContacts = setOf(MockPersons.PERSON_1, MockPersons.PERSON_2, MockPersons.PERSON_3, MockGroups.GROUP_1)
         Assert.assertEquals(expectedContacts, broker.getContacts(null).toBlocking().first().toSet())

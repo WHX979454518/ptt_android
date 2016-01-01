@@ -19,10 +19,10 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.service.provider.*
 import com.xianzhitech.ptt.service.room.RoomService
 import com.xianzhitech.ptt.service.room.RoomStatus
+import com.xianzhitech.ptt.service.user.UserService
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import rx.Observable
@@ -109,15 +109,15 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
                     })
 
             // 绑定当前对讲用户状态
-            // 这个临时变量只是用来保持下面一个async call chain的整洁
-            val logonPersonObj = authProvider.currentLogonUserId?.let { Person(it, "", EnumSet.noneOf(Privilege::class.java)) }
-
-            RoomService.getCurrentSpeakerId(context)
+            Observable.combineLatest(
+                    conversationIdObservable.flatMap { RoomService.getCurrentSpeakerId(context) },
+                    UserService.getLogonUser(context),
+                    { first, second -> Pair(first, second) })
                     .flatMap {
-                        when (it) {
+                        when (it.first) {
                             null -> Observable.just(null)
-                            authProvider.currentLogonUserId -> logonPersonObj.toObservable()
-                            else -> broker.getPerson(it)
+                            it.second?.id -> it.second.toObservable()
+                            else -> broker.getPerson(it.first!!)
                         }
                     }
                     .observeOnMainThread()
@@ -125,7 +125,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
                     .subscribe {
                         if (it == null) {
                             roomStatusView.animate().alpha(0f).start()
-                        } else if (authProvider.currentLogonUserId == it.id) {
+                        } else if (authProvider.peekCurrentLogonUserId() == it.id) {
                             roomStatusView.animate().alpha(1f).start()
                             roomStatusView.text = R.string.room_talking.toFormattedString(context)
                         } else {
@@ -137,8 +137,9 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
                     }
 
             // 绑定房间的成员
-            Observable.combineLatest(conversationIdObservable.flatMap { broker.getConversationMembers(it) },
-                    conversationIdObservable.flatMap { signalProvider.getConversationActiveMemberIds(it) },
+            Observable.combineLatest(
+                    conversationIdObservable.flatMap { broker.getConversationMembers(it) },
+                    RoomService.getActiveMemberIds(context),
                     { first, second -> Pair(first, second) })
                     .observeOnMainThread()
                     .compose(bindToLifecycle())

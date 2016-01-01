@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ext
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.*
 import kotlin.collections.emptyList
 
 /**
@@ -9,6 +10,14 @@ import kotlin.collections.emptyList
  */
 
 fun JSONArray?.toStringIterable(): Iterable<String> = transform { it.toString() }
+
+fun JSONArray?.toStringList(): List<String> = this?.let {
+    ArrayList<String>(length()).apply {
+        for (i in 0..length() - 1) {
+            add(getString(i))
+        }
+    }
+} ?: emptyList<String>()
 
 fun <T> JSONArray?.transform(map: (Any) -> T): Iterable<T> {
     if (this == null) {

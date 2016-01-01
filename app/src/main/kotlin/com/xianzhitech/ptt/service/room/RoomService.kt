@@ -21,12 +21,14 @@ import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.CompositeSubscription
+import kotlin.collections.listOf
 
 /**
  * 提供房间服务的查询接口
  */
 interface RoomServiceBinder {
     val currentSpeakerId: String?
+    val activeMemberIds: Collection<String>
     val roomStatus: RoomStatus
 }
 
@@ -105,6 +107,11 @@ class RoomService() : Service(), RoomServiceBinder {
         public const val ACTION_CURRENT_SPEAKER_CHANGED = "action_current_speaker_changed"
 
         /**
+         * 在线成员发生变化的事件
+         */
+        public const val ACTION_ACTIVE_MEMBERS_CHANGED = "action_active_members_changed"
+
+        /**
          * 房间连接状态发生改变时发出的事件
          */
         public const val ACTION_ROOM_STATUS_CHANGED = "action_room_status_changed"
@@ -151,6 +158,13 @@ class RoomService() : Service(), RoomServiceBinder {
         public @JvmStatic fun getCurrentSpeakerId(context: Context): Observable<String?> =
                 context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.currentSpeakerId }, true,
                         AndroidSchedulers.mainThread(), ACTION_CURRENT_SPEAKER_CHANGED)
+
+        /**
+         * 监听当前在线用户的变化
+         */
+        public @JvmStatic fun getActiveMemberIds(context: Context): Observable<Collection<String>> =
+                context.retrieveServiceValue(buildEmpty(context), { binder: RoomServiceBinder -> binder.activeMemberIds }, true,
+                        AndroidSchedulers.mainThread(), ACTION_ACTIVE_MEMBERS_CHANGED)
     }
 
     private var binder: IBinder? = null
@@ -173,6 +187,12 @@ class RoomService() : Service(), RoomServiceBinder {
                 sendLocalBroadcast(Intent(ACTION_CURRENT_SPEAKER_CHANGED))
                 roomStatus = if (value == null) RoomStatus.CONNECTED else RoomStatus.ACTIVE
             }
+        }
+
+    override var activeMemberIds: Collection<String> = listOf()
+        set(value) {
+            field = value
+            sendLocalBroadcast(Intent(ACTION_ACTIVE_MEMBERS_CHANGED))
         }
 
     override var roomStatus = RoomStatus.NOT_CONNECTED
@@ -205,7 +225,7 @@ class RoomService() : Service(), RoomServiceBinder {
         val appComponent = application as AppComponent
         signalProvider = appComponent.signalProvider
         talkEngineProvider = appComponent.talkEngineProvider
-        logonUserId = appComponent.authProvider.currentLogonUserId ?: throw IllegalArgumentException("No logon user")
+        logonUserId = appComponent.authProvider.peekCurrentLogonUserId() ?: throw IllegalArgumentException("No logon user")
 
         soundPool.second.put(R.raw.incoming, soundPool.first.load(this, R.raw.incoming, 0))
         soundPool.second.put(R.raw.outgoing, soundPool.first.load(this, R.raw.outgoing, 0))
@@ -235,7 +255,6 @@ class RoomService() : Service(), RoomServiceBinder {
         handleIntent(intent)
         return START_NOT_STICKY
     }
-
 
     private fun handleIntent(intent: Intent?) {
         intent?.apply {
@@ -286,14 +305,19 @@ class RoomService() : Service(), RoomServiceBinder {
                         }
                     }))
 
-            add(signalProvider.getActiveSpeakerId(conversationId)
+            add(signalProvider.getCurrentSpeakerId(conversationId)
                     .observeOnMainThread()
                     .subscribe {
                         currentSpeakerId = it
                     })
+
+            add(signalProvider.getActiveMemberIds(conversationId)
+                    .observeOnMainThread()
+                    .subscribe {
+                        activeMemberIds = it
+                    })
         }
     }
-
 
     private fun doDisconnect() {
         currentConversationId?.let {

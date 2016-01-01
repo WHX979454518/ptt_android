@@ -20,7 +20,6 @@ import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
-import kotlin.collections.listOf
 import kotlin.text.isNullOrEmpty
 
 
@@ -196,8 +195,6 @@ class UserService() : Service(), UserServiceBinder {
                 .subscribe(object : GlobalSubscriber<LoginResult>() {
                     override fun onNext(t: LoginResult) {
                         logonUser = t.person
-
-                        broker.updatePersons(listOf(t.person))
 
                         if (t.token != null) {
                             saveLoginToken(t.token)

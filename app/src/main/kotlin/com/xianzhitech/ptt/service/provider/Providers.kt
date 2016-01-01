@@ -59,14 +59,24 @@ interface SignalProvider {
     fun joinConversation(conversationId: String): Observable<RoomInfo>
 
     /**
-     * 获取房间成员（以及更新）
+     * 获取房间在线成员（以及更新）
      */
-    fun getConversationActiveMemberIds(conversationId: String): Observable<Collection<String>>
+    fun getActiveMemberIds(conversationId: String): Observable<Collection<String>>
 
     /**
-     * 获取正在发言的成员
+     * 获取当前房间在线成员
      */
-    fun getActiveSpeakerId(conversationId: String): Observable<String?>
+    fun peekActiveMemberIds(conversationId: String): Collection<String>
+
+    /**
+     * 获取正在发言的成员（以及后续的更新）
+     */
+    fun getCurrentSpeakerId(conversationId: String): Observable<String?>
+
+    /**
+     * 获取当前正在发言的成员
+     */
+    fun peekCurrentSpeakerId(conversationId: String): String?
 
     /**
      * 退出会话（退出对讲房间）
@@ -111,7 +121,7 @@ interface AuthProvider {
     /**
      * 获取当前登陆的用户ID
      */
-    val currentLogonUserId: String?
+    fun peekCurrentLogonUserId(): String?
 
     /**
      * 登出

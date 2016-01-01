@@ -11,7 +11,6 @@ import rx.Observable
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.collections.*
 
 /**
@@ -45,11 +44,11 @@ object MockGroups {
 class MockSignalProvider(val currentUser: Person,
                          val persons: List<Person>,
                          val groups: List<Group>,
-                         val groupMembers: Map<String, Iterable<String>>) : SignalProvider {
+                         val groupMembers: Map<String, Iterable<String>>) : AbstractSignalProvider() {
 
     private val idSeq = AtomicInteger(0)
 
-    val conversations = HashMap<String, ActiveRoomInfo>()
+    val conversations = HashMap<String, ConversationInfo>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         when (request) {
@@ -63,7 +62,7 @@ class MockSignalProvider(val currentUser: Person,
 
                 // 新建一个会话
                 val conv = Conversation(idSeq.incrementAndGet().toString(), "Conversation $idSeq", "Conversation description", currentUser.id, false)
-                conversations.put(conv.id, ActiveRoomInfo(conv, setToFind))
+                conversations.put(conv.id, ConversationInfo(conv, setToFind))
                 return conv.toObservable()
             }
 
@@ -77,7 +76,7 @@ class MockSignalProvider(val currentUser: Person,
                 }
 
                 val conv = Conversation(idSeq.incrementAndGet().toString(), "Conversation $idSeq", "Conversation description", currentUser.id, false)
-                conversations.put(conv.id, ActiveRoomInfo(conv, members.toHashSet()))
+                conversations.put(conv.id, ConversationInfo(conv, members.toHashSet()))
                 return conv.toObservable()
             }
 
@@ -98,32 +97,32 @@ class MockSignalProvider(val currentUser: Person,
 
     override fun joinConversation(conversationId: String): Observable<RoomInfo> {
         val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
-        roomInfo.activeMembers += currentUser.id
-        return RoomInfo(roomInfo.conversation.id, roomInfo.conversation.id, roomInfo.activeMembers.toList(),
-                roomInfo.speaker.get(), emptyMap()).toObservable()
+        ensureActiveMemberSubject(conversationId).onNext(peekActiveMemberIds(conversationId) + currentUser.id)
+        return RoomInfo(roomInfo.conversation.id, roomInfo.conversation.id, roomInfo.members, peekActiveMemberIds(conversationId),
+                peekCurrentSpeakerId(conversationId), emptyMap()).toObservable()
     }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
-        val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
-        roomInfo.activeMembers -= currentUser.id
+        ensureActiveMemberSubject(conversationId).onNext(peekActiveMemberIds(conversationId) - currentUser.id)
         return Observable.just(null)
     }
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
-        val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
-        return roomInfo.speaker.compareAndSet(null, currentUser.id).toObservable()
+        return (if (peekCurrentSpeakerId(conversationId) == null) {
+            ensureCurrentSpeakerSubject(conversationId).onNext(currentUser.id)
+            true
+        } else false).toObservable()
     }
 
     override fun releaseMic(conversationId: String): Observable<Unit> {
-        val roomInfo = conversations[conversationId] ?: return Observable.error(IllegalArgumentException())
-        roomInfo.speaker.compareAndSet(currentUser.id, null)
+        if (peekCurrentSpeakerId(conversationId) == currentUser.id) {
+            ensureCurrentSpeakerSubject(conversationId).onNext(null)
+        }
         return Observable.just(null)
     }
 
-    class ActiveRoomInfo(val conversation: Conversation,
-                         val members: MutableSet<String> = hashSetOf(),
-                         val activeMembers: MutableSet<String> = hashSetOf(),
-                         var speaker: AtomicReference<String> = AtomicReference<String>(null))
+    class ConversationInfo(val conversation: Conversation,
+                           val members: MutableSet<String> = hashSetOf())
 
 
 }
@@ -181,8 +180,7 @@ class MockAuthProvider : AuthProvider {
         throw UnsupportedOperationException()
     }
 
-    override val currentLogonUserId: String?
-        get() = logonUser?.id
+    override fun peekCurrentLogonUserId() = logonUser?.id
 
     override fun logout(): Observable<Unit> {
         logonUser = null
