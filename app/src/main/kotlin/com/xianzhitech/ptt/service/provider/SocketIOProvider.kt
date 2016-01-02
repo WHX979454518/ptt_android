@@ -71,7 +71,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     override fun joinConversation(conversationId: String): Observable<RoomInfo> {
         return socket.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
-                { (it as JSONObject).toRoomInfo(conversationId) },
+                { (it as JSONObject).toRoomInfo(conversationId, peekCurrentLogonUserId() ?: throw IllegalStateException("Not logon")) },
                 JSONObject().put("roomId", conversationId))
                 .doOnNext {
                     broker.updateConversationMembers(conversationId, it.members)
@@ -237,15 +237,16 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
     return this
 }
 
-internal fun JSONObject.toRoomInfo(conversationId: String): RoomInfo {
+internal fun JSONObject.toRoomInfo(conversationId: String, logonUserId: String): RoomInfo {
     val server = getJSONObject("server")
     val roomInfoObject = getJSONObject("roomInfo")
     return RoomInfo(roomInfoObject.getString("idNumber"), conversationId,
             roomInfoObject.getJSONArray("members").toStringIterable().toList(),
             getJSONArray("activeMembers").toStringList(), optString("speaker"),
-            ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host"),
-                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port"),
-                    WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
+            ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, "10.255.57.238",
+                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, 5000,
+                    WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol"),
+                    WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, logonUserId))
 }
 
 internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {

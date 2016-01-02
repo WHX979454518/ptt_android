@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.engine
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import com.xianzhitech.ptt.model.RoomInfo
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry
@@ -22,13 +23,15 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
     internal lateinit var mediaEngine: MediaEngine
     internal var roomIds: IntArray? = null
+    internal lateinit var contextRegistry : NativeWebRtcContextRegistry
 
     init {
-        this.handler = Handler(ENGINE_THREAD.looper)
+        this.handler = Handler(Looper.getMainLooper())
         this.context = context.applicationContext
 
         if (hasRegisteredWebRtc.compareAndSet(false, true)) {
-            NativeWebRtcContextRegistry().register(context.applicationContext)
+            contextRegistry = NativeWebRtcContextRegistry()
+            contextRegistry.register(context.applicationContext)
         }
     }
 
@@ -42,14 +45,14 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
         handler.post {
             mediaEngine = MediaEngine(context, roomInfo.getProperty<String>(PROPERTY_PROTOCOL)?.equals("tcp") ?: false)
-            mediaEngine.setLocalSSRC(roomId)
+            mediaEngine.setLocalSSRC(roomInfo.getProperty<String>(PROPERTY_LOCAL_USER_ID)?.toInt() ?: throw IllegalArgumentException("User id is null"))
             mediaEngine.setRemoteIp(roomInfo.getProperty<String>(PROPERTY_REMOTE_SERVER_IP) ?: throw IllegalArgumentException("No server ip specified"))
             mediaEngine.setAudioTxPort(roomInfo.getProperty<Int>(PROPERTY_REMOTE_SERVER_PORT) ?: throw IllegalArgumentException("No report port specified"))
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT)
             mediaEngine.setAgc(true)
             mediaEngine.setNs(true)
             mediaEngine.setEc(true)
-            mediaEngine.setSpeaker(false)
+            mediaEngine.setSpeaker(true)
             mediaEngine.setAudio(true)
             mediaEngine.start(roomId)
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds)
@@ -76,6 +79,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
     override fun dispose() {
         handler.post {
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_QUIT_ROOM, roomIds)
+            mediaEngine.stop()
             mediaEngine.dispose()
             handler.removeCallbacksAndMessages(null)
         }
@@ -91,9 +95,10 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         public const val PROPERTY_REMOTE_SERVER_IP = "server_ip"
         public const val PROPERTY_REMOTE_SERVER_PORT = "server_port"
         public const val PROPERTY_PROTOCOL = "protocol"
+        public const val PROPERTY_LOCAL_USER_ID = "local_user_id"
 
-        private val LOCAL_RTP_PORT = 10010
-        private val LOCAL_RTCP_PORT = 10011
+        private val LOCAL_RTP_PORT = 0
+        private val LOCAL_RTCP_PORT = 0
 
         private val hasRegisteredWebRtc = AtomicBoolean(false)
 
@@ -101,10 +106,6 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             init {
                 start()
             }
-        }
-
-        init {
-            System.loadLibrary("autoim_jni")
         }
     }
 }

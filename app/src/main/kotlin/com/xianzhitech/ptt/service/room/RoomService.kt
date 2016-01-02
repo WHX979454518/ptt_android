@@ -218,6 +218,7 @@ class RoomService() : Service(), RoomServiceBinder {
     var requestFocusSubscription: Subscription? = null
     var soundPool: Pair<SoundPool, SparseIntArray> = Pair(SoundPool(1, AudioManager.STREAM_RING, 0), SparseIntArray())
     var vibrator: Vibrator? = null
+    lateinit var audioManager: AudioManager
 
     override fun onCreate() {
         super.onCreate()
@@ -234,6 +235,7 @@ class RoomService() : Service(), RoomServiceBinder {
         soundPool.second.put(R.raw.pttup_offline, soundPool.first.load(this, R.raw.pttup_offline, 0))
 
         vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
+        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
     }
 
     override fun onDestroy() {
@@ -268,7 +270,7 @@ class RoomService() : Service(), RoomServiceBinder {
     }
 
     private fun playSound(@RawRes soundRes: Int) {
-        soundPool.first.play(soundPool.second[soundRes], 1f, 1f, 1, 0, 1f)
+        //        soundPool.first.play(soundPool.second[soundRes], 1f, 1f, 1, 0, 1f)
     }
 
     private fun doConnect(conversationId: String) {
@@ -302,6 +304,8 @@ class RoomService() : Service(), RoomServiceBinder {
                                 currentTalkEngine = talkEngineProvider.createEngine().apply { connect(t) }
                             }
                             roomStatus = RoomStatus.CONNECTED
+                            audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                            audioManager.mode = AudioManager.MODE_RINGTONE
                         }
                     }))
 
@@ -334,6 +338,9 @@ class RoomService() : Service(), RoomServiceBinder {
 
         currentConversationId = null
         stopSelf()
+
+        audioManager.abandonAudioFocus(null)
+        audioManager.mode = AudioManager.MODE_NORMAL
     }
 
 
