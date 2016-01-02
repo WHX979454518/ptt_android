@@ -11,7 +11,6 @@ import rx.Observable
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.*
 
 /**
  * Created by fanchao on 18/12/15.
@@ -39,6 +38,17 @@ object MockGroups {
             GROUP_3.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_4.id, MockPersons.PERSON_5.id))
 
     val ALL = listOf(GROUP_1, GROUP_2, GROUP_3)
+}
+
+object MockConversations {
+    val CONVERSATION_1 = Conversation("1", "Conversation 1", null, MockPersons.PERSON_1.id, false)
+    val CONVERSATION_2 = Conversation("2", "Conversation 2", null, MockPersons.PERSON_2.id, false)
+
+    val CONVERSATION_MEMBERS = ImmutableMap.of<String, Iterable<String>>(
+            CONVERSATION_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_3.id),
+            CONVERSATION_2.id, listOf(MockPersons.PERSON_2.id, MockPersons.PERSON_4.id))
+
+    val ALL = listOf(CONVERSATION_1, CONVERSATION_2)
 }
 
 class MockSignalProvider(val currentUser: Person,

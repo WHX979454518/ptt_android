@@ -3,8 +3,10 @@ package com.xianzhitech.ptt
 import android.support.v4.util.ArrayMap
 import android.test.AndroidTestCase
 import android.util.Log
+import com.xianzhitech.ptt.ext.toBlockingFirst
 import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.service.MockConversations
 import com.xianzhitech.ptt.service.MockGroups
 import com.xianzhitech.ptt.service.MockPersons
 import junit.framework.Assert
@@ -116,4 +118,17 @@ class DatabaseTest : AndroidTestCase() {
         Assert.assertEquals(expectedContacts, broker.getContacts(null).toBlocking().first().toSet())
     }
 
+    fun testConversation() {
+        MockConversations.ALL.forEach {
+            broker.updateAllPersons(MockPersons.ALL).toBlockingFirst()
+            broker.saveConversation(it).toBlockingFirst()
+            broker.updateConversationMembers(it.id, MockConversations.CONVERSATION_MEMBERS[it.id] ?: emptyList()).toBlockingFirst()
+        }
+
+        MockConversations.CONVERSATION_1.apply {
+            assertEquals(this, broker.getConversation(id).toBlockingFirst())
+            assertEquals(MockConversations.CONVERSATION_MEMBERS[id]?.toSet(),
+                    broker.getConversationMembers(id).toBlockingFirst().transform { it.id }.toSet())
+        }
+    }
 }
