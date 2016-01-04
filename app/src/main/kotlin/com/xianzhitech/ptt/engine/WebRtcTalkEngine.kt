@@ -3,12 +3,10 @@ package com.xianzhitech.ptt.engine
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import com.xianzhitech.ptt.model.RoomInfo
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.text.toInt
 
 /**
 
@@ -23,15 +21,15 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
     internal lateinit var mediaEngine: MediaEngine
     internal var roomIds: IntArray? = null
-    internal lateinit var contextRegistry : NativeWebRtcContextRegistry
 
     init {
-        this.handler = Handler(Looper.getMainLooper())
+        this.handler = Handler(ENGINE_THREAD.looper)
         this.context = context.applicationContext
 
         if (hasRegisteredWebRtc.compareAndSet(false, true)) {
-            contextRegistry = NativeWebRtcContextRegistry()
-            contextRegistry.register(context.applicationContext)
+            handler.post {
+                NativeWebRtcContextRegistry().apply { register(this@WebRtcTalkEngine.context) }
+            }
         }
     }
 
@@ -53,6 +51,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             mediaEngine.setNs(true)
             mediaEngine.setEc(true)
             mediaEngine.setSpeaker(true)
+            mediaEngine.setDebuging(true)
             mediaEngine.setAudio(true)
             mediaEngine.start(roomId)
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds)
@@ -100,12 +99,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         private val LOCAL_RTP_PORT = 0
         private val LOCAL_RTCP_PORT = 0
 
+        private val ENGINE_THREAD = HandlerThread("RTCEngineThread").apply { start() }
         private val hasRegisteredWebRtc = AtomicBoolean(false)
-
-        private val ENGINE_THREAD = object : HandlerThread("RTCEngineThread") {
-            init {
-                start()
-            }
-        }
     }
 }

@@ -1,8 +1,6 @@
 package com.xianzhitech.ptt.service.provider
 
 import android.support.v4.util.ArrayMap
-import com.google.common.collect.ImmutableMap
-import com.google.common.collect.Iterables
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
@@ -18,6 +16,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
 import rx.subjects.PublishSubject
+import rx.subscriptions.Subscriptions
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeoutException
@@ -48,19 +47,20 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
 
     private lateinit var socket: Socket
     private val logonUser = AtomicReference<Person>()
-    private val eventSubject = PublishSubject.create<Event>()
+    private val errorSubject = PublishSubject.create<Any>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         return socket
-                .sendEvent(EVENT_CLIENT_CREATE_ROOM, { it as JSONObject }, request.toJSON())
+                .sendEvent(EVENT_CLIENT_CREATE_ROOM, { it[0] as JSONObject }, request.toJSON())
                 .flatMap {
                     val conversation = Conversation().readFrom(it)
-                    val members = it.getJSONArray("members").toStringIterable()
 
                     broker.saveConversation(conversation)
-                    broker.updateConversationMembers(conversation.id, members).map { conversation }
+                            .concatWith(broker.updateConversationMembers(conversation.id, it.getJSONArray("members").toStringIterable()).map { conversation })
                 }
     }
+
+    private fun <T> reifiedErrorSubject(): PublishSubject<T> = (errorSubject as PublishSubject<T>)
 
     override fun deleteConversation(conversationId: String): Observable<Unit> {
         return Observable.empty()
@@ -71,27 +71,31 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     override fun joinConversation(conversationId: String): Observable<RoomInfo> {
         return socket.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
-                { (it as JSONObject).toRoomInfo(conversationId, peekCurrentLogonUserId() ?: throw IllegalStateException("Not logon")) },
+                { (it[0] as JSONObject).toRoomInfo(conversationId, peekCurrentLogonUserId() ?: throw IllegalStateException("Not logon")) },
                 JSONObject().put("roomId", conversationId))
-                .doOnNext {
-                    broker.updateConversationMembers(conversationId, it.members)
-                    ensureActiveMemberSubject(conversationId).onNext(it.activeMembers)
-                    ensureCurrentSpeakerSubject(conversationId).onNext(it.speaker)
+                .flatMap { roomInfo ->
+                    ensureActiveMemberSubject(conversationId).onNext(roomInfo.activeMembers)
+                    ensureCurrentSpeakerSubject(conversationId).onNext(roomInfo.speaker)
+                    broker.updateConversationMembers(conversationId, roomInfo.members).map { roomInfo }
                 }
+                .mergeWith(reifiedErrorSubject())
     }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
-        return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM, {}, JSONObject().put("roomId", conversationId))
+        return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM,
+                {}, JSONObject().put("roomId", conversationId))
+                .mergeWith(reifiedErrorSubject())
     }
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
-        return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == logonUser.get().id } },
+        return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it[0] as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == logonUser.get().id } },
                 JSONObject().put("roomId", conversationId))
                 .doOnNext {
                     if (it) {
                         ensureCurrentSpeakerSubject(conversationId).onNext(logonUser.get()?.id)
                     }
                 }
+                .mergeWith(reifiedErrorSubject())
     }
 
     override fun releaseMic(conversationId: String): Observable<Unit> {
@@ -114,93 +118,96 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
     }.map { LoginResult(it, "${username.toBase64()}:${password.toBase64()}") }
 
     private fun doLogin(headerOperator: (MutableMap<String, List<String>>) -> Unit): Observable<Person> {
-        socket = IO.socket(endpoint).let {
-            it.io().on(Manager.EVENT_TRANSPORT, { args: Array<Any> ->
-                val arg = args[0] as Transport
-                arg.on(Transport.EVENT_REQUEST_HEADERS, {
-                    headerOperator(it[0] as MutableMap<String, List<String>>)
+        return IO.socket(endpoint).let {
+            Observable.create<Person> { subscriber ->
+
+                // 绑定IO事件,以便操作Headers
+                it.io().on(Manager.EVENT_TRANSPORT, {
+                    (it[0] as Transport).on(Transport.EVENT_REQUEST_HEADERS, { headerOperator(it[0] as MutableMap<String, List<String>>) })
                 })
-            })
 
-            it.subscribeTo(
-                    Socket.EVENT_CONNECT,
-                    Socket.EVENT_CONNECT_ERROR,
-                    Socket.EVENT_CONNECT_TIMEOUT,
-                    Socket.EVENT_ERROR,
-                    EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED,
-                    EVENT_SERVER_SPEAKER_CHANGED,
-                    EVENT_SERVER_ROOM_INFO_CHANGED,
-                    EVENT_SERVER_USER_LOGON)
-            it
-        }
-
-        return eventSubject
-                .flatMap({ event: Event ->
-                    when (event.name) {
-                        Socket.EVENT_ERROR, Socket.EVENT_CONNECT_ERROR -> Observable.error<Person>(RuntimeException("Connection error: " + event.args.firstOrNull()))
-                        Socket.EVENT_CONNECT_TIMEOUT -> Observable.error<Person>(TimeoutException())
-                        Socket.EVENT_CONNECT -> {
-                            Observable.empty<Person>()
-                        }
-
-                        EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED -> {
-                            val conversationId = event.jsonObject.getString("roomId")
-                            val members = event.jsonObject.getJSONArray("activeMembers").toStringList()
-                            ensureActiveMemberSubject(conversationId).onNext(members)
-                            Observable.empty<Person>()
-                        }
-
-                        EVENT_SERVER_SPEAKER_CHANGED -> {
-                            ensureCurrentSpeakerSubject(event.jsonObject.getString("roomId"))
-                                    .onNext(event.jsonObject.let { if (it.isNull("speaker")) null else it.getString("speaker") })
-                            Observable.empty<Person>()
-                        }
-
-                        EVENT_SERVER_ROOM_INFO_CHANGED -> {
-                            broker.updateConversationMembers(event.jsonObject.getString("idNumber"), event.jsonObject.getJSONArray("members").toStringList())
-                            Observable.empty<Person>()
-                        }
-
-                        EVENT_SERVER_USER_LOGON -> {
-                            logonUser.set(Person().readFrom(event.jsonObject))
-                            syncContacts().subscribe()
-                            logonUser.get().toObservable()
-                        }
-
-
-                        else -> Observable.empty<Person>()
+                // 监听用户登陆事件
+                it.on(EVENT_SERVER_USER_LOGON, { args ->
+                    try {
+                        subscriber.onNext(parseServerResult(args, { it -> Person().readFrom(it[0] as JSONObject) }))
+                    } catch(e: Exception) {
+                        subscriber.onError(e)
+                        subscriber.onCompleted()
                     }
                 })
-                .doOnSubscribe { socket.connect() }
+
+                // 监听出错事件
+                val errorHandler: (Array<Any>) -> Unit = { errorSubject.onError(ServerException(it.getOrNull(0)?.toString() ?: "Unknown exception: " + it)) }
+                it.on(Socket.EVENT_ERROR, errorHandler)
+                it.on(Socket.EVENT_CONNECT_ERROR, errorHandler)
+                it.on(Socket.EVENT_CONNECT_TIMEOUT, { errorSubject.onError(TimeoutException()) })
+
+                // 监听房间在线成员变化事件
+                it.on(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED, {
+                    val event = parseServerResult(it, { it[0] as JSONObject })
+                    ensureActiveMemberSubject(event.getString("roomId"))
+                            .onNext(event.getJSONArray("activeMembers").toStringList())
+                })
+
+                // 监听得Mic人变化的事件
+                it.on(EVENT_SERVER_SPEAKER_CHANGED, {
+                    val event = parseServerResult(it, { it[0] as JSONObject })
+                    ensureCurrentSpeakerSubject(event.getString("roomId"))
+                            .onNext(event.let { if (it.isNull("speaker")) null else it.getString("speaker") })
+                })
+
+                // 监听房间成员变化的事件
+                it.on(EVENT_SERVER_ROOM_INFO_CHANGED, {
+                    val event = parseServerResult(it, { it[0] as JSONObject })
+                    broker.updateConversationMembers(event.getString("idNumber"), event.getJSONArray("members").toStringList())
+                })
+
+                subscriber.add(Subscriptions.create {
+                    it.close()
+                })
+
+                socket = it.connect()
+            }.flatMap { person ->
+                logonUser.set(person) // 设置当前用户
+                syncContacts().map { person } // 在登陆完成以后等待通讯录同步
+            }.mergeWith(reifiedErrorSubject())
+        }
     }
 
     override fun logout(): Observable<Unit> {
         logonUser.set(null)
+        socket.close()
         return Observable.empty()
     }
 
     fun syncContacts() = socket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, {
-        val result: JSONObject = it as JSONObject
+        val result: JSONObject = it[0] as JSONObject
         val personBuf = Person()
         var groupBuf = Group()
         val persons = result.getJSONObject("enterpriseMembers").getJSONArray("add").transform { personBuf.readFrom(it as JSONObject) }
         val groupJsonArray = result.getJSONObject("enterpriseGroups").getJSONArray("add")
         val groups = groupJsonArray.transform { groupBuf.readFrom(it as JSONObject) }
-        Observable.concat(
-                broker.updateAllPersons(persons),
-                broker.updateAllGroups(groups, groupJsonArray.toGroupsAndMembers()),
-                broker.updateAllContacts(Iterables.transform(persons, { it.id }), Iterables.transform(groups, { it.id })))
-                .subscribe()
-    }, ImmutableMap.of("enterMemberVersion", 1, "enterGroupVersion", 1).toJSONObject())
+        Triple(persons, groupJsonArray, groups)
+    }, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
+            .flatMap {
+                Observable.concat(
+                        broker.updateAllPersons(it.first),
+                        broker.updateAllGroups(it.third, it.second.toGroupsAndMembers()),
+                        broker.updateAllContacts(it.first.transform { it.id }, it.third.transform { it.id }))
+            }
+}
 
-
-    fun Socket.subscribeTo(vararg events: String): Socket {
-        for (event in events) {
-            on(event, { this@SocketIOProvider.eventSubject.onNext(Event(event, it)) })
-        }
-        return this
+internal inline fun <T> parseServerResult(args: Array<Any?>, resultMapper: (Array<Any?>) -> T): T {
+    if (args.isEmpty()) {
+        throw ServerException("No response from server")
     }
 
+    val arg = args[0]
+    if (arg is JSONObject && arg.has("error")) {
+        throw ServerException(arg.getString("error"))
+    }
+
+    return resultMapper(args)
 }
 
 
@@ -243,10 +250,12 @@ internal fun JSONObject.toRoomInfo(conversationId: String, logonUserId: String):
     return RoomInfo(roomInfoObject.getString("idNumber"), conversationId,
             roomInfoObject.getJSONArray("members").toStringIterable().toList(),
             getJSONArray("activeMembers").toStringList(), optString("speaker"),
-            ImmutableMap.of(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, "10.255.57.238",
-                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, 5000,
-                    WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol"),
-                    WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, logonUserId))
+            mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
+                    Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, logonUserId),
+                    Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
+                    Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
+    )
+
 }
 
 internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
@@ -289,27 +298,18 @@ internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
     return result
 }
 
-private fun <T> Socket.sendEvent(eventName : String, resultMapper : (Any?) -> T?, vararg args : Any?) = Observable.create<T> {
-    it.onStart()
-    emit(eventName, *args, Ack { results : Array<Any?> ->
-        val result = results[0]
-        if (result is JSONObject && result.has("error")) {
-            it.onError(ServerException(result.getString("error")))
-            it.onCompleted()
-        }
-        else {
-            it.onNext(resultMapper(result))
-            it.onCompleted()
+private inline fun <T> Socket.sendEvent(eventName: String, crossinline resultMapper: (Array<Any?>) -> T, vararg args: Any?) = Observable.create<T> { subscriber ->
+    subscriber.onStart()
+    emit(eventName, *args, Ack {
+        try {
+            subscriber.onNext(parseServerResult(it, resultMapper))
+        } catch(e: Throwable) {
+            subscriber.onError(e)
+        } finally {
+            subscriber.onCompleted()
         }
     })
 }
 
+
 internal fun JSONObject.hasPrivilege(name: String) = has(name) && getBoolean(name)
-
-internal data class Event(val name: String, val args: Array<Any>) {
-    val jsonObject: JSONObject
-        get() = args[0] as JSONObject
-
-    val jsonArray: JSONArray
-        get() = args[0] as JSONArray
-}

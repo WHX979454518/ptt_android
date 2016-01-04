@@ -1,7 +1,5 @@
 package com.xianzhitech.ptt.service
 
-import com.google.common.collect.ImmutableMap
-import com.google.common.collect.ImmutableSet
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.ext.toObservable
@@ -32,10 +30,10 @@ object MockGroups {
     val GROUP_3 = Group("3", "Group 3")
     val GROUP_4 = Group("4", "Group 4")
 
-    val GROUP_MEMBERS = ImmutableMap.of(
-            GROUP_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_2.id),
-            GROUP_2.id, listOf(MockPersons.PERSON_3.id, MockPersons.PERSON_4.id),
-            GROUP_3.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_4.id, MockPersons.PERSON_5.id))
+    val GROUP_MEMBERS = mapOf(
+            Pair(GROUP_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_2.id)),
+            Pair(GROUP_2.id, listOf(MockPersons.PERSON_3.id, MockPersons.PERSON_4.id)),
+            Pair(GROUP_3.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_4.id, MockPersons.PERSON_5.id)))
 
     val ALL = listOf(GROUP_1, GROUP_2, GROUP_3)
 }
@@ -44,9 +42,9 @@ object MockConversations {
     val CONVERSATION_1 = Conversation("1", "Conversation 1", null, MockPersons.PERSON_1.id, false)
     val CONVERSATION_2 = Conversation("2", "Conversation 2", null, MockPersons.PERSON_2.id, false)
 
-    val CONVERSATION_MEMBERS = ImmutableMap.of<String, Iterable<String>>(
-            CONVERSATION_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_3.id),
-            CONVERSATION_2.id, listOf(MockPersons.PERSON_2.id, MockPersons.PERSON_4.id))
+    val CONVERSATION_MEMBERS = mapOf(
+            Pair(CONVERSATION_1.id, listOf(MockPersons.PERSON_1.id, MockPersons.PERSON_3.id)),
+            Pair(CONVERSATION_2.id, listOf(MockPersons.PERSON_2.id, MockPersons.PERSON_4.id)))
 
     val ALL = listOf(CONVERSATION_1, CONVERSATION_2)
 }
@@ -79,7 +77,7 @@ class MockSignalProvider(val currentUser: Person,
             is CreateConversationFromGroup -> {
                 val members = groupMembers.get(request.groupId) ?: return Observable.error(IllegalArgumentException("Group ${request.groupId} does not exist"))
 
-                val setToFind = ImmutableSet.copyOf(members)
+                val setToFind = members.toSet()
                 val foundEntry = conversations.entries.firstOrNull { it.value.members.toHashSet() == setToFind }
                 if (foundEntry != null) {
                     return foundEntry.value.conversation.toObservable()

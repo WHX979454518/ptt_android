@@ -21,7 +21,6 @@ import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.CompositeSubscription
-import kotlin.collections.listOf
 
 /**
  * 提供房间服务的查询接口
@@ -270,7 +269,7 @@ class RoomService() : Service(), RoomServiceBinder {
     }
 
     private fun playSound(@RawRes soundRes: Int) {
-        //        soundPool.first.play(soundPool.second[soundRes], 1f, 1f, 1, 0, 1f)
+        soundPool.first.play(soundPool.second[soundRes], 1f, 1f, 1, 0, 1f)
     }
 
     private fun doConnect(conversationId: String) {

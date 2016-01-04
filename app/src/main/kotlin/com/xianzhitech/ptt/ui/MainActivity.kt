@@ -1,6 +1,9 @@
 package com.xianzhitech.ptt.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v7.widget.Toolbar
 import com.xianzhitech.ptt.R
@@ -22,6 +25,11 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         setContentView(R.layout.activity_main)
         toolbar = findView(R.id.main_toolbar)
         setSupportActionBar(toolbar)
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 0)
+        }
 
         UserService.getLoginStatus(this)
                 .observeOnMainThread()
@@ -46,5 +54,9 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
                         transaction.replace(R.id.main_content, Fragment.instantiate(this@MainActivity, fragmentToDisplay.name)).commit()
                     }
                 }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
+
     }
 }
