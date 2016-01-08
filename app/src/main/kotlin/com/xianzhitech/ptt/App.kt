@@ -13,7 +13,7 @@ import com.xianzhitech.ptt.service.provider.SocketIOProvider
 
 open class App : Application(), AppComponent {
     override val httpClient by lazy { OkHttpClient() }
-    override val signalProvider: SignalProvider  by lazy { SocketIOProvider(broker, "http://106.186.124.143:3000/") }
+    override val signalProvider: SignalProvider  by lazy { SocketIOProvider(broker, "http://61.157.38.95:9001/") }
     override val talkEngineProvider = object : TalkEngineProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)
     }

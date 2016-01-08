@@ -31,6 +31,11 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
                     arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 0)
         }
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.RECORD_AUDIO), 0)
+        }
+
         UserService.getLoginStatus(this)
                 .observeOnMainThread()
                 .compose(bindToLifecycle())

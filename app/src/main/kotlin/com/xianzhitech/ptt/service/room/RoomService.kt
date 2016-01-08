@@ -21,6 +21,7 @@ import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.CompositeSubscription
+import kotlin.collections.listOf
 
 /**
  * 提供房间服务的查询接口

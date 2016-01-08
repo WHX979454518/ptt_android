@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.model.RoomInfo
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.text.toInt
 
 /**
 
@@ -51,7 +52,6 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             mediaEngine.setNs(true)
             mediaEngine.setEc(true)
             mediaEngine.setSpeaker(true)
-            mediaEngine.setDebuging(true)
             mediaEngine.setAudio(true)
             mediaEngine.start(roomId)
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds)
