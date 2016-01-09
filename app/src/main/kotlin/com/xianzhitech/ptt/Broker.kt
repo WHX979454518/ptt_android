@@ -12,6 +12,10 @@ import rx.Observable
 import rx.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.Executors
+import kotlin.collections.forEach
+import kotlin.collections.listOf
+import kotlin.collections.plusAssign
+import kotlin.text.isNullOrEmpty
 
 /**
  * 提供数据库操作层

@@ -12,8 +12,9 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Conversation
+import com.xianzhitech.ptt.presenter.ConversationPresenter
+import com.xianzhitech.ptt.presenter.ConversationView
 import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -23,33 +24,54 @@ import java.util.*
 /**
  * 显示会话列表(Group)的界面
  */
-class ConversationListFragment : BaseFragment<Void>() {
+class ConversationListFragment : BaseFragment<Void>(), ConversationView {
 
-    private lateinit var listView: RecyclerView
+    private var listView: RecyclerView? = null
     private val adapter = Adapter()
-    private lateinit var broker: Broker
+    private lateinit var presenter: ConversationPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        broker = (activity.application as AppComponent).broker
-    }
-
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
-            listView = findView(R.id.conversationList_recyclerView)
-            listView.layoutManager = LinearLayoutManager(context)
-            listView.adapter = adapter
-        }
+        presenter = (activity.application as AppComponent).conversationPresenter
     }
 
     override fun onStart() {
         super.onStart()
 
-        broker.getConversationsWithMemberNames(MAX_MEMBER_TO_DISPLAY)
-                .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe { adapter.setConversations(it) }
+        presenter.attachView(this)
+    }
+
+    override fun onStop() {
+        presenter.detachView(this)
+
+        super.onStop()
+    }
+
+    override fun showLoading(visible: Boolean) {
+        // Nothing to show
+    }
+
+    override fun showError(message: CharSequence?) {
+        // Nothing to show
+    }
+
+    override fun showConversationList(list: List<Broker.AggregateInfo<Conversation, String>>) {
+        adapter.setConversations(list)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
+            listView = findView<RecyclerView>(R.id.conversationList_recyclerView).apply {
+                this.layoutManager = LinearLayoutManager(context)
+                this.adapter = this@ConversationListFragment.adapter
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        listView = null
+        super.onDestroyView()
     }
 
     private inner class Adapter : RecyclerView.Adapter<ConversationItemHolder>() {
@@ -104,9 +126,5 @@ class ConversationListFragment : BaseFragment<Void>() {
                     StringUtils.join(info.members, itemView.resources.getString(R.string.member_separator)))
 
         }
-    }
-
-    companion object {
-        private const val MAX_MEMBER_TO_DISPLAY = 3
     }
 }

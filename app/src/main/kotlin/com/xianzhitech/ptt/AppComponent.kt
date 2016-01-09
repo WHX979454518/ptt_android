@@ -2,10 +2,11 @@ package com.xianzhitech.ptt
 
 import com.squareup.okhttp.OkHttpClient
 import com.xianzhitech.ptt.engine.TalkEngineProvider
+import com.xianzhitech.ptt.presenter.ConversationPresenter
+import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.provider.SignalProvider
-import com.xianzhitech.ptt.presenter.LoginPresenter
 
 /**
 
@@ -23,4 +24,5 @@ interface AppComponent {
 
     // Presenters
     val loginPresenter: LoginPresenter
+    val conversationPresenter: ConversationPresenter
 }

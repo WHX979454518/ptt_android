@@ -27,8 +27,8 @@ class LoginPresenter(private val authProvider: AuthProvider,
         override fun onError(e: Throwable) {
             views.forEach {
                 it.showLogin()
-                it.showLoginInProgress(false)
-                it.showLoginError(e.message)
+                it.showLoading(false)
+                it.showError(e.message)
             }
             preferenceProvider.remove(PREF_KEY_TOKEN)
             loginSubscription = null
@@ -37,7 +37,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
         override fun onNext(t: LoginResult) {
             preferenceProvider.save(PREF_KEY_TOKEN, t.token)
             views.forEach {
-                it.showLoginInProgress(false)
+                it.showLoading(false)
                 it.showLoginSuccess()
             }
             loginSubscription = null
@@ -56,15 +56,15 @@ class LoginPresenter(private val authProvider: AuthProvider,
         if (authProvider.peekCurrentLogonUserId() != null) {
             view.showLoginSuccess()
         } else if (loginSubscription != null) {
-            view.showLoginInProgress(true)
+            view.showLoading(true)
         } else {
             view.showLogin()
-            view.showLoginInProgress(false)
+            view.showLoading(false)
         }
     }
 
     fun requestLogin(name: String, password: String) {
-        views.forEach { it.showLoginInProgress(true) }
+        views.forEach { it.showLoading(true) }
 
         if (loginSubscription != null) {
             loginSubscription?.unsubscribe()
@@ -76,7 +76,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
 
     fun cancelLogin() = loginSubscription?.let {
         it.unsubscribe()
-        views.forEach { it.showLoginInProgress(false) }
+        views.forEach { it.showLoading(false) }
         loginSubscription = null
         true
     } ?: false
@@ -86,6 +86,4 @@ class LoginPresenter(private val authProvider: AuthProvider,
 interface LoginView : PresenterView {
     fun showLogin()
     fun showLoginSuccess()
-    fun showLoginError(message: CharSequence?)
-    fun showLoginInProgress(inProgress: Boolean)
 }

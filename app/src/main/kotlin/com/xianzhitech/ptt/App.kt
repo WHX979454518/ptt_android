@@ -10,6 +10,7 @@ import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
+import com.xianzhitech.ptt.presenter.ConversationPresenter
 import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
@@ -28,6 +29,7 @@ open class App : Application(), AppComponent {
     override val authProvider by lazy { signalProvider as AuthProvider }
     override val loginPresenter by lazy { LoginPresenter(authProvider, preferenceProvider) }
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
+    override val conversationPresenter: ConversationPresenter by lazy { ConversationPresenter(broker) }
 
     override fun onCreate() {
         super.onCreate()

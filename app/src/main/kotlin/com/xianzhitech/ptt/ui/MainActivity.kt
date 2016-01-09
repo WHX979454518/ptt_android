@@ -8,12 +8,12 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.presenter.LoginPresenter
+import com.xianzhitech.ptt.presenter.LoginView
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
-import com.xianzhitech.ptt.presenter.LoginPresenter
-import com.xianzhitech.ptt.presenter.LoginView
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginView {
 
@@ -64,11 +64,11 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         displayFragment(HomeFragment::class.java)
     }
 
-    override fun showLoginInProgress(inProgress: Boolean) {
-        progress.setVisible(inProgress)
+    override fun showLoading(visible: Boolean) {
+        progress.setVisible(visible)
     }
 
-    override fun showLoginError(message: CharSequence?) {
-        // Do nothing.
+    override fun showError(message: CharSequence?) {
+        // Do nothing
     }
 }

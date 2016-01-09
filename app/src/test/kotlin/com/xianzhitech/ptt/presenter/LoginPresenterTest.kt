@@ -106,12 +106,12 @@ class LoginPresenterTest {
             showedLoginSuccess = true
         }
 
-        override fun showLoginError(message: CharSequence?) {
-            showedLoginError = true
+        override fun showLoading(visible: Boolean) {
+            showedLoginInProgress = visible
         }
 
-        override fun showLoginInProgress(inProgress: Boolean) {
-            showedLoginInProgress = inProgress
+        override fun showError(message: CharSequence?) {
+            showedLoginError = true
         }
     }
 }

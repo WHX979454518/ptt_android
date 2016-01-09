@@ -75,11 +75,11 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
         super.onDestroyView()
     }
 
-    override fun showLoginInProgress(inProgress: Boolean) {
+    override fun showLoading(visible: Boolean) {
         views?.apply {
-            loginButton.isEnabled = inProgress.not()
-            nameEditText.isEnabled = inProgress.not()
-            passwordEditText.isEnabled = inProgress.not()
+            loginButton.isEnabled = visible.not()
+            nameEditText.isEnabled = visible.not()
+            passwordEditText.isEnabled = visible.not()
         }
     }
 
@@ -95,7 +95,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
         // Do nothing
     }
 
-    override fun showLoginError(message: CharSequence?) {
+    override fun showError(message: CharSequence?) {
         AlertDialogFragment.Builder()
                 .setTitle(R.string.error_title.toFormattedString(context))
                 .setMessage(R.string.error_content.toFormattedString(context, message ?: R.string.error_unknown.toFormattedString(context)))
