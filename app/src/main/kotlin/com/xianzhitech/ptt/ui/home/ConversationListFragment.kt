@@ -9,17 +9,17 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.model.Conversation
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.presenter.ConversationListPresenter
 import com.xianzhitech.ptt.presenter.ConversationListPresenterView
+import com.xianzhitech.ptt.repo.ConversationWithMemberNames
 import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
-import org.apache.commons.lang3.StringUtils
-import java.util.*
+import kotlin.collections.emptyList
+import kotlin.collections.joinToString
 
 /**
  * 显示会话列表(Group)的界面
@@ -56,9 +56,10 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
         // Nothing to show
     }
 
-    override fun showConversationList(list: List<Broker.AggregateInfo<Conversation, String>>) {
-        adapter.setConversations(list)
+    override fun showConversationList(result: List<ConversationWithMemberNames>) {
+        adapter.conversations = result
     }
+
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
@@ -75,26 +76,21 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
     }
 
     private inner class Adapter : RecyclerView.Adapter<ConversationItemHolder>() {
-        private val conversations = ArrayList<Broker.AggregateInfo<Conversation, String>>()
-
-        fun setConversations(newGroups: Collection<Broker.AggregateInfo<Conversation, String>>?) {
-            conversations.clear()
-            if (newGroups != null) {
-                conversations.addAll(newGroups)
-            }
+        var conversations: List<ConversationWithMemberNames> = emptyList()
+            set(value) {
+                field = value
             notifyDataSetChanged()
         }
-
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ConversationItemHolder {
             return ConversationItemHolder(parent)
         }
 
         override fun onBindViewHolder(holder: ConversationItemHolder, position: Int) {
-            holder.setGroup(conversations[position])
+            holder.setConversation(conversations[position])
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        ConversationFromExisiting(conversations[position].group.id)))
+                        ConversationFromExisiting(conversations[position].conversation.id)))
             }
         }
 
@@ -115,15 +111,15 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
             iconView = itemView.findView(R.id.groupListItem_icon)
         }
 
-        fun setGroup(info: Broker.AggregateInfo<Conversation, String>) {
-            nameView.text = info.group.name
+        fun setConversation(info: ConversationWithMemberNames) {
+            nameView.text = info.conversation.name
             //            Picasso.with(itemView.getContext())
             //                    .load(info.group.getImageUri())
             //                    .fit()
             //                    .into(iconView);
 
-            memberView.text = itemView.resources.getString(if (info.memberCount > info.members.size) R.string.group_member_with_more else R.string.group_member,
-                    StringUtils.join(info.members, itemView.resources.getString(R.string.member_separator)))
+            memberView.text = itemView.resources.getString(if (info.memberCount > info.memberNames.size) R.string.group_member_with_more else R.string.group_member,
+                    info.memberNames.joinToString(R.string.member_separator.toFormattedString(itemView.context)))
 
         }
     }

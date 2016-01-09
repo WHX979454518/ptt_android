@@ -43,7 +43,7 @@ open class App : Application(), AppComponent {
     override val authProvider by lazy { signalProvider as AuthProvider }
     override val loginPresenter by lazy { LoginPresenter(authProvider, preferenceProvider) }
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
-    val conversationListPresenter: ConversationListPresenter by lazy { ConversationListPresenter(conversationRepository) }
+    override val conversationListPresenter: ConversationListPresenter by lazy { ConversationListPresenter(conversationRepository) }
 
     override fun onCreate() {
         super.onCreate()

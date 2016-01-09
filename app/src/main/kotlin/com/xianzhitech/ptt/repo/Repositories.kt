@@ -5,7 +5,6 @@ import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
 import rx.Observable
-import kotlin.collections.forEachIndexed
 
 /**
  *
@@ -31,7 +30,7 @@ interface ConversationRepository {
     fun getConversationMembers(convId: String): Observable<List<Person>>
     fun updateConversation(conversation: Conversation): Observable<Conversation>
     fun updateConversationMembers(convId: String, memberIds: Iterable<String>): Observable<Unit>
-    fun getConversationsWithMemberNames(maxMember: Int): Observable<ConversationsWithMemberNames>
+    fun getConversationsWithMemberNames(maxMember: Int): Observable<List<ConversationWithMemberNames>>
 }
 
 interface ContactRepository {
@@ -40,10 +39,6 @@ interface ContactRepository {
     fun replaceAllContacts(userIds: Iterable<String>, groupIds: Iterable<String>): Observable<Unit>
 }
 
-data class ConversationsWithMemberNames(val conversations: List<Conversation>,
-                                        val memberNames: List<List<String>>,
-                                        val memberCounts: List<Int>) {
-    inline fun forEach(func: (Conversation, List<String>, Int) -> Unit) {
-        conversations.forEachIndexed { i, conversation -> func(conversation, memberNames[i], memberCounts[i]) }
-    }
-}
+data class ConversationWithMemberNames(val conversation: Conversation,
+                                       val memberNames: List<String>,
+                                       val memberCount: Int)

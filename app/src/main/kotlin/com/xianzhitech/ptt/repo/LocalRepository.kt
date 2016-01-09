@@ -15,7 +15,6 @@ import java.util.concurrent.Executors
 import kotlin.collections.emptyList
 import kotlin.collections.forEach
 import kotlin.collections.listOf
-import kotlin.collections.map
 
 /**
  *
@@ -105,18 +104,15 @@ class LocalRepository(private val db: Database)
 
     override fun getConversationsWithMemberNames(maxMember: Int) =
             db.createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME}")
-                    .mapToList(Conversation.MAPPER)
-                    .subscribeOn(queryScheduler)
-                    .map {
-                        ConversationsWithMemberNames(
-                                it,
-                                it.map {
-                                    db.query("SELECT P.${Person.COL_NAME} FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS GM ON GM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} AND ${ConversationMembers.COL_CONVERSATION_ID} = ? LIMIT $maxMember", it.id).mapAndClose { it.getString(0) }
-                                },
-                                it.map {
-                                    db.query("SELECT COUNT(${ConversationMembers.COL_PERSON_ID}) FROM ${ConversationMembers.TABLE_NAME} WHERE ${ConversationMembers.COL_CONVERSATION_ID} = ?", it.id).countAndClose()
-                                })
+                    .mapToList {
+                        val conversation = Conversation.MAPPER.call(it)
+                        ConversationWithMemberNames(
+                                conversation,
+                                db.query("SELECT P.${Person.COL_NAME} FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS GM ON GM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} AND ${ConversationMembers.COL_CONVERSATION_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
+                                db.query("SELECT COUNT(${ConversationMembers.COL_PERSON_ID}) FROM ${ConversationMembers.TABLE_NAME} WHERE ${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id).countAndClose()
+                        )
                     }
+                    .subscribeOn(queryScheduler)
 
     override fun getContactItems() = db.createQuery(Contacts.TABLE_NAME,
             "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${Person.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${Person.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID}")
