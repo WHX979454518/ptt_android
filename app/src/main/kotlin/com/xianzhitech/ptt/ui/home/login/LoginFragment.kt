@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.ext.getString
 import com.xianzhitech.ptt.ext.isEmpty
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.presenter.LoginPresenter
-import com.xianzhitech.ptt.presenter.LoginView
+import com.xianzhitech.ptt.presenter.LoginPresenterView
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
@@ -22,7 +22,7 @@ import com.xianzhitech.ptt.ui.home.AlertDialogFragment
  * Created by fanchao on 17/12/15.
  */
 class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
-        , LoginView
+        , LoginPresenterView
         , BackPressable
         , AlertDialogFragment.OnNeutralButtonClickListener {
 

@@ -9,13 +9,13 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.presenter.LoginPresenter
-import com.xianzhitech.ptt.presenter.LoginView
+import com.xianzhitech.ptt.presenter.LoginPresenterView
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
-class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginView {
+class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginPresenterView {
 
     private lateinit var toolbar: Toolbar
     private lateinit var loginPresenter: LoginPresenter

@@ -35,12 +35,6 @@ class Broker(internal val db: Database) {
         }.subscribeOn(modifyScheduler)
     }
 
-    @CheckResult
-    fun getPerson(id: String): Observable<Person?> {
-        return db.createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME} WHERE ${Person.COL_ID} = ? LIMIT 1", id)
-                .mapToOneOrDefault(Person.MAPPER, null)
-                .subscribeOn(queryScheduler)
-    }
 
     @CheckResult
     fun getPersons(ids: Iterable<String>): Observable<List<Person>> {
@@ -49,12 +43,6 @@ class Broker(internal val db: Database) {
                 .subscribeOn(queryScheduler)
     }
 
-    @CheckResult
-    fun getGroup(id: String): Observable<Group> {
-        return db.createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} = ? LIMIT 1", id)
-                .mapToOne(Group.MAPPER)
-                .subscribeOn(queryScheduler)
-    }
 
     @CheckResult
     fun getConversation(id: String): Observable<Conversation> {

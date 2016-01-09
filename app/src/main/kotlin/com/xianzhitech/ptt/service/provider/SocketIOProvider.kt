@@ -1,10 +1,13 @@
 package com.xianzhitech.ptt.service.provider
 
 import android.support.v4.util.ArrayMap
-import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.repo.ContactRepository
+import com.xianzhitech.ptt.repo.ConversationRepository
+import com.xianzhitech.ptt.repo.GroupRepository
+import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.InvalidSavedTokenException
 import com.xianzhitech.ptt.service.ServerException
 import io.socket.client.Ack
@@ -30,7 +33,11 @@ import kotlin.collections.*
  *
  * Created by fanchao on 17/12/15.
  */
-class SocketIOProvider(private val broker: Broker, private val endpoint: String) : AbstractSignalProvider(), AuthProvider {
+class SocketIOProvider(private val userRepository: UserRepository,
+                       private val groupRepository: GroupRepository,
+                       private val conversationRepository: ConversationRepository,
+                       private val contactRepository: ContactRepository,
+                       private val endpoint: String) : AbstractSignalProvider(), AuthProvider {
     companion object {
         public const val EVENT_SERVER_USER_LOGON = "s_logon"
         public const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
@@ -55,8 +62,8 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 .flatMap {
                     val conversation = Conversation().readFrom(it)
 
-                    broker.saveConversation(conversation)
-                            .concatWith(broker.updateConversationMembers(conversation.id, it.getJSONArray("members").toStringIterable()).map { conversation })
+                    conversationRepository.updateConversation(conversation)
+                            .concatWith(conversationRepository.updateConversationMembers(conversation.id, it.getJSONArray("members").toStringIterable()).map { conversation })
                 }
     }
 
@@ -76,7 +83,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 .flatMap { roomInfo ->
                     ensureActiveMemberSubject(conversationId).onNext(roomInfo.activeMembers)
                     ensureCurrentSpeakerSubject(conversationId).onNext(roomInfo.speaker)
-                    broker.updateConversationMembers(conversationId, roomInfo.members).map { roomInfo }
+                    conversationRepository.updateConversationMembers(conversationId, roomInfo.members).map { roomInfo }
                 }
                 .mergeWith(reifiedErrorSubject())
     }
@@ -159,7 +166,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
                 // 监听房间成员变化的事件
                 it.on(EVENT_SERVER_ROOM_INFO_CHANGED, {
                     val event = parseServerResult(it, { it[0] as JSONObject })
-                    broker.updateConversationMembers(event.getString("idNumber"), event.getJSONArray("members").toStringList())
+                    conversationRepository.updateConversationMembers(event.getString("idNumber"), event.getJSONArray("members").toStringList())
                 })
 
                 subscriber.add(Subscriptions.create {
@@ -170,7 +177,7 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
             }.flatMap { person ->
                 logonUser.set(person) // 设置当前用户
                 syncContacts().map { person } // 在登陆完成以后等待通讯录同步
-            }.mergeWith(reifiedErrorSubject())
+            }.mergeWith(reifiedErrorSubject<Person>())
         }
     }
 
@@ -190,10 +197,9 @@ class SocketIOProvider(private val broker: Broker, private val endpoint: String)
         Triple(persons, groupJsonArray, groups)
     }, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
             .flatMap {
-                Observable.concat(
-                        broker.updateAllPersons(it.first),
-                        broker.updateAllGroups(it.third, it.second.toGroupsAndMembers()),
-                        broker.updateAllContacts(it.first.transform { it.id }, it.third.transform { it.id }))
+                userRepository.replaceAllUsers(it.first)
+                        .concatWith(groupRepository.replaceAllGroups(it.third, it.second.toGroupsAndMembers()))
+                        .concatWith(contactRepository.replaceAllContacts(it.first.transform { it.id }, it.third.transform { it.id }))
             }
 }
 

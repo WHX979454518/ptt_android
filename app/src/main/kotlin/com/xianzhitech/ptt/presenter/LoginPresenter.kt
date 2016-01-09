@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.service.provider.LoginResult
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import rx.Subscription
 import java.io.Serializable
+import kotlin.collections.forEach
 
 /**
  *
@@ -16,7 +17,7 @@ import java.io.Serializable
  * Created by fanchao on 9/01/16.
  */
 class LoginPresenter(private val authProvider: AuthProvider,
-                     private val preferenceProvider: PreferenceStorageProvider) : BasePresenter<LoginView>() {
+                     private val preferenceProvider: PreferenceStorageProvider) : BasePresenter<LoginPresenterView>() {
 
     companion object {
         const val PREF_KEY_TOKEN = "login_token"
@@ -50,7 +51,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
         }
     }
 
-    override fun attachView(view: LoginView) {
+    override fun attachView(view: LoginPresenterView) {
         super.attachView(view)
 
         if (authProvider.peekCurrentLogonUserId() != null) {
@@ -83,7 +84,3 @@ class LoginPresenter(private val authProvider: AuthProvider,
 
 }
 
-interface LoginView : PresenterView {
-    fun showLogin()
-    fun showLoginSuccess()
-}

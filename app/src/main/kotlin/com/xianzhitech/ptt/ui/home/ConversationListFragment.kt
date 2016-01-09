@@ -13,8 +13,8 @@ import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.model.Conversation
-import com.xianzhitech.ptt.presenter.ConversationPresenter
-import com.xianzhitech.ptt.presenter.ConversationView
+import com.xianzhitech.ptt.presenter.ConversationListPresenter
+import com.xianzhitech.ptt.presenter.ConversationListPresenterView
 import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -24,16 +24,16 @@ import java.util.*
 /**
  * 显示会话列表(Group)的界面
  */
-class ConversationListFragment : BaseFragment<Void>(), ConversationView {
+class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenterView {
 
     private var listView: RecyclerView? = null
     private val adapter = Adapter()
-    private lateinit var presenter: ConversationPresenter
+    private lateinit var presenter: ConversationListPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        presenter = (activity.application as AppComponent).conversationPresenter
+        presenter = (activity.application as AppComponent).conversationListPresenter
     }
 
     override fun onStart() {

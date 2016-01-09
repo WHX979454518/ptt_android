@@ -31,7 +31,7 @@ class LoginPresenterTest {
 
     @Test
     fun testLogin() {
-        val view = MockLoginView()
+        val view = MockLoginPresenterView()
         presenter.attachView(view)
         Assert.assertEquals(true, view.showedLogin)
         Assert.assertEquals(false, view.showedLoginSuccess)
@@ -41,7 +41,7 @@ class LoginPresenterTest {
 
     @Test
     fun testLoginSuccess() {
-        val view = MockLoginView()
+        val view = MockLoginPresenterView()
         val testFunc = {
             Assert.assertEquals(true, view.showedLoginSuccess)
             Assert.assertEquals(false, view.showedLoginError)
@@ -58,7 +58,7 @@ class LoginPresenterTest {
 
     @Test
     fun testLoginFailed() {
-        val view = MockLoginView()
+        val view = MockLoginPresenterView()
         val testFunc = {
             Assert.assertEquals(false, view.showedLoginSuccess)
             Assert.assertEquals(true, view.showedLoginError)
@@ -75,7 +75,7 @@ class LoginPresenterTest {
 
     @Test
     fun testResumeLogin() {
-        val view = MockLoginView()
+        val view = MockLoginPresenterView()
         val testFunc = {
             Assert.assertEquals(true, view.showedLoginSuccess)
             Assert.assertEquals(false, view.showedLoginError)
@@ -92,7 +92,7 @@ class LoginPresenterTest {
         testFunc()
     }
 
-    private class MockLoginView : LoginView {
+    private class MockLoginPresenterView : LoginPresenterView {
         var showedLogin = false
         var showedLoginSuccess = false
         var showedLoginError = false
