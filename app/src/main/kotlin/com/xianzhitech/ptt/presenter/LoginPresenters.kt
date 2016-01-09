@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.presenter
 
 import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.presenter.base.BasePresenter
 import com.xianzhitech.ptt.presenter.base.PresenterView
 import com.xianzhitech.ptt.service.provider.AuthProvider
@@ -47,7 +46,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
 
     init {
         (preferenceProvider.get(PREF_KEY_TOKEN) as? Serializable)?.let {
-            loginSubscription = authProvider.resumeLogin(it).observeOnMainThread().subscribe(loginSubscriber)
+            loginSubscription = authProvider.resumeLogin(it).subscribe(loginSubscriber)
         }
     }
 
@@ -72,8 +71,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
         }
 
         preferenceProvider.remove(PREF_KEY_TOKEN)
-
-        loginSubscription = authProvider.login(name, password).observeOnMainThread().subscribe(loginSubscriber)
+        loginSubscription = authProvider.login(name, password).subscribe(loginSubscriber)
     }
 
     fun cancelLogin() = loginSubscription?.let {
