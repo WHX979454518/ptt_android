@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.EditText
 import rx.Observable
 import rx.subscriptions.Subscriptions
+import kotlin.text.isEmpty
 
 
 fun EditText.getString() = text.toString()
@@ -28,5 +29,10 @@ fun EditText.fromTextChanged() = Observable.create<String> {
     it.add(Subscriptions.create { removeTextChangedListener(watcher) })
 }
 
+fun EditText.isEmpty() = text.isEmpty()
+
 inline fun <reified T : View> Activity.findView(@IdRes id: Int) = findViewById(id) as T
 inline fun <reified T : View> View.findView(@IdRes id: Int) = findViewById(id) as T
+fun View.setVisible(visible: Boolean) {
+    visibility = if (visible) View.VISIBLE else View.GONE
+}

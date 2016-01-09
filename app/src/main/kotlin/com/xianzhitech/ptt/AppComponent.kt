@@ -3,7 +3,9 @@ package com.xianzhitech.ptt
 import com.squareup.okhttp.OkHttpClient
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.service.provider.AuthProvider
+import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.provider.SignalProvider
+import com.xianzhitech.ptt.presenter.LoginPresenter
 
 /**
 
@@ -17,4 +19,8 @@ interface AppComponent {
     val talkEngineProvider: TalkEngineProvider
     val broker: Broker
     val authProvider: AuthProvider
+    val preferenceProvider: PreferenceStorageProvider
+
+    // Presenters
+    val loginPresenter: LoginPresenter
 }

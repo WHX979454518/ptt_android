@@ -1,67 +1,74 @@
 package com.xianzhitech.ptt.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v7.widget.Toolbar
+import android.view.View
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.service.user.LoginStatus
-import com.xianzhitech.ptt.service.user.UserService
+import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
-import com.xianzhitech.ptt.ui.home.LoginFragment
+import com.xianzhitech.ptt.ui.home.login.LoginFragment
+import com.xianzhitech.ptt.presenter.LoginPresenter
+import com.xianzhitech.ptt.presenter.LoginView
 
-class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
+class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginView {
 
     private lateinit var toolbar: Toolbar
+    private lateinit var loginPresenter: LoginPresenter
+    private lateinit var progress: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
         toolbar = findView(R.id.main_toolbar)
+        progress = findView(R.id.main_progress)
         setSupportActionBar(toolbar)
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 0)
-        }
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.RECORD_AUDIO), 0)
-        }
-
-        UserService.getLoginStatus(this)
-                .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe { status ->
-                    val fragmentToDisplay: Class<out Fragment>
-                    if (status == LoginStatus.LOGGED_ON) {
-                        fragmentToDisplay = HomeFragment::class.java
-                    } else {
-                        fragmentToDisplay = LoginFragment::class.java
-                    }
-
-                    val currFragment = supportFragmentManager.findFragmentById(R.id.main_content)
-                    val currFragmentClazz = currFragment?.javaClass
-
-                    if (fragmentToDisplay != currFragmentClazz) {
-                        val transaction = supportFragmentManager.beginTransaction()
-                        if (currFragment != null) {
-                            transaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-                        }
-
-                        transaction.replace(R.id.main_content, Fragment.instantiate(this@MainActivity, fragmentToDisplay.name)).commit()
-                    }
-                }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
+    override fun onBackPressed() {
+        (supportFragmentManager.findFragmentById(R.id.main_content) as? BackPressable)?.onBackPressed() ?: super.onBackPressed()
+    }
 
+    override fun onStart() {
+        super.onStart()
+
+        loginPresenter = (application as AppComponent).loginPresenter
+        loginPresenter.attachView(this)
+    }
+
+    override fun onStop() {
+        loginPresenter.detachView(this)
+
+        super.onStop()
+    }
+
+    private fun displayFragment(fragmentClazz: Class<out Fragment>) {
+        if (fragmentClazz != supportFragmentManager.findFragmentById(R.id.main_content)?.javaClass) {
+            supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                    .replace(R.id.main_content, Fragment.instantiate(this, fragmentClazz.name))
+                    .commit();
+        }
+    }
+
+    override fun showLogin() {
+        displayFragment(LoginFragment::class.java)
+    }
+
+    override fun showLoginSuccess() {
+        displayFragment(HomeFragment::class.java)
+    }
+
+    override fun showLoginInProgress(inProgress: Boolean) {
+        progress.setVisible(inProgress)
+    }
+
+    override fun showLoginError(message: CharSequence?) {
+        // Do nothing.
     }
 }

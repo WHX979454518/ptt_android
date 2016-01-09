@@ -18,6 +18,9 @@
     <string name="room_other_is_talking">%1$s 正在讲话</string>
 
     <string name="error_title">出错啦</string>
+    <string name="error_ok">知道了</string>
+    <string name="error_unknown">未知错误</string>
+    <string name="error_retry">重试</string>
     <string name="error_content">错误原因: %1$s</string>
     <string name="error_input_name">用户名不能为空</string>
     <string name="error_input_password">密码不能为空</string>

@@ -129,3 +129,12 @@ interface AuthProvider {
     @CheckResult
     fun logout(): Observable<Unit>
 }
+
+/**
+ * 提供程序选项数据的永久存储
+ */
+interface PreferenceStorageProvider {
+    fun save(key: String, value: Serializable?)
+    fun remove(key: String)
+    fun get(key: String): Serializable?
+}
