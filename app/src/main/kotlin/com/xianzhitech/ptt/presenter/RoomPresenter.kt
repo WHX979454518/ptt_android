@@ -98,6 +98,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                                 activeRoomSubscription?.unsubscribe()
                                 activeRoom.onNext(null)
                                 activeConversationId = null
+                                activeTalkEngine = activeTalkEngine?.let { it.dispose(); null }
 
                                 views.forEach { view -> view.onRoomQuited(it.conversation) }
                             }
