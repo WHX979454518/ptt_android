@@ -3,11 +3,14 @@ package com.xianzhitech.ptt.ext
 import android.content.Context
 import android.support.v4.app.FragmentActivity
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import rx.Observable
 import rx.Scheduler
 import rx.Subscriber
 import rx.android.schedulers.AndroidSchedulers
+import rx.functions.Func1
+import java.util.*
 
 /**
  * Created by fanchao on 17/12/15.
@@ -33,6 +36,30 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
     }
 
     override fun onCompleted() {
+    }
+}
+
+fun <T> Observable<ResultSet>.mapToOne(mapper: Func1<ResultSet, T>) = map {
+    it.use {
+        it.moveToFirst()
+        mapper.call(it)
+    }
+}
+
+fun <T> Observable<ResultSet>.mapToOneOrDefault(mapper: Func1<ResultSet, T>, defaultValue: T?) = map {
+    it.use {
+        if (it.moveToFirst()) mapper.call(it)
+        else defaultValue
+    }
+}
+
+fun <T> Observable<ResultSet>.mapToList(mapper: Func1<ResultSet, T>): Observable<List<T>> = map {
+    it.use {
+        ArrayList<T>(it.getCount()).apply {
+            while (it.moveToNext()) {
+                add(mapper.call(it))
+            }
+        }
     }
 }
 

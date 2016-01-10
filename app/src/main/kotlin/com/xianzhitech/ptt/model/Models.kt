@@ -1,10 +1,9 @@
 package com.xianzhitech.ptt.model
 
-import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.graphics.drawable.Drawable
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
@@ -23,8 +22,8 @@ import kotlin.text.substring
  */
 
 interface Model {
-    fun toValues(values: ContentValues)
-    fun from(cursor: Cursor): Model
+    fun toValues(values: MutableMap<String, Any?>)
+    fun from(cursor: ResultSet): Model
 }
 
 interface ContactItem {
@@ -46,13 +45,13 @@ class Contacts {
                 "$COL_PERSON_ID TEXT REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
                 ")"
 
-        public @JvmField val MAPPER = Func1<Cursor, ContactItem> { cursor ->
+        public @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
             if (cursor?.optStringValue(COL_GROUP_ID).isNullOrEmpty().not()) {
                 Group.MAPPER.call(cursor)
             } else if (cursor?.optStringValue(COL_PERSON_ID).isNullOrEmpty().not()) {
                 Person.MAPPER.call(cursor)
             } else {
-                throw IllegalArgumentException("Cursor $cursor is not a valid contact")
+                throw IllegalArgumentException("ResultSet $cursor is not a valid contact")
             }
         }
     }
@@ -83,7 +82,7 @@ class Conversation() : Model {
                 "$COL_IMPORTANT INTEGER NOT NULL" +
                 ")"
 
-        public @JvmStatic val MAPPER = Func1<Cursor, Conversation> { Conversation().from(it) }
+        public @JvmStatic val MAPPER = Func1<ResultSet, Conversation> { Conversation().from(it) }
     }
 
     var id: String = ""
@@ -110,7 +109,7 @@ class Conversation() : Model {
 
     override fun hashCode() = id.hashCode()
 
-    override fun toValues(values: ContentValues) {
+    override fun toValues(values: MutableMap<String, Any?>) {
         values.put(COL_ID, id)
         values.put(COL_NAME, name)
         values.put(COL_DESC, description)
@@ -118,7 +117,7 @@ class Conversation() : Model {
         values.put(COL_IMPORTANT, important)
     }
 
-    override fun from(cursor: Cursor): Conversation {
+    override fun from(cursor: ResultSet): Conversation {
         id = cursor.getStringValue(COL_ID)
         name = cursor.getStringValue(COL_NAME)
         description = cursor.optStringValue(COL_DESC)
@@ -143,7 +142,7 @@ class Group() : Model, ContactItem {
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID INTEGER PRIMARY KEY NOT NULL,$COL_NAME TEXT NOT NULL,$COL_DESCRIPTION TEXT)"
 
-        public @JvmField val MAPPER = Func1<Cursor, Group> { Group().from(it) }
+        public @JvmField val MAPPER = Func1<ResultSet, Group> { Group().from(it) }
     }
 
     var id: String = ""
@@ -172,13 +171,13 @@ class Group() : Model, ContactItem {
 
     override fun hashCode() = id.hashCode()
 
-    override fun toValues(values: ContentValues) {
+    override fun toValues(values: MutableMap<String, Any?>) {
         values.put(COL_ID, id)
         values.put(COL_DESCRIPTION, description)
         values.put(COL_NAME, name)
     }
 
-    override fun from(cursor: Cursor): Group {
+    override fun from(cursor: ResultSet): Group {
         id = cursor.getStringValue(COL_ID)
         description = cursor.optStringValue(COL_DESCRIPTION)
         name = cursor.getStringValue(COL_NAME)
@@ -197,7 +196,7 @@ class Person() : Model, ContactItem, Serializable {
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID TEXT PRIMARY KEY NOT NULL, $COL_NAME TEXT NOT NULL, $COL_AVATAR TEXT, $COL_PRIV INTEGER NOT NULL)"
 
-        public @JvmField val MAPPER = Func1<Cursor, Person> {
+        public @JvmField val MAPPER = Func1<ResultSet, Person> {
             Person().from(it)
         }
     }
@@ -229,14 +228,14 @@ class Person() : Model, ContactItem, Serializable {
 
     override fun hashCode() = id.hashCode()
 
-    override fun toValues(values: ContentValues) {
+    override fun toValues(values: MutableMap<String, Any?>) {
         values.put(COL_ID, id)
         values.put(COL_AVATAR, avatar)
         values.put(COL_NAME, name)
         values.put(COL_PRIV, privileges.toDatabaseString())
     }
 
-    override fun from(cursor: Cursor): Person {
+    override fun from(cursor: ResultSet): Person {
         id = cursor.getStringValue(COL_ID)
         avatar = cursor.optStringValue(COL_AVATAR)
         name = cursor.getStringValue(COL_NAME)

@@ -6,6 +6,7 @@ import android.preference.PreferenceManager
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.picasso.OkHttpDownloader
 import com.squareup.picasso.Picasso
+import com.xianzhitech.ptt.db.AndroidDatabase
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
@@ -33,7 +34,7 @@ open class App : Application(), AppComponent {
         override fun createEngine() = WebRtcTalkEngine(this@App)
     }
 
-    override val userRepository by lazy { LocalRepository(Database(this@App, Constants.DB_NAME, Constants.DB_VERSION)) }
+    override val userRepository by lazy { LocalRepository(AndroidDatabase(this@App, Constants.DB_NAME, Constants.DB_VERSION)) }
     override val groupRepository: GroupRepository
         get() = userRepository
     override val conversationRepository: ConversationRepository

@@ -1,20 +1,17 @@
 package com.xianzhitech.ptt.repo
 
-import android.content.ContentValues
-import android.database.sqlite.SQLiteDatabase
 import android.support.annotation.CheckResult
-import com.xianzhitech.ptt.Database
-import com.xianzhitech.ptt.ext.countAndClose
-import com.xianzhitech.ptt.ext.mapAndClose
-import com.xianzhitech.ptt.ext.toObservable
-import com.xianzhitech.ptt.ext.toSqlSet
+import com.xianzhitech.ptt.db.Database
+import com.xianzhitech.ptt.db.ResultSet
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
 import rx.Observable
+import rx.functions.Func1
 import rx.schedulers.Schedulers
+import rx.subjects.BehaviorSubject
+import java.util.*
 import java.util.concurrent.Executors
-import kotlin.collections.emptyList
-import kotlin.collections.forEach
-import kotlin.collections.listOf
+import kotlin.collections.*
 
 /**
  *
@@ -28,46 +25,96 @@ class LocalRepository(private val db: Database)
         , GroupRepository
         , ConversationRepository
         , ContactRepository {
+
     private val queryScheduler = Schedulers.computation()
     private val modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
+    private val tableSubjects = hashMapOf<String, BehaviorSubject<Unit?>>()
+    private val pendingNotificationTables = object : ThreadLocal<HashSet<String>>() {
+        override fun initialValue() = hashSetOf<String>()
+    }
+    private val inTransaction = object : ThreadLocal<Boolean>() {
+        override fun initialValue() = false
+    }
+
+    private fun getTableSubject(tableName: String): BehaviorSubject<Unit?> {
+        synchronized(tableSubjects, {
+            return tableSubjects.getOrPut(tableName, { BehaviorSubject.create(null as Unit?) })
+        })
+    }
+
     private inline fun <T> updateInTransaction(crossinline func: () -> T?): Observable<T> {
         return Observable.defer<T> {
-            db.newTransaction().use {
-                func().apply {
-                    it.markSuccessful()
-                }.toObservable()
-            }
+            db.executeInTransaction {
+                inTransaction.set(true)
+                try {
+                    func()
+                } finally {
+                    inTransaction.set(false)
+                    pendingNotificationTables.get().apply {
+                        forEach { getTableSubject(it).onNext(null) }
+                        clear()
+                    }
+                }
+
+            }.toObservable()
         }.subscribeOn(modifyScheduler)
     }
 
-    @CheckResult
-    override fun getUser(id: String): Observable<Person?> {
-        return db.createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME} WHERE ${Person.COL_ID} = ? LIMIT 1", id)
-                .mapToOneOrDefault(Person.MAPPER, null)
-                .subscribeOn(queryScheduler)
-    }
+    private fun createQuery(tableNames: Iterable<String>, sql: String, vararg args: Any?) =
+            Observable.merge(tableNames.transform { getTableSubject(it) })
+                    .flatMap {
+                        Observable.defer<ResultSet> {
+                            db.query(sql, *args).toObservable()
+                        }
+                    }
 
-    override fun getGroup(groupId: String): Observable<Group?> {
-        return db.createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} = ? LIMIT 1", groupId)
-                .mapToOne(Group.MAPPER)
-                .subscribeOn(queryScheduler)
-    }
+    private fun createQuery(tableName: String, sql: String, vararg args: Any?) = createQuery(listOf(tableName), sql, *args)
 
-    override fun replaceAllUsers(users: Iterable<Person>) = updateInTransaction {
-        db.delete(Person.TABLE_NAME, "")
-
-        val cacheValues = ContentValues()
-        users.forEach {
-            db.insert(Person.TABLE_NAME, cacheValues.apply { clear(); it.toValues(this) })
+    private fun notifyTable(tableName: String) {
+        if (inTransaction.get()) {
+            pendingNotificationTables.get().add(tableName)
+        } else {
+            getTableSubject(tableName).onNext(null)
         }
     }
 
-    override fun getGroupMembers(groupId: String) =
-            db.createQuery(
-                    listOf(Group.TABLE_NAME, Person.TABLE_NAME),
-                    "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " + "LEFT JOIN " + GroupMembers.TABLE_NAME + " AS GM ON " + "GM." + GroupMembers.COL_PERSON_ID + " = P." + Person.COL_ID + " " + "WHERE GM." + GroupMembers.COL_GROUP_ID + " = ?",
-                    groupId).mapToList(Person.MAPPER)
+    private fun delete(tableName: String, whereClause: String, vararg args: Any?) {
+        db.delete(tableName, whereClause, *args)
+        notifyTable(tableName)
+    }
+
+    private fun insert(tableName: String, values: Map<String, Any?>, replaceIfConflicts: Boolean = false) {
+        db.insert(tableName, values, replaceIfConflicts)
+        notifyTable(tableName)
+    }
+
+
+    @CheckResult
+    override fun getUser(id: String): Observable<Person?> {
+        return createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME} WHERE ${Person.COL_ID} = ? LIMIT 1", id)
+                .mapToOneOrDefault(Person.MAPPER, null)
+    }
+
+    override fun getGroup(groupId: String): Observable<Group?> {
+        return createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} = ? LIMIT 1", groupId)
+                .mapToOneOrDefault(Group.MAPPER, null)
+    }
+
+    override fun replaceAllUsers(users: Iterable<Person>) = updateInTransaction {
+        delete(Person.TABLE_NAME, "")
+
+        val cacheValues = hashMapOf<String, Any?>()
+        users.forEach {
+            insert(Person.TABLE_NAME, cacheValues.apply { clear(); it.toValues(this) })
+        }
+    }
+
+    override fun getGroupMembers(groupId: String) = createQuery(
+            listOf(Group.TABLE_NAME, Person.TABLE_NAME),
+            "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " + "LEFT JOIN " + GroupMembers.TABLE_NAME + " AS GM ON " + "GM." + GroupMembers.COL_PERSON_ID + " = P." + Person.COL_ID + " " + "WHERE GM." + GroupMembers.COL_GROUP_ID + " = ?",
+            groupId)
+            .mapToList(Person.MAPPER)
 
     override fun updateGroupMembers(groupId: String, memberIds: Iterable<String>) = updateInTransaction {
         db.delete(GroupMembers.TABLE_NAME, "${GroupMembers.COL_GROUP_ID} = ? AND ${GroupMembers.COL_PERSON_ID} NOT IN ${memberIds.toSqlSet()}", groupId)
@@ -75,91 +122,86 @@ class LocalRepository(private val db: Database)
     }
 
     override fun getConversation(convId: String) =
-            db.createQuery(Conversation.TABLE_NAME, "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ? LIMIT 1", convId)
+            createQuery(Conversation.TABLE_NAME, "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ? LIMIT 1", convId)
                     .mapToOne(Conversation.MAPPER)
-                    .subscribeOn(queryScheduler)
 
     override fun getConversationMembers(convId: String) =
-            db.createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME),
+            createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME),
                     "SELECT P.* FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS CM ON CM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} WHERE CM.${ConversationMembers.COL_CONVERSATION_ID} = ?", convId)
                     .mapToList(Person.MAPPER)
-                    .subscribeOn(queryScheduler)
 
     override fun updateConversation(conversation: Conversation) = updateInTransaction {
         conversation.let {
             db.insert(Conversation.TABLE_NAME,
-                    ContentValues().apply { it.toValues(this) },
-                    SQLiteDatabase.CONFLICT_REPLACE)
+                    hashMapOf<String, Any?>().apply { it.toValues(this) },
+                    true)
             it
         }
     }
 
     override fun updateConversationMembers(convId: String, memberIds: Iterable<String>) = updateInTransaction {
         db.delete(ConversationMembers.TABLE_NAME, "${ConversationMembers.COL_CONVERSATION_ID} = ?", convId)
-        val cacheContentValues = ContentValues(2)
+        val cacheContentValues = HashMap<String, Any?>(2)
         memberIds.forEach {
-            db.insert(ConversationMembers.TABLE_NAME, cacheContentValues.apply { put(ConversationMembers.COL_PERSON_ID, it) })
+            insert(ConversationMembers.TABLE_NAME, cacheContentValues.apply { put(ConversationMembers.COL_PERSON_ID, it) })
         }
     }
 
     override fun getConversationsWithMemberNames(maxMember: Int) =
-            db.createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME}")
-                    .mapToList {
+            createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME}")
+                    .mapToList(Func1<ResultSet, ConversationWithMemberNames> {
                         val conversation = Conversation.MAPPER.call(it)
                         ConversationWithMemberNames(
                                 conversation,
                                 db.query("SELECT P.${Person.COL_NAME} FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS GM ON GM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} AND ${ConversationMembers.COL_CONVERSATION_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
                                 db.query("SELECT COUNT(${ConversationMembers.COL_PERSON_ID}) FROM ${ConversationMembers.TABLE_NAME} WHERE ${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id).countAndClose()
                         )
-                    }
-                    .subscribeOn(queryScheduler)
+                    })
 
-    override fun getContactItems() = db.createQuery(Contacts.TABLE_NAME,
+    override fun getContactItems() = createQuery(Contacts.TABLE_NAME,
             "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${Person.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${Person.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID}")
             .mapToList(Contacts.MAPPER)
-            .subscribeOn(queryScheduler)
 
     override fun searchContactItems(searchTerm: String): Observable<List<ContactItem>> {
         val formattedSearchTerm = "%$searchTerm%"
-        return db.createQuery(Contacts.TABLE_NAME,
+        return createQuery(Contacts.TABLE_NAME,
                 "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${Person.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${Person.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID} WHERE (P.${Person.COL_NAME} LIKE ? OR G.${Group.COL_NAME} LIKE ? )", formattedSearchTerm, formattedSearchTerm)
                 .mapToList(Contacts.MAPPER)
-                .subscribeOn(queryScheduler)
     }
 
     override fun replaceAllContacts(userIds: Iterable<String>, groupIds: Iterable<String>) = updateInTransaction {
-        db.delete(Contacts.TABLE_NAME, "1")
+        delete(Contacts.TABLE_NAME, "1")
 
-        val values = ContentValues(2)
+        val values = HashMap<String, Any?>(2)
         userIds.forEach {
-            db.insert(Contacts.TABLE_NAME, values.apply { clear(); put(Contacts.COL_PERSON_ID, it) })
+            insert(Contacts.TABLE_NAME, values.apply { clear(); put(Contacts.COL_PERSON_ID, it) })
         }
 
         groupIds.forEach {
-            db.insert(Contacts.TABLE_NAME, values.apply { clear(); put(Contacts.COL_GROUP_ID, it) })
+            insert(Contacts.TABLE_NAME, values.apply { clear(); put(Contacts.COL_GROUP_ID, it) })
         }
     }
 
     override fun replaceAllGroups(groups: Iterable<Group>, groupMembers: Map<String, Iterable<String>>) = updateInTransaction {
-        db.delete(Group.TABLE_NAME, "1")
+        delete(Group.TABLE_NAME, "1")
 
-        val values = ContentValues()
+        val values = HashMap<String, Any?>()
         groups.forEach {
-            db.insert(Group.TABLE_NAME, values.apply { clear(); it.toValues(this) })
+            insert(Group.TABLE_NAME, values.apply { clear(); it.toValues(this) })
             doAddGroupMembers(it.id, groupMembers[it.id] ?: emptyList())
         }
     }
 
     private fun doAddGroupMembers(groupId: String, members: Iterable<String>) {
-        val values = ContentValues(2)
+        val values = HashMap<String, Any?>(2)
         members.forEach {
-            db.insert(
+            insert(
                     GroupMembers.TABLE_NAME,
                     values.apply {
                         put(GroupMembers.COL_GROUP_ID, groupId)
                         put(GroupMembers.COL_PERSON_ID, it)
                     },
-                    SQLiteDatabase.CONFLICT_REPLACE)
+                    true)
         }
     }
 }
