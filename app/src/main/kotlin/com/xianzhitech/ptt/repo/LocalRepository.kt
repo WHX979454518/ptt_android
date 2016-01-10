@@ -20,7 +20,7 @@ import kotlin.collections.*
  * Created by fanchao on 9/01/16.
  */
 
-class LocalRepository(private val db: Database)
+class LocalRepository(internal val db: Database)
 : UserRepository
         , GroupRepository
         , ConversationRepository
@@ -66,7 +66,7 @@ class LocalRepository(private val db: Database)
                     .flatMap {
                         Observable.defer<ResultSet> {
                             db.query(sql, *args).toObservable()
-                        }
+                        }.subscribeOn(queryScheduler)
                     }
 
     private fun createQuery(tableName: String, sql: String, vararg args: Any?) = createQuery(listOf(tableName), sql, *args)

@@ -12,6 +12,7 @@ import org.mockito.runners.MockitoJUnitRunner
 import rx.android.plugins.RxAndroidPlugins
 import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  *
@@ -20,6 +21,10 @@ import rx.schedulers.Schedulers
 
 @RunWith(MockitoJUnitRunner::class)
 class LoginPresenterTest {
+
+    companion object {
+        val hasInitRx = AtomicBoolean(false)
+    }
 
     private lateinit var presenter: LoginPresenter
     private lateinit var authProvider: AuthProvider
@@ -30,9 +35,12 @@ class LoginPresenterTest {
         authProvider = MockAuthProvider()
         preferenceProvider = MockPreferenceProvider()
         presenter = LoginPresenter(authProvider, preferenceProvider)
-        RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
-            override fun getMainThreadScheduler() = Schedulers.immediate()
-        })
+
+        if (hasInitRx.compareAndSet(false, true)) {
+            RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
+                override fun getMainThreadScheduler() = Schedulers.immediate()
+            })
+        }
     }
 
     @Test

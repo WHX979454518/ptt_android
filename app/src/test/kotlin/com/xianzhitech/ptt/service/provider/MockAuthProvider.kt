@@ -4,9 +4,9 @@ import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.model.Privilege
 import rx.Observable
+import rx.subjects.BehaviorSubject
 import java.io.Serializable
 import java.util.*
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Created by fanchao on 9/01/16.
@@ -16,36 +16,38 @@ class MockAuthProvider : AuthProvider {
         public val LEGIT_USER = Person("1", "user", EnumSet.allOf(Privilege::class.java))
     }
 
-    val logonUser = AtomicReference<Person>()
+    val logonUser = BehaviorSubject.create(null as Person?)
 
     override fun login(username: String, password: String): Observable<LoginResult> {
         if (username == LEGIT_USER.name) {
             return LoginResult(LEGIT_USER, username).apply {
-                logonUser.set(this.person)
+                logonUser.onNext(this.person)
             }.toObservable()
         } else {
-            logonUser.set(null)
+            logonUser.onNext(null)
             return Observable.error(RuntimeException())
         }
     }
 
+    override fun getCurrentLogonUserId() = logonUser.map { it?.id }
+
     override fun resumeLogin(token: Serializable): Observable<LoginResult> {
         if (token == LEGIT_USER.name) {
             return LoginResult(LEGIT_USER, token).apply {
-                logonUser.set(this.person)
+                logonUser.onNext(this.person)
             }.toObservable()
         } else {
-            logonUser.set(null)
+            logonUser.onNext(null)
             return Observable.error(IllegalAccessError())
         }
     }
 
     override fun peekCurrentLogonUserId(): String? {
-        return logonUser.get()?.id
+        return logonUser.value?.id
     }
 
     override fun logout(): Observable<Unit> {
-        logonUser.set(null)
+        logonUser.onNext(null)
         return Observable.just(null)
     }
 }
