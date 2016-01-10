@@ -35,4 +35,5 @@
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
     <string name="error_user_not_logon">未登陆用户无法进行此操作</string>
+    <string name="room_loading">加载中...</string>
 </resources>

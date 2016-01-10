@@ -19,7 +19,7 @@
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/room_toolbar"
-                app:title="Hello"
+                app:title="@string/room_loading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 

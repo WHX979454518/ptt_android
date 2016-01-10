@@ -43,7 +43,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
         } else if (joinRoomSubscription != null) {
             // We're joining room
             view.showLoading(true)
-        } else {
+        } else if (activeRoom.value != null) {
             // We've joined a room
             view.showLoading(false)
             showViewsRoom(listOf(view), activeRoom.value!!)

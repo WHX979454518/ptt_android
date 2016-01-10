@@ -6,7 +6,11 @@ import android.support.v4.app.Fragment
 import android.view.View
 import com.trello.rxlifecycle.FragmentEvent
 import com.trello.rxlifecycle.RxLifecycle
+import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.presenter.base.PresenterView
+import com.xianzhitech.ptt.service.UserDescribableException
+import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import rx.Observable
 import rx.subjects.BehaviorSubject
 
@@ -27,7 +31,19 @@ abstract class BaseFragment<T> : Fragment(), PresenterView {
     }
 
     override fun showError(err: Throwable) {
-        throw RuntimeException(err)
+        if (err is UserDescribableException) {
+            AlertDialogFragment.Builder()
+                    .setTitle(R.string.error_title.toFormattedString(context))
+                    .setMessage(err.describe(context))
+                    .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
+                    .show(childFragmentManager, TAG_GENERIC_ERROR_DIALOG)
+        } else {
+            AlertDialogFragment.Builder()
+                    .setTitle(R.string.error_title.toFormattedString(context))
+                    .setMessage("Class: ${err.javaClass}, msg: ${err.message}")
+                    .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
+                    .show(childFragmentManager, TAG_GENERIC_ERROR_DIALOG)
+        }
     }
 
     override fun showLoading(visible: Boolean) {
@@ -91,5 +107,9 @@ abstract class BaseFragment<T> : Fragment(), PresenterView {
 
     fun <D> bindUntil(event: FragmentEvent): Observable.Transformer<in D, out D> {
         return RxLifecycle.bindUntilFragmentEvent<D>(lifecycleEventSubject, event)
+    }
+
+    companion object {
+        public const val TAG_GENERIC_ERROR_DIALOG = "tag_generic_error_dialog"
     }
 }
