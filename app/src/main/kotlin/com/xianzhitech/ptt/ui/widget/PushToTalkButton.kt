@@ -10,7 +10,6 @@ import android.view.MotionEvent
 import android.widget.ImageButton
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.toColorValue
-import com.xianzhitech.ptt.service.room.RoomStatus
 
 /**
 
@@ -19,18 +18,35 @@ import com.xianzhitech.ptt.service.room.RoomStatus
  * Created by fanchao on 12/12/15.
  */
 class PushToTalkButton : ImageButton {
-    public lateinit var callbacks: Callbacks
-
-    private val requestFocusRunnable = Runnable {
-        callbacks.requestFocus()
-    }
-    var roomStatus = RoomStatus.NOT_CONNECTED
-        set(newStatus) {
-            if (field != newStatus) {
-                field = newStatus
-                applyRoomStatus()
+    var isConnectedToRoom: Boolean = false
+        set(value) {
+            if (field != value) {
+                field = value
+                invalidate()
             }
         }
+
+    var isRequestingMic: Boolean = false
+        set(value) {
+            if (field != value) {
+                field = value
+                invalidate()
+            }
+        }
+
+    var hasActiveSpeaker: Boolean = false
+        set(value) {
+            if (field != value) {
+                field = value
+                invalidate()
+            }
+        }
+
+    public var callbacks: Callbacks? = null
+
+    private val requestFocusRunnable = Runnable {
+        callbacks?.requestMic()
+    }
 
     private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
@@ -52,26 +68,20 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun init(context: Context) {
-        applyRoomStatus()
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
     }
 
-    private fun applyRoomStatus() {
-        isEnabled = roomStatus == RoomStatus.CONNECTED
-        invalidate()
-    }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
-        paint.color = when (roomStatus) {
-            RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
-            RoomStatus.ACTIVE -> android.R.color.holo_red_dark
-            RoomStatus.CONNECTED -> android.R.color.holo_green_dark
-            RoomStatus.CONNECTING -> android.R.color.darker_gray
-            RoomStatus.NOT_CONNECTED -> android.R.color.holo_purple
-        }.toColorValue(context)
+        paint.color = (
+                if (hasActiveSpeaker) android.R.color.holo_red_dark
+                else if (isRequestingMic) android.R.color.holo_orange_dark
+                else if (isConnectedToRoom) android.R.color.holo_green_dark
+                else android.R.color.darker_gray
+                ).toColorValue(context)
 
         canvas?.drawCircle(width / 2f, height / 2f, width / 2f, paint)
     }
@@ -82,7 +92,7 @@ class PushToTalkButton : ImageButton {
 
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
                 removeCallbacks(requestFocusRunnable)
-                callbacks.releaseFocus()
+                callbacks?.releaseMic()
             }
         }
 
@@ -90,8 +100,7 @@ class PushToTalkButton : ImageButton {
     }
 
     interface Callbacks {
-        fun requestFocus()
-        fun releaseFocus()
-
+        fun requestMic()
+        fun releaseMic()
     }
 }

@@ -68,7 +68,7 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         progress.setVisible(visible)
     }
 
-    override fun showError(message: CharSequence?) {
+    override fun showError(err: Throwable) {
         // Do nothing
     }
 }

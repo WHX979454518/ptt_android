@@ -3,7 +3,6 @@ package com.xianzhitech.ptt.service.provider
 import android.support.annotation.CheckResult
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.model.RoomInfo
 import rx.Observable
 import java.io.Serializable
 
@@ -15,7 +14,7 @@ interface ConversationRequest : Serializable
 /**
  * 从已有的会话发起会话
  */
-data class ConversationFromExisiting(val conversationId: String) : ConversationRequest
+data class ConversationFromExisting(val conversationId: String) : ConversationRequest
 
 /**
  * 新建一个会话的请求
@@ -34,6 +33,13 @@ data class CreateConversationFromPerson(val personId: String, override val name:
  * 从一个组创建会话请求
  */
 data class CreateConversationFromGroup(val groupId: String, override val name: String? = null) : CreateConversationRequest
+
+/**
+ * 加入房间的返回结果
+ */
+data class JoinConversationResult(val conversationId: String,
+                                  val roomId: String,
+                                  val engineProperties: Map<String, Any?>)
 
 /**
  * 信号服务器的接口
@@ -56,7 +62,7 @@ interface SignalProvider {
      * 加入会话（进入对讲房间）
      */
     @CheckResult
-    fun joinConversation(conversationId: String): Observable<RoomInfo>
+    fun joinConversation(conversationId: String): Observable<JoinConversationResult>
 
     /**
      * 获取房间在线成员（以及更新）
@@ -122,6 +128,12 @@ interface AuthProvider {
      * 获取当前登陆的用户ID
      */
     fun peekCurrentLogonUserId(): String?
+
+    /**
+     * 订阅当前登陆用户的ID
+     */
+    @CheckResult
+    fun getCurrentLogonUserId(): Observable<String?>
 
     /**
      * 登出

@@ -10,8 +10,8 @@ import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
-import com.xianzhitech.ptt.presenter.ConversationListPresenter
 import com.xianzhitech.ptt.presenter.LoginPresenter
+import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -39,11 +39,11 @@ open class App : Application(), AppComponent {
     override val conversationRepository: ConversationRepository
         get() = userRepository
     override val contactRepository: ContactRepository
-        get() = contactRepository
+        get() = userRepository
     override val authProvider by lazy { signalProvider as AuthProvider }
     override val loginPresenter by lazy { LoginPresenter(authProvider, preferenceProvider) }
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
-    override val conversationListPresenter: ConversationListPresenter by lazy { ConversationListPresenter(conversationRepository) }
+    override val roomPresenter: RoomPresenter by lazy { RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, conversationRepository) }
 
     override fun onCreate() {
         super.onCreate()

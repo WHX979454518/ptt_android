@@ -6,6 +6,7 @@ import android.os.Bundle
 
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.service.provider.ConversationRequest
+import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 
 /**
@@ -31,7 +32,19 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     private fun handleIntent(intent: Intent) {
-        supportFragmentManager.beginTransaction().replace(R.id.room_content, RoomFragment.create(intent.getSerializableExtra(EXTRA_ROOM_REQUEST) as ConversationRequest)).commit()
+        supportFragmentManager.beginTransaction()
+                .replace(R.id.room_content, RoomFragment.create(intent.getSerializableExtra(EXTRA_ROOM_REQUEST) as ConversationRequest))
+                .commit()
+    }
+
+    override fun onBackPressed() {
+        (supportFragmentManager.findFragmentById(R.id.room_content) as? BackPressable)?.let {
+            it.onBackPressed()
+        } ?: super.onBackPressed()
+    }
+
+    override fun onRoomQuited() {
+        finish()
     }
 
     companion object {

@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.presenter.base
 
 import java.util.*
+import kotlin.collections.forEach
 
 /**
  * 表现层
@@ -13,7 +14,7 @@ public interface Presenter<T : PresenterView> {
 }
 
 public abstract class BasePresenter<T : PresenterView> : Presenter<T> {
-    protected val views = ArrayList<T>(1)
+    protected val views = LinkedHashSet<T>(1)
 
     override fun attachView(view: T) {
         views.add(view)
@@ -21,5 +22,13 @@ public abstract class BasePresenter<T : PresenterView> : Presenter<T> {
 
     override fun detachView(view: T) {
         views.remove(view)
+    }
+
+    protected final fun notifyViewsError(error: Throwable) {
+        views.forEach { it.showError(error) }
+    }
+
+    protected final fun showViewsLoading(loading: Boolean) {
+        views.forEach { it.showLoading(loading) }
     }
 }

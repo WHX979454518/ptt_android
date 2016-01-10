@@ -1,8 +1,6 @@
 package com.xianzhitech.ptt.engine
 
 
-import com.xianzhitech.ptt.model.RoomInfo
-
 /**
 
  * 定义对讲引擎操作的接口
@@ -10,7 +8,7 @@ import com.xianzhitech.ptt.model.RoomInfo
  * Created by fanchao on 13/12/15.
  */
 interface TalkEngine {
-    fun connect(roomInfo: RoomInfo)
+    fun connect(roomId: String, property: Map<String, Any?>)
     fun dispose()
     fun startSend()
     fun stopSend()

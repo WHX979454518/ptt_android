@@ -10,12 +10,13 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.presenter.ContactListPresenter
+import com.xianzhitech.ptt.presenter.ContactListPresenterView
 import com.xianzhitech.ptt.service.provider.CreateConversationFromGroup
 import com.xianzhitech.ptt.service.provider.CreateConversationFromPerson
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -27,57 +28,70 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.arrayListOf
 import kotlin.collections.sortWith
 
-class ContactsFragment : BaseFragment<Void>() {
+class ContactsFragment : BaseFragment<Void>(), ContactListPresenterView {
+    private class Views(rootView: View,
+                        val recyclerView: RecyclerView = rootView.findView(R.id.contacts_list),
+                        val searchBox: EditText = rootView.findView(R.id.contacts_searchBox))
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var searchBox: EditText
+
+    private var views: Views? = null
 
     private lateinit var accountColors: IntArray
+    private lateinit var presenter: ContactListPresenter
     private val adapter = Adapter()
-    private lateinit var broker: Broker
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        broker = (activity.application as AppComponent).broker
+        presenter = ContactListPresenter((activity.application as AppComponent).contactRepository)
         accountColors = resources.getIntArray(R.array.account_colors)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_contacts, container, false)?.apply {
-            recyclerView = findView(R.id.contacts_list)
-            searchBox = findView(R.id.contacts_searchBox)
-            recyclerView.layoutManager = LinearLayoutManager(context)
-            recyclerView.adapter = adapter
+            views = Views(this).apply {
+                recyclerView.layoutManager = LinearLayoutManager(context)
+                recyclerView.adapter = adapter
 
-            searchBox.setCompoundDrawablesWithIntrinsicBounds(
-                    context.getTintedDrawable(R.drawable.ic_search, context.getColorCompat(R.color.secondary_text)), null, null, null)
+                searchBox.setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_search, context.getColorCompat(R.color.secondary_text)), null, null, null)
+            }
         }
     }
 
     override fun onStart() {
         super.onStart()
 
-        Observable.merge(
-                searchBox.fromTextChanged(),
-                searchBox.getString().toObservable())
-                .debounce(500, TimeUnit.MILLISECONDS)
-                .flatMap { broker.getContacts(it) }
-                .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe { adapter.setPersons(it) }
+        views?.apply {
+            Observable.merge(
+                    searchBox.fromTextChanged(),
+                    searchBox.getString().toObservable())
+                    .debounce(500, TimeUnit.MILLISECONDS)
+                    .subscribe { presenter.search(it) }
+        }
+
+        presenter.attachView(this)
     }
 
+    override fun showLoading(visible: Boolean) {
+        //Do nothing
+    }
+
+    override fun showError(err: Throwable) {
+        //TODO
+    }
+
+    override fun showContactList(contactList: List<ContactItem>) {
+        adapter.setContactItems(contactList)
+    }
 
     private inner class Adapter : RecyclerView.Adapter<ContactHolder>() {
-        private val contactItems = arrayListOf<ContactItem>()
+        var contactItems = arrayListOf<ContactItem>()
 
-        fun setPersons(newPersons: Collection<ContactItem>?) {
-            this.contactItems.clear()
-            if (newPersons != null) {
-                this.contactItems.addAll(newPersons)
-                this.contactItems.sortWith(ContactComparator(Locale.CHINESE))
-            }
+        fun setContactItems(newItems: Collection<ContactItem>) {
+            contactItems.clear()
+            contactItems.addAll(newItems)
+            contactItems.sortWith(ContactComparator(Locale.CHINESE))
 
             notifyDataSetChanged()
         }

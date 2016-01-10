@@ -3,13 +3,17 @@ package com.xianzhitech.ptt.service.provider
 import android.support.v4.util.ArrayMap
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.model.Conversation
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.InvalidSavedTokenException
 import com.xianzhitech.ptt.service.ServerException
+import com.xianzhitech.ptt.service.UserNotLogonException
 import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -18,12 +22,12 @@ import io.socket.engineio.client.Transport
 import org.json.JSONArray
 import org.json.JSONObject
 import rx.Observable
+import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import rx.subscriptions.Subscriptions
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 import kotlin.collections.*
 
@@ -53,7 +57,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
     }
 
     private lateinit var socket: Socket
-    private val logonUser = AtomicReference<Person>()
+    private val logonUser = BehaviorSubject.create(null as Person?)
     private val errorSubject = PublishSubject.create<Any>()
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
@@ -73,20 +77,31 @@ class SocketIOProvider(private val userRepository: UserRepository,
         return Observable.empty()
     }
 
-    override fun peekCurrentLogonUserId() = logonUser.get()?.id
+    override fun peekCurrentLogonUserId() = logonUser.value?.id
 
-    override fun joinConversation(conversationId: String): Observable<RoomInfo> {
+    override fun joinConversation(conversationId: String): Observable<JoinConversationResult> {
         return socket.sendEvent(
                 EVENT_CLIENT_JOIN_ROOM,
-                { (it[0] as JSONObject).toRoomInfo(conversationId, peekCurrentLogonUserId() ?: throw IllegalStateException("Not logon")) },
+                { it[0] as JSONObject },
                 JSONObject().put("roomId", conversationId))
-                .flatMap { roomInfo ->
-                    ensureActiveMemberSubject(conversationId).onNext(roomInfo.activeMembers)
-                    ensureCurrentSpeakerSubject(conversationId).onNext(roomInfo.speaker)
-                    conversationRepository.updateConversationMembers(conversationId, roomInfo.members).map { roomInfo }
+                .flatMap { response ->
+                    val server = response.getJSONObject("server")
+                    val roomInfoObject = response.getJSONObject("roomInfo")
+                    val engineProperties = mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
+                            Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, peekCurrentLogonUserId() ?: throw UserNotLogonException()),
+                            Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
+                            Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
+
+                    ensureActiveMemberSubject(conversationId).onNext(response.getJSONArray("activeMembers").toStringList())
+                    ensureCurrentSpeakerSubject(conversationId).onNext(response.optString("speaker"))
+                    conversationRepository.updateConversationMembers(conversationId, roomInfoObject.getJSONArray("members").toStringList()).map {
+                        JoinConversationResult(conversationId, roomInfoObject.getString("idNumber"), engineProperties)
+                    }
                 }
                 .mergeWith(reifiedErrorSubject())
     }
+
+    override fun getCurrentLogonUserId() = logonUser.map { it?.id }
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
         return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM,
@@ -95,11 +110,11 @@ class SocketIOProvider(private val userRepository: UserRepository,
     }
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
-        return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it[0] as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == logonUser.get().id } },
+        return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it[0] as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == peekCurrentLogonUserId() } },
                 JSONObject().put("roomId", conversationId))
                 .doOnNext {
                     if (it) {
-                        ensureCurrentSpeakerSubject(conversationId).onNext(logonUser.get()?.id)
+                        ensureCurrentSpeakerSubject(conversationId).onNext(peekCurrentLogonUserId())
                     }
                 }
                 .mergeWith(reifiedErrorSubject())
@@ -175,14 +190,14 @@ class SocketIOProvider(private val userRepository: UserRepository,
 
                 socket = it.connect()
             }.flatMap { person ->
-                logonUser.set(person) // 设置当前用户
+                logonUser.onNext(person) // 设置当前用户
                 syncContacts().map { person } // 在登陆完成以后等待通讯录同步
             }.mergeWith(reifiedErrorSubject<Person>())
         }
     }
 
     override fun logout(): Observable<Unit> {
-        logonUser.set(null)
+        logonUser.onNext(null)
         socket.close()
         return Observable.empty()
     }
@@ -248,20 +263,6 @@ internal fun Conversation.readFrom(obj : JSONObject) : Conversation {
     ownerId = obj.getString("owner")
     important = obj.getBoolean("important")
     return this
-}
-
-internal fun JSONObject.toRoomInfo(conversationId: String, logonUserId: String): RoomInfo {
-    val server = getJSONObject("server")
-    val roomInfoObject = getJSONObject("roomInfo")
-    return RoomInfo(roomInfoObject.getString("idNumber"), conversationId,
-            roomInfoObject.getJSONArray("members").toStringIterable().toList(),
-            getJSONArray("activeMembers").toStringList(), optString("speaker"),
-            mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
-                    Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, logonUserId),
-                    Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
-                    Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
-    )
-
 }
 
 internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {

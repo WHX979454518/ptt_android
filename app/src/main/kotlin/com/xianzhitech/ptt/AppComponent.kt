@@ -2,8 +2,8 @@ package com.xianzhitech.ptt
 
 import com.squareup.okhttp.OkHttpClient
 import com.xianzhitech.ptt.engine.TalkEngineProvider
-import com.xianzhitech.ptt.presenter.ConversationListPresenter
 import com.xianzhitech.ptt.presenter.LoginPresenter
+import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -33,5 +33,5 @@ interface AppComponent {
 
     // Presenters
     val loginPresenter: LoginPresenter
-    val conversationListPresenter: ConversationListPresenter
+    val roomPresenter: RoomPresenter
 }

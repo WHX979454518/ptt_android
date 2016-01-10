@@ -4,7 +4,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.view.ViewCompat
-import android.support.v7.app.AlertDialog
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
@@ -14,174 +13,164 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.Broker
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
-import com.xianzhitech.ptt.service.provider.*
-import com.xianzhitech.ptt.service.room.RoomService
-import com.xianzhitech.ptt.service.room.RoomStatus
-import com.xianzhitech.ptt.service.user.UserService
+import com.xianzhitech.ptt.presenter.RoomPresenter
+import com.xianzhitech.ptt.presenter.RoomPresenterView
+import com.xianzhitech.ptt.service.provider.ConversationRequest
+import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
-import rx.Observable
-import rx.observables.ConnectableObservable
 import java.util.*
 import kotlin.collections.arrayListOf
 import kotlin.collections.hashSetOf
 import kotlin.collections.sortWith
 
-/**
- * 显示对话界面
+class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
+        , PushToTalkButton.Callbacks
+        , RoomPresenterView
+        , BackPressable
+        , AlertDialogFragment.OnPositiveButtonClickListener
+        , AlertDialogFragment.OnNegativeButtonClickListener
+        , AlertDialogFragment.OnNeutralButtonClickListener {
+    private class Views(rootView: View,
+                        val toolbar: Toolbar = rootView.findView(R.id.room_toolbar),
+                        val pttBtn: PushToTalkButton = rootView.findView(R.id.room_pushToTalkButton),
+                        val appBar: ViewGroup = rootView.findView(R.id.room_appBar),
+                        val progressBar: View = rootView.findView(R.id.room_progress),
+                        val roomStatusView: TextView = rootView.findView(R.id.room_status),
+                        val memberView: RecyclerView = rootView.findView(R.id.room_memberList))
 
- * Created by fanchao on 11/12/15.
- */
-class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Callbacks {
-
-    private lateinit var toolbar: Toolbar
-    private lateinit var pttBtn: PushToTalkButton
-    private lateinit var appBar: ViewGroup
-    private lateinit var progressBar: View
-    private lateinit var roomStatusView: TextView
-    private lateinit var memberView: RecyclerView
-    private lateinit var broker: Broker
-
+    private var views: Views? = null
     private val adapter = Adapter()
+    private var presenter: RoomPresenter? = null
 
-    internal lateinit var signalProvider: SignalProvider
-    internal lateinit var authProvider: AuthProvider
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val component = activity.application as AppComponent
-        broker = component.broker
-        signalProvider = component.signalProvider
-        authProvider = component.authProvider
-    }
+    private var roomRequest: ConversationRequest
+        set(value) = ensureArguments().putSerializable(ARG_ROOM_REQUEST, value)
+        get() = ensureArguments().getSerializable(ARG_ROOM_REQUEST) as ConversationRequest
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_room, container, false)?.apply {
-            toolbar = findView(R.id.room_toolbar)
-            pttBtn = findView(R.id.room_pushToTalkButton)
-            appBar = findView(R.id.room_appBar)
-            progressBar = findView(R.id.room_progress)
-            roomStatusView = findView(R.id.room_status)
-            memberView = findView(R.id.room_memberList)
+            views = Views(this).apply {
+                memberView.layoutManager = GridLayoutManager(context, 7)
+                memberView.adapter = adapter
 
-            memberView.layoutManager = GridLayoutManager(context, 7)
-            memberView.adapter = adapter
-
-            toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
-            toolbar.setNavigationOnClickListener { v -> activity.finish() }
-            ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + resources.getDimension(R.dimen.divider_normal))
-            pttBtn.callbacks = this@RoomFragment
+                toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
+                toolbar.setNavigationOnClickListener { v -> activity.finish() }
+                ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + resources.getDimension(R.dimen.divider_normal))
+                pttBtn.callbacks = this@RoomFragment
+            }
         }
     }
 
     override fun onStart() {
         super.onStart()
 
-        val request = arguments.getSerializable(ARG_ROOM_REQUEST) as ConversationRequest?
-
-        if (request != null) {
-            val conversationIdObservable: ConnectableObservable<String> = if (request is CreateConversationRequest) {
-                // 没有会话id, 向服务器请求
-                signalProvider.createConversation(request)
-                        .flatMap { broker.saveConversation(it) }
-                        .map { it.id }.publish()
-            } else if (request is ConversationFromExisiting) {
-                Observable.just(request.conversationId).publish()
-            } else {
-                throw IllegalArgumentException("Unknown request " + request)
-            }
-
-            // 绑定对讲状态
-            RoomService.getRoomStatus(context)
-                    .observeOnMainThread()
-                    .compose(bindToLifecycle())
-                    .subscribe(object : GlobalSubscriber<RoomStatus>(context) {
-                        override fun onNext(t: RoomStatus) {
-                            logd("$this@RoomFragment received status $t")
-                            pttBtn.roomStatus = t
-                        }
-                    })
-
-            // 绑定当前对讲用户状态
-            Observable.combineLatest(
-                    conversationIdObservable.flatMap { RoomService.getCurrentSpeakerId(context) },
-                    UserService.getLogonUser(context),
-                    { first, second -> Pair(first, second) })
-                    .flatMap {
-                        when (it.first) {
-                            null -> Observable.just(null)
-                            it.second?.id -> it.second.toObservable()
-                            else -> broker.getPerson(it.first!!)
-                        }
-                    }
-                    .observeOnMainThread()
-                    .compose(bindToLifecycle())
-                    .subscribe {
-                        if (it == null) {
-                            roomStatusView.animate().alpha(0f).start()
-                        } else if (authProvider.peekCurrentLogonUserId() == it.id) {
-                            roomStatusView.animate().alpha(1f).start()
-                            roomStatusView.text = R.string.room_talking.toFormattedString(context)
-                        } else {
-                            roomStatusView.animate().alpha(1f).start()
-                            roomStatusView.text = R.string.room_other_is_talking.toFormattedString(context, it.name)
-                        }
-
-                        adapter.currentSpeakerId = it?.id
-                    }
-
-            // 绑定房间的成员
-            Observable.combineLatest(
-                    conversationIdObservable.flatMap { broker.getConversationMembers(it) },
-                    RoomService.getActiveMemberIds(context),
-                    { first, second -> Pair(first, second) })
-                    .observeOnMainThread()
-                    .compose(bindToLifecycle())
-                    .subscribe { adapter.setMembers(it.first, it.second) }
-
-            // 请求连接房间
-            conversationIdObservable
-                    .flatMap { broker.getConversation(it) }
-                    .observeOnMainThread()
-                    .compose(bindToLifecycle())
-                    .subscribe(object : GlobalSubscriber<Conversation>(context) {
-                        override fun onError(e: Throwable) {
-                            AlertDialog.Builder(context).setMessage("Joined room failed: " + e.message).create().show()
-                            progressBar.visibility = View.GONE
-                        }
-
-                        override fun onNext(t: Conversation) {
-                            progressBar.visibility = View.GONE
-                            context.startService(RoomService.buildConnect(context, t.id))
-                            toolbar.title = t.name
-                        }
-                    })
-
-            conversationIdObservable.connect()
+        presenter = (context.applicationContext as AppComponent).roomPresenter.apply {
+            attachView(this@RoomFragment)
+            requestJoinRoom(roomRequest, false)
         }
     }
 
     override fun onStop() {
+        presenter?.detachView(this)
+
         super.onStop()
-
-        context.startService(RoomService.buildDisconnect(context))
     }
 
-    override fun requestFocus() {
-        context.startService(RoomService.buildRequestFocus(context, true))
+    override fun onBackPressed(): Boolean {
+        presenter?.requestQuitCurrentRoom()
+        return true
     }
 
-    override fun releaseFocus() {
-        context.startService(RoomService.buildRequestFocus(context, false))
+    override fun promptCurrentJoinedRoomIsImportant(currentRoom: Conversation) {
+        AlertDialogFragment.Builder()
+                .setTitle(R.string.room_prompt_important.toFormattedString(context))
+                .setMessage(R.string.room_prompt_important_message.toFormattedString(context, currentRoom.name))
+                .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
+                .show(childFragmentManager, TAG_PROMPT_IMPORTANT)
     }
 
-    interface Callbacks
+    override fun showRoom(room: Conversation) {
+        views?.toolbar?.title = room.name
+    }
+
+    override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {
+        views?.apply {
+            if (speaker == null) {
+                roomStatusView.animate().alpha(0f).start()
+            } else {
+                roomStatusView.animate().alpha(1f).start()
+                roomStatusView.text = if (isSelf) R.string.room_talking.toFormattedString(context)
+                else R.string.room_other_is_talking.toFormattedString(context, speaker.name)
+            }
+        }
+    }
+
+    override fun showRoomMembers(members: List<Person>, activeMemberIds: Collection<String>) {
+        adapter.setMembers(members, activeMemberIds)
+    }
+
+    override fun promptConfirmSwitchingRoom(newRoom: Conversation) {
+        AlertDialogFragment.Builder()
+                .setTitle(R.string.room_prompt_switching.toFormattedString(context))
+                .setMessage(R.string.room_prompt_switching_message.toFormattedString(context, newRoom.name))
+                .setBtnPositive(R.string.dialog_confirm.toFormattedString(context))
+                .setBtnNegative(R.string.dialog_cancel.toFormattedString(context))
+                .show(childFragmentManager, TAG_SWITCHING_ROOM_CONFIRM)
+    }
+
+    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
+        if (fragment.tag == TAG_SWITCHING_ROOM_CONFIRM) {
+            presenter?.requestJoinRoom(roomRequest, true)
+        }
+
+        fragment.dismiss()
+    }
+
+    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
+        if (fragment.tag == TAG_SWITCHING_ROOM_CONFIRM) {
+            callbacks?.onRoomQuited()
+        }
+
+        fragment.dismiss()
+    }
+
+    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
+        fragment.dismiss()
+    }
+
+    override fun onRoomQuited(conversation: Conversation?) {
+        callbacks?.onRoomQuited()
+    }
+
+    override fun showRequestingMic(isRequesting: Boolean) {
+        views?.pttBtn?.isRequestingMic = isRequesting
+    }
+
+    override fun showLoading(visible: Boolean) {
+        views?.progressBar?.setVisible(visible)
+    }
+
+    override fun showError(err: Throwable) {
+        //TODO: Error
+    }
+
+    override fun onDestroyView() {
+        views = null
+        super.onDestroyView()
+    }
+
+    override fun requestMic() {
+        presenter?.requestMic()
+    }
+
+    override fun releaseMic() {
+        presenter?.releaseMic()
+    }
 
     private class Adapter : RecyclerView.Adapter<ViewHolder>(), Comparator<Person> {
         val activeMembers = hashSetOf<String>()
@@ -232,9 +221,15 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>(), PushToTalkButton.Ca
                              val imageView: ImageView = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false) as ImageView)
     : RecyclerView.ViewHolder(imageView)
 
-    companion object {
+    interface Callbacks {
+        fun onRoomQuited()
+    }
 
-        val ARG_ROOM_REQUEST = "arg_room_request"
+    companion object {
+        const val ARG_ROOM_REQUEST = "arg_room_request"
+
+        private const val TAG_SWITCHING_ROOM_CONFIRM = "tag_switching_room_confirm"
+        private const val TAG_PROMPT_IMPORTANT = "tag_prompt_important"
 
         fun create(request: ConversationRequest): Fragment {
             val fragment = RoomFragment()

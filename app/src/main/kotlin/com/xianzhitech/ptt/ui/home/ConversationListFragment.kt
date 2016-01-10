@@ -15,7 +15,7 @@ import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.presenter.ConversationListPresenter
 import com.xianzhitech.ptt.presenter.ConversationListPresenterView
 import com.xianzhitech.ptt.repo.ConversationWithMemberNames
-import com.xianzhitech.ptt.service.provider.ConversationFromExisiting
+import com.xianzhitech.ptt.service.provider.ConversationFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import kotlin.collections.emptyList
@@ -33,7 +33,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        presenter = (activity.application as AppComponent).conversationListPresenter
+        presenter = ConversationListPresenter((activity.application as AppComponent).conversationRepository)
     }
 
     override fun onStart() {
@@ -42,17 +42,11 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
         presenter.attachView(this)
     }
 
-    override fun onStop() {
-        presenter.detachView(this)
-
-        super.onStop()
-    }
-
     override fun showLoading(visible: Boolean) {
         // Nothing to show
     }
 
-    override fun showError(message: CharSequence?) {
+    override fun showError(err: Throwable) {
         // Nothing to show
     }
 
@@ -90,7 +84,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
             holder.setConversation(conversations[position])
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        ConversationFromExisiting(conversations[position].conversation.id)))
+                        ConversationFromExisting(conversations[position].conversation.id)))
             }
         }
 

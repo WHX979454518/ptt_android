@@ -95,11 +95,11 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
         // Do nothing
     }
 
-    override fun showError(message: CharSequence?) {
+    override fun showError(err: Throwable) {
         AlertDialogFragment.Builder()
                 .setTitle(R.string.error_title.toFormattedString(context))
-                .setMessage(R.string.error_content.toFormattedString(context, message ?: R.string.error_unknown.toFormattedString(context)))
-                .setBtnNeutral(R.string.error_ok.toFormattedString(context))
+                .setMessage(R.string.error_content.toFormattedString(context, err.message ?: R.string.error_unknown.toFormattedString(context)))
+                .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
                 .show(childFragmentManager, TAG_LOGIN_ERROR_DIALOG)
     }
 

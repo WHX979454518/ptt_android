@@ -3,7 +3,6 @@ package com.xianzhitech.ptt.engine
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
-import com.xianzhitech.ptt.model.RoomInfo
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry
 import java.util.concurrent.atomic.AtomicBoolean
@@ -34,26 +33,26 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         }
     }
 
-    override fun connect(roomInfo: RoomInfo) {
+    override fun connect(roomId: String, property: Map<String, Any?>) {
         if (this.roomIds != null) {
             throw IllegalStateException("Engine already connected to a room before")
         }
 
-        val roomId = roomInfo.id.toInt()
-        this.roomIds = intArrayOf(roomId)
+        val roomIdInt = roomId.toInt()
+        this.roomIds = intArrayOf(roomIdInt)
 
         handler.post {
-            mediaEngine = MediaEngine(context, roomInfo.getProperty<String>(PROPERTY_PROTOCOL)?.equals("tcp") ?: false)
-            mediaEngine.setLocalSSRC(roomInfo.getProperty<String>(PROPERTY_LOCAL_USER_ID)?.toInt() ?: throw IllegalArgumentException("User id is null"))
-            mediaEngine.setRemoteIp(roomInfo.getProperty<String>(PROPERTY_REMOTE_SERVER_IP) ?: throw IllegalArgumentException("No server ip specified"))
-            mediaEngine.setAudioTxPort(roomInfo.getProperty<Int>(PROPERTY_REMOTE_SERVER_PORT) ?: throw IllegalArgumentException("No report port specified"))
+            mediaEngine = MediaEngine(context, property[PROPERTY_PROTOCOL]?.equals("tcp") ?: false)
+            mediaEngine.setLocalSSRC(property[PROPERTY_LOCAL_USER_ID]?.toString()?.toInt() ?: throw IllegalArgumentException("User id is null"))
+            mediaEngine.setRemoteIp(property[PROPERTY_REMOTE_SERVER_IP]?.toString() ?: throw IllegalArgumentException("No server ip specified"))
+            mediaEngine.setAudioTxPort(property[PROPERTY_REMOTE_SERVER_PORT]?.toString()?.toInt() ?: throw IllegalArgumentException("No report port specified"))
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT)
             mediaEngine.setAgc(true)
             mediaEngine.setNs(true)
             mediaEngine.setEc(true)
             mediaEngine.setSpeaker(true)
             mediaEngine.setAudio(true)
-            mediaEngine.start(roomId)
+            mediaEngine.start(roomIdInt)
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds)
 
             scheduleHeartbeat()

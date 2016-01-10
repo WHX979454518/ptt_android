@@ -9,6 +9,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.runners.MockitoJUnitRunner
+import rx.android.plugins.RxAndroidPlugins
+import rx.android.plugins.RxAndroidSchedulersHook
+import rx.schedulers.Schedulers
 
 /**
  *
@@ -27,6 +30,9 @@ class LoginPresenterTest {
         authProvider = MockAuthProvider()
         preferenceProvider = MockPreferenceProvider()
         presenter = LoginPresenter(authProvider, preferenceProvider)
+        RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
+            override fun getMainThreadScheduler() = Schedulers.immediate()
+        })
     }
 
     @Test
@@ -110,7 +116,7 @@ class LoginPresenterTest {
             showedLoginInProgress = visible
         }
 
-        override fun showError(message: CharSequence?) {
+        override fun showError(err: Throwable) {
             showedLoginError = true
         }
     }
