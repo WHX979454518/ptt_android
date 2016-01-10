@@ -42,7 +42,7 @@ open class App : Application(), AppComponent {
     override val contactRepository: ContactRepository
         get() = userRepository
     override val authProvider by lazy { signalProvider as AuthProvider }
-    override val loginPresenter by lazy { LoginPresenter(authProvider, preferenceProvider) }
+    override val loginPresenter by lazy { LoginPresenter(authProvider, userRepository, preferenceProvider) }
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
     override val roomPresenter: RoomPresenter by lazy { RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, conversationRepository) }
 

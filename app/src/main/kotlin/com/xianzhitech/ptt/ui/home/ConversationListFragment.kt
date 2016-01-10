@@ -46,10 +46,6 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
         // Nothing to show
     }
 
-    override fun showError(err: Throwable) {
-        // Nothing to show
-    }
-
     override fun showConversationList(result: List<ConversationWithMemberNames>) {
         adapter.conversations = result
     }

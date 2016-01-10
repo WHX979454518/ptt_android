@@ -127,7 +127,7 @@ interface AuthProvider {
     /**
      * 获取当前登陆的用户ID
      */
-    fun peekCurrentLogonUserId(): String?
+    fun peekCurrentLogonUser(): Person?
 
     /**
      * 订阅当前登陆用户的ID

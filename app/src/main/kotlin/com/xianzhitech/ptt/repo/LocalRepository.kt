@@ -8,7 +8,7 @@ import com.xianzhitech.ptt.model.*
 import rx.Observable
 import rx.functions.Func1
 import rx.schedulers.Schedulers
-import rx.subjects.BehaviorSubject
+import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.collections.*
@@ -29,7 +29,7 @@ class LocalRepository(internal val db: Database)
     private val queryScheduler = Schedulers.computation()
     private val modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
-    private val tableSubjects = hashMapOf<String, BehaviorSubject<Unit?>>()
+    private val tableSubjects = hashMapOf<String, PublishSubject<Unit?>>()
     private val pendingNotificationTables = object : ThreadLocal<HashSet<String>>() {
         override fun initialValue() = hashSetOf<String>()
     }
@@ -37,9 +37,9 @@ class LocalRepository(internal val db: Database)
         override fun initialValue() = false
     }
 
-    private fun getTableSubject(tableName: String): BehaviorSubject<Unit?> {
+    private fun getTableSubject(tableName: String): PublishSubject<Unit?> {
         synchronized(tableSubjects, {
-            return tableSubjects.getOrPut(tableName, { BehaviorSubject.create(null as Unit?) })
+            return tableSubjects.getOrPut(tableName, { PublishSubject.create<Unit?>() })
         })
     }
 
@@ -62,7 +62,7 @@ class LocalRepository(internal val db: Database)
     }
 
     private fun createQuery(tableNames: Iterable<String>, sql: String, vararg args: Any?) =
-            Observable.merge(tableNames.transform { getTableSubject(it) })
+            Observable.merge(tableNames.transform { getTableSubject(it) }).mergeWith(Observable.just(null))
                     .flatMap {
                         Observable.defer<ResultSet> {
                             db.query(sql, *args).toObservable()
@@ -99,6 +99,11 @@ class LocalRepository(internal val db: Database)
     override fun getGroup(groupId: String): Observable<Group?> {
         return createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} = ? LIMIT 1", groupId)
                 .mapToOneOrDefault(Group.MAPPER, null)
+    }
+
+    override fun getAllUsers(): Observable<List<Person>> {
+        return createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME}")
+                .mapToList(Person.MAPPER)
     }
 
     override fun replaceAllUsers(users: Iterable<Person>) = updateInTransaction {
@@ -141,7 +146,7 @@ class LocalRepository(internal val db: Database)
 
     override fun updateConversationMembers(convId: String, memberIds: Iterable<String>) = updateInTransaction {
         db.delete(ConversationMembers.TABLE_NAME, "${ConversationMembers.COL_CONVERSATION_ID} = ?", convId)
-        val cacheContentValues = HashMap<String, Any?>(2)
+        val cacheContentValues = HashMap<String, Any?>(2).apply { put(ConversationMembers.COL_CONVERSATION_ID, convId) }
         memberIds.forEach {
             insert(ConversationMembers.TABLE_NAME, cacheContentValues.apply { put(ConversationMembers.COL_PERSON_ID, it) })
         }

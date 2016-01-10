@@ -77,10 +77,6 @@ class ContactsFragment : BaseFragment<Void>(), ContactListPresenterView {
         //Do nothing
     }
 
-    override fun showError(err: Throwable) {
-        //TODO
-    }
-
     override fun showContactList(contactList: List<ContactItem>) {
         adapter.setContactItems(contactList)
     }

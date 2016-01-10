@@ -7,7 +7,6 @@ import android.database.CursorWrapper
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
 
 /**
  * Created by fanchao on 10/01/16.
@@ -97,11 +96,7 @@ class AndroidDatabase(context: Context, name: String, version: Int) : Database {
 
     private fun Cursor.toResultSet(): ResultSet = CursorResultSet(this)
 
-    private fun <T> Array<T>.toStringArray(): Array<String?> {
-        val result = this as Array<String?>
-        forEachIndexed { i, any -> result[i] = any?.toString() }
-        return result
-    }
+    private fun <T> Array<T>.toStringArray() = Array(this.size, { this[it]?.toString() })
 
     private class CursorResultSet(cursor: Cursor) : CursorWrapper(cursor), ResultSet
 }

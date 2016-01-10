@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.presenter.base.BasePresenter
 import com.xianzhitech.ptt.repo.ContactRepository
 import rx.Subscription
 import rx.subjects.BehaviorSubject
+import kotlin.collections.forEach
 import kotlin.text.isNullOrEmpty
 
 /**
@@ -22,6 +23,7 @@ class ContactListPresenter(private val contactRepository: ContactRepository) : B
 
         override fun onNext(t: List<ContactItem>) {
             contactListSubject.onNext(t)
+            views.forEach { it.showContactList(t) }
         }
     }
 

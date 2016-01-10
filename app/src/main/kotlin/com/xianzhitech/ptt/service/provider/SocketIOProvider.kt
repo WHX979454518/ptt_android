@@ -77,7 +77,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
         return Observable.empty()
     }
 
-    override fun peekCurrentLogonUserId() = logonUser.value?.id
+    override fun peekCurrentLogonUser(): Person? = logonUser.value
 
     override fun joinConversation(conversationId: String): Observable<JoinConversationResult> {
         return socket.sendEvent(
@@ -88,7 +88,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
                     val server = response.getJSONObject("server")
                     val roomInfoObject = response.getJSONObject("roomInfo")
                     val engineProperties = mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
-                            Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, peekCurrentLogonUserId() ?: throw UserNotLogonException()),
+                            Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, peekCurrentLogonUser()?.id ?: throw UserNotLogonException()),
                             Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
                             Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
 
@@ -110,11 +110,11 @@ class SocketIOProvider(private val userRepository: UserRepository,
     }
 
     override fun requestMic(conversationId: String): Observable<Boolean> {
-        return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it[0] as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == peekCurrentLogonUserId() } },
+        return socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, { (it[0] as JSONObject).let { it.getBoolean("success") && it.getString("speaker") == peekCurrentLogonUser()?.id } },
                 JSONObject().put("roomId", conversationId))
                 .doOnNext {
                     if (it) {
-                        ensureCurrentSpeakerSubject(conversationId).onNext(peekCurrentLogonUserId())
+                        ensureCurrentSpeakerSubject(conversationId).onNext(peekCurrentLogonUser()?.id)
                     }
                 }
                 .mergeWith(reifiedErrorSubject())
@@ -122,6 +122,13 @@ class SocketIOProvider(private val userRepository: UserRepository,
 
     override fun releaseMic(conversationId: String): Observable<Unit> {
         return socket.sendEvent(EVENT_CLIENT_RELEASE_MIC, {}, JSONObject().put("roomId", conversationId))
+                .doOnSubscribe {
+                    ensureCurrentSpeakerSubject(conversationId).let {
+                        if (it.value == peekCurrentLogonUser()?.id) {
+                            it.onNext(null)
+                        }
+                    }
+                }
     }
 
     override fun resumeLogin(token: Serializable): Observable<LoginResult> {

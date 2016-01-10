@@ -6,10 +6,11 @@ import android.support.v4.app.Fragment
 import android.view.View
 import com.trello.rxlifecycle.FragmentEvent
 import com.trello.rxlifecycle.RxLifecycle
+import com.xianzhitech.ptt.presenter.base.PresenterView
 import rx.Observable
 import rx.subjects.BehaviorSubject
 
-abstract class BaseFragment<T> : Fragment() {
+abstract class BaseFragment<T> : Fragment(), PresenterView {
     val lifecycleEventSubject = BehaviorSubject.create<FragmentEvent>()
     protected var callbacks: T? = null
 
@@ -23,6 +24,14 @@ abstract class BaseFragment<T> : Fragment() {
         super.onResume()
 
         lifecycleEventSubject.onNext(FragmentEvent.RESUME)
+    }
+
+    override fun showError(err: Throwable) {
+        throw RuntimeException(err)
+    }
+
+    override fun showLoading(visible: Boolean) {
+
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {

@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.repo.ConversationWithMemberNames
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import kotlin.collections.emptyList
+import kotlin.collections.forEach
 
 /**
  * Created by fanchao on 9/01/16.
@@ -29,6 +30,7 @@ class ConversationListPresenter(private val conversationRepository: Conversation
 
                         override fun onNext(t: List<ConversationWithMemberNames>) {
                             resultSubject.onNext(t)
+                            views.forEach { it.showConversationList(t) }
                         }
                     })
         }

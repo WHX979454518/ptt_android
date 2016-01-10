@@ -95,7 +95,10 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     override fun showRoom(room: Conversation) {
-        views?.toolbar?.title = room.name
+        views?.apply {
+            toolbar.title = room.name
+            pttBtn.connectedToRoom = true
+        }
     }
 
     override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {
@@ -107,7 +110,12 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 roomStatusView.text = if (isSelf) R.string.room_talking.toFormattedString(context)
                 else R.string.room_other_is_talking.toFormattedString(context, speaker.name)
             }
+
+            pttBtn.hasActiveSpeaker = speaker != null
+            pttBtn.isEnabled = speaker == null
         }
+
+        adapter.currentSpeakerId = speaker?.id
     }
 
     override fun showRoomMembers(members: List<Person>, activeMemberIds: Collection<String>) {
@@ -155,10 +163,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         views?.progressBar?.setVisible(visible)
     }
 
-    override fun showError(err: Throwable) {
-        //TODO: Error
-    }
-
     override fun onDestroyView() {
         views = null
         super.onDestroyView()
@@ -183,11 +187,12 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 }
             }
 
-        fun setMembers(newMembers: Collection<Person>?, newActiveMembers: Collection<String>?) {
+        fun setMembers(newMembers: Collection<Person>, newActiveMembers: Collection<String>) {
             members.clear()
-            newMembers?.let { members.addAll(it); members.sortWith(this) }
+            members.addAll(newMembers)
+            members.sortWith(this)
             activeMembers.clear()
-            newActiveMembers?.let { activeMembers.addAll(it) }
+            activeMembers.addAll(newActiveMembers)
             notifyDataSetChanged()
         }
 

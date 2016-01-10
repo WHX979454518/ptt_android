@@ -42,7 +42,7 @@ class MockAuthProvider : AuthProvider {
         }
     }
 
-    override fun peekCurrentLogonUserId(): String? {
+    override fun peekCurrentLogonUser(): Person? {
         return logonUser.value?.id
     }
 

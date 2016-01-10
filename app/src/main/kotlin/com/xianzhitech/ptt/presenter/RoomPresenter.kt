@@ -31,7 +31,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
 
     private var activeConversationId: String? = null
     private var activeRoomSubscription: Subscription? = null
-    private val activeRoom = BehaviorSubject.create<RoomDetails>()
+    private val activeRoom = BehaviorSubject.create<RoomDetails?>()
     private var activeTalkEngine: TalkEngine? = null
 
 
@@ -46,12 +46,17 @@ class RoomPresenter(private val signalProvider: SignalProvider,
         } else {
             // We've joined a room
             view.showLoading(false)
-            showViewsRoom(listOf(view), activeRoom.value)
+            showViewsRoom(listOf(view), activeRoom.value!!)
         }
     }
 
     fun requestMic() {
         activeConversationId?.let {
+            if (activeRoom.value?.currentSpeaker != null) {
+                // There's already a speaker speaking. Nothing we can do
+                return
+            }
+
             views.forEach { it.showRequestingMic(true) }
             signalProvider.requestMic(it)
                     .observeOnMainThread()
@@ -83,16 +88,19 @@ class RoomPresenter(private val signalProvider: SignalProvider,
     fun requestQuitCurrentRoom() {
         activeConversationId?.let {
             activeRoom.observeOnMainThread()
+                    .first()
                     .subscribe {
-                        if (it.conversation.important) {
-                            views.forEach { view -> view.promptCurrentJoinedRoomIsImportant(it.conversation) }
-                        } else {
-                            signalProvider.quitConversation(it.conversation.id).subscribe()
-                            activeRoomSubscription?.unsubscribe()
-                            activeRoom.onNext(null)
-                            activeConversationId = null
+                        it?.let {
+                            if (it.conversation.important) {
+                                views.forEach { view -> view.promptCurrentJoinedRoomIsImportant(it.conversation) }
+                            } else {
+                                signalProvider.quitConversation(it.conversation.id).subscribe()
+                                activeRoomSubscription?.unsubscribe()
+                                activeRoom.onNext(null)
+                                activeConversationId = null
 
-                            views.forEach { view -> view.onRoomQuited(it.conversation) }
+                                views.forEach { view -> view.onRoomQuited(it.conversation) }
+                            }
                         }
                     }
 
@@ -115,77 +123,6 @@ class RoomPresenter(private val signalProvider: SignalProvider,
         showViewsLoading(true)
 
         joinRoomSubscription = CompositeSubscription().apply {
-            val doJoinConversation = { conversationId: String ->
-                val currRoomDetailsObservable = if (activeConversationId == null) Observable.just<RoomDetails?>(null) else activeRoom
-
-                add(currRoomDetailsObservable
-                        .observeOnMainThread()
-                        .subscribe {
-                            val willJoin: Boolean
-                            if (it == null) {
-                                willJoin = true
-                            } else if (!it.conversation.important) {
-                                willJoin = confirm
-
-                                if (!confirm) {
-                                    views.forEach { view -> view.promptConfirmSwitchingRoom(it.conversation) }
-                                }
-                            } else {
-                                views.forEach { view -> view.promptCurrentJoinedRoomIsImportant(it.conversation) }
-                                willJoin = false
-                            }
-
-                            if (willJoin && it != null) {
-                                // 加入请求的房间
-                                activeConversationId = conversationId
-                                activeRoomSubscription?.unsubscribe()
-                                activeTalkEngine = activeTalkEngine?.let {
-                                    it.dispose()
-                                    null
-                                }
-
-                                // 加入房间并订阅房间的相关信息（成员, 在线成员以及当前说话用户）
-                                activeRoomSubscription = signalProvider.joinConversation(conversationId)
-                                        .observeOnMainThread()
-                                        .flatMap { result ->
-                                            if (activeTalkEngine == null) {
-                                                activeTalkEngine = talkEngineProvider.createEngine().apply {
-                                                    connect(result.roomId, result.engineProperties)
-                                                }
-                                            }
-
-                                            Observable.combineLatest(
-                                                    conversationRepository.getConversation(result.conversationId),
-                                                    conversationRepository.getConversationMembers(conversationId),
-                                                    signalProvider.getActiveMemberIds(conversationId),
-                                                    signalProvider.getCurrentSpeakerId(conversationId).flatMap { it?.let { userRepository.getUser(it) } ?: Observable.just(null) },
-                                                    { first, second, third, forth -> RoomDetails(first ?: throw StaticUserException(R.string.error_unable_to_get_room_info), second, third, forth) })
-                                        }
-                                        .observeOnMainThread()
-                                        .subscribe(object : GlobalSubscriber<RoomDetails>() {
-                                            override fun onError(e: Throwable) {
-                                                notifyViewsError(e)
-                                            }
-
-                                            override fun onNext(t: RoomDetails) {
-                                                if (t.currentSpeaker?.id == authProvider.peekCurrentLogonUserId()) {
-                                                    activeTalkEngine?.startSend()
-                                                } else {
-                                                    activeTalkEngine?.stopSend()
-                                                }
-
-                                                activeRoom.onNext(t)
-                                            }
-                                        })
-
-                            }
-
-                            showViewsLoading(false)
-                            joinRoomSubscription = null
-                        })
-
-            }
-
             if (request is CreateConversationRequest) {
                 add(signalProvider.createConversation(request)
                         .first()
@@ -198,23 +135,104 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                             }
 
                             override fun onNext(t: Conversation) {
-                                doJoinConversation(t.id)
+                                add(doJoinConversation(t.id, confirm))
                             }
                         }))
             } else if (request is ConversationFromExisting) {
                 if (request.conversationId == activeConversationId) {
                     // 如果当前已经有一个一样的房间, 那么看看有没有缓存的房间信息, 有就直接通知视图刷新, 否则就啥都不干, 因为这个信息等一下一定会拿得到
                     if (activeRoom.hasValue()) {
-                        showViewsRoom(views, activeRoom.value)
+                        showViewsRoom(views, activeRoom.value!!)
                     }
 
                     showViewsLoading(false)
                     joinRoomSubscription = null
                 } else {
-                    doJoinConversation(request.conversationId)
+                    add(doJoinConversation(request.conversationId, confirm))
                 }
             }
         }
+    }
+
+    private fun doJoinConversation(conversationId: String, confirm: Boolean): Subscription {
+        val currRoomDetailsObservable = if (activeConversationId == null) Observable.just<RoomDetails?>(null) else activeRoom
+
+        return currRoomDetailsObservable
+                .observeOnMainThread()
+                .subscribe {
+                    val willJoin: Boolean
+                    if (it == null) {
+                        willJoin = true
+                    } else if (!it.conversation.important) {
+                        willJoin = confirm
+
+                        if (!confirm) {
+                            views.forEach { view -> view.promptConfirmSwitchingRoom(it.conversation) }
+                        }
+                    } else {
+                        views.forEach { view -> view.promptCurrentJoinedRoomIsImportant(it.conversation) }
+                        willJoin = false
+                    }
+
+                    if (willJoin) {
+                        // 加入请求的房间
+                        activeConversationId = conversationId
+                        activeRoomSubscription?.unsubscribe()
+                        activeTalkEngine = activeTalkEngine?.let {
+                            it.dispose()
+                            null
+                        }
+
+                        // 加入房间并订阅房间的相关信息（成员, 在线成员以及当前说话用户）
+                        activeRoomSubscription = signalProvider.joinConversation(conversationId)
+                                .observeOnMainThread()
+                                .flatMap { result ->
+                                    if (activeTalkEngine == null) {
+                                        activeTalkEngine = talkEngineProvider.createEngine().apply {
+                                            connect(result.roomId, result.engineProperties)
+                                        }
+                                    }
+
+                                    Observable.combineLatest(
+                                            conversationRepository.getConversation(result.conversationId),
+                                            conversationRepository.getConversationMembers(conversationId),
+                                            signalProvider.getActiveMemberIds(conversationId),
+                                            signalProvider.getCurrentSpeakerId(conversationId).flatMap {
+                                                val logonUser = authProvider.peekCurrentLogonUser()
+                                                if (it == null) {
+                                                    Observable.just<Person>(null)
+                                                } else if (it == logonUser?.id ?: null) {
+                                                    Observable.just(logonUser)
+                                                } else {
+                                                    userRepository.getUser(it)
+                                                }
+                                            },
+                                            { first, second, third, forth -> RoomDetails(first ?: throw StaticUserException(R.string.error_unable_to_get_room_info), second, third, forth) })
+                                }
+                                .observeOnMainThread()
+                                .subscribe(object : GlobalSubscriber<RoomDetails>() {
+                                    override fun onError(e: Throwable) {
+                                        notifyViewsError(e)
+                                    }
+
+                                    override fun onNext(t: RoomDetails) {
+                                        if (t.currentSpeaker?.id == authProvider.peekCurrentLogonUser()!!.id) {
+                                            activeTalkEngine?.startSend()
+                                        } else {
+                                            activeTalkEngine?.stopSend()
+                                        }
+
+                                        activeRoom.onNext(t)
+                                        showViewsRoom(views, t)
+                                    }
+                                })
+
+                    }
+
+                    showViewsLoading(false)
+                    joinRoomSubscription = null
+                }
+
     }
 
     private fun showViewsRoom(views: Iterable<RoomPresenterView>, roomDetails: RoomDetails) {
@@ -222,7 +240,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
             it.showRoom(roomDetails.conversation)
             it.showRoomMembers(roomDetails.members, roomDetails.activeMemberIds)
             it.showCurrentSpeaker(roomDetails.currentSpeaker,
-                    roomDetails.currentSpeaker != null && roomDetails.currentSpeaker.id == authProvider.peekCurrentLogonUserId())
+                    roomDetails.currentSpeaker != null && roomDetails.currentSpeaker.id == authProvider.peekCurrentLogonUser()?.id)
         }
     }
 

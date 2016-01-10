@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import org.mockito.runners.MockitoJUnitRunner
 import java.util.*
 import kotlin.collections.listOf
+import kotlin.collections.toSet
 
 /**
  * Created by fanchao on 10/01/16.
@@ -21,9 +22,12 @@ class LocalRepositoryTest {
     private lateinit var db: Database
     private lateinit var localRepository: LocalRepository
 
+    private val person1 = Person("1", "hello", EnumSet.allOf(Privilege::class.java))
+    private val person2 = Person("2", "hello2", EnumSet.allOf(Privilege::class.java))
+
     @Before
     fun init() {
-        db = JDBCDatabase("jdbc:sqlite:memory").apply {
+        db = JDBCDatabase("jdbc:sqlite:memory:").apply {
             execute("DROP TABLE ${Person.TABLE_NAME}")
             execute("DROP TABLE ${Group.TABLE_NAME}")
             execute("DROP TABLE ${GroupMembers.TABLE_NAME}")
@@ -47,10 +51,17 @@ class LocalRepositoryTest {
     }
 
     @Test
-    fun testPerson() {
-        val person = Person("1", "hello", EnumSet.allOf(Privilege::class.java))
-        localRepository.replaceAllUsers(listOf(person)).toBlockingFirst()
-        Assert.assertEquals(person, localRepository.getUser(person.id).toBlockingFirst())
+    fun testGetUser() {
+        localRepository.replaceAllUsers(listOf(person1, person2)).toBlockingFirst()
+        Assert.assertEquals(person1, localRepository.getUser(person1.id).toBlockingFirst())
+    }
+
+
+    @Test
+    fun testReplaceAllUsers() {
+        val userList = listOf(person1, person2)
+        localRepository.replaceAllUsers(userList).toBlockingFirst()
+        Assert.assertEquals(userList.toSet(), localRepository.getAllUsers().toBlockingFirst().toSet())
     }
 
 }

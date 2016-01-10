@@ -18,7 +18,7 @@ import com.xianzhitech.ptt.ext.toColorValue
  * Created by fanchao on 12/12/15.
  */
 class PushToTalkButton : ImageButton {
-    var isConnectedToRoom: Boolean = false
+    var connectedToRoom: Boolean = false
         set(value) {
             if (field != value) {
                 field = value
@@ -79,7 +79,7 @@ class PushToTalkButton : ImageButton {
         paint.color = (
                 if (hasActiveSpeaker) android.R.color.holo_red_dark
                 else if (isRequestingMic) android.R.color.holo_orange_dark
-                else if (isConnectedToRoom) android.R.color.holo_green_dark
+                else if (connectedToRoom) android.R.color.holo_green_dark
                 else android.R.color.darker_gray
                 ).toColorValue(context)
 
