@@ -64,10 +64,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
         return socket
                 .sendEvent(EVENT_CLIENT_CREATE_ROOM, { it[0] as JSONObject }, request.toJSON())
                 .flatMap {
-                    val conversation = Conversation().readFrom(it)
-
-                    conversationRepository.updateConversation(conversation)
-                            .concatWith(conversationRepository.updateConversationMembers(conversation.id, it.getJSONArray("members").toStringIterable()).map { conversation })
+                    conversationRepository.updateConversation(Conversation().readFrom(it), it.getJSONArray("members").toStringIterable())
                 }
     }
 

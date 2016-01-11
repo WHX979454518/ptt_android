@@ -36,7 +36,7 @@ import java.io.Serializable
 open class App : Application(), AppComponent {
     override val httpClient by lazy { OkHttpClient() }
     override val signalProvider: SignalProvider  by lazy {
-        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://61.157.38.95:9001/")
+        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://192.168.1.128:3000/")
 
     }
     override val talkEngineProvider = object : TalkEngineProvider {

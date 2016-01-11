@@ -4,6 +4,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
@@ -136,7 +137,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                             }
 
                             override fun onNext(t: Conversation) {
-                                add(doJoinConversation(t.id, confirm))
+                                doJoinConversation(t.id, confirm)?.let { this.add(it) }
                             }
                         }))
             } else if (request is ConversationFromExisting) {
@@ -149,90 +150,98 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                     showViewsLoading(false)
                     joinRoomSubscription = null
                 } else {
-                    add(doJoinConversation(request.conversationId, confirm))
+                    doJoinConversation(request.conversationId, confirm)?.let { this.add(it) }
                 }
             }
         }
     }
 
-    private fun doJoinConversation(conversationId: String, confirm: Boolean): Subscription {
-        val currRoomDetailsObservable = if (activeConversationId == null) Observable.just<RoomDetails?>(null) else activeRoom
+    private fun doJoinConversation(conversationId: String, confirm: Boolean): Subscription? {
+        logd("Joining room: $conversationId, confirm: $confirm")
+        val joinRoomAction: (RoomDetails?) -> Unit = {
+            val willJoin: Boolean
+            if (it == null) {
+                willJoin = true
+            } else if (!it.conversation.important) {
+                willJoin = confirm
 
-        return currRoomDetailsObservable
-                .observeOnMainThread()
-                .subscribe {
-                    val willJoin: Boolean
-                    if (it == null) {
-                        willJoin = true
-                    } else if (!it.conversation.important) {
-                        willJoin = confirm
-
-                        if (!confirm) {
-                            views.forEach { view -> view.promptConfirmSwitchingRoom(it.conversation) }
-                        }
-                    } else {
-                        views.forEach { view -> view.promptCurrentJoinedRoomIsImportant(it.conversation) }
-                        willJoin = false
-                    }
-
-                    if (willJoin) {
-                        // 加入请求的房间
-                        activeConversationId = conversationId
-                        activeRoomSubscription?.unsubscribe()
-                        activeTalkEngine = activeTalkEngine?.let {
-                            it.dispose()
-                            null
-                        }
-
-                        // 加入房间并订阅房间的相关信息（成员, 在线成员以及当前说话用户）
-                        activeRoomSubscription = signalProvider.joinConversation(conversationId)
-                                .observeOnMainThread()
-                                .flatMap { result ->
-                                    if (activeTalkEngine == null) {
-                                        activeTalkEngine = talkEngineProvider.createEngine().apply {
-                                            connect(result.roomId, result.engineProperties)
-                                        }
-                                    }
-
-                                    Observable.combineLatest(
-                                            conversationRepository.getConversation(result.conversationId),
-                                            conversationRepository.getConversationMembers(conversationId),
-                                            signalProvider.getActiveMemberIds(conversationId),
-                                            signalProvider.getCurrentSpeakerId(conversationId).flatMap {
-                                                val logonUser = authProvider.peekCurrentLogonUser()
-                                                if (it == null) {
-                                                    Observable.just<Person>(null)
-                                                } else if (it == logonUser?.id ?: null) {
-                                                    Observable.just(logonUser)
-                                                } else {
-                                                    userRepository.getUser(it)
-                                                }
-                                            },
-                                            { first, second, third, forth -> RoomDetails(first ?: throw StaticUserException(R.string.error_unable_to_get_room_info), second, third, forth) })
-                                }
-                                .observeOnMainThread()
-                                .subscribe(object : GlobalSubscriber<RoomDetails>() {
-                                    override fun onError(e: Throwable) {
-                                        notifyViewsError(e)
-                                    }
-
-                                    override fun onNext(t: RoomDetails) {
-                                        if (t.currentSpeaker?.id == authProvider.peekCurrentLogonUser()!!.id) {
-                                            activeTalkEngine?.startSend()
-                                        } else {
-                                            activeTalkEngine?.stopSend()
-                                        }
-
-                                        activeRoom.onNext(t)
-                                        showViewsRoom(views, t)
-                                    }
-                                })
-
-                    }
-
-                    showViewsLoading(false)
-                    joinRoomSubscription = null
+                if (!confirm) {
+                    views.forEach { view -> view.promptConfirmSwitchingRoom(it.conversation) }
                 }
+            } else {
+                views.forEach { view -> view.promptCurrentJoinedRoomIsImportant(it.conversation) }
+                willJoin = false
+            }
+
+            logd("Will join room: $willJoin")
+
+            if (willJoin) {
+                // 加入请求的房间
+                activeConversationId = conversationId
+                activeRoomSubscription?.unsubscribe()
+                activeTalkEngine = activeTalkEngine?.let {
+                    it.dispose()
+                    null
+                }
+
+                // 加入房间并订阅房间的相关信息（成员, 在线成员以及当前说话用户）
+                activeRoomSubscription = signalProvider.joinConversation(conversationId)
+                        .observeOnMainThread()
+                        .flatMap { result ->
+                            logd("Join room result: $result")
+
+                            if (activeTalkEngine == null) {
+                                activeTalkEngine = talkEngineProvider.createEngine().apply {
+                                    connect(result.roomId, result.engineProperties)
+                                }
+                            }
+
+                            Observable.combineLatest(
+                                    conversationRepository.getConversation(result.conversationId),
+                                    conversationRepository.getConversationMembers(conversationId),
+                                    signalProvider.getActiveMemberIds(conversationId),
+                                    signalProvider.getCurrentSpeakerId(conversationId).flatMap {
+                                        val logonUser = authProvider.peekCurrentLogonUser()
+                                        if (it == null) {
+                                            Observable.just<Person>(null)
+                                        } else if (it == logonUser?.id ?: null) {
+                                            Observable.just(logonUser)
+                                        } else {
+                                            userRepository.getUser(it)
+                                        }
+                                    },
+                                    { first, second, third, forth -> RoomDetails(first ?: throw StaticUserException(R.string.error_unable_to_get_room_info), second, third, forth) })
+                        }
+                        .observeOnMainThread()
+                        .subscribe(object : GlobalSubscriber<RoomDetails>() {
+                            override fun onError(e: Throwable) {
+                                notifyViewsError(e)
+                            }
+
+                            override fun onNext(t: RoomDetails) {
+                                if (t.currentSpeaker?.id == authProvider.peekCurrentLogonUser()!!.id) {
+                                    activeTalkEngine?.startSend()
+                                } else {
+                                    activeTalkEngine?.stopSend()
+                                }
+
+                                activeRoom.onNext(t)
+                                showViewsRoom(views, t)
+                            }
+                        })
+
+            }
+
+            showViewsLoading(false)
+            joinRoomSubscription = null
+        }
+
+        if (activeConversationId == null) {
+            joinRoomAction(null)
+            return null
+        } else {
+            return activeRoom.first().observeOnMainThread().subscribe(joinRoomAction)
+        }
 
     }
 

@@ -29,7 +29,7 @@ interface GroupRepository {
 interface ConversationRepository {
     fun getConversation(convId: String): Observable<Conversation?>
     fun getConversationMembers(convId: String): Observable<List<Person>>
-    fun updateConversation(conversation: Conversation): Observable<Conversation>
+    fun updateConversation(conversation: Conversation, memberIds: Iterable<String>): Observable<Conversation>
     fun updateConversationMembers(convId: String, memberIds: Iterable<String>): Observable<Unit>
     fun getConversationsWithMemberNames(maxMember: Int): Observable<List<ConversationWithMemberNames>>
 }

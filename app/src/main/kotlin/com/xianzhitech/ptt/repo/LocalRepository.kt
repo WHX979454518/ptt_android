@@ -43,21 +43,18 @@ class LocalRepository(internal val db: Database)
         })
     }
 
-    private inline fun <T> updateInTransaction(crossinline func: () -> T?): Observable<T> {
+    private fun <T> updateInTransaction(func: () -> T?): Observable<T> {
         return Observable.defer<T> {
-            db.executeInTransaction {
-                inTransaction.set(true)
-                try {
-                    func()
-                } finally {
-                    inTransaction.set(false)
-                    pendingNotificationTables.get().apply {
-                        forEach { getTableSubject(it).onNext(null) }
-                        clear()
-                    }
+            inTransaction.set(true)
+            try {
+                db.executeInTransaction(func).toObservable()
+            } finally {
+                inTransaction.set(false)
+                pendingNotificationTables.get().apply {
+                    forEach { getTableSubject(it).onNext(null) }
+                    clear()
                 }
-
-            }.toObservable()
+            }
         }.subscribeOn(modifyScheduler)
     }
 
@@ -122,7 +119,7 @@ class LocalRepository(internal val db: Database)
             .mapToList(Person.MAPPER)
 
     override fun updateGroupMembers(groupId: String, memberIds: Iterable<String>) = updateInTransaction {
-        db.delete(GroupMembers.TABLE_NAME, "${GroupMembers.COL_GROUP_ID} = ? AND ${GroupMembers.COL_PERSON_ID} NOT IN ${memberIds.toSqlSet()}", groupId)
+        delete(GroupMembers.TABLE_NAME, "${GroupMembers.COL_GROUP_ID} = ? AND ${GroupMembers.COL_PERSON_ID} NOT IN ${memberIds.toSqlSet()}", groupId)
         doAddGroupMembers(groupId, memberIds)
     }
 
@@ -135,12 +132,19 @@ class LocalRepository(internal val db: Database)
                     "SELECT P.* FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS CM ON CM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} WHERE CM.${ConversationMembers.COL_CONVERSATION_ID} = ?", convId)
                     .mapToList(Person.MAPPER)
 
-    override fun updateConversation(conversation: Conversation) = updateInTransaction {
-        conversation.let {
-            db.insert(Conversation.TABLE_NAME,
-                    hashMapOf<String, Any?>().apply { it.toValues(this) },
+    override fun updateConversation(conversation: Conversation, memberIds: Iterable<String>) = updateInTransaction {
+        conversation.apply {
+            val cacheValue = hashMapOf<String, Any?>()
+
+            insert(Conversation.TABLE_NAME,
+                    cacheValue.apply { clear(); conversation.toValues(this) },
                     true)
-            it
+
+            cacheValue.clear()
+            cacheValue[ConversationMembers.COL_CONVERSATION_ID] = conversation.id
+            memberIds.forEach {
+                insert(ConversationMembers.TABLE_NAME, cacheValue.apply { this[ConversationMembers.COL_PERSON_ID] = it })
+            }
         }
     }
 
