@@ -20,33 +20,20 @@ class LoginPresenter(private val authProvider: AuthProvider,
 
     companion object {
         const val PREF_KEY_TOKEN = "login_token"
+
     }
 
     private var loginSubscription: Subscription? = null
-    private val loginSubscriber = object : GlobalSubscriber<LoginResult>() {
-        override fun onError(e: Throwable) {
-            views.forEach {
-                it.showLogin()
-                it.showLoading(false)
-                it.showError(e)
-            }
-
-            loginSubscription = null
-        }
-
-        override fun onNext(t: LoginResult) {
-            preferenceProvider.save(PREF_KEY_TOKEN, t.token)
-            views.forEach {
-                it.showLoading(false)
-                it.showLoginSuccess()
-            }
-            loginSubscription = null
-        }
-    }
 
     init {
         (preferenceProvider.get(PREF_KEY_TOKEN) as? Serializable)?.let {
-            loginSubscription = authProvider.resumeLogin(it).observeOnMainThread().subscribe(loginSubscriber)
+            loginSubscription = authProvider.resumeLogin(it).observeOnMainThread().subscribe(object : GlobalSubscriber<LoginResult>() {
+                override fun onError(e: Throwable) = onLoginError(e)
+
+                override fun onNext(t: LoginResult) {
+                    onLoginResult(t)
+                }
+            })
         }
     }
 
@@ -71,7 +58,34 @@ class LoginPresenter(private val authProvider: AuthProvider,
         }
 
         preferenceProvider.remove(PREF_KEY_TOKEN)
-        loginSubscription = authProvider.login(name, password).observeOnMainThread().subscribe(loginSubscriber)
+        loginSubscription = authProvider.login(name, password).observeOnMainThread().subscribe(object : GlobalSubscriber<LoginResult>() {
+            override fun onError(e: Throwable) {
+                onLoginError(e)
+            }
+
+            override fun onNext(t: LoginResult) {
+                onLoginResult(t)
+            }
+        })
+    }
+
+    private fun onLoginResult(t: LoginResult) {
+        preferenceProvider.save(PREF_KEY_TOKEN, t.token)
+        views.forEach {
+            it.showLoading(false)
+            it.showLoginSuccess()
+        }
+        loginSubscription = null
+    }
+
+    private fun onLoginError(e: Throwable) {
+        views.forEach {
+            it.showLogin()
+            it.showLoading(false)
+            it.showError(e)
+        }
+
+        loginSubscription = null
     }
 
     fun cancelLogin() = loginSubscription?.let {
