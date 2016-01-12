@@ -2,6 +2,7 @@ package com.xianzhitech.ptt
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.media.SoundPool
@@ -30,7 +31,7 @@ import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.ConversationFromExisting
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.provider.SocketIOProvider
-import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.service.BackgroundService
 import java.io.Serializable
 
 
@@ -55,7 +56,6 @@ open class App : Application(), AppComponent {
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
     override val roomPresenter: RoomPresenter by lazy {
         RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, conversationRepository).apply {
-            signalProvider.roomPresenter = this
             attachView(GlobalRoomPresenterView(this@App, authProvider))
         }
     }
@@ -63,7 +63,9 @@ open class App : Application(), AppComponent {
     override val backgroundRoomPresenterView = object : BaseRoomPresenterView() {
         override fun onRoomJoined(conversation: Conversation) {
             // 有房间加入, 拉起对讲界面
-            startActivity(RoomActivity.builder(this@App, ConversationFromExisting(conversation.id)))
+            startService(Intent(this@App, BackgroundService::class.java)
+                    .setAction(BackgroundService.ACTION_OPEN_ROOM)
+                    .putExtra(BackgroundService.EXTRA_CONVERSATION_REQUEST, ConversationFromExisting(conversation.id)))
         }
     }
 
@@ -72,6 +74,13 @@ open class App : Application(), AppComponent {
 
         Picasso.setSingletonInstance(
                 Picasso.Builder(this).downloader(OkHttpDownloader(httpClient)).build())
+
+        // Attach background processor to room presenter
+        roomPresenter.attachView(backgroundRoomPresenterView)
+
+        //FIXME: Here we force initialization to do dependency injection
+        signalProvider.roomPresenter = roomPresenter
+
     }
 
     private class GlobalRoomPresenterView(context: Context,

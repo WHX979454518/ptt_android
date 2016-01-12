@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.service.provider
 
+import android.os.Handler
+import android.os.Looper
 import android.support.v4.util.ArrayMap
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
@@ -28,8 +30,8 @@ import rx.subjects.PublishSubject
 import rx.subscriptions.Subscriptions
 import java.io.Serializable
 import java.util.*
-import java.util.concurrent.TimeoutException
 import java.util.regex.Pattern
+import kotlin.collections.*
 
 /**
  *
@@ -60,6 +62,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
     private lateinit var socket: Socket
     private val logonUser = BehaviorSubject.create(null as Person?)
     private val errorSubject = PublishSubject.create<Any>()
+    private val handler = Handler(Looper.getMainLooper())
 
     var roomPresenter : RoomPresenter? = null
 
@@ -148,7 +151,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
 
     private fun doLogin(headerOperator: (MutableMap<String, List<String>>) -> Unit): Observable<Person> {
         return IO.socket(endpoint).let {
-            Observable.create<Person> { subscriber ->
+            Observable.create<Person>({ subscriber ->
 
                 // 绑定IO事件,以便操作Headers
                 it.io().on(Manager.EVENT_TRANSPORT, {
@@ -166,22 +169,16 @@ class SocketIOProvider(private val userRepository: UserRepository,
                 })
 
                 // 监听出错事件
-                val errorHandler: (Array<Any>) -> Unit = { errorSubject.onError(ServerException(it.getOrNull(0)?.toString() ?: "Unknown exception: " + it)) }
-                it.on(Socket.EVENT_ERROR, errorHandler)
-                it.on(Socket.EVENT_CONNECT_ERROR, errorHandler)
-                it.on(Socket.EVENT_CONNECT_TIMEOUT, { errorSubject.onError(TimeoutException()) })
+                //                val errorHandler: (Array<Any>) -> Unit = { errorSubject.onError(ServerException(it.getOrNull(0)?.toString() ?: "Unknown exception: " + it)) }
+                //                it.on(Socket.EVENT_ERROR, errorHandler)
+                //                it.on(Socket.EVENT_CONNECT_ERROR, errorHandler)
+                //                it.on(Socket.EVENT_CONNECT_TIMEOUT, { errorSubject.onError(TimeoutException()) })
 
                 // 监听房间在线成员变化事件
                 it.on(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED, {
                     val event = parseServerResult(it, { it[0] as JSONObject })
                     ensureActiveMemberSubject(event.getString("roomId"))
                             .onNext(event.getJSONArray("activeMembers").toStringList())
-                })
-
-                // 监听房间邀请事件
-                it.on(EVENT_SERVER_INVITE_TO_JOIN, {
-                    val event = parseServerResult(it, { it[0] as String })
-                    roomPresenter?.requestJoinRoom(ConversationFromExisting(event), false)
                 })
 
                 // 监听得Mic人变化的事件
@@ -193,8 +190,19 @@ class SocketIOProvider(private val userRepository: UserRepository,
 
                 // 监听房间成员变化的事件
                 it.on(EVENT_SERVER_ROOM_INFO_CHANGED, {
+                    logd("RoomInfoChanged: $it[0")
                     val event = parseServerResult(it, { it[0] as JSONObject })
-                    conversationRepository.updateConversationMembers(event.getString("idNumber"), event.getJSONArray("members").toStringList())
+                })
+
+                // 监听房间邀请事件
+                it.on(EVENT_SERVER_INVITE_TO_JOIN, {
+                    val roomId = parseServerResult(it, { (it[0] as JSONObject) }).getString("roomId")
+                    logd("Server invites us to join $roomId")
+                    roomPresenter?.let {
+                        handler.post {
+                            it.requestJoinRoom(ConversationFromExisting(roomId), false)
+                        }
+                    }
                 })
 
                 subscriber.add(Subscriptions.create {
@@ -202,7 +210,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
                 })
 
                 socket = it.connect()
-            }.flatMap { person ->
+            }).flatMap { person ->
                 logonUser.onNext(person) // 设置当前用户
                 syncContacts().map { person } // 在登陆完成以后等待通讯录同步
             }.mergeWith(reifiedErrorSubject<Person>())

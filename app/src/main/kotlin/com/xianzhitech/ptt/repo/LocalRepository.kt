@@ -140,6 +140,8 @@ class LocalRepository(internal val db: Database)
                     cacheValue.apply { clear(); conversation.toValues(this) },
                     true)
 
+            db.delete(ConversationMembers.TABLE_NAME, "${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id)
+
             cacheValue.clear()
             cacheValue[ConversationMembers.COL_CONVERSATION_ID] = conversation.id
             memberIds.forEach {

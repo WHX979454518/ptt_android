@@ -143,7 +143,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
             } else if (request is ConversationFromExisting) {
                 if (request.conversationId == activeConversationId) {
                     // 如果当前已经有一个一样的房间, 那么看看有没有缓存的房间信息, 有就直接通知视图刷新, 否则就啥都不干, 因为这个信息等一下一定会拿得到
-                    if (activeRoom.hasValue()) {
+                    if (activeRoom.value != null) {
                         showViewsRoom(views, activeRoom.value!!)
                     }
 
@@ -216,6 +216,8 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                         .subscribe(object : GlobalSubscriber<RoomDetails>() {
                             override fun onError(e: Throwable) {
                                 notifyViewsError(e)
+                                activeConversationId = null
+                                activeRoom.onNext(null)
                             }
 
                             override fun onNext(t: RoomDetails) {

@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.service.provider.LoginResult
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import rx.Subscription
 import java.io.Serializable
+import kotlin.collections.forEach
 
 /**
  *
@@ -93,7 +94,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
         views.forEach { it.showLoading(false) }
         loginSubscription = null
         true
-    } ?: false
+    } ?: true
 
 }
 

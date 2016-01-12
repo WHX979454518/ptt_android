@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry
+import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.text.toInt
 
@@ -46,7 +47,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         handler.post {
             mediaEngine = MediaEngine(context, property[PROPERTY_PROTOCOL]?.equals("tcp") ?: false)
             mediaEngine.setLocalSSRC(property[PROPERTY_LOCAL_USER_ID]?.toString()?.toInt() ?: throw IllegalArgumentException("User id is null"))
-            mediaEngine.setRemoteIp(property[PROPERTY_REMOTE_SERVER_IP]?.toString() ?: throw IllegalArgumentException("No server ip specified"))
+            mediaEngine.setRemoteIp(property[PROPERTY_REMOTE_SERVER_IP]?.toString()?.resolveToIPAddress() ?: throw IllegalArgumentException("No server ip specified"))
             mediaEngine.setAudioTxPort(property[PROPERTY_REMOTE_SERVER_PORT]?.toString()?.toInt() ?: throw IllegalArgumentException("No report port specified"))
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT)
             mediaEngine.setAgc(true)
@@ -88,6 +89,8 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             audioManager.abandonAudioFocus(null)
         }
     }
+
+    private fun String.resolveToIPAddress() = InetAddress.getByName(this).hostAddress
 
     companion object {
         private val RTP_EXT_PROTO_JOIN_ROOM: Short = 300

@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.Toolbar
@@ -14,6 +15,7 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
+import com.xianzhitech.ptt.ui.service.BackgroundService
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginPresenterView {
 
@@ -23,6 +25,8 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        startService(Intent(this, BackgroundService::class.java))
 
         setContentView(R.layout.activity_main)
         toolbar = findView(R.id.main_toolbar)
