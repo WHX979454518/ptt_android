@@ -33,15 +33,8 @@
 
         <activity
             android:theme="@style/AppTheme.Dark"
+            android:launchMode="singleTask"
             android:name=".ui.room.RoomActivity" />
-
-        <service
-            android:name=".service.room.RoomService"
-            android:exported="false" />
-
-        <service
-            android:name=".service.user.UserService"
-            android:exported="false" />
 
     </application>
 

@@ -19,25 +19,25 @@ import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.presenter.BaseRoomPresenterView
 import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenter
-import com.xianzhitech.ptt.presenter.RoomPresenterView
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.service.provider.AuthProvider
+import com.xianzhitech.ptt.service.provider.ConversationFromExisting
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
-import com.xianzhitech.ptt.service.provider.SignalProvider
 import com.xianzhitech.ptt.service.provider.SocketIOProvider
+import com.xianzhitech.ptt.ui.room.RoomActivity
 import java.io.Serializable
 
 
 open class App : Application(), AppComponent {
     override val httpClient by lazy { OkHttpClient() }
-    override val signalProvider: SignalProvider  by lazy {
-        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://192.168.1.128:3000/")
-
+    override val signalProvider by lazy {
+        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://61.157.38.95:9001/")
     }
     override val talkEngineProvider = object : TalkEngineProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)
@@ -50,12 +50,20 @@ open class App : Application(), AppComponent {
         get() = userRepository
     override val contactRepository: ContactRepository
         get() = userRepository
-    override val authProvider by lazy { signalProvider as AuthProvider }
-    override val loginPresenter by lazy { LoginPresenter(authProvider, userRepository, preferenceProvider) }
+    override val authProvider by lazy { signalProvider }
+    override val loginPresenter by lazy { LoginPresenter(authProvider, preferenceProvider) }
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
     override val roomPresenter: RoomPresenter by lazy {
         RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, conversationRepository).apply {
+            signalProvider.roomPresenter = this
             attachView(GlobalRoomPresenterView(this@App, authProvider))
+        }
+    }
+
+    override val backgroundRoomPresenterView = object : BaseRoomPresenterView() {
+        override fun onRoomJoined(conversation: Conversation) {
+            // 有房间加入, 拉起对讲界面
+            startActivity(RoomActivity.builder(this@App, ConversationFromExisting(conversation.id)))
         }
     }
 
@@ -67,7 +75,7 @@ open class App : Application(), AppComponent {
     }
 
     private class GlobalRoomPresenterView(context: Context,
-                                          private val authProvider: AuthProvider) : RoomPresenterView {
+                                          private val authProvider: AuthProvider) : BaseRoomPresenterView() {
         private var lastSpeaker: Person? = null
 
         var soundPool: Pair<SoundPool, SparseIntArray> = Pair(SoundPool(1, AudioManager.STREAM_MUSIC, 0), SparseIntArray()).apply {
@@ -81,21 +89,6 @@ open class App : Application(), AppComponent {
         var vibrator = (context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let {
             if (it.hasVibrator()) it
             else null
-        }
-
-        override fun promptCurrentJoinedRoomIsImportant(currentRoom: Conversation) {
-        }
-
-        override fun promptConfirmSwitchingRoom(newRoom: Conversation) {
-        }
-
-        override fun onRoomQuited(conversation: Conversation?) {
-        }
-
-        override fun showRoom(room: Conversation) {
-        }
-
-        override fun showRequestingMic(isRequesting: Boolean) {
         }
 
         override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {
@@ -115,15 +108,6 @@ open class App : Application(), AppComponent {
 
         private fun playSound(@RawRes res: Int) {
             soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
-        }
-
-        override fun showRoomMembers(members: List<Person>, activeMemberIds: Collection<String>) {
-        }
-
-        override fun showLoading(visible: Boolean) {
-        }
-
-        override fun showError(err: Throwable) {
         }
     }
 

@@ -3,13 +3,11 @@ package com.xianzhitech.ptt.presenter
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.presenter.base.BasePresenter
-import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.LoginResult
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import rx.Subscription
 import java.io.Serializable
-import kotlin.collections.forEach
 
 /**
  *
@@ -18,7 +16,6 @@ import kotlin.collections.forEach
  * Created by fanchao on 9/01/16.
  */
 class LoginPresenter(private val authProvider: AuthProvider,
-                     private val userRepository: UserRepository,
                      private val preferenceProvider: PreferenceStorageProvider) : BasePresenter<LoginPresenterView>() {
 
     companion object {
@@ -33,7 +30,7 @@ class LoginPresenter(private val authProvider: AuthProvider,
                 it.showLoading(false)
                 it.showError(e)
             }
-            preferenceProvider.remove(PREF_KEY_TOKEN)
+
             loginSubscription = null
         }
 

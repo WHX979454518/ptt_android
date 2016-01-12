@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.model.Privilege
+import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -29,7 +30,6 @@ import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeoutException
 import java.util.regex.Pattern
-import kotlin.collections.*
 
 /**
  *
@@ -47,6 +47,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
         public const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
         public const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
         public const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
+        public const val EVENT_SERVER_INVITE_TO_JOIN = "s_invite_to_join"
 
         public const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
         public const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"
@@ -59,6 +60,8 @@ class SocketIOProvider(private val userRepository: UserRepository,
     private lateinit var socket: Socket
     private val logonUser = BehaviorSubject.create(null as Person?)
     private val errorSubject = PublishSubject.create<Any>()
+
+    var roomPresenter : RoomPresenter? = null
 
     override fun createConversation(request: CreateConversationRequest): Observable<Conversation> {
         return socket
@@ -173,6 +176,12 @@ class SocketIOProvider(private val userRepository: UserRepository,
                     val event = parseServerResult(it, { it[0] as JSONObject })
                     ensureActiveMemberSubject(event.getString("roomId"))
                             .onNext(event.getJSONArray("activeMembers").toStringList())
+                })
+
+                // 监听房间邀请事件
+                it.on(EVENT_SERVER_INVITE_TO_JOIN, {
+                    val event = parseServerResult(it, { it[0] as String })
+                    roomPresenter?.requestJoinRoom(ConversationFromExisting(event), false)
                 })
 
                 // 监听得Mic人变化的事件

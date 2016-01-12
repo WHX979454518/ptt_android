@@ -25,9 +25,6 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import java.util.*
-import kotlin.collections.arrayListOf
-import kotlin.collections.hashSetOf
-import kotlin.collections.sortWith
 
 class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         , PushToTalkButton.Callbacks
@@ -47,6 +44,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private var views: Views? = null
     private val adapter = Adapter()
     private var presenter: RoomPresenter? = null
+    private var backgroundRoomPresenterView : RoomPresenterView ? = null
 
     private var roomRequest: ConversationRequest
         set(value) = ensureArguments().putSerializable(ARG_ROOM_REQUEST, value)
@@ -69,14 +67,23 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     override fun onStart() {
         super.onStart()
 
-        presenter = (context.applicationContext as AppComponent).roomPresenter.apply {
+        val appComponent = context.applicationContext as AppComponent
+        backgroundRoomPresenterView = appComponent.backgroundRoomPresenterView
+
+        presenter = appComponent.roomPresenter.apply {
             attachView(this@RoomFragment)
+            detachView(appComponent.backgroundRoomPresenterView)
             requestJoinRoom(roomRequest, false)
         }
+
     }
 
     override fun onStop() {
-        presenter?.detachView(this)
+        presenter?.apply {
+            backgroundRoomPresenterView?.let { attachView(it) }
+            detachView(this@RoomFragment)
+        }
+
 
         super.onStop()
     }
@@ -153,6 +160,10 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
     override fun onRoomQuited(conversation: Conversation?) {
         callbacks?.onRoomQuited()
+    }
+
+    override fun onRoomJoined(conversation: Conversation) {
+        //Do nothing
     }
 
     override fun showRequestingMic(isRequesting: Boolean) {

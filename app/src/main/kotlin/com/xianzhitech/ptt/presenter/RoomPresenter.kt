@@ -226,6 +226,7 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                                 }
 
                                 activeRoom.onNext(t)
+                                views.forEach { view -> view.onRoomJoined(t.conversation) }
                                 showViewsRoom(views, t)
                             }
                         })

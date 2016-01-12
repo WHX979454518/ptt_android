@@ -7,8 +7,6 @@ import com.xianzhitech.ptt.presenter.base.BasePresenter
 import com.xianzhitech.ptt.repo.ContactRepository
 import rx.Subscription
 import rx.subjects.BehaviorSubject
-import kotlin.collections.forEach
-import kotlin.text.isNullOrEmpty
 
 /**
  * Created by fanchao on 9/01/16.
@@ -16,16 +14,6 @@ import kotlin.text.isNullOrEmpty
 class ContactListPresenter(private val contactRepository: ContactRepository) : BasePresenter<ContactListPresenterView>() {
     private var contactListSubject = BehaviorSubject.create<List<ContactItem>>()
     private var subscription: Subscription? = null
-    private val subscriber = object : GlobalSubscriber<List<ContactItem>>() {
-        override fun onError(e: Throwable) {
-            notifyViewsError(e)
-        }
-
-        override fun onNext(t: List<ContactItem>) {
-            contactListSubject.onNext(t)
-            views.forEach { it.showContactList(t) }
-        }
-    }
 
     override fun attachView(view: ContactListPresenterView) {
         super.attachView(view)
@@ -33,7 +21,16 @@ class ContactListPresenter(private val contactRepository: ContactRepository) : B
         if (subscription == null) {
             subscription = contactRepository.getContactItems()
                     .observeOnMainThread()
-                    .subscribe(subscriber)
+                    .subscribe(object : GlobalSubscriber<List<ContactItem>>() {
+                        override fun onError(e: Throwable) {
+                            notifyViewsError(e)
+                        }
+
+                        override fun onNext(t: List<ContactItem>) {
+                            contactListSubject.onNext(t)
+                            views.forEach { it.showContactList(t) }
+                        }
+                    })
         }
 
         contactListSubject.value?.let { view.showContactList(it) }
@@ -52,7 +49,16 @@ class ContactListPresenter(private val contactRepository: ContactRepository) : B
 
         subscription = (if (term.isNullOrEmpty()) contactRepository.getContactItems() else contactRepository.searchContactItems(term!!))
                 .observeOnMainThread()
-                .subscribe(subscriber)
+                .subscribe(object : GlobalSubscriber<List<ContactItem>>() {
+                    override fun onError(e: Throwable) {
+                        notifyViewsError(e)
+                    }
+
+                    override fun onNext(t: List<ContactItem>) {
+                        contactListSubject.onNext(t)
+                        views.forEach { it.showContactList(t) }
+                    }
+                })
     }
 }
 
