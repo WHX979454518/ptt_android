@@ -198,7 +198,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         callbacks?.onRoomQuited()
     }
 
-    override fun onRoomJoined(conversation: Conversation) {
+    override fun onRoomJoined(conversationId: String) {
         //Do nothing
     }
 

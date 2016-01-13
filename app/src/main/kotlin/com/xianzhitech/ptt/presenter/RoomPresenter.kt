@@ -196,6 +196,8 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                                 }
                             }
 
+                            views.forEach { view -> view.onRoomJoined(conversationId) }
+
                             Observable.combineLatest(
                                     conversationRepository.getConversation(result.conversationId),
                                     conversationRepository.getConversationMembers(conversationId),
@@ -228,7 +230,6 @@ class RoomPresenter(private val signalProvider: SignalProvider,
                                 }
 
                                 activeRoom.onNext(t)
-                                views.forEach { view -> view.onRoomJoined(t.conversation) }
                                 showViewsRoom(views, t)
                             }
                         })
