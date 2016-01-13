@@ -90,6 +90,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
                 .flatMap { response ->
                     val server = response.getJSONObject("server")
                     val roomInfoObject = response.getJSONObject("roomInfo")
+                    val conversation = Conversation().readFrom(roomInfoObject)
                     val engineProperties = mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
                             Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, peekCurrentLogonUser()?.id ?: throw UserNotLogonException()),
                             Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
@@ -97,7 +98,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
 
                     ensureActiveMemberSubject(conversationId).onNext(response.getJSONArray("activeMembers").toStringList())
                     ensureCurrentSpeakerSubject(conversationId).onNext(response.optString("speaker"))
-                    conversationRepository.updateConversationMembers(conversationId, roomInfoObject.getJSONArray("members").toStringList()).map {
+                    conversationRepository.updateConversation(conversation, roomInfoObject.getJSONArray("members").toStringList()).map {
                         JoinConversationResult(conversationId, roomInfoObject.getString("idNumber"), engineProperties)
                     }
                 }

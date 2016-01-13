@@ -12,7 +12,7 @@ interface RoomPresenterView : PresenterView {
     fun promptConfirmSwitchingRoom(newRoom: Conversation)
 
     fun onRoomQuited(conversation: Conversation?)
-    fun onRoomJoined(conversation: Conversation)
+    fun onRoomJoined(conversationId: String)
 
     fun showRoom(room: Conversation)
     fun showRequestingMic(isRequesting: Boolean)
@@ -31,7 +31,7 @@ open class BaseRoomPresenterView : RoomPresenterView {
     override fun onRoomQuited(conversation: Conversation?) {
     }
 
-    override fun onRoomJoined(conversation: Conversation) {
+    override fun onRoomJoined(conversationId: String) {
     }
 
     override fun showRoom(room: Conversation) {

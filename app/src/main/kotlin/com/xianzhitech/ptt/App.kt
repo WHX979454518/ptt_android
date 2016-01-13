@@ -63,11 +63,11 @@ open class App : Application(), AppComponent {
     override val btEngine by lazy { BtEngine(this) }
 
     override val backgroundRoomPresenterView = object : BaseRoomPresenterView() {
-        override fun onRoomJoined(conversation: Conversation) {
+        override fun onRoomJoined(conversationId: String) {
             // 有房间加入, 拉起对讲界面
             startService(Intent(this@App, BackgroundService::class.java)
                     .setAction(BackgroundService.ACTION_OPEN_ROOM)
-                    .putExtra(BackgroundService.EXTRA_CONVERSATION_REQUEST, ConversationFromExisting(conversation.id)))
+                    .putExtra(BackgroundService.EXTRA_CONVERSATION_REQUEST, ConversationFromExisting(conversationId)))
         }
     }
 
@@ -117,8 +117,8 @@ open class App : Application(), AppComponent {
             else null
         }
 
-        override fun onRoomJoined(conversation: Conversation) {
-            super.onRoomJoined(conversation)
+        override fun onRoomJoined(conversationId: String) {
+            super.onRoomJoined(conversationId)
 
             btEngine.startSCO()
         }
