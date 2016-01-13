@@ -39,7 +39,7 @@ import java.io.Serializable
 open class App : Application(), AppComponent {
     override val httpClient by lazy { OkHttpClient() }
     override val signalProvider by lazy {
-        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://cdjiahotx.eicp.net:9001/")
+        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, BuildConfig.SIGNAL_SERVER_ENDPOINT)
     }
     override val talkEngineProvider = object : TalkEngineProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)

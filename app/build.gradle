@@ -25,6 +25,12 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+
+        if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
+        } else {
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9001\"")
+        }
     }
 
     buildTypes {
