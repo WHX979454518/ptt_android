@@ -84,19 +84,18 @@ open class App : Application(), AppComponent {
         signalProvider.roomPresenter = roomPresenter
 
         // Hook up bluetooth engine
-        btEngine.btMicEnable
-                .first { it == true }
-                .flatMap { btEngine.btMessage }
-                .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<String>() {
-                    override fun onNext(t: String) {
-                        when (t) {
-                            BtEngine.MESSAGE_PUSH_DOWN -> roomPresenter.requestMic()
-                            BtEngine.MESSAGE_PUSH_RELEASE -> roomPresenter.releaseMic()
+        if (btEngine.isBtMicEnable) {
+            btEngine.btMessage
+                    .observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<String>() {
+                        override fun onNext(t: String) {
+                            when (t) {
+                                BtEngine.MESSAGE_PUSH_DOWN -> roomPresenter.requestMic()
+                                BtEngine.MESSAGE_PUSH_RELEASE -> roomPresenter.releaseMic()
+                            }
                         }
-                    }
-                })
-
+                    })
+        }
     }
 
     private class GlobalRoomPresenterView(context: Context,
@@ -120,13 +119,17 @@ open class App : Application(), AppComponent {
         override fun onRoomJoined(conversationId: String) {
             super.onRoomJoined(conversationId)
 
-            btEngine.startSCO()
+            if (btEngine.isBtMicEnable) {
+                btEngine.startSCO()
+            }
         }
 
         override fun onRoomQuited(conversation: Conversation?) {
             super.onRoomQuited(conversation)
 
-            btEngine.stopSCO()
+            if (btEngine.isBtMicEnable) {
+                btEngine.stopSCO()
+            }
         }
 
         override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {
