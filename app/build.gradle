@@ -45,6 +45,18 @@ android {
         dev {
             applicationId 'com.xianzhitech.ptt.dev'
         }
+
+        uat {
+            applicationId 'com.xianzhitech.ptt.test'
+
+            if (System.getenv("BUILD_NUMBER") != null) {
+                versionCode Integer.valueOf(System.getenv("BUILD_NUMBER"))
+            }
+
+            if (System.getenv("BUILD_TAG") != null) {
+                versionName System.getenv("BUILD_TAG")
+            }
+        }
     }
 
     packagingOptions {
