@@ -11,12 +11,13 @@ import android.preference.PreferenceManager
 import android.support.annotation.RawRes
 import android.util.SparseIntArray
 import com.squareup.okhttp.OkHttpClient
-import com.squareup.picasso.OkHttpDownloader
-import com.squareup.picasso.Picasso
 import com.xianzhitech.ptt.db.AndroidDatabase
+import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
+import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
@@ -38,7 +39,7 @@ import java.io.Serializable
 open class App : Application(), AppComponent {
     override val httpClient by lazy { OkHttpClient() }
     override val signalProvider by lazy {
-        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://61.157.38.95:9001/")
+        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, "http://cdjiahotx.eicp.net:9001/")
     }
     override val talkEngineProvider = object : TalkEngineProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)
@@ -56,9 +57,10 @@ open class App : Application(), AppComponent {
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
     override val roomPresenter: RoomPresenter by lazy {
         RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, conversationRepository).apply {
-            attachView(GlobalRoomPresenterView(this@App, authProvider))
+            attachView(GlobalRoomPresenterView(this@App, btEngine, authProvider))
         }
     }
+    override val btEngine by lazy { BtEngine(this) }
 
     override val backgroundRoomPresenterView = object : BaseRoomPresenterView() {
         override fun onRoomJoined(conversation: Conversation) {
@@ -72,8 +74,8 @@ open class App : Application(), AppComponent {
     override fun onCreate() {
         super.onCreate()
 
-        Picasso.setSingletonInstance(
-                Picasso.Builder(this).downloader(OkHttpDownloader(httpClient)).build())
+        //        Picasso.setSingletonInstance(
+        //                Picasso.Builder(this).downloader(OkHttpDownloader(httpClient)).build())
 
         // Attach background processor to room presenter
         roomPresenter.attachView(backgroundRoomPresenterView)
@@ -81,9 +83,24 @@ open class App : Application(), AppComponent {
         //FIXME: Here we force initialization to do dependency injection
         signalProvider.roomPresenter = roomPresenter
 
+        // Hook up bluetooth engine
+        btEngine.btMicEnable
+                .first { it == true }
+                .flatMap { btEngine.btMessage }
+                .observeOnMainThread()
+                .subscribe(object : GlobalSubscriber<String>() {
+                    override fun onNext(t: String) {
+                        when (t) {
+                            BtEngine.MESSAGE_PUSH_DOWN -> roomPresenter.requestMic()
+                            BtEngine.MESSAGE_PUSH_RELEASE -> roomPresenter.releaseMic()
+                        }
+                    }
+                })
+
     }
 
     private class GlobalRoomPresenterView(context: Context,
+                                          private val btEngine: BtEngine,
                                           private val authProvider: AuthProvider) : BaseRoomPresenterView() {
         private var lastSpeaker: Person? = null
 
@@ -98,6 +115,18 @@ open class App : Application(), AppComponent {
         var vibrator = (context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let {
             if (it.hasVibrator()) it
             else null
+        }
+
+        override fun onRoomJoined(conversation: Conversation) {
+            super.onRoomJoined(conversation)
+
+            btEngine.startSCO()
+        }
+
+        override fun onRoomQuited(conversation: Conversation?) {
+            super.onRoomQuited(conversation)
+
+            btEngine.stopSCO()
         }
 
         override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {

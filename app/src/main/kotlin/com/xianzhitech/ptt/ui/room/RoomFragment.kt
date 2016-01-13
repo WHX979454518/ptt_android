@@ -10,7 +10,9 @@ import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.BaseAdapter
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
@@ -25,6 +27,10 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import java.util.*
+import kotlin.collections.arrayListOf
+import kotlin.collections.emptyList
+import kotlin.collections.hashSetOf
+import kotlin.collections.sortWith
 
 class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         , PushToTalkButton.Callbacks
@@ -33,22 +39,50 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         , AlertDialogFragment.OnPositiveButtonClickListener
         , AlertDialogFragment.OnNegativeButtonClickListener
         , AlertDialogFragment.OnNeutralButtonClickListener {
+
     private class Views(rootView: View,
                         val toolbar: Toolbar = rootView.findView(R.id.room_toolbar),
                         val pttBtn: PushToTalkButton = rootView.findView(R.id.room_pushToTalkButton),
                         val appBar: ViewGroup = rootView.findView(R.id.room_appBar),
+                        val speakerSourceView: Spinner = rootView.findView(R.id.room_speakerSource),
                         val progressBar: View = rootView.findView(R.id.room_progress),
                         val roomStatusView: TextView = rootView.findView(R.id.room_status),
                         val memberView: RecyclerView = rootView.findView(R.id.room_memberList))
+
+    private enum class SpeakerMode(val titleResId: Int) {
+        SPEAKER(R.string.source_speaker),
+        HEADPHONE(R.string.source_headphone),
+        BLUETOOTH(R.string.source_bluetooth)
+    }
 
     private var views: Views? = null
     private val adapter = Adapter()
     private var presenter: RoomPresenter? = null
     private var backgroundRoomPresenterView : RoomPresenterView ? = null
 
+    private val speakSourceAdapter = object : BaseAdapter() {
+        var speakerModes: List<SpeakerMode> = emptyList()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View? {
+            val view = (convertView as? TextView) ?: TextView(parent!!.context)
+            view.setText(speakerModes[position].titleResId)
+            return view
+        }
+
+        override fun getItem(position: Int) = speakerModes[position]
+        override fun getItemId(position: Int) = speakerModes[position].ordinal.toLong()
+        override fun getCount() = speakerModes.size
+    }
+
     private var roomRequest: ConversationRequest
         set(value) = ensureArguments().putSerializable(ARG_ROOM_REQUEST, value)
         get() = ensureArguments().getSerializable(ARG_ROOM_REQUEST) as ConversationRequest
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        //        speakSourceAdapter.speakerModes = SpeakerMode.values().toList()
+    }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_room, container, false)?.apply {
@@ -60,6 +94,8 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 toolbar.setNavigationOnClickListener { v -> activity.finish() }
                 ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + resources.getDimension(R.dimen.divider_normal))
                 pttBtn.callbacks = this@RoomFragment
+
+                speakerSourceView.adapter = speakSourceAdapter
             }
         }
     }

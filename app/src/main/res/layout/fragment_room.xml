@@ -54,10 +54,24 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/room_memberList"
+    <LinearLayout
         android:layout_gravity="bottom"
+        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="100dp"/>
+        android:layout_height="wrap_content">
+
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/room_speakerSource"/>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/room_memberList"
+            android:layout_weight="1"
+            android:layout_width="0dip"
+            android:layout_height="100dp"/>
+
+    </LinearLayout>
+
 
 </FrameLayout>
