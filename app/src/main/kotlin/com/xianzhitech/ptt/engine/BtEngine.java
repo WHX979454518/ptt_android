@@ -8,10 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.support.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Set;
 import java.util.UUID;
 
 import rx.Observable;
@@ -28,11 +28,14 @@ public class BtEngine {
     private static final UUID BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     private Context context;
-    private BluetoothAdapter btAdapter;
+    private
+    @Nullable
+    BluetoothAdapter btAdapter;
     private AudioManager audioManager;
     private BluetoothDevice selectedDevice = null;
     private BluetoothSocket socket = null;
     private boolean isShutdown = false;
+    private BroadcastReceiver broadcastReceiver;
 
 
     public BtEngine(Context context) {
@@ -57,53 +60,24 @@ public class BtEngine {
     }
 
     /**
-     * PTT 设备是否可用，因为可能会有一个复杂的开启和关闭过程，所以用Observable
+     * PTT 设备是否可用
      *
      * @return
      */
-    public Observable<Boolean> getBtMicEnable() {
-        return Observable.create(new Observable.OnSubscribe<Boolean>() {
-            @Override
-            public void call(Subscriber<? super Boolean> subscriber) {
-
-                boolean enable = false;
-
-                if (btAdapter.isEnabled()) {
-
-                    boolean sco = audioManager.isBluetoothScoAvailableOffCall();
-
-                    if (sco) {
-
-                        Set<BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
-
-                        // If there are paired devices
-                        if (pairedDevices.size() > 0) {
-
-                            // Loop through paired devices
-                            for (BluetoothDevice device : pairedDevices) {
-
-                                // Add the name and address to an array adapter to show in a ListView
-                                System.out.println(device.getName() + "\n" + device.getAddress());
-                                if (device.getName().contains("PTT")) {
-                                    selectedDevice = device;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (selectedDevice != null) {
-                            enable = true;
-                        }
-                    }
-                }
-
-                //返回是否可用蓝牙MIC
-                if (!subscriber.isUnsubscribed()) {
-                    subscriber.onNext(enable);
-                    subscriber.onCompleted();
+    public boolean isBtMicEnable() {
+        if (btAdapter != null && btAdapter.isEnabled() && audioManager.isBluetoothScoAvailableOffCall()) {
+            // Loop through paired devices
+            for (final BluetoothDevice device : btAdapter.getBondedDevices()) {
+                // Add the name and address to an array adapter to show in a ListView
+                System.out.println(device.getName() + "\n" + device.getAddress());
+                if (device.getName().contains("PTT")) {
+                    selectedDevice = device;
+                    return true;
                 }
             }
-        });
+        }
+
+        return false;
     }
 
     //停止
@@ -131,15 +105,13 @@ public class BtEngine {
             public void call(Subscriber<? super String> subscriber) {
 
                 if (btAdapter == null || !btAdapter.isEnabled()) {
-                    if (!subscriber.isUnsubscribed())
-                        subscriber.onError(new Exception("bluetooth unsupported"));
+                    subscriber.onError(new Exception("bluetooth unsupported"));
                     return;
                 }
 
 
                 if (selectedDevice == null) {
-                    if (!subscriber.isUnsubscribed())
-                        subscriber.onError(new Exception("not found ptt device"));
+                    subscriber.onError(new Exception("not found ptt device"));
                     return;
                 }
 
@@ -148,8 +120,7 @@ public class BtEngine {
                     // MY_UUID is the app's UUID string, also used by the server code
                     socket = selectedDevice.createRfcommSocketToServiceRecord(BT_UUID);
                 } catch (IOException e) {
-                    if (!subscriber.isUnsubscribed())
-                        subscriber.onError(e);
+                    subscriber.onError(e);
                     e.printStackTrace();
                     return;
                 }
@@ -165,11 +136,10 @@ public class BtEngine {
                     InputStream ins = socket.getInputStream();
 
                     byte[] buf = new byte[100];
-                    int count = 0;
-                    while ((count = ins.read(buf)) != -1) {
+                    int count;
+                    while ((count = ins.read(buf)) != -1 && !subscriber.isUnsubscribed()) {
                         //发送事件
-                        if (!subscriber.isUnsubscribed())
-                            subscriber.onNext(new String(buf, 0, count));
+                        subscriber.onNext(new String(buf, 0, count));
                     }
 
                 } catch (IOException connectException) {
@@ -180,10 +150,8 @@ public class BtEngine {
                     }
 
                     if (isShutdown) {
-                        if (!subscriber.isUnsubscribed())
                             subscriber.onCompleted();
                     } else {
-                        if (!subscriber.isUnsubscribed())
                             subscriber.onError(connectException);
                     }
                 }
@@ -200,7 +168,7 @@ public class BtEngine {
 
             System.out.println("startSCO >>>>>>>>>>>>>>>>");
 
-            this.context.registerReceiver(new BroadcastReceiver() {
+            broadcastReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1);
@@ -214,7 +182,8 @@ public class BtEngine {
                         audioManager.setBluetoothScoOn(true);
                     }
                 }
-            }, new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED));
+            };
+            this.context.registerReceiver(broadcastReceiver, new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -226,6 +195,11 @@ public class BtEngine {
             audioManager.stopBluetoothSco();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        if (broadcastReceiver != null) {
+            context.unregisterReceiver(broadcastReceiver);
+            broadcastReceiver = null;
         }
     }
 }
