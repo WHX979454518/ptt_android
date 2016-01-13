@@ -32,6 +32,7 @@ interface ConversationRepository {
     fun updateConversation(conversation: Conversation, memberIds: Iterable<String>): Observable<Conversation>
     fun updateConversationMembers(convId: String, memberIds: Iterable<String>): Observable<Unit>
     fun getConversationsWithMemberNames(maxMember: Int): Observable<List<ConversationWithMemberNames>>
+    fun getConversationWithMemberNames(convId: String, maxMember: Int): Observable<ConversationWithMemberNames?>
 }
 
 interface ContactRepository {

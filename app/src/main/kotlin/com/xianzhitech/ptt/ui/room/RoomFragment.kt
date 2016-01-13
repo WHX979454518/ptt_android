@@ -21,6 +21,8 @@ import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Person
 import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenterView
+import com.xianzhitech.ptt.repo.ConversationRepository
+import com.xianzhitech.ptt.repo.ConversationWithMemberNames
 import com.xianzhitech.ptt.service.provider.ConversationRequest
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -31,6 +33,7 @@ import kotlin.collections.arrayListOf
 import kotlin.collections.emptyList
 import kotlin.collections.hashSetOf
 import kotlin.collections.sortWith
+import kotlin.text.isNullOrBlank
 
 class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         , PushToTalkButton.Callbacks
@@ -59,6 +62,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private val adapter = Adapter()
     private var presenter: RoomPresenter? = null
     private var backgroundRoomPresenterView : RoomPresenterView ? = null
+    private lateinit var conversationRepository: ConversationRepository
 
     private val speakSourceAdapter = object : BaseAdapter() {
         var speakerModes: List<SpeakerMode> = emptyList()
@@ -82,6 +86,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         super.onCreate(savedInstanceState)
 
         //        speakSourceAdapter.speakerModes = SpeakerMode.values().toList()
+        conversationRepository = (activity.application as AppComponent).conversationRepository
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -139,7 +144,19 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
     override fun showRoom(room: Conversation) {
         views?.apply {
-            toolbar.title = room.name
+            if (room.name.isNullOrBlank()) {
+                conversationRepository.getConversationWithMemberNames(room.id, 3)
+                        .observeOnMainThread()
+                        .compose(bindToLifecycle())
+                        .subscribe(object : GlobalSubscriber<ConversationWithMemberNames?>() {
+                            override fun onNext(t: ConversationWithMemberNames?) {
+                                toolbar.title = t?.getMemberNames(activity)
+                            }
+                        })
+            } else {
+                toolbar.title = room.name
+            }
+
             pttBtn.connectedToRoom = true
         }
     }

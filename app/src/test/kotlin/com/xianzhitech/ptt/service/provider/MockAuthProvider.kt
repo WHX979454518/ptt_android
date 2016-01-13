@@ -29,7 +29,7 @@ class MockAuthProvider : AuthProvider {
         }
     }
 
-    override fun getCurrentLogonUserId() = logonUser.map { it?.id }
+    override fun getCurrentLogonUser() = logonUser.map { it?.id }
 
     override fun resumeLogin(token: Serializable): Observable<LoginResult> {
         if (token == LEGIT_USER.name) {

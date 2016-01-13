@@ -6,6 +6,9 @@ import android.support.annotation.ColorInt
 import android.support.annotation.ColorRes
 import android.support.annotation.DrawableRes
 import android.support.v4.graphics.drawable.DrawableCompat
+import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.repo.ConversationWithMemberNames
+import kotlin.collections.joinToString
 
 /**
  *
@@ -31,3 +34,7 @@ fun Int.toColorValue(context: Context) = context.getColorCompat(this)
 fun Int.toDimen(context: Context) = context.resources.getDimension(this)
 
 fun Int.toFormattedString(context: Context, vararg args: Any?) = context.getString(this, *args)
+
+fun ConversationWithMemberNames.getMemberNames(context: Context) =
+        context.resources.getString(if (memberCount > memberNames.size) R.string.group_member_with_more else R.string.group_member,
+                memberNames.joinToString(R.string.member_separator.toFormattedString(context)))

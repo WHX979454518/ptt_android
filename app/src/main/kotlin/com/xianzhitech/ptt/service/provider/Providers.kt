@@ -133,7 +133,7 @@ interface AuthProvider {
      * 订阅当前登陆用户的ID
      */
     @CheckResult
-    fun getCurrentLogonUserId(): Observable<String?>
+    fun getCurrentLogonUser(): Observable<Person?>
 
     /**
      * 登出
