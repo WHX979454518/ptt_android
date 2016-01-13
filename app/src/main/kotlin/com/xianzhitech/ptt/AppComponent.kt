@@ -26,6 +26,9 @@ interface AppComponent {
     val authProvider: AuthProvider
     val preferenceProvider: PreferenceStorageProvider
 
+    // Configuration
+    val signalServerEndpoint: String
+
     // Repositories
     val userRepository: UserRepository
     val groupRepository: GroupRepository
