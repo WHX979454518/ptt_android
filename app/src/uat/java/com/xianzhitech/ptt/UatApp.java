@@ -23,10 +23,10 @@ public class UatApp extends App {
             @Override
             public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
                 final View decorView = activity.getWindow().getDecorView();
-                if (decorView instanceof FrameLayout) {
+                if (decorView instanceof ViewGroup) {
                     final TextView versionNumberView = new TextView(activity);
                     versionNumberView.setText("Build (" + BuildConfig.VERSION_NAME + ")");
-                    ((FrameLayout) decorView).addView(versionNumberView,
+                    ((ViewGroup) decorView).addView(versionNumberView,
                             new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.RIGHT));
                 }
             }
