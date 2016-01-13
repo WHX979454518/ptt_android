@@ -3,7 +3,10 @@ package com.xianzhitech.ptt.engine;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 
 import java.io.IOException;
@@ -22,6 +25,7 @@ public class BtEngine {
 
     private Context context;
     private BluetoothAdapter btAdapter;
+    private AudioManager audioManager;
     private BluetoothDevice selectedDevice = null;
     private BluetoothSocket socket = null;
     private boolean isShutdown = false;
@@ -34,6 +38,7 @@ public class BtEngine {
 
     private void init() {
         btAdapter = BluetoothAdapter.getDefaultAdapter();
+        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
         if (btAdapter == null) {
             System.out.println("not support Bluetooth");
@@ -61,8 +66,7 @@ public class BtEngine {
 
                 if (btAdapter.isEnabled()) {
 
-                    boolean sco = ((AudioManager) context.getSystemService(Context.AUDIO_SERVICE))
-                            .isBluetoothScoAvailableOffCall();
+                    boolean sco = audioManager.isBluetoothScoAvailableOffCall();
 
                     if (sco) {
 
@@ -181,5 +185,43 @@ public class BtEngine {
                 }
             }
         });
+    }
+
+    //请求启用sco
+    public void startSCO() {
+        try {
+            audioManager.stopBluetoothSco();
+            //这儿主要是想开启外置蓝牙扬声器。
+            audioManager.startBluetoothSco();
+
+            System.out.println("startSCO >>>>>>>>>>>>>>>>");
+
+            this.context.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1);
+
+                    System.out.println("UPDATED : code = " + state + " intent = " + intent);
+
+
+                    if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
+
+                        System.out.println("AudioManager.SCO_AUDIO_STATE_CONNECTED");
+                        audioManager.setBluetoothScoOn(true);
+                    }
+                }
+            }, new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //停用sco
+    public void stopSCO() {
+        try {
+            audioManager.stopBluetoothSco();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
