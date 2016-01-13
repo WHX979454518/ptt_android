@@ -1,6 +1,6 @@
 package com.xianzhitech.ptt.service.provider
 
-import android.util.ArrayMap
+import android.support.v4.util.ArrayMap
 import rx.subjects.BehaviorSubject
 import kotlin.collections.emptyList
 import kotlin.collections.getOrPut

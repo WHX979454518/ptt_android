@@ -11,7 +11,7 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.getMemberNames
 import com.xianzhitech.ptt.presenter.ConversationListPresenter
 import com.xianzhitech.ptt.presenter.ConversationListPresenterView
 import com.xianzhitech.ptt.repo.ConversationWithMemberNames
@@ -19,7 +19,7 @@ import com.xianzhitech.ptt.service.provider.ConversationFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import kotlin.collections.emptyList
-import kotlin.collections.joinToString
+import kotlin.text.isNullOrBlank
 
 /**
  * 显示会话列表(Group)的界面
@@ -102,14 +102,21 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
         }
 
         fun setConversation(info: ConversationWithMemberNames) {
-            nameView.text = info.conversation.name
-            //            Picasso.with(itemView.getContext())
-            //                    .load(info.group.getImageUri())
-            //                    .fit()
-            //                    .into(iconView);
+            val memberText = info.getMemberNames(itemView.context)
 
-            memberView.text = itemView.resources.getString(if (info.memberCount > info.memberNames.size) R.string.group_member_with_more else R.string.group_member,
-                    info.memberNames.joinToString(R.string.member_separator.toFormattedString(itemView.context)))
+            if (info.conversation.name.isNullOrBlank()) {
+                nameView.text = memberText
+                memberView.visibility = View.GONE
+            } else {
+                nameView.text = info.conversation.name
+                //            Picasso.with(itemView.getContext())
+                //                    .load(info.group.getImageUri())
+                //                    .fit()
+                //                    .into(iconView);
+
+                memberView.text = memberText
+                memberView.visibility = View.VISIBLE
+            }
 
         }
     }

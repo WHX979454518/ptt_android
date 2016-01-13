@@ -105,7 +105,7 @@ class SocketIOProvider(private val userRepository: UserRepository,
                 .mergeWith(reifiedErrorSubject())
     }
 
-    override fun getCurrentLogonUserId() = logonUser.map { it?.id }
+    override fun getCurrentLogonUser() = logonUser
 
     override fun quitConversation(conversationId: String): Observable<Unit> {
         return socket.sendEvent(EVENT_CLIENT_LEAVE_ROOM,
@@ -226,15 +226,14 @@ class SocketIOProvider(private val userRepository: UserRepository,
 
     fun syncContacts() = socket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, {
         val result: JSONObject = it[0] as JSONObject
-        val personBuf = Person()
         var groupBuf = Group()
-        val persons = result.getJSONObject("enterpriseMembers").getJSONArray("add").transform { personBuf.readFrom(it as JSONObject) }
+        val persons = result.getJSONObject("enterpriseMembers").getJSONArray("add").transform { Person().readFrom(it as JSONObject) }.toSet()
         val groupJsonArray = result.getJSONObject("enterpriseGroups").getJSONArray("add")
         val groups = groupJsonArray.transform { groupBuf.readFrom(it as JSONObject) }
         Triple(persons, groupJsonArray, groups)
     }, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
             .flatMap {
-                userRepository.replaceAllUsers(it.first)
+                userRepository.replaceAllUsers(it.first + (logonUser.value ?: throw IllegalStateException("User not logon")))
                         .concatWith(groupRepository.replaceAllGroups(it.third, it.second.toGroupsAndMembers()))
                         .concatWith(contactRepository.replaceAllContacts(it.first.transform { it.id }, it.third.transform { it.id }))
             }

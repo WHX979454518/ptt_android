@@ -158,6 +158,18 @@ class LocalRepository(internal val db: Database)
         }
     }
 
+    override fun getConversationWithMemberNames(convId: String, maxMember: Int) =
+            createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ?", convId)
+                    .mapToOneOrDefault(Func1<ResultSet, ConversationWithMemberNames> {
+                        val conversation = Conversation.MAPPER.call(it)
+                        ConversationWithMemberNames(
+                                conversation,
+                                db.query("SELECT P.${Person.COL_NAME} FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS GM ON GM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} AND ${ConversationMembers.COL_CONVERSATION_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
+                                db.query("SELECT COUNT(${ConversationMembers.COL_PERSON_ID}) FROM ${ConversationMembers.TABLE_NAME} WHERE ${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id).countAndClose()
+                        )
+                    }, null)
+
+
     override fun getConversationsWithMemberNames(maxMember: Int) =
             createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME}")
                     .mapToList(Func1<ResultSet, ConversationWithMemberNames> {
