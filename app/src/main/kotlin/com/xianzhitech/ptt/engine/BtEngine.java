@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -37,6 +38,21 @@ public class BtEngine {
     private boolean isShutdown = false;
     private BroadcastReceiver broadcastReceiver;
 
+    private ComponentName mRemoteControlClientReceiverComponent;//接管MediaButton
+
+    class RemoteControlClientReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if (action.equalsIgnoreCase(Intent.ACTION_MEDIA_BUTTON)) {
+                System.out.println("RemoteControlClientReceiver = " + intent);
+            }
+
+        }
+    }
+
 
     public BtEngine(Context context) {
         this.context = context;
@@ -46,6 +62,7 @@ public class BtEngine {
     private void init() {
         btAdapter = BluetoothAdapter.getDefaultAdapter();
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        mRemoteControlClientReceiverComponent = new ComponentName(context.getPackageName(), RemoteControlClientReceiver.class.getName());
 
         if (btAdapter == null) {
             System.out.println("not support Bluetooth");
@@ -150,18 +167,22 @@ public class BtEngine {
                     }
 
                     if (isShutdown) {
-                            subscriber.onCompleted();
+                        subscriber.onCompleted();
                     } else {
-                            subscriber.onError(connectException);
+                        subscriber.onError(connectException);
                     }
                 }
             }
         }).subscribeOn(Schedulers.io());
     }
 
+
     //请求启用sco
     public void startSCO() {
         try {
+
+            audioManager.registerMediaButtonEventReceiver(mRemoteControlClientReceiverComponent);
+
             audioManager.stopBluetoothSco();
             //这儿主要是想开启外置蓝牙扬声器。
             audioManager.startBluetoothSco();
@@ -193,6 +214,8 @@ public class BtEngine {
     public void stopSCO() {
         try {
             audioManager.stopBluetoothSco();
+
+            audioManager.unregisterMediaButtonEventReceiver(mRemoteControlClientReceiverComponent);
         } catch (Exception e) {
             e.printStackTrace();
         }
