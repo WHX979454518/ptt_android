@@ -16,11 +16,15 @@ import java.util.UUID;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by suke on 16/1/12.
  */
 public class BtEngine {
+    public static final String MESSAGE_PUSH_DOWN = "+PTT=P";
+    public static final String MESSAGE_PUSH_RELEASE = "+PTT=R";
+
     private static final UUID BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     private Context context;
@@ -184,7 +188,7 @@ public class BtEngine {
                     }
                 }
             }
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
     //请求启用sco
