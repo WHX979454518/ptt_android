@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt
 
 import com.squareup.okhttp.OkHttpClient
-import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenter
@@ -26,6 +25,9 @@ interface AppComponent {
     val talkEngineProvider: TalkEngineProvider
     val authProvider: AuthProvider
     val preferenceProvider: PreferenceStorageProvider
+
+    // Configuration
+    val signalServerEndpoint: String
 
     val btEngine : BtEngine
 
