@@ -3,37 +3,33 @@ package com.xianzhitech.ptt.service
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.provider.JoinRoomRequest
 import rx.Observable
+import kotlin.collections.emptySet
 
-interface RoomState {
+data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
+                     val activeRoomID: String? = null,
+                     val activeRoomSpeakerID: String? = null,
+                     val activeRoomOnlineMemberIDs: Set<String> = emptySet(),
+                     val currentJoinRoomRequest: JoinRoomRequest? = null) {
     enum class Status {
         IDLE,
         JOINING,
         JOINED,
         REQUESTING_MIC,
     }
-
-    val status : Status
-    val activeRoomID: String?
-    val activeRoomSpeakerID: String?
-    val activeRoomMemberIDs: Set<String>
-
-    val currentJoinRoomRequest: JoinRoomRequest?
 }
 
-interface LoginState {
+data class LoginState(val status : LoginState.Status = LoginState.Status.IDLE,
+                      val currentUser : User? = null) {
     enum class Status {
         IDLE,
         LOGIN_IN_PROGRESS,
         LOGGED_IN,
     }
-
-    val status : Status
-    val currentUser : User?
 }
 
 interface BackgroundServiceBinder {
-    val roomState : Observable<out RoomState>
-    val loginState : Observable<out LoginState>
+    val roomState : Observable<RoomState>
+    val loginState : Observable<LoginState>
 
     fun peekRoomState() : RoomState
     fun peekLoginState() : LoginState

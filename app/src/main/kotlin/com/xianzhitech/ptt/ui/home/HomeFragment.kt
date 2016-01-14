@@ -7,11 +7,11 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.graphics.drawable.DrawableCompat
 import android.support.v4.view.ViewPager
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.TextView
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getColorCompat
 import com.xianzhitech.ptt.ext.getTintedDrawable
@@ -39,6 +39,12 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
     internal lateinit var tabContainer: ViewGroup
     internal var selectedTintColor: Int = 0
     internal var normalTintColor: Int = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setHasOptionsMenu(true)
+    }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_home, container, false)?.apply {
@@ -81,6 +87,23 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
                 setTabItemSelected(0, true)
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+        super.onCreateOptionsMenu(menu, inflater)
+
+        inflater?.inflate(R.menu.home, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (item?.itemId == R.id.home_logout) {
+            (context.applicationContext as AppComponent).connectToBackgroundService()
+                .flatMap { it.logout() }
+                .first()
+                .subscribe(GlobalSubscriber())
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onStart() {

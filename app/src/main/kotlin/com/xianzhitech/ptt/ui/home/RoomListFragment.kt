@@ -14,9 +14,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getMemberNames
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
-import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.room.RoomActivity
 import kotlin.collections.emptyList
 import kotlin.text.isNullOrBlank
 
@@ -69,8 +67,8 @@ class RoomListFragment : BaseFragment<Void>() {
         override fun onBindViewHolder(holder: ConversationItemHolder, position: Int) {
             holder.setConversation(rooms[position])
             holder.itemView.setOnClickListener { v ->
-                startActivity(RoomActivity.builder(context,
-                        JoinRoomFromExisting(rooms[position].room.id)))
+//                startActivity(RoomActivity.builder(context,
+//                        JoinRoomFromExisting(rooms[position].room.id)))
             }
         }
 

@@ -93,6 +93,11 @@ class LocalRepository(internal val db: Database)
                 .mapToOneOrDefault(User.MAPPER, null)
     }
 
+    override fun getUsers(ids: Iterable<String>): Observable<List<User>> {
+        return createQuery(User.TABLE_NAME, "SELECT * FROM ${User.TABLE_NAME} WHERE ${User.COL_ID} IN ${ids.toSqlSet(true)}")
+                .mapToList(User.MAPPER)
+    }
+
     override fun getGroup(groupId: String): Observable<Group?> {
         return createQuery(Group.TABLE_NAME, "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} = ? LIMIT 1", groupId)
                 .mapToOneOrDefault(Group.MAPPER, null)

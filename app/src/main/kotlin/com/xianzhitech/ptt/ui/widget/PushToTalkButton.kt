@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.widget.ImageButton
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.toColorValue
+import com.xianzhitech.ptt.service.RoomState
 
 /**
 
@@ -18,29 +19,14 @@ import com.xianzhitech.ptt.ext.toColorValue
  * Created by fanchao on 12/12/15.
  */
 class PushToTalkButton : ImageButton {
-    var connectedToRoom: Boolean = false
-        set(value) {
-            if (field != value) {
-                field = value
-                invalidate()
-            }
+    var roomState : RoomState? = null
+    set(value) {
+        if (field != value) {
+            field = value
+            isEnabled = value?.status == RoomState.Status.JOINED && value?.activeRoomSpeakerID == null
+            invalidate()
         }
-
-    var isRequestingMic: Boolean = false
-        set(value) {
-            if (field != value) {
-                field = value
-                invalidate()
-            }
-        }
-
-    var hasActiveSpeaker: Boolean = false
-        set(value) {
-            if (field != value) {
-                field = value
-                invalidate()
-            }
-        }
+    }
 
     public var callbacks: Callbacks? = null
 
@@ -70,18 +56,19 @@ class PushToTalkButton : ImageButton {
     private fun init(context: Context) {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
+        isEnabled = false
     }
 
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
-        paint.color = (
-                if (hasActiveSpeaker) android.R.color.holo_red_dark
-                else if (isRequestingMic) android.R.color.holo_orange_dark
-                else if (connectedToRoom) android.R.color.holo_green_dark
-                else android.R.color.darker_gray
-                ).toColorValue(context)
+        paint.color = when {
+            roomState?.activeRoomSpeakerID != null -> android.R.color.holo_red_dark
+            roomState?.status == RoomState.Status.REQUESTING_MIC -> android.R.color.holo_orange_dark
+            roomState?.status == RoomState.Status.JOINED -> android.R.color.holo_green_dark
+            else  -> android.R.color.darker_gray
+        }.toColorValue(context)
 
         canvas?.drawCircle(width / 2f, height / 2f, width / 2f, paint)
     }

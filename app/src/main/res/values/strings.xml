@@ -49,7 +49,8 @@
 
     <string name="notification_user_online">%1$s 在线</string>
     <string name="notification_joined_room">房间 %1$s 正在对讲</string>
-    <string name="notification_joining_room">正在进入房间 %1$s ...</string>
+    <string name="notification_joining_room">正在进入对讲房间...</string>
     <string name="notification_user_logging_in">正在登陆...</string>
     <string name="notification_rejoining_room">断线重连中...</string>
+    <string name="logout">注销</string>
 </resources>

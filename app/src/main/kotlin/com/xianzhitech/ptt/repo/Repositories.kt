@@ -15,6 +15,7 @@ import rx.Observable
 
 interface UserRepository {
     fun getUser(id: String): Observable<User?>
+    fun getUsers(ids : Iterable<String>) : Observable<List<User>>
     fun getAllUsers(): Observable<List<User>>
     fun replaceAllUsers(users: Iterable<User>): Observable<Unit>
 }

@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.ui.room
 
 import android.graphics.Color
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.support.v4.view.ViewCompat
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -16,17 +15,17 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.ensureArguments
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getIcon
-import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.service.provider.JoinRoomRequest
+import com.xianzhitech.ptt.service.BackgroundServiceBinder
+import com.xianzhitech.ptt.service.LoginState
+import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
+import rx.Observable
 import java.util.*
 import kotlin.collections.arrayListOf
 import kotlin.collections.emptyList
@@ -58,6 +57,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private var views: Views? = null
     private val adapter = Adapter()
     private lateinit var roomRepository: RoomRepository
+    private var backgroundServiceBinder : BackgroundServiceBinder? = null
 
     private val speakSourceAdapter = object : BaseAdapter() {
         var speakerModes: List<SpeakerMode> = emptyList()
@@ -72,10 +72,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         override fun getItemId(position: Int) = speakerModes[position].ordinal.toLong()
         override fun getCount() = speakerModes.size
     }
-
-    private var roomRequest: JoinRoomRequest
-        set(value) = ensureArguments().putSerializable(ARG_ROOM_REQUEST, value)
-        get() = ensureArguments().getSerializable(ARG_ROOM_REQUEST) as JoinRoomRequest
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,9 +100,45 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         super.onStart()
 
         val appComponent = context.applicationContext as AppComponent
+        val bgService = appComponent
+                .connectToBackgroundService()
+                .observeOnMainThread()
+                .publish()
+
+        bgService.compose(bindToLifecycle()).subscribe(object : GlobalSubscriber<BackgroundServiceBinder>() {
+            override fun onNext(t: BackgroundServiceBinder) {
+                backgroundServiceBinder = t
+            }
+        })
+
+        bgService.flatMap { Observable.combineLatest(
+                it.roomState.flatMap { state ->
+                    if (state.activeRoomID == null) {
+                        Pair(state, emptyList<User>()).toObservable()
+                    }
+                    else {
+                        appComponent.roomRepository.getRoomMembers(state.activeRoomID!!).map { Pair(state, it) }
+                    }
+                },
+                it.loginState,
+                { first, second -> Triple(first.first, first.second, second) }) }
+                .compose(bindToLifecycle())
+                .subscribe(object : GlobalSubscriber<Triple<RoomState, List<User>, LoginState>>() {
+                    override fun onNext(t: Triple<RoomState, List<User>, LoginState>) {
+                        updateRoomState(t.first, t.second, t.third)
+                    }
+                })
+
+        bgService.connect()
+    }
+
+    internal fun updateRoomState(roomState: RoomState, roomMembers : List<User>, loginState: LoginState) {
+        adapter.setMembers(roomMembers, roomState.activeRoomOnlineMemberIDs)
+        views?.pttBtn?.roomState = roomState
     }
 
     override fun onStop() {
+        backgroundServiceBinder = null
 
         super.onStop()
     }
@@ -116,10 +148,11 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     override fun requestMic() {
-
+        backgroundServiceBinder?.requestMic()?.subscribe(GlobalSubscriber())
     }
 
     override fun releaseMic() {
+        backgroundServiceBinder?.releaseMic()?.subscribe(GlobalSubscriber())
     }
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
@@ -185,18 +218,9 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         fun onRoomQuited()
     }
 
-    companion object {
-        const val ARG_ROOM_REQUEST = "arg_room_request"
 
+    companion object {
         private const val TAG_SWITCHING_ROOM_CONFIRM = "tag_switching_room_confirm"
         private const val TAG_PROMPT_IMPORTANT = "tag_prompt_important"
-
-        fun create(request: JoinRoomRequest): Fragment {
-            val fragment = RoomFragment()
-            val args = Bundle(1)
-            args.putSerializable(ARG_ROOM_REQUEST, request)
-            fragment.arguments = args
-            return fragment
-        }
     }
 }
