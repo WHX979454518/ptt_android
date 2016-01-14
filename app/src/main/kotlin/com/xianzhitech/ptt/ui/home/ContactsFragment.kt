@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.app.ProgressDialog
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -13,7 +15,12 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
+import com.xianzhitech.ptt.service.provider.JoinRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
 import java.util.*
@@ -99,9 +106,24 @@ class ContactsFragment : BaseFragment<Void>() {
             holder.iconView.setImageDrawable(contactItem.getIcon(holder.iconView.context))
             holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->
+                val request = if (contactItem is User) JoinRoomFromUser(contactItem.id) else JoinRoomFromGroup((contactItem as Group).id)
+                val dialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context),
+                        R.string.joining_room.toFormattedString(context), true, false)
 
-//                startActivity(RoomActivity.builder(context,
-//                        if (contactItem is User) JoinRoomFromUser(contactItem.id) else JoinRoomFromGroup((contactItem as Group).id)))
+                (context.applicationContext as AppComponent).connectToBackgroundService()
+                        .flatMap { it.requestJoinRoom(request) }
+                        .observeOnMainThread()
+                        .subscribe(object : GlobalSubscriber<Unit>(context) {
+                            override fun onNext(t: Unit) {
+                                dialog.dismiss()
+                                startActivity(Intent(context, RoomActivity::class.java))
+                            }
+
+                            override fun onError(e: Throwable) {
+                                super.onError(e)
+                                dialog.dismiss()
+                            }
+                        })
             }
         }
 

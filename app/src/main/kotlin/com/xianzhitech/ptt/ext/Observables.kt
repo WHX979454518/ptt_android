@@ -5,6 +5,7 @@ import android.support.v4.app.FragmentActivity
 import android.util.Log
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.db.ResultSet
+import com.xianzhitech.ptt.service.UserDescribableException
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import rx.Observable
 import rx.Scheduler
@@ -25,14 +26,22 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
     }
 
     override fun onError(e: Throwable) {
+        val message : CharSequence?
+        if (context != null && e is UserDescribableException) {
+            message = e.describe(context)
+        }
+        else {
+            message = e.message
+        }
+
         if (context is FragmentActivity) {
             AlertDialogFragment.Builder()
                     .setTitle(context.getString(R.string.error_title))
-                    .setMessage(context.getString(R.string.error_content, e.message))
+                    .setMessage(context.getString(R.string.error_content, message))
                     .show(context.supportFragmentManager, FRAG_ERROR_DIALOG)
         }
 
-        Log.e("GlobalSubscriber", "Error: ${e.message}", e)
+        Log.e("GlobalSubscriber", "Error: ${message}", e)
     }
 
     override fun onNext(t: T) {

@@ -47,6 +47,9 @@
     <string name="source_speaker">喇叭</string>
     <string name="source_headphone">耳机</string>
 
+    <string name="joining_room">正在进入房间...</string>
+    <string name="please_wait">请稍候</string>
+
     <string name="notification_user_online">%1$s 在线</string>
     <string name="notification_joined_room">房间 %1$s 正在对讲</string>
     <string name="notification_joining_room">正在进入对讲房间...</string>

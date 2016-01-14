@@ -314,6 +314,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun onMicActivated(isSelf: Boolean) {
         if (isSelf) {
             playSound(R.raw.outgoing)
+            currentTalkEngine?.startSend()
         } else {
             playSound(R.raw.incoming)
         }
@@ -322,6 +323,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun onMicReleased(isSelf: Boolean) {
         if (isSelf) {
             playSound(R.raw.pttup)
+            currentTalkEngine?.stopSend()
         } else {
             playSound(R.raw.over)
         }
@@ -341,12 +343,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             joinRoomSubscription = joinRoomSubscription?.let { it.unsubscribe(); null }
             state.currentJoinRoomRequest?.let { roomState.onNext(state.copy(currentJoinRoomRequest = null)) }
 
-//            // Check if current room is important (thus we can't join another room)
-//            if (roomState.value.currentRoom?.important ?: false) {
-//                subscriber.onError(StaticUserException(R.string.error_room_is_important_to_quit))
-//                return@create
-//            }
-
             // If we don't have yet a room id, create one first
             val roomIdObservable: Observable<String>
             if (request is JoinRoomFromContact) {
@@ -359,23 +355,35 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             }
 
             joinRoomSubscription = roomIdObservable
-                    .subscribe(object : GlobalSubscriber<String>() {
+                    .flatMap { newRoomId ->
+                        if (state.activeRoomID != null) {
+                            roomRepository.getRoom(state.activeRoomID).map { Pair(it, newRoomId) }
+                        }
+                        else {
+                            Pair<Room?, String>(null, newRoomId).toObservable()
+                        }
+                    }
+                    .subscribe(object : GlobalSubscriber<Pair<Room?, String>>() {
                         override fun onError(e: Throwable) {
                             subscriber.onError(e)
                         }
 
-                        override fun onNext(t: String) {
-                            doJoinRoom(t).observeOnMainThread().subscribe(object : GlobalSubscriber<Unit>() {
-                                override fun onError(e: Throwable) {
-                                    subscriber.onError(e)
-                                }
+                        override fun onNext(t: Pair<Room?, String>) {
+                            if (t.first?.important ?: false) {
+                                subscriber.onError(StaticUserException(R.string.error_room_is_important_to_quit))
+                            }
+                            else {
+                                doJoinRoom(t.second).observeOnMainThread().subscribe(object : GlobalSubscriber<Unit>() {
+                                    override fun onError(e: Throwable) {
+                                        subscriber.onError(e)
+                                    }
 
-                                override fun onNext(t: Unit) {
-                                    roomState.onNext(roomState.value.copy(currentJoinRoomRequest = null))
-                                }
-                            })
+                                    override fun onNext(t: Unit) {
+                                        roomState.onNext(roomState.value.copy(currentJoinRoomRequest = null))
+                                    }
+                                })
+                            }
                         }
-
                     })
         }
     }.subscribeOnMainThread()
@@ -403,12 +411,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun doCreateRoom(request: JoinRoomFromContact): Observable<Room> {
         checkMainThread()
         logd("Creating room with $request")
-        if (loginState.value.currentUser?.privileges?.contains(Privilege.CREATE_ROOM) ?: false) {
+        if (loginState.value.currentUser?.privileges?.contains(Privilege.CREATE_ROOM)?.not() ?: false) {
             return Observable.error(StaticUserException(R.string.error_no_permission))
         }
 
         return socket?.let {
-            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it ?: throw EmptyServerResponseException() })
+            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it ?: throw EmptyServerResponseException() }, request.toJSON())
                     .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
         } ?: Observable.error<Room>(IllegalStateException("Not connected to server"))
     }
@@ -481,6 +489,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             }
 
                             override fun onNext(t: JoinRoomResult) {
+                                subscriber.onNext(null)
+                                subscriber.onCompleted()
+
                                 roomState.onNext(roomState.value.copy(
                                         status = RoomState.Status.JOINED,
                                         activeRoomOnlineMemberIDs = t.activeMemberIDs,
@@ -501,6 +512,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         socket?.let {
             roomState.value.let { state ->
                 state.activeRoomID?.let { roomId ->
+                    roomState.onNext(state.copy(status = RoomState.Status.REQUESTING_MIC))
+
                     roomSubscription?.add(it.sendEvent(EVENT_CLIENT_CONTROL_MIC,
                             { it?.getBoolean("success")?.and(it.getString("speaker") == loginState.value.currentUser?.id) ?: throw EmptyServerResponseException() },
                             JSONObject().put("roomId", roomId))

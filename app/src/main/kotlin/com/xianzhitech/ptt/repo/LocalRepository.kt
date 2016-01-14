@@ -142,6 +142,15 @@ class LocalRepository(internal val db: Database)
                     "SELECT P.* FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
                     .mapToList(User.MAPPER)
 
+    override fun getRoomWithMembers(roomId: String) = getRoom(roomId).flatMap { room : Room? ->
+        if (room == null) {
+            Pair(null, emptyList<User>()).toObservable()
+        }
+        else {
+            getRoomMembers(roomId).map { Pair(room, it) }
+        }
+    }
+
     override fun updateRoom(room: Room, memberIds: Iterable<String>) = updateInTransaction {
         room.apply {
             val cacheValue = hashMapOf<String, Any?>()

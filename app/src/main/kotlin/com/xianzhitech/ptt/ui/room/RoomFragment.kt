@@ -16,6 +16,7 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
@@ -44,7 +45,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                         val pttBtn: PushToTalkButton = rootView.findView(R.id.room_pushToTalkButton),
                         val appBar: ViewGroup = rootView.findView(R.id.room_appBar),
                         val speakerSourceView: Spinner = rootView.findView(R.id.room_speakerSource),
-                        val progressBar: View = rootView.findView(R.id.room_progress),
                         val roomStatusView: TextView = rootView.findView(R.id.room_status),
                         val memberView: RecyclerView = rootView.findView(R.id.room_memberList))
 
@@ -114,27 +114,31 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         bgService.flatMap { Observable.combineLatest(
                 it.roomState.flatMap { state ->
                     if (state.activeRoomID == null) {
-                        Pair(state, emptyList<User>()).toObservable()
+                        ExtraRoomData(null, state, emptyList<User>()).toObservable()
                     }
                     else {
-                        appComponent.roomRepository.getRoomMembers(state.activeRoomID!!).map { Pair(state, it) }
+                        appComponent.roomRepository.getRoomWithMembers(state.activeRoomID).map { ExtraRoomData(it.first, state, it.second) }
                     }
                 },
                 it.loginState,
-                { first, second -> Triple(first.first, first.second, second) }) }
+                { first, second -> Pair(first, second) }) }
+                .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<Triple<RoomState, List<User>, LoginState>>() {
-                    override fun onNext(t: Triple<RoomState, List<User>, LoginState>) {
-                        updateRoomState(t.first, t.second, t.third)
+                .subscribe(object : GlobalSubscriber<Pair<ExtraRoomData, LoginState>>() {
+                    override fun onNext(t: Pair<ExtraRoomData, LoginState>) {
+                        updateRoomState(t.first, t.second)
                     }
                 })
 
         bgService.connect()
     }
 
-    internal fun updateRoomState(roomState: RoomState, roomMembers : List<User>, loginState: LoginState) {
-        adapter.setMembers(roomMembers, roomState.activeRoomOnlineMemberIDs)
-        views?.pttBtn?.roomState = roomState
+    internal fun updateRoomState(extraRoomData: ExtraRoomData, loginState: LoginState) {
+        adapter.setMembers(extraRoomData.roomMembers, extraRoomData.roomState.activeRoomOnlineMemberIDs)
+        views?.apply {
+            pttBtn.roomState = extraRoomData.roomState
+            toolbar.title = extraRoomData.room?.name
+        }
     }
 
     override fun onStop() {
@@ -144,7 +148,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     override fun onBackPressed(): Boolean {
-        return true
+        return false
     }
 
     override fun requestMic() {
@@ -209,6 +213,10 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
         override fun getItemCount() = members.size
     }
+
+    internal data class ExtraRoomData(val room : Room?,
+                                     val roomState : RoomState,
+                                     val roomMembers : List<User>)
 
     private class ViewHolder(container: ViewGroup,
                              val imageView: ImageView = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false) as ImageView)
