@@ -7,13 +7,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-import com.xianzhitech.ptt.ui.MainActivity;
-import com.xianzhitech.ptt.ui.room.RoomActivity;
+import net.hockeyapp.android.CrashManager;
+import net.hockeyapp.android.UpdateManager;
 
 /**
  * Created by fanchao on 13/01/16.
  */
 public class UatApp extends App {
+
 
     @Override
     public void onCreate() {
@@ -33,6 +34,8 @@ public class UatApp extends App {
 
             @Override
             public void onActivityStarted(Activity activity) {
+                UpdateManager.register(activity, BuildConfig.HOCKEYAPP_ID);
+                CrashManager.register(activity, BuildConfig.HOCKEYAPP_ID);
             }
 
             @Override
@@ -47,7 +50,7 @@ public class UatApp extends App {
 
             @Override
             public void onActivityStopped(Activity activity) {
-
+                UpdateManager.unregister();
             }
 
             @Override
