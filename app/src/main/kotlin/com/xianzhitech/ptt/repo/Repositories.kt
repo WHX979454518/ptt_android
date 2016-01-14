@@ -1,9 +1,9 @@
 package com.xianzhitech.ptt.repo
 
 import com.xianzhitech.ptt.model.ContactItem
-import com.xianzhitech.ptt.model.Conversation
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import rx.Observable
 
 /**
@@ -14,25 +14,26 @@ import rx.Observable
  */
 
 interface UserRepository {
-    fun getUser(id: String): Observable<Person?>
-    fun getAllUsers(): Observable<List<Person>>
-    fun replaceAllUsers(users: Iterable<Person>): Observable<Unit>
+    fun getUser(id: String): Observable<User?>
+    fun getAllUsers(): Observable<List<User>>
+    fun replaceAllUsers(users: Iterable<User>): Observable<Unit>
 }
 
 interface GroupRepository {
     fun getGroup(groupId: String): Observable<Group?>
-    fun getGroupMembers(groupId: String): Observable<List<Person>>
+    fun getGroupMembers(groupId: String): Observable<List<User>>
     fun updateGroupMembers(groupId: String, memberIds: Iterable<String>): Observable<Unit>
     fun replaceAllGroups(groups: Iterable<Group>, groupMembers: Map<String, Iterable<String>>): Observable<Unit>
 }
 
-interface ConversationRepository {
-    fun getConversation(convId: String): Observable<Conversation?>
-    fun getConversationMembers(convId: String): Observable<List<Person>>
-    fun updateConversation(conversation: Conversation, memberIds: Iterable<String>): Observable<Conversation>
-    fun updateConversationMembers(convId: String, memberIds: Iterable<String>): Observable<Unit>
-    fun getConversationsWithMemberNames(maxMember: Int): Observable<List<ConversationWithMemberNames>>
-    fun getConversationWithMemberNames(convId: String, maxMember: Int): Observable<ConversationWithMemberNames?>
+interface RoomRepository {
+    fun clearRooms() : Observable<Unit>
+    fun getRoom(roomId: String): Observable<Room?>
+    fun getRoomMembers(roomId: String): Observable<List<User>>
+    fun updateRoom(room: Room, memberIds: Iterable<String>): Observable<Room>
+    fun updateRoomMembers(roomId: String, memberIds: Iterable<String>): Observable<Unit>
+    fun getRoomsWithMemberNames(maxMember: Int): Observable<List<RoomWithMemberNames>>
+    fun getRoomWithMemberNames(roomId: String, maxMember: Int): Observable<RoomWithMemberNames?>
 }
 
 interface ContactRepository {
@@ -41,6 +42,6 @@ interface ContactRepository {
     fun replaceAllContacts(userIds: Iterable<String>, groupIds: Iterable<String>): Observable<Unit>
 }
 
-data class ConversationWithMemberNames(val conversation: Conversation,
-                                       val memberNames: List<String>,
-                                       val memberCount: Int)
+data class RoomWithMemberNames(val room: Room,
+                               val memberNames: List<String>,
+                               val memberCount: Int)

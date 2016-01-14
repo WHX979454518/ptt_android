@@ -14,11 +14,11 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.presenter.ContactListPresenter
 import com.xianzhitech.ptt.presenter.ContactListPresenterView
-import com.xianzhitech.ptt.service.provider.CreateConversationFromGroup
-import com.xianzhitech.ptt.service.provider.CreateConversationFromPerson
+import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
+import com.xianzhitech.ptt.service.provider.JoinRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.ContactComparator
@@ -102,7 +102,7 @@ class ContactsFragment : BaseFragment<Void>(), ContactListPresenterView {
             holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        if (contactItem is Person) CreateConversationFromPerson(contactItem.id) else CreateConversationFromGroup((contactItem as Group).id)))
+                        if (contactItem is User) JoinRoomFromUser(contactItem.id) else JoinRoomFromGroup((contactItem as Group).id)))
             }
         }
 

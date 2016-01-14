@@ -14,8 +14,8 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getMemberNames
 import com.xianzhitech.ptt.presenter.ConversationListPresenter
 import com.xianzhitech.ptt.presenter.ConversationListPresenterView
-import com.xianzhitech.ptt.repo.ConversationWithMemberNames
-import com.xianzhitech.ptt.service.provider.ConversationFromExisting
+import com.xianzhitech.ptt.repo.RoomWithMemberNames
+import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import kotlin.collections.emptyList
@@ -33,7 +33,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        presenter = ConversationListPresenter((activity.application as AppComponent).conversationRepository)
+        presenter = ConversationListPresenter((activity.application as AppComponent).roomRepository)
     }
 
     override fun onStart() {
@@ -46,7 +46,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
         // Nothing to show
     }
 
-    override fun showConversationList(result: List<ConversationWithMemberNames>) {
+    override fun showConversationList(result: List<RoomWithMemberNames>) {
         adapter.conversations = result
     }
 
@@ -66,7 +66,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
     }
 
     private inner class Adapter : RecyclerView.Adapter<ConversationItemHolder>() {
-        var conversations: List<ConversationWithMemberNames> = emptyList()
+        var conversations: List<RoomWithMemberNames> = emptyList()
             set(value) {
                 field = value
             notifyDataSetChanged()
@@ -80,7 +80,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
             holder.setConversation(conversations[position])
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        ConversationFromExisting(conversations[position].conversation.id)))
+                        JoinRoomFromExisting(conversations[position].room.id)))
             }
         }
 
@@ -101,14 +101,14 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
             iconView = itemView.findView(R.id.groupListItem_icon)
         }
 
-        fun setConversation(info: ConversationWithMemberNames) {
+        fun setConversation(info: RoomWithMemberNames) {
             val memberText = info.getMemberNames(itemView.context)
 
-            if (info.conversation.name.isNullOrBlank()) {
+            if (info.room.name.isNullOrBlank()) {
                 nameView.text = memberText
                 memberView.visibility = View.GONE
             } else {
-                nameView.text = info.conversation.name
+                nameView.text = info.room.name
                 //            Picasso.with(itemView.getContext())
                 //                    .load(info.group.getImageUri())
                 //                    .fit()

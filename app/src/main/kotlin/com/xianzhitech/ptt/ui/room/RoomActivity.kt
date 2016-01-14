@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.service.provider.ConversationRequest
+import com.xianzhitech.ptt.service.provider.JoinRoomRequest
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 
@@ -33,7 +33,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
 
     private fun handleIntent(intent: Intent) {
         supportFragmentManager.beginTransaction()
-                .replace(R.id.room_content, RoomFragment.create(intent.getSerializableExtra(EXTRA_ROOM_REQUEST) as ConversationRequest))
+                .replace(R.id.room_content, RoomFragment.create(intent.getSerializableExtra(EXTRA_ROOM_REQUEST) as JoinRoomRequest))
                 .commit()
     }
 
@@ -51,7 +51,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
 
         val EXTRA_ROOM_REQUEST = "extra_room_request"
 
-        fun builder(context: Context, roomRequest: ConversationRequest): Intent {
+        fun builder(context: Context, roomRequest: JoinRoomRequest): Intent {
             return Intent(context, RoomActivity::class.java).putExtra(EXTRA_ROOM_REQUEST, roomRequest)
         }
     }

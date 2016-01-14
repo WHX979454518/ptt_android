@@ -40,7 +40,7 @@
             android:launchMode="singleTask"
             android:name=".ui.room.RoomActivity" />
 
-        <service android:name=".ui.service.BackgroundService"/>
+        <service android:name=".service.sio.SocketIOBackgroundService"/>
 
     </application>
 

@@ -21,11 +21,11 @@ class AndroidDatabase(context: Context, name: String, version: Int) : Database {
                 db?.apply {
                     beginTransaction()
                     try {
-                        execSQL(com.xianzhitech.ptt.model.Person.Companion.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.User.Companion.CREATE_TABLE_SQL)
                         execSQL(com.xianzhitech.ptt.model.Group.Companion.CREATE_TABLE_SQL)
                         execSQL(com.xianzhitech.ptt.model.GroupMembers.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Conversation.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.ConversationMembers.Companion.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.Room.Companion.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.RoomMembers.Companion.CREATE_TABLE_SQL)
                         execSQL(com.xianzhitech.ptt.model.Contacts.Companion.CREATE_TABLE_SQL)
                         setTransactionSuccessful()
                     } finally {

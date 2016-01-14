@@ -11,11 +11,11 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.presenter.LoginPresenterView
+import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
-import com.xianzhitech.ptt.ui.service.BackgroundService
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginPresenterView {
 
@@ -26,7 +26,7 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        startService(Intent(this, BackgroundService::class.java))
+        startService(Intent(this, SocketIOBackgroundService::class.java))
 
         setContentView(R.layout.activity_main)
         toolbar = findView(R.id.main_toolbar)

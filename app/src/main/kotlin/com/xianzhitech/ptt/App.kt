@@ -19,27 +19,27 @@ import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.serializeToBase64
-import com.xianzhitech.ptt.model.Conversation
-import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.presenter.BaseRoomPresenterView
 import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.repo.ContactRepository
-import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
+import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.service.provider.AuthProvider
-import com.xianzhitech.ptt.service.provider.ConversationFromExisting
+import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.provider.SocketIOProvider
-import com.xianzhitech.ptt.ui.service.BackgroundService
+import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import java.io.Serializable
 
 
 open class App : Application(), AppComponent {
     override val httpClient by lazy { OkHttpClient() }
     override val signalProvider by lazy {
-        SocketIOProvider(userRepository, groupRepository, conversationRepository, contactRepository, BuildConfig.SIGNAL_SERVER_ENDPOINT)
+        SocketIOProvider(userRepository, groupRepository, roomRepository, contactRepository, BuildConfig.SIGNAL_SERVER_ENDPOINT)
     }
     override val talkEngineProvider = object : TalkEngineProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)
@@ -48,7 +48,7 @@ open class App : Application(), AppComponent {
     override val userRepository by lazy { LocalRepository(AndroidDatabase(this@App, Constants.DB_NAME, Constants.DB_VERSION)) }
     override val groupRepository: GroupRepository
         get() = userRepository
-    override val conversationRepository: ConversationRepository
+    override val roomRepository: RoomRepository
         get() = userRepository
     override val contactRepository: ContactRepository
         get() = userRepository
@@ -56,7 +56,7 @@ open class App : Application(), AppComponent {
     override val loginPresenter by lazy { LoginPresenter(authProvider, preferenceProvider) }
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
     override val roomPresenter: RoomPresenter by lazy {
-        RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, conversationRepository).apply {
+        RoomPresenter(signalProvider, authProvider, talkEngineProvider, userRepository, roomRepository).apply {
             attachView(GlobalRoomPresenterView(this@App, btEngine, authProvider))
         }
     }
@@ -65,9 +65,9 @@ open class App : Application(), AppComponent {
     override val backgroundRoomPresenterView = object : BaseRoomPresenterView() {
         override fun onRoomJoined(conversationId: String) {
             // 有房间加入, 拉起对讲界面
-            startService(Intent(this@App, BackgroundService::class.java)
-                    .setAction(BackgroundService.ACTION_OPEN_ROOM)
-                    .putExtra(BackgroundService.EXTRA_CONVERSATION_REQUEST, ConversationFromExisting(conversationId)))
+            startService(Intent(this@App, SocketIOBackgroundService::class.java)
+                    .setAction(SocketIOBackgroundService.ACTION_OPEN_ROOM)
+                    .putExtra(SocketIOBackgroundService.EXTRA_CONVERSATION_REQUEST, JoinRoomFromExisting(conversationId)))
         }
     }
 
@@ -101,7 +101,7 @@ open class App : Application(), AppComponent {
     private class GlobalRoomPresenterView(context: Context,
                                           private val btEngine: BtEngine,
                                           private val authProvider: AuthProvider) : BaseRoomPresenterView() {
-        private var lastSpeaker: Person? = null
+        private var lastSpeaker: User? = null
 
         var soundPool: Pair<SoundPool, SparseIntArray> = Pair(SoundPool(1, AudioManager.STREAM_MUSIC, 0), SparseIntArray()).apply {
             second.put(R.raw.incoming, first.load(context, R.raw.incoming, 0))
@@ -124,15 +124,15 @@ open class App : Application(), AppComponent {
             }
         }
 
-        override fun onRoomQuited(conversation: Conversation?) {
-            super.onRoomQuited(conversation)
+        override fun onRoomQuited(room: Room?) {
+            super.onRoomQuited(room)
 
             if (btEngine.isBtMicEnable) {
                 btEngine.stopSCO()
             }
         }
 
-        override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {
+        override fun showCurrentSpeaker(speaker: User?, isSelf: Boolean) {
             if (speaker != null && isSelf) {
                 playSound(R.raw.outgoing)
                 vibrator?.vibrate(100)

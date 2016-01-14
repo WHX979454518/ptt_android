@@ -6,8 +6,8 @@ import com.xianzhitech.ptt.presenter.LoginPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenterView
 import com.xianzhitech.ptt.repo.ContactRepository
-import com.xianzhitech.ptt.repo.ConversationRepository
 import com.xianzhitech.ptt.repo.GroupRepository
+import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.provider.AuthProvider
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
@@ -34,7 +34,7 @@ interface AppComponent {
     // Repositories
     val userRepository: UserRepository
     val groupRepository: GroupRepository
-    val conversationRepository: ConversationRepository
+    val roomRepository: RoomRepository
     val contactRepository: ContactRepository
 
     // Presenters

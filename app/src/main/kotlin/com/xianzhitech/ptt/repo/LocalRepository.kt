@@ -23,7 +23,7 @@ import kotlin.collections.*
 class LocalRepository(internal val db: Database)
 : UserRepository
         , GroupRepository
-        , ConversationRepository
+        , RoomRepository
         , ContactRepository {
 
     private val queryScheduler = Schedulers.computation()
@@ -88,9 +88,9 @@ class LocalRepository(internal val db: Database)
 
 
     @CheckResult
-    override fun getUser(id: String): Observable<Person?> {
-        return createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME} WHERE ${Person.COL_ID} = ? LIMIT 1", id)
-                .mapToOneOrDefault(Person.MAPPER, null)
+    override fun getUser(id: String): Observable<User?> {
+        return createQuery(User.TABLE_NAME, "SELECT * FROM ${User.TABLE_NAME} WHERE ${User.COL_ID} = ? LIMIT 1", id)
+                .mapToOneOrDefault(User.MAPPER, null)
     }
 
     override fun getGroup(groupId: String): Observable<Group?> {
@@ -98,97 +98,102 @@ class LocalRepository(internal val db: Database)
                 .mapToOneOrDefault(Group.MAPPER, null)
     }
 
-    override fun getAllUsers(): Observable<List<Person>> {
-        return createQuery(Person.TABLE_NAME, "SELECT * FROM ${Person.TABLE_NAME}")
-                .mapToList(Person.MAPPER)
+    override fun getAllUsers(): Observable<List<User>> {
+        return createQuery(User.TABLE_NAME, "SELECT * FROM ${User.TABLE_NAME}")
+                .mapToList(User.MAPPER)
     }
 
-    override fun replaceAllUsers(users: Iterable<Person>) = updateInTransaction {
-        delete(Person.TABLE_NAME, "")
+    override fun replaceAllUsers(users: Iterable<User>) = updateInTransaction {
+        delete(User.TABLE_NAME, "")
 
         val cacheValues = hashMapOf<String, Any?>()
         users.forEach {
-            insert(Person.TABLE_NAME, cacheValues.apply { clear(); it.toValues(this) })
+            insert(User.TABLE_NAME, cacheValues.apply { clear(); it.toValues(this) })
         }
     }
 
     override fun getGroupMembers(groupId: String) = createQuery(
-            listOf(Group.TABLE_NAME, Person.TABLE_NAME),
-            "SELECT P.* FROM " + Person.TABLE_NAME + " AS P " + "LEFT JOIN " + GroupMembers.TABLE_NAME + " AS GM ON " + "GM." + GroupMembers.COL_PERSON_ID + " = P." + Person.COL_ID + " " + "WHERE GM." + GroupMembers.COL_GROUP_ID + " = ?",
+            listOf(Group.TABLE_NAME, User.TABLE_NAME),
+            "SELECT P.* FROM " + User.TABLE_NAME + " AS P " + "LEFT JOIN " + GroupMembers.TABLE_NAME + " AS GM ON " + "GM." + GroupMembers.COL_PERSON_ID + " = P." + User.COL_ID + " " + "WHERE GM." + GroupMembers.COL_GROUP_ID + " = ?",
             groupId)
-            .mapToList(Person.MAPPER)
+            .mapToList(User.MAPPER)
 
     override fun updateGroupMembers(groupId: String, memberIds: Iterable<String>) = updateInTransaction {
         delete(GroupMembers.TABLE_NAME, "${GroupMembers.COL_GROUP_ID} = ? AND ${GroupMembers.COL_PERSON_ID} NOT IN ${memberIds.toSqlSet()}", groupId)
         doAddGroupMembers(groupId, memberIds)
     }
 
-    override fun getConversation(convId: String) =
-            createQuery(Conversation.TABLE_NAME, "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ? LIMIT 1", convId)
-                    .mapToOne(Conversation.MAPPER)
+    override fun clearRooms() = updateInTransaction {
+        delete(Room.TABLE_NAME, "1")
+        delete(RoomMembers.TABLE_NAME, "1")
+    }
 
-    override fun getConversationMembers(convId: String) =
-            createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME),
-                    "SELECT P.* FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS CM ON CM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} WHERE CM.${ConversationMembers.COL_CONVERSATION_ID} = ?", convId)
-                    .mapToList(Person.MAPPER)
+    override fun getRoom(roomId: String) =
+            createQuery(Room.TABLE_NAME, "SELECT * FROM ${Room.TABLE_NAME} WHERE ${Room.COL_ID} = ? LIMIT 1", roomId)
+                    .mapToOne(Room.MAPPER)
 
-    override fun updateConversation(conversation: Conversation, memberIds: Iterable<String>) = updateInTransaction {
-        conversation.apply {
+    override fun getRoomMembers(roomId: String) =
+            createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME),
+                    "SELECT P.* FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
+                    .mapToList(User.MAPPER)
+
+    override fun updateRoom(room: Room, memberIds: Iterable<String>) = updateInTransaction {
+        room.apply {
             val cacheValue = hashMapOf<String, Any?>()
 
-            insert(Conversation.TABLE_NAME,
-                    cacheValue.apply { clear(); conversation.toValues(this) },
+            insert(Room.TABLE_NAME,
+                    cacheValue.apply { clear(); room.toValues(this) },
                     true)
 
-            db.delete(ConversationMembers.TABLE_NAME, "${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id)
+            db.delete(RoomMembers.TABLE_NAME, "${RoomMembers.COL_ROOM_ID} = ?", room.id)
 
             cacheValue.clear()
-            cacheValue[ConversationMembers.COL_CONVERSATION_ID] = conversation.id
+            cacheValue[RoomMembers.COL_ROOM_ID] = room.id
             memberIds.forEach {
-                insert(ConversationMembers.TABLE_NAME, cacheValue.apply { this[ConversationMembers.COL_PERSON_ID] = it })
+                insert(RoomMembers.TABLE_NAME, cacheValue.apply { this[RoomMembers.COL_USER_ID] = it })
             }
         }
     }
 
-    override fun updateConversationMembers(convId: String, memberIds: Iterable<String>) = updateInTransaction {
-        db.delete(ConversationMembers.TABLE_NAME, "${ConversationMembers.COL_CONVERSATION_ID} = ?", convId)
-        val cacheContentValues = HashMap<String, Any?>(2).apply { put(ConversationMembers.COL_CONVERSATION_ID, convId) }
+    override fun updateRoomMembers(roomId: String, memberIds: Iterable<String>) = updateInTransaction {
+        db.delete(RoomMembers.TABLE_NAME, "${RoomMembers.COL_ROOM_ID} = ?", roomId)
+        val cacheContentValues = HashMap<String, Any?>(2).apply { put(RoomMembers.COL_ROOM_ID, roomId) }
         memberIds.forEach {
-            insert(ConversationMembers.TABLE_NAME, cacheContentValues.apply { put(ConversationMembers.COL_PERSON_ID, it) })
+            insert(RoomMembers.TABLE_NAME, cacheContentValues.apply { put(RoomMembers.COL_USER_ID, it) })
         }
     }
 
-    override fun getConversationWithMemberNames(convId: String, maxMember: Int) =
-            createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME} WHERE ${Conversation.COL_ID} = ?", convId)
-                    .mapToOneOrDefault(Func1<ResultSet, ConversationWithMemberNames> {
-                        val conversation = Conversation.MAPPER.call(it)
-                        ConversationWithMemberNames(
+    override fun getRoomWithMemberNames(roomId: String, maxMember: Int) =
+            createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Room.TABLE_NAME} WHERE ${Room.COL_ID} = ?", roomId)
+                    .mapToOneOrDefault(Func1<ResultSet, RoomWithMemberNames> {
+                        val conversation = Room.MAPPER.call(it)
+                        RoomWithMemberNames(
                                 conversation,
-                                db.query("SELECT P.${Person.COL_NAME} FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS GM ON GM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} AND ${ConversationMembers.COL_CONVERSATION_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
-                                db.query("SELECT COUNT(${ConversationMembers.COL_PERSON_ID}) FROM ${ConversationMembers.TABLE_NAME} WHERE ${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id).countAndClose()
+                                db.query("SELECT P.${User.COL_NAME} FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
+                                db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
                         )
                     }, null)
 
 
-    override fun getConversationsWithMemberNames(maxMember: Int) =
-            createQuery(listOf(Conversation.TABLE_NAME, ConversationMembers.TABLE_NAME), "SELECT * FROM ${Conversation.TABLE_NAME}")
-                    .mapToList(Func1<ResultSet, ConversationWithMemberNames> {
-                        val conversation = Conversation.MAPPER.call(it)
-                        ConversationWithMemberNames(
+    override fun getRoomsWithMemberNames(maxMember: Int) =
+            createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Room.TABLE_NAME}")
+                    .mapToList(Func1<ResultSet, RoomWithMemberNames> {
+                        val conversation = Room.MAPPER.call(it)
+                        RoomWithMemberNames(
                                 conversation,
-                                db.query("SELECT P.${Person.COL_NAME} FROM ${Person.TABLE_NAME} AS P INNER JOIN ${ConversationMembers.TABLE_NAME} AS GM ON GM.${ConversationMembers.COL_PERSON_ID} = P.${Person.COL_ID} AND ${ConversationMembers.COL_CONVERSATION_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
-                                db.query("SELECT COUNT(${ConversationMembers.COL_PERSON_ID}) FROM ${ConversationMembers.TABLE_NAME} WHERE ${ConversationMembers.COL_CONVERSATION_ID} = ?", conversation.id).countAndClose()
+                                db.query("SELECT P.${User.COL_NAME} FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
+                                db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
                         )
                     })
 
     override fun getContactItems() = createQuery(Contacts.TABLE_NAME,
-            "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${Person.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${Person.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID}")
+            "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${User.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${User.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID}")
             .mapToList(Contacts.MAPPER)
 
     override fun searchContactItems(searchTerm: String): Observable<List<ContactItem>> {
         val formattedSearchTerm = "%$searchTerm%"
         return createQuery(Contacts.TABLE_NAME,
-                "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${Person.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${Person.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID} WHERE (P.${Person.COL_NAME} LIKE ? OR G.${Group.COL_NAME} LIKE ? )", formattedSearchTerm, formattedSearchTerm)
+                "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${User.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${User.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID} WHERE (P.${User.COL_NAME} LIKE ? OR G.${Group.COL_NAME} LIKE ? )", formattedSearchTerm, formattedSearchTerm)
                 .mapToList(Contacts.MAPPER)
     }
 

@@ -1,45 +1,44 @@
 package com.xianzhitech.ptt.service.provider
 
 import android.support.annotation.CheckResult
-import com.xianzhitech.ptt.model.Conversation
-import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import rx.Observable
 import java.io.Serializable
 
 /**
  * 请求会话的参数
  */
-interface ConversationRequest : Serializable
+interface JoinRoomRequest : Serializable
 
 /**
  * 从已有的会话发起会话
  */
-data class ConversationFromExisting(val conversationId: String) : ConversationRequest
+data class JoinRoomFromExisting(val roomId: String) : JoinRoomRequest
 
 /**
  * 新建一个会话的请求
  */
-interface CreateConversationRequest : ConversationRequest {
+interface JoinRoomFromContact : JoinRoomRequest {
     val name: String?
 }
 
 /**
  * 从一个联系人创建会话请求
  */
-data class CreateConversationFromPerson(val personId: String, override val name: String? = null) : CreateConversationRequest {
+data class JoinRoomFromUser(val userId: String, override val name: String? = null) : JoinRoomFromContact {
 }
 
 /**
  * 从一个组创建会话请求
  */
-data class CreateConversationFromGroup(val groupId: String, override val name: String? = null) : CreateConversationRequest
+data class JoinRoomFromGroup(val groupId: String, override val name: String? = null) : JoinRoomFromContact
 
 /**
  * 加入房间的返回结果
  */
-data class JoinConversationResult(val conversationId: String,
-                                  val roomId: String,
-                                  val engineProperties: Map<String, Any?>)
+data class JoinRoomResult(val roomId: String,
+                          val engineProperties: Map<String, Any?>)
 
 /**
  * 信号服务器的接口
@@ -50,29 +49,29 @@ interface SignalProvider {
      * 创建一个会话
      */
     @CheckResult
-    fun createConversation(request: CreateConversationRequest): Observable<Conversation>
+    fun createRoom(request: JoinRoomFromContact): Observable<Room>
 
     /**
      * 删除一个会话
      */
     @CheckResult
-    fun deleteConversation(conversationId: String): Observable<Unit>
+    fun deleteRoom(roomId: String): Observable<Unit>
 
     /**
      * 加入会话（进入对讲房间）
      */
     @CheckResult
-    fun joinConversation(conversationId: String): Observable<JoinConversationResult>
+    fun joinRoom(roomId: String): Observable<JoinRoomResult>
 
     /**
      * 获取房间在线成员（以及更新）
      */
-    fun getActiveMemberIds(conversationId: String): Observable<Collection<String>>
+    fun getActiveMemberIds(roomId: String): Observable<Collection<String>>
 
     /**
      * 获取当前房间在线成员
      */
-    fun peekActiveMemberIds(conversationId: String): Collection<String>
+    fun peekActiveMemberIds(roomId: String): Collection<String>
 
     /**
      * 获取正在发言的成员（以及后续的更新）
@@ -106,7 +105,7 @@ interface SignalProvider {
 /**
  * 登陆结果
  */
-data class LoginResult(val person: Person, val token: Serializable?)
+data class LoginResult(val user: User, val token: Serializable?)
 
 /**
  * 提供鉴权服务
@@ -127,13 +126,13 @@ interface AuthProvider {
     /**
      * 获取当前登陆的用户ID
      */
-    fun peekCurrentLogonUser(): Person?
+    fun peekCurrentLogonUser(): User?
 
     /**
      * 订阅当前登陆用户的ID
      */
     @CheckResult
-    fun getCurrentLogonUser(): Observable<Person?>
+    fun getCurrentLogonUser(): Observable<User?>
 
     /**
      * 登出

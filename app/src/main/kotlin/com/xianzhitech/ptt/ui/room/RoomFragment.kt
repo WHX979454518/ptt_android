@@ -17,13 +17,13 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Conversation
-import com.xianzhitech.ptt.model.Person
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.presenter.RoomPresenter
 import com.xianzhitech.ptt.presenter.RoomPresenterView
-import com.xianzhitech.ptt.repo.ConversationRepository
-import com.xianzhitech.ptt.repo.ConversationWithMemberNames
-import com.xianzhitech.ptt.service.provider.ConversationRequest
+import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.repo.RoomWithMemberNames
+import com.xianzhitech.ptt.service.provider.JoinRoomRequest
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
@@ -62,7 +62,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private val adapter = Adapter()
     private var presenter: RoomPresenter? = null
     private var backgroundRoomPresenterView : RoomPresenterView ? = null
-    private lateinit var conversationRepository: ConversationRepository
+    private lateinit var roomRepository: RoomRepository
 
     private val speakSourceAdapter = object : BaseAdapter() {
         var speakerModes: List<SpeakerMode> = emptyList()
@@ -78,15 +78,15 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         override fun getCount() = speakerModes.size
     }
 
-    private var roomRequest: ConversationRequest
+    private var roomRequest: JoinRoomRequest
         set(value) = ensureArguments().putSerializable(ARG_ROOM_REQUEST, value)
-        get() = ensureArguments().getSerializable(ARG_ROOM_REQUEST) as ConversationRequest
+        get() = ensureArguments().getSerializable(ARG_ROOM_REQUEST) as JoinRoomRequest
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         //        speakSourceAdapter.speakerModes = SpeakerMode.values().toList()
-        conversationRepository = (activity.application as AppComponent).conversationRepository
+        roomRepository = (activity.application as AppComponent).roomRepository
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -134,7 +134,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         return true
     }
 
-    override fun promptCurrentJoinedRoomIsImportant(currentRoom: Conversation) {
+    override fun promptCurrentJoinedRoomIsImportant(currentRoom: Room) {
         AlertDialogFragment.Builder()
                 .setTitle(R.string.room_prompt_important.toFormattedString(context))
                 .setMessage(R.string.room_prompt_important_message.toFormattedString(context, currentRoom.name))
@@ -142,14 +142,14 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 .show(childFragmentManager, TAG_PROMPT_IMPORTANT)
     }
 
-    override fun showRoom(room: Conversation) {
+    override fun showRoom(room: Room) {
         views?.apply {
             if (room.name.isNullOrBlank()) {
-                conversationRepository.getConversationWithMemberNames(room.id, 3)
+                roomRepository.getRoomWithMemberNames(room.id, 3)
                         .observeOnMainThread()
                         .compose(bindToLifecycle())
-                        .subscribe(object : GlobalSubscriber<ConversationWithMemberNames?>() {
-                            override fun onNext(t: ConversationWithMemberNames?) {
+                        .subscribe(object : GlobalSubscriber<RoomWithMemberNames?>() {
+                            override fun onNext(t: RoomWithMemberNames?) {
                                 toolbar.title = t?.getMemberNames(activity)
                             }
                         })
@@ -161,7 +161,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         }
     }
 
-    override fun showCurrentSpeaker(speaker: Person?, isSelf: Boolean) {
+    override fun showCurrentSpeaker(speaker: User?, isSelf: Boolean) {
         views?.apply {
             if (speaker == null) {
                 roomStatusView.animate().alpha(0f).start()
@@ -178,11 +178,11 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         adapter.currentSpeakerId = speaker?.id
     }
 
-    override fun showRoomMembers(members: List<Person>, activeMemberIds: Collection<String>) {
+    override fun showRoomMembers(members: List<User>, activeMemberIds: Collection<String>) {
         adapter.setMembers(members, activeMemberIds)
     }
 
-    override fun promptConfirmSwitchingRoom(newRoom: Conversation) {
+    override fun promptConfirmSwitchingRoom(newRoom: Room) {
         AlertDialogFragment.Builder()
                 .setTitle(R.string.room_prompt_switching.toFormattedString(context))
                 .setMessage(R.string.room_prompt_switching_message.toFormattedString(context, newRoom.name))
@@ -211,7 +211,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         fragment.dismiss()
     }
 
-    override fun onRoomQuited(conversation: Conversation?) {
+    override fun onRoomQuited(room: Room?) {
         callbacks?.onRoomQuited()
     }
 
@@ -240,9 +240,9 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         presenter?.releaseMic()
     }
 
-    private class Adapter : RecyclerView.Adapter<ViewHolder>(), Comparator<Person> {
+    private class Adapter : RecyclerView.Adapter<ViewHolder>(), Comparator<User> {
         val activeMembers = hashSetOf<String>()
-        val members = arrayListOf<Person>()
+        val members = arrayListOf<User>()
         var currentSpeakerId: String? = null
             set(newSpeaker) {
                 if (field != newSpeaker) {
@@ -251,7 +251,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 }
             }
 
-        fun setMembers(newMembers: Collection<Person>, newActiveMembers: Collection<String>) {
+        fun setMembers(newMembers: Collection<User>, newActiveMembers: Collection<String>) {
             members.clear()
             members.addAll(newMembers)
             members.sortWith(this)
@@ -260,7 +260,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
             notifyDataSetChanged()
         }
 
-        override fun compare(lhs: Person, rhs: Person): Int {
+        override fun compare(lhs: User, rhs: User): Int {
             val lhsActive = activeMembers.contains(lhs.id)
             val rhsActive = activeMembers.contains(rhs.id)
             if (lhsActive && rhsActive || (!lhsActive && !rhsActive)) {
@@ -300,7 +300,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         private const val TAG_SWITCHING_ROOM_CONFIRM = "tag_switching_room_confirm"
         private const val TAG_PROMPT_IMPORTANT = "tag_prompt_important"
 
-        fun create(request: ConversationRequest): Fragment {
+        fun create(request: JoinRoomRequest): Fragment {
             val fragment = RoomFragment()
             val args = Bundle(1)
             args.putSerializable(ARG_ROOM_REQUEST, request)

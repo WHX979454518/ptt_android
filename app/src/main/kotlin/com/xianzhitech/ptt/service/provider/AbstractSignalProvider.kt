@@ -20,8 +20,8 @@ abstract class AbstractSignalProvider : SignalProvider {
         currentSpeakerSubjects.getOrPut(conversationId, { BehaviorSubject.create() })
     })
 
-    override fun getActiveMemberIds(conversationId: String) = ensureActiveMemberSubject(conversationId)
-    override fun peekActiveMemberIds(conversationId: String) = ensureActiveMemberSubject(conversationId).value ?: emptyList<String>()
+    override fun getActiveMemberIds(roomId: String) = ensureActiveMemberSubject(roomId)
+    override fun peekActiveMemberIds(roomId: String) = ensureActiveMemberSubject(roomId).value ?: emptyList<String>()
 
     override fun getCurrentSpeakerId(conversationId: String) = ensureCurrentSpeakerSubject(conversationId)
     override fun peekCurrentSpeakerId(conversationId: String) = currentSpeakerSubjects[conversationId]?.value

@@ -1,18 +1,13 @@
 package com.xianzhitech.ptt.model
 
-import android.content.Context
-import android.graphics.drawable.Drawable
-import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.ext.getIntValue
 import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.optStringValue
-import com.xianzhitech.ptt.ui.widget.TextDrawable
 import rx.functions.Func1
 import java.io.Serializable
 import java.util.*
 import kotlin.text.isNullOrEmpty
-import kotlin.text.substring
 
 /**
  *
@@ -27,9 +22,6 @@ interface Model {
 }
 
 interface ContactItem {
-    fun getTintColor(context: Context): Int
-    fun getIcon(context: Context): Drawable
-
     val name: CharSequence
     val avatar: String?
 }
@@ -42,14 +34,14 @@ class Contacts {
         public const val COL_PERSON_ID = "contact_person_id"
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
                 "$COL_GROUP_ID TEXT REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) UNIQUE ON CONFLICT IGNORE," +
-                "$COL_PERSON_ID TEXT REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
+                "$COL_PERSON_ID TEXT REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
                 ")"
 
         public @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
             if (cursor?.optStringValue(COL_GROUP_ID).isNullOrEmpty().not()) {
                 Group.MAPPER.call(cursor)
             } else if (cursor?.optStringValue(COL_PERSON_ID).isNullOrEmpty().not()) {
-                Person.MAPPER.call(cursor)
+                User.MAPPER.call(cursor)
             } else {
                 throw IllegalArgumentException("ResultSet $cursor is not a valid contact")
             }
@@ -63,7 +55,7 @@ class Contacts {
  *
  * Created by fanchao on 17/12/15.
  */
-class Conversation() : Model {
+class Room() : Model {
 
     companion object {
         public const val TABLE_NAME = "conversations"
@@ -78,11 +70,11 @@ class Conversation() : Model {
                 "$COL_ID TEXT PRIMARY KEY," +
                 "$COL_NAME TEXT," +
                 "$COL_DESC TEXT," +
-                "$COL_OWNER_ID TEXT NOT NULL REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID})," +
+                "$COL_OWNER_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID})," +
                 "$COL_IMPORTANT INTEGER NOT NULL" +
                 ")"
 
-        public @JvmStatic val MAPPER = Func1<ResultSet, Conversation> { Conversation().from(it) }
+        public @JvmStatic val MAPPER = Func1<ResultSet, Room> { Room().from(it) }
     }
 
     var id: String = ""
@@ -104,7 +96,7 @@ class Conversation() : Model {
             return true
         }
 
-        return other is Conversation && other.id == id
+        return other is Room && other.id == id
     }
 
     override fun hashCode() = id.hashCode()
@@ -117,7 +109,7 @@ class Conversation() : Model {
         values.put(COL_IMPORTANT, important)
     }
 
-    override fun from(cursor: ResultSet): Conversation {
+    override fun from(cursor: ResultSet): Room {
         id = cursor.getStringValue(COL_ID)
         name = cursor.getStringValue(COL_NAME)
         description = cursor.optStringValue(COL_DESC)
@@ -155,12 +147,6 @@ class Group() : Model, ContactItem {
         this.name = name
     }
 
-    override fun getTintColor(context: Context) = context.resources.getIntArray(R.array.account_colors).let {
-        it[hashCode() % it.size]
-    }
-
-    override fun getIcon(context: Context) = TextDrawable(context, name.substring(0, 1), getTintColor(context))
-
     override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
@@ -185,9 +171,9 @@ class Group() : Model, ContactItem {
     }
 }
 
-class Person() : Model, ContactItem, Serializable {
+class User() : Model, ContactItem, Serializable {
     companion object {
-        public const val TABLE_NAME = "persons"
+        public const val TABLE_NAME = "users"
 
         public const val COL_ID = "person_id"
         public const val COL_NAME = "person_name"
@@ -196,8 +182,8 @@ class Person() : Model, ContactItem, Serializable {
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID TEXT PRIMARY KEY NOT NULL, $COL_NAME TEXT NOT NULL, $COL_AVATAR TEXT, $COL_PRIV INTEGER NOT NULL)"
 
-        public @JvmField val MAPPER = Func1<ResultSet, Person> {
-            Person().from(it)
+        public @JvmField val MAPPER = Func1<ResultSet, User> {
+            User().from(it)
         }
     }
 
@@ -212,18 +198,12 @@ class Person() : Model, ContactItem, Serializable {
         this.privileges = privileges
     }
 
-    override fun getTintColor(context: Context) = context.resources.getIntArray(R.array.account_colors).let {
-        it[hashCode() % it.size]
-    }
-
-    override fun getIcon(context: Context) = TextDrawable(context, name.substring(0, 1), getTintColor(context))
-
     override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true;
         }
 
-        return other is Person && other.id == id
+        return other is User && other.id == id
     }
 
     override fun hashCode() = id.hashCode()
@@ -235,7 +215,7 @@ class Person() : Model, ContactItem, Serializable {
         values.put(COL_PRIV, privileges.toDatabaseString())
     }
 
-    override fun from(cursor: ResultSet): Person {
+    override fun from(cursor: ResultSet): User {
         id = cursor.getStringValue(COL_ID)
         avatar = cursor.optStringValue(COL_AVATAR)
         name = cursor.getStringValue(COL_NAME)
@@ -253,22 +233,22 @@ class GroupMembers {
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME(" +
                 "$COL_GROUP_ID TEXT NOT NULL REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) ON DELETE CASCADE," +
-                "$COL_PERSON_ID TEXT NOT NULL REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID}) ON DELETE CASCADE, " +
+                "$COL_PERSON_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) ON DELETE CASCADE, " +
                 "UNIQUE ($COL_GROUP_ID,$COL_PERSON_ID) ON CONFLICT REPLACE" +
                 ")"
     }
 }
 
-class ConversationMembers {
+class RoomMembers {
     companion object {
-        public const val TABLE_NAME = "conversation_members"
+        public const val TABLE_NAME = "room_members"
 
-        public const val COL_CONVERSATION_ID = "cm_conv_id"
-        public const val COL_PERSON_ID = "cm_person_id"
+        public const val COL_ROOM_ID = "rm_room_id"
+        public const val COL_USER_ID = "rm_user_id"
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
-                "$COL_CONVERSATION_ID TEXT NOT NULL REFERENCES ${Conversation.TABLE_NAME}(${Conversation.COL_ID})," +
-                "$COL_PERSON_ID TEXT NOT NULL REFERENCES ${Person.TABLE_NAME}(${Person.COL_ID})" +
+                "$COL_ROOM_ID TEXT NOT NULL REFERENCES ${Room.TABLE_NAME}(${Room.COL_ID})," +
+                "$COL_USER_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID})" +
                 ")"
     }
 }
