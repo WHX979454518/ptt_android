@@ -9,14 +9,11 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.presenter.ContactListPresenter
-import com.xianzhitech.ptt.presenter.ContactListPresenterView
 import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
 import com.xianzhitech.ptt.service.provider.JoinRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -28,7 +25,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.arrayListOf
 import kotlin.collections.sortWith
 
-class ContactsFragment : BaseFragment<Void>(), ContactListPresenterView {
+class ContactsFragment : BaseFragment<Void>() {
     private class Views(rootView: View,
                         val recyclerView: RecyclerView = rootView.findView(R.id.contacts_list),
                         val searchBox: EditText = rootView.findView(R.id.contacts_searchBox))
@@ -37,13 +34,11 @@ class ContactsFragment : BaseFragment<Void>(), ContactListPresenterView {
     private var views: Views? = null
 
     private lateinit var accountColors: IntArray
-    private lateinit var presenter: ContactListPresenter
     private val adapter = Adapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        presenter = ContactListPresenter((activity.application as AppComponent).contactRepository)
         accountColors = resources.getIntArray(R.array.account_colors)
     }
 
@@ -67,17 +62,12 @@ class ContactsFragment : BaseFragment<Void>(), ContactListPresenterView {
                     searchBox.fromTextChanged(),
                     searchBox.getString().toObservable())
                     .debounce(500, TimeUnit.MILLISECONDS)
-                    .subscribe { presenter.search(it) }
+                    .subscribe { }
         }
-
-        presenter.attachView(this)
     }
 
-    override fun showLoading(visible: Boolean) {
-        //Do nothing
-    }
 
-    override fun showContactList(contactList: List<ContactItem>) {
+    fun showContactList(contactList: List<ContactItem>) {
         adapter.setContactItems(contactList)
     }
 

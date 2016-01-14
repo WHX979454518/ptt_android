@@ -1,17 +1,15 @@
 package com.xianzhitech.ptt
 
 import com.squareup.okhttp.OkHttpClient
+import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
-import com.xianzhitech.ptt.presenter.LoginPresenter
-import com.xianzhitech.ptt.presenter.RoomPresenter
-import com.xianzhitech.ptt.presenter.RoomPresenterView
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.service.provider.AuthProvider
+import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
-import com.xianzhitech.ptt.service.provider.SignalProvider
+import rx.Observable
 
 /**
 
@@ -21,9 +19,7 @@ import com.xianzhitech.ptt.service.provider.SignalProvider
  */
 interface AppComponent {
     val httpClient: OkHttpClient
-    val signalProvider: SignalProvider
     val talkEngineProvider: TalkEngineProvider
-    val authProvider: AuthProvider
     val preferenceProvider: PreferenceStorageProvider
 
     // Configuration
@@ -37,10 +33,6 @@ interface AppComponent {
     val roomRepository: RoomRepository
     val contactRepository: ContactRepository
 
-    // Presenters
-    val loginPresenter: LoginPresenter
-    val roomPresenter: RoomPresenter
-
-    // Special presenter views
-    val backgroundRoomPresenterView : RoomPresenterView
+    // Service
+    fun connectToBackgroundService(): Observable<BackgroundServiceBinder>
 }

@@ -8,12 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getMemberNames
-import com.xianzhitech.ptt.presenter.ConversationListPresenter
-import com.xianzhitech.ptt.presenter.ConversationListPresenterView
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
 import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -22,31 +19,24 @@ import kotlin.collections.emptyList
 import kotlin.text.isNullOrBlank
 
 /**
- * 显示会话列表(Group)的界面
+ * 显示会话列表(Room)的界面
  */
-class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenterView {
+class RoomListFragment : BaseFragment<Void>() {
 
     private var listView: RecyclerView? = null
     private val adapter = Adapter()
-    private lateinit var presenter: ConversationListPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        presenter = ConversationListPresenter((activity.application as AppComponent).roomRepository)
     }
 
     override fun onStart() {
         super.onStart()
 
-        presenter.attachView(this)
     }
 
-    override fun showLoading(visible: Boolean) {
-        // Nothing to show
-    }
 
-    override fun showConversationList(result: List<RoomWithMemberNames>) {
+    fun showConversationList(result: List<RoomWithMemberNames>) {
         adapter.conversations = result
     }
 
@@ -55,7 +45,7 @@ class ConversationListFragment : BaseFragment<Void>(), ConversationListPresenter
         return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
             listView = findView<RecyclerView>(R.id.conversationList_recyclerView).apply {
                 this.layoutManager = LinearLayoutManager(context)
-                this.adapter = this@ConversationListFragment.adapter
+                this.adapter = this@RoomListFragment.adapter
             }
         }
     }

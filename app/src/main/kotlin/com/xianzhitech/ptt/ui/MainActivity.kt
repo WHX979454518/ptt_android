@@ -8,19 +8,18 @@ import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.presenter.LoginPresenter
-import com.xianzhitech.ptt.presenter.LoginPresenterView
+import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
-class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks, LoginPresenterView {
+class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
 
     private lateinit var toolbar: Toolbar
-    private lateinit var loginPresenter: LoginPresenter
     private lateinit var progress: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,14 +40,19 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     override fun onStart() {
         super.onStart()
 
-        loginPresenter = (application as AppComponent).loginPresenter
-        loginPresenter.attachView(this)
-    }
+        (application as AppComponent).connectToBackgroundService()
+                .flatMap { it.loginState }
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribe {
+                    if (it.status == LoginState.Status.IDLE) {
+                        displayFragment(LoginFragment::class.java)
+                    } else if (it.status == LoginState.Status.LOGGED_IN) {
+                        displayFragment(HomeFragment::class.java)
+                    }
 
-    override fun onStop() {
-        loginPresenter.detachView(this)
-
-        super.onStop()
+                    progress.setVisible(it.status == LoginState.Status.LOGIN_IN_PROGRESS)
+                }
     }
 
     private fun displayFragment(fragmentClazz: Class<out Fragment>) {
@@ -60,19 +64,4 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         }
     }
 
-    override fun showLogin() {
-        displayFragment(LoginFragment::class.java)
-    }
-
-    override fun showLoginSuccess() {
-        displayFragment(HomeFragment::class.java)
-    }
-
-    override fun showLoading(visible: Boolean) {
-        progress.setVisible(visible)
-    }
-
-    override fun showError(err: Throwable) {
-        // Do nothing
-    }
 }

@@ -29,7 +29,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
     private enum class Tab private constructor(@StringRes
                                                val labelRes: Int, @DrawableRes
                                                val drawableRes: Int, val fragmentClazz: Class<out Fragment>) {
-        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, ConversationListFragment::class.java),
+        Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, RoomListFragment::class.java),
         Contacts(R.string.tab_contacts, R.drawable.ic_people, ContactsFragment::class.java),
         Person(R.string.tab_me, R.drawable.ic_person, PersonFragment::class.java)
     }

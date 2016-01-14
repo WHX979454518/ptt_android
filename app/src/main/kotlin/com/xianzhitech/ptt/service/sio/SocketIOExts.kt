@@ -11,6 +11,7 @@ import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.provider.JoinRoomFromContact
 import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
 import com.xianzhitech.ptt.service.provider.JoinRoomFromUser
+import io.socket.client.Ack
 import io.socket.client.Socket
 import org.json.JSONArray
 import org.json.JSONObject
@@ -58,9 +59,9 @@ internal inline fun <T> Socket.onEvent(event: String, crossinline mapper : (JSON
     subscriber.add(Subscriptions.create { off(event, listener) })
 }
 
-internal inline fun <T> Socket.sendEvent(eventName: String, crossinline resultMapper: (JSONObject?) -> T, vararg args: Any?) = Observable.create<T> { subscriber ->
+internal fun <T> Socket.sendEvent(eventName: String, resultMapper: (JSONObject?) -> T, vararg args: Any?) = Observable.create<T> { subscriber ->
     subscriber.onStart()
-    emit(eventName, *args, { args : Array<Any?> ->
+    emit(eventName, args, Ack { args: Array<Any?> ->
         try {
             subscriber.onNext(parseSeverResult(args, resultMapper))
         } catch(e: Throwable) {

@@ -16,13 +16,12 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.ext.ensureArguments
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getIcon
+import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.presenter.RoomPresenter
-import com.xianzhitech.ptt.presenter.RoomPresenterView
 import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.repo.RoomWithMemberNames
 import com.xianzhitech.ptt.service.provider.JoinRoomRequest
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -33,11 +32,9 @@ import kotlin.collections.arrayListOf
 import kotlin.collections.emptyList
 import kotlin.collections.hashSetOf
 import kotlin.collections.sortWith
-import kotlin.text.isNullOrBlank
 
 class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         , PushToTalkButton.Callbacks
-        , RoomPresenterView
         , BackPressable
         , AlertDialogFragment.OnPositiveButtonClickListener
         , AlertDialogFragment.OnNegativeButtonClickListener
@@ -60,8 +57,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
     private var views: Views? = null
     private val adapter = Adapter()
-    private var presenter: RoomPresenter? = null
-    private var backgroundRoomPresenterView : RoomPresenterView ? = null
     private lateinit var roomRepository: RoomRepository
 
     private val speakSourceAdapter = object : BaseAdapter() {
@@ -109,135 +104,31 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         super.onStart()
 
         val appComponent = context.applicationContext as AppComponent
-        backgroundRoomPresenterView = appComponent.backgroundRoomPresenterView
-
-        presenter = appComponent.roomPresenter.apply {
-            attachView(this@RoomFragment)
-            detachView(appComponent.backgroundRoomPresenterView)
-            requestJoinRoom(roomRequest, false)
-        }
-
     }
 
     override fun onStop() {
-        presenter?.apply {
-            backgroundRoomPresenterView?.let { attachView(it) }
-            detachView(this@RoomFragment)
-        }
-
 
         super.onStop()
     }
 
     override fun onBackPressed(): Boolean {
-        presenter?.requestQuitCurrentRoom()
         return true
     }
 
-    override fun promptCurrentJoinedRoomIsImportant(currentRoom: Room) {
-        AlertDialogFragment.Builder()
-                .setTitle(R.string.room_prompt_important.toFormattedString(context))
-                .setMessage(R.string.room_prompt_important_message.toFormattedString(context, currentRoom.name))
-                .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
-                .show(childFragmentManager, TAG_PROMPT_IMPORTANT)
-    }
-
-    override fun showRoom(room: Room) {
-        views?.apply {
-            if (room.name.isNullOrBlank()) {
-                roomRepository.getRoomWithMemberNames(room.id, 3)
-                        .observeOnMainThread()
-                        .compose(bindToLifecycle())
-                        .subscribe(object : GlobalSubscriber<RoomWithMemberNames?>() {
-                            override fun onNext(t: RoomWithMemberNames?) {
-                                toolbar.title = t?.getMemberNames(activity)
-                            }
-                        })
-            } else {
-                toolbar.title = room.name
-            }
-
-            pttBtn.connectedToRoom = true
-        }
-    }
-
-    override fun showCurrentSpeaker(speaker: User?, isSelf: Boolean) {
-        views?.apply {
-            if (speaker == null) {
-                roomStatusView.animate().alpha(0f).start()
-            } else {
-                roomStatusView.animate().alpha(1f).start()
-                roomStatusView.text = if (isSelf) R.string.room_talking.toFormattedString(context)
-                else R.string.room_other_is_talking.toFormattedString(context, speaker.name)
-            }
-
-            pttBtn.hasActiveSpeaker = speaker != null
-            pttBtn.isEnabled = speaker == null
-        }
-
-        adapter.currentSpeakerId = speaker?.id
-    }
-
-    override fun showRoomMembers(members: List<User>, activeMemberIds: Collection<String>) {
-        adapter.setMembers(members, activeMemberIds)
-    }
-
-    override fun promptConfirmSwitchingRoom(newRoom: Room) {
-        AlertDialogFragment.Builder()
-                .setTitle(R.string.room_prompt_switching.toFormattedString(context))
-                .setMessage(R.string.room_prompt_switching_message.toFormattedString(context, newRoom.name))
-                .setBtnPositive(R.string.dialog_confirm.toFormattedString(context))
-                .setBtnNegative(R.string.dialog_cancel.toFormattedString(context))
-                .show(childFragmentManager, TAG_SWITCHING_ROOM_CONFIRM)
-    }
-
-    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
-        if (fragment.tag == TAG_SWITCHING_ROOM_CONFIRM) {
-            presenter?.requestJoinRoom(roomRequest, true)
-        }
-
-        fragment.dismiss()
-    }
-
-    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
-        if (fragment.tag == TAG_SWITCHING_ROOM_CONFIRM) {
-            callbacks?.onRoomQuited()
-        }
-
-        fragment.dismiss()
-    }
-
-    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
-        fragment.dismiss()
-    }
-
-    override fun onRoomQuited(room: Room?) {
-        callbacks?.onRoomQuited()
-    }
-
-    override fun onRoomJoined(conversationId: String) {
-        //Do nothing
-    }
-
-    override fun showRequestingMic(isRequesting: Boolean) {
-        views?.pttBtn?.isRequestingMic = isRequesting
-    }
-
-    override fun showLoading(visible: Boolean) {
-        views?.progressBar?.setVisible(visible)
-    }
-
-    override fun onDestroyView() {
-        views = null
-        super.onDestroyView()
-    }
-
     override fun requestMic() {
-        presenter?.requestMic()
+
     }
 
     override fun releaseMic() {
-        presenter?.releaseMic()
+    }
+
+    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
+    }
+
+    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
+    }
+
+    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
     }
 
     private class Adapter : RecyclerView.Adapter<ViewHolder>(), Comparator<User> {

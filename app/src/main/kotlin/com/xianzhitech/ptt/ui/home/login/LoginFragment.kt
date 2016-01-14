@@ -7,12 +7,9 @@ import android.view.ViewGroup
 import android.widget.EditText
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getString
-import com.xianzhitech.ptt.ext.isEmpty
-import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.presenter.LoginPresenter
-import com.xianzhitech.ptt.presenter.LoginPresenterView
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.BackgroundServiceBinder
+import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
@@ -22,7 +19,6 @@ import com.xianzhitech.ptt.ui.home.AlertDialogFragment
  * Created by fanchao on 17/12/15.
  */
 class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
-        , LoginPresenterView
         , BackPressable
         , AlertDialogFragment.OnNeutralButtonClickListener {
 
@@ -31,18 +27,32 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
     }
 
     private var views: Views? = null
-    private lateinit var presenter: LoginPresenter
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        presenter = (context.applicationContext as AppComponent).loginPresenter
-    }
+    private var serviceBinder: BackgroundServiceBinder? = null
 
     override fun onStart() {
         super.onStart()
 
         callbacks?.setTitle(R.string.login.toFormattedString(context))
+
+        (context.applicationContext as AppComponent).connectToBackgroundService().flatMap { serviceBinder = it; it.loginState }
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribe { updateLoginState(it) }
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        serviceBinder = null
+    }
+
+    internal fun updateLoginState(state: LoginState) {
+        views?.apply {
+            val isIdle = state.status == LoginState.Status.IDLE
+            nameEditText.isEnabled = isIdle
+            passwordEditText.isEnabled = isIdle
+            loginButton.isEnabled = isIdle
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -54,54 +64,39 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
                     } else if (passwordEditText.isEmpty()) {
                         passwordEditText.error = R.string.error_input_password.toFormattedString(context)
                     } else {
-                        presenter.requestLogin(nameEditText.getString(), passwordEditText.getString())
+                        serviceBinder?.let {
+                            it.login(nameEditText.getString(), passwordEditText.getString())
+                                    .observeOnMainThread()
+                                    .compose(bindToLifecycle())
+                                    .subscribe(GlobalSubscriber<LoginState>(context))
+                        }
                     }
                 }
             }
         }
     }
 
-    override fun onBackPressed() = presenter.cancelLogin()
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        presenter.attachView(this)
+    override fun onBackPressed(): Boolean {
+        return false
     }
+
 
     override fun onDestroyView() {
-        presenter.detachView(this)
         views = null
         super.onDestroyView()
-    }
-
-    override fun showLoading(visible: Boolean) {
-        views?.apply {
-            loginButton.isEnabled = visible.not()
-            nameEditText.isEnabled = visible.not()
-            passwordEditText.isEnabled = visible.not()
-        }
     }
 
     override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
         fragment.dismiss()
     }
 
-    override fun showLogin() {
-        // Do nothing
-    }
-
-    override fun showLoginSuccess() {
-        // Do nothing
-    }
-
-    override fun showError(err: Throwable) {
-        AlertDialogFragment.Builder()
-                .setTitle(R.string.error_title.toFormattedString(context))
-                .setMessage(R.string.error_content.toFormattedString(context, err.message ?: R.string.error_unknown.toFormattedString(context)))
-                .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
-                .show(childFragmentManager, TAG_LOGIN_ERROR_DIALOG)
-    }
+    //    override fun showError(err: Throwable) {
+    //        AlertDialogFragment.Builder()
+    //                .setTitle(R.string.error_title.toFormattedString(context))
+    //                .setMessage(R.string.error_content.toFormattedString(context, err.message ?: R.string.error_unknown.toFormattedString(context)))
+    //                .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
+    //                .show(childFragmentManager, TAG_LOGIN_ERROR_DIALOG)
+    //    }
 
     private class Views(
             rootView: View

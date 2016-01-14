@@ -3,12 +3,19 @@ package com.xianzhitech.ptt.service.sio
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.media.AudioManager
+import android.media.SoundPool
 import android.os.Binder
 import android.os.IBinder
 import android.os.Looper
+import android.support.annotation.RawRes
 import android.support.v4.app.NotificationCompat
+import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.engine.BtEngine
+import com.xianzhitech.ptt.engine.TalkEngine
+import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Privilege
@@ -42,6 +49,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     var loginSubscription : Subscription? = null
     var joinRoomSubscription: Subscription? = null
     var roomSubscription: CompositeSubscription? = null
+    var currentTalkEngine: TalkEngine? = null
 
     override fun peekRoomState() = roomState.value
     override fun peekLoginState() = loginState.value
@@ -51,6 +59,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var groupRepository : GroupRepository
     private lateinit var contactRepository : ContactRepository
     private lateinit var roomRepository : RoomRepository
+    private lateinit var talkEngineProvider: TalkEngineProvider
+    private lateinit var btEngine: BtEngine
+
+    private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
 
     private var socket : Socket? = null
 
@@ -63,6 +75,17 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         roomRepository = appComponent.roomRepository
         userRepository = appComponent.userRepository
         groupRepository = appComponent.groupRepository
+        talkEngineProvider = appComponent.talkEngineProvider
+        btEngine = appComponent.btEngine
+
+        soundPool = Pair(SoundPool(1, AudioManager.STREAM_MUSIC, 0), SparseIntArray()).apply {
+            val context = this@SocketIOBackgroundService
+            second.put(R.raw.incoming, first.load(context, R.raw.incoming, 0))
+            second.put(R.raw.outgoing, first.load(context, R.raw.outgoing, 0))
+            second.put(R.raw.over, first.load(context, R.raw.over, 0))
+            second.put(R.raw.pttup, first.load(context, R.raw.pttup, 0))
+            second.put(R.raw.pttup_offline, first.load(context, R.raw.pttup_offline, 0))
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -78,6 +101,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         val builder = NotificationCompat.Builder(context)
                         builder.setOngoing(true)
                         builder.setAutoCancel(false)
+                        builder.setTicker("ticker")
+                        builder.setSmallIcon(R.mipmap.ic_launcher)
                         builder.setContentTitle(R.string.app_name.toFormattedString(context))
 
                         when (loginState.status) {
@@ -147,7 +172,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         loginSubscription = loginSubscription?.let { it.unsubscribe(); null }
     }
 
-    override fun login(username: String, password: String): Observable<out LoginState> {
+    override fun login(username: String, password: String): Observable<LoginState> {
         return doLogin(mapOf(Pair("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))))
     }
 
@@ -184,10 +209,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     .flatMap { user ->
                         // Do sync contacts
                         logd("Requesting syncing contacts")
-                        newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, { it?.toSyncContactsDto() ?: throw ServerException("No contacts returned") })
+                        newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS,
+                                { it?.toSyncContactsDto() ?: throw ServerException("No contacts returned") },
+                                JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
                                 .flatMap {
                                     logd("Received sync result: $it")
-                                    userRepository.replaceAllUsers(it.users.toList() + (loginState.value.currentUser ?: throw IllegalStateException("User not logon")))
+                                    userRepository.replaceAllUsers(it.users.toList() + user)
                                             .concatWith(groupRepository.replaceAllGroups(it.groups, it.groupMemberMap))
                                             .concatWith(contactRepository.replaceAllContacts(it.users.transform { it.id }, it.groups.transform { it.id }))
                                 }
@@ -237,6 +264,49 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         logd("Received invite to join room $roomId")
         startActivity(RoomActivity.builder(this, JoinRoomFromExisting(roomId))
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    internal fun onRoomJoined(result: JoinRoomResult) {
+        currentTalkEngine = talkEngineProvider.createEngine().apply {
+            logd("Connecting to talk engine")
+            connect(result.room.id, result.engineProperties)
+        }
+
+        if (btEngine.isBtMicEnable) {
+            btEngine.startSCO()
+            roomSubscription?.add(btEngine.btMessage
+                    .observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<String>() {
+                        override fun onNext(t: String) {
+                            when (t) {
+                                BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
+                                BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
+                            }
+                        }
+                    }))
+        }
+    }
+
+    internal fun onRoomQuited(room: Room) {
+        if (btEngine.isBtMicEnable) {
+            btEngine.stopSCO()
+        }
+    }
+
+    internal fun onMicActivated(isSelf: Boolean) {
+        if (isSelf) {
+            playSound(R.raw.outgoing)
+        } else {
+            playSound(R.raw.incoming)
+        }
+    }
+
+    internal fun onMicReleased(isSelf: Boolean) {
+        if (isSelf) {
+            playSound(R.raw.pttup)
+        } else {
+            playSound(R.raw.over)
+        }
     }
 
     override fun onBind(intent: Intent?) : IBinder = object : Binder(), BackgroundServiceBinder by this {}
@@ -301,9 +371,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 socket?.let {
                     it.sendEvent(EVENT_CLIENT_LEAVE_ROOM, { it }, JSONObject().put("roomId", room.id)).subscribe(GlobalSubscriber())
                     roomState.onNext(state.copy(status = RoomState.Status.IDLE, activeRoomID = null, currentRoom = null, activeRoomMemberIDs = emptySet()))
+                    onRoomQuited(room)
                 }
             }
         }
+
+        currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
     }
 
     /**
@@ -342,6 +415,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 val receivedSpeakerId = if (t.isNull("speaker")) null else t.getString("speaker")
                                 if (receivedRoomId == roomId && roomState.value.activeRoomSpeakerID != receivedSpeakerId) {
                                     roomState.onNext(roomState.value.copy(activeRoomSpeakerID = receivedSpeakerId))
+
+                                    if (receivedSpeakerId != null) {
+                                        onMicActivated(false)
+                                    } else {
+                                        onMicReleased(false)
+                                    }
                                 }
                             }
                         }))
@@ -389,6 +468,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                         currentRoom = t.room,
                                         activeRoomMemberIDs = t.activeMemberIDs,
                                         activeRoomSpeakerID = t.currentSpeaker))
+
+                                onRoomJoined(t)
                             }
                         }))
 
@@ -411,6 +492,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             .subscribe {
                                 if (it) {
                                     roomState.onNext(state.copy(activeRoomSpeakerID = loginState.value.currentUser?.id))
+                                    onMicActivated(true)
                                 }
                                 subscriber.onNext(null)
                                 subscriber.onCompleted()
@@ -433,6 +515,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                 if (state.activeRoomSpeakerID == loginState.value.currentUser?.id) {
                     roomState.onNext(state.copy(activeRoomSpeakerID = null))
+                    onMicReleased(true)
                 }
             }
         }
@@ -444,6 +527,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
             throw AssertionError("This method must be called in main thread")
         }
+    }
+
+    private fun playSound(@RawRes res: Int) {
+        soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
     }
 
     data class RoomStateData(override val status : RoomState.Status = RoomState.Status.IDLE,

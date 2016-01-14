@@ -38,7 +38,7 @@ interface BackgroundServiceBinder {
     fun peekRoomState() : RoomState
     fun peekLoginState() : LoginState
 
-    fun login(username : String, password : String) : Observable<out LoginState>
+    fun login(username: String, password: String): Observable<LoginState>
     fun logout(): Observable<Unit>
 
     fun requestJoinRoom(request: JoinRoomRequest): Observable<Unit>
