@@ -8,9 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getMemberNames
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
 import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -33,13 +35,11 @@ class RoomListFragment : BaseFragment<Void>() {
     override fun onStart() {
         super.onStart()
 
+        (context.applicationContext as AppComponent).roomRepository.getRoomsWithMemberNames(3)
+            .observeOnMainThread()
+            .compose(bindToLifecycle())
+            .subscribe { adapter.rooms = it }
     }
-
-
-    fun showConversationList(result: List<RoomWithMemberNames>) {
-        adapter.conversations = result
-    }
-
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
@@ -56,7 +56,7 @@ class RoomListFragment : BaseFragment<Void>() {
     }
 
     private inner class Adapter : RecyclerView.Adapter<ConversationItemHolder>() {
-        var conversations: List<RoomWithMemberNames> = emptyList()
+        var rooms: List<RoomWithMemberNames> = emptyList()
             set(value) {
                 field = value
             notifyDataSetChanged()
@@ -67,15 +67,15 @@ class RoomListFragment : BaseFragment<Void>() {
         }
 
         override fun onBindViewHolder(holder: ConversationItemHolder, position: Int) {
-            holder.setConversation(conversations[position])
+            holder.setConversation(rooms[position])
             holder.itemView.setOnClickListener { v ->
                 startActivity(RoomActivity.builder(context,
-                        JoinRoomFromExisting(conversations[position].room.id)))
+                        JoinRoomFromExisting(rooms[position].room.id)))
             }
         }
 
         override fun getItemCount(): Int {
-            return conversations.size
+            return rooms.size
         }
     }
 

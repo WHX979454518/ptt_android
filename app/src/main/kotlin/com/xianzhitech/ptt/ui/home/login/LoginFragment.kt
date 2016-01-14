@@ -10,7 +10,6 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.LoginState
-import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 
@@ -19,7 +18,6 @@ import com.xianzhitech.ptt.ui.home.AlertDialogFragment
  * Created by fanchao on 17/12/15.
  */
 class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
-        , BackPressable
         , AlertDialogFragment.OnNeutralButtonClickListener {
 
     companion object {
@@ -76,11 +74,6 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
         }
     }
 
-    override fun onBackPressed(): Boolean {
-        return false
-    }
-
-
     override fun onDestroyView() {
         views = null
         super.onDestroyView()
@@ -89,14 +82,6 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
     override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
         fragment.dismiss()
     }
-
-    //    override fun showError(err: Throwable) {
-    //        AlertDialogFragment.Builder()
-    //                .setTitle(R.string.error_title.toFormattedString(context))
-    //                .setMessage(R.string.error_content.toFormattedString(context, err.message ?: R.string.error_unknown.toFormattedString(context)))
-    //                .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
-    //                .show(childFragmentManager, TAG_LOGIN_ERROR_DIALOG)
-    //    }
 
     private class Views(
             rootView: View

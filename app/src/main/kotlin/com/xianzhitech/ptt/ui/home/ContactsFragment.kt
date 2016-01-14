@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
@@ -24,6 +25,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.arrayListOf
 import kotlin.collections.sortWith
+import kotlin.text.isNullOrBlank
 
 class ContactsFragment : BaseFragment<Void>() {
     private class Views(rootView: View,
@@ -58,11 +60,22 @@ class ContactsFragment : BaseFragment<Void>() {
         super.onStart()
 
         views?.apply {
+            val contactRepository = (context.applicationContext as AppComponent).contactRepository
+
             Observable.merge(
-                    searchBox.fromTextChanged(),
+                    searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS),
                     searchBox.getString().toObservable())
-                    .debounce(500, TimeUnit.MILLISECONDS)
-                    .subscribe { }
+                    .flatMap {
+                        if (it.isNullOrBlank()) {
+                            contactRepository.getContactItems()
+                        }
+                        else {
+                            contactRepository.searchContactItems(it)
+                        }
+                    }
+                    .observeOnMainThread()
+                    .compose(bindToLifecycle())
+                    .subscribe { showContactList(it) }
         }
     }
 

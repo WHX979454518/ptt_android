@@ -86,6 +86,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             second.put(R.raw.pttup, first.load(context, R.raw.pttup, 0))
             second.put(R.raw.pttup_offline, first.load(context, R.raw.pttup_offline, 0))
         }
+
+        val loginStateValue = loginState.value
+        if (loginStateValue.currentUser == null && loginStateValue.status == LoginState.Status.IDLE) {
+            preferenceProvider.get(PREF_KEY_LOGIN_TOKEN)?.let {
+                doLogin(it as Map<String, List<String>>).subscribe(GlobalSubscriber())
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -101,7 +108,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         val builder = NotificationCompat.Builder(context)
                         builder.setOngoing(true)
                         builder.setAutoCancel(false)
-                        builder.setTicker("ticker")
                         builder.setSmallIcon(R.mipmap.ic_launcher)
                         builder.setContentTitle(R.string.app_name.toFormattedString(context))
 
@@ -177,7 +183,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
     internal fun doLogin(headers: Map<String, List<String>> = emptyMap()) = Observable.create<LoginState> { subscriber ->
-        doLogout()
+        loginState.value.currentUser?.let {
+            doLogout()
+        }
 
         val newSocket = IO.socket((application as AppComponent).signalServerEndpoint)
 
@@ -232,7 +240,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             preferenceProvider.save(PREF_KEY_LOGIN_TOKEN, headers as Serializable)
                             loginState.onNext(newLoginState)
                             subscriber.onNext(newLoginState)
-
 
                             onUserLogon(t)
                         }

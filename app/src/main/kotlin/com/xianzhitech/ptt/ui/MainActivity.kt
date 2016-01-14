@@ -34,7 +34,13 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     }
 
     override fun onBackPressed() {
-        (supportFragmentManager.findFragmentById(R.id.main_content) as? BackPressable)?.onBackPressed() ?: super.onBackPressed()
+        supportFragmentManager.findFragmentById(R.id.main_content) ?. let {
+            if (it is BackPressable) {
+                it.onBackPressed()
+                return
+            }
+        }
+        super.onBackPressed()
     }
 
     override fun onStart() {

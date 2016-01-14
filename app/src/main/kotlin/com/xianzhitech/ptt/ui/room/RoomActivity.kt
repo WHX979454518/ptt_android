@@ -38,9 +38,13 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     override fun onBackPressed() {
-        (supportFragmentManager.findFragmentById(R.id.room_content) as? BackPressable)?.let {
-            it.onBackPressed()
-        } ?: super.onBackPressed()
+        supportFragmentManager.findFragmentById(R.id.room_content) ?. let {
+            if (it is BackPressable) {
+                it.onBackPressed()
+                return
+            }
+        }
+        super.onBackPressed()
     }
 
     override fun onRoomQuited() {
