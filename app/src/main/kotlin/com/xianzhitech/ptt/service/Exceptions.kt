@@ -16,7 +16,7 @@ interface UserDescribableException {
     fun describe(context: Context): CharSequence
 }
 
-class StaticUserException : UserDescribableException, RuntimeException {
+open class StaticUserException : UserDescribableException, RuntimeException {
     private val msg: Any
     private val args: Array<out Any?>
 
@@ -47,4 +47,5 @@ class ServerException(val serverMsg: String) : RuntimeException(serverMsg), User
     override fun describe(context: Context) = serverMsg
 }
 
+class EmptyServerResponseException() : StaticUserException(R.string.error_service_empty_response)
 class InvalidSavedTokenException : RuntimeException()

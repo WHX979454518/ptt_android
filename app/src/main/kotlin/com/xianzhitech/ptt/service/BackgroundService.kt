@@ -10,12 +10,14 @@ interface RoomState {
         JOINING,
         JOINED,
         REQUESTING_MIC,
-        ACTIVE,
     }
 
     val status : Status
-    val currentRoomId : String?
-    val activeMemberIds : Collection<String>
+    val activeRoomID: String?
+    val activeRoomSpeakerID: String?
+    val activeRoomMemberIDs: Set<String>
+
+    val currentJoinRoomRequest: JoinRoomRequest?
 }
 
 interface LoginState {
@@ -37,11 +39,11 @@ interface BackgroundServiceBinder {
     fun peekLoginState() : LoginState
 
     fun login(username : String, password : String) : Observable<out LoginState>
-    fun logout()
+    fun logout(): Observable<Unit>
 
-    fun requestJoinRoom(request: JoinRoomRequest): Observable<out RoomState>
-    fun requestMic() : Observable<Boolean>
+    fun requestJoinRoom(request: JoinRoomRequest): Observable<Unit>
+    fun requestMic(): Observable<Unit>
     fun releaseMic() : Observable<Unit>
-    fun requestQuitCurrentRoom()
+    fun requestQuitCurrentRoom(): Observable<Unit>
 }
 

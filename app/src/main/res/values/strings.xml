@@ -34,10 +34,22 @@
     <string name="error_input_password">密码不能为空</string>
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
+    <string name="error_no_such_room">没有该房间</string>
     <string name="error_user_not_logon">未登陆用户无法进行此操作</string>
+    <string name="error_join_room">加入房间失败</string>
+    <string name="error_service_empty_response">服务器故障</string>
+    <string name="error_room_is_important_to_quit">房间 %1$s 被管理员标记为重要房间, 当前不可退出</string>
+    <string name="error_no_permission">当前用户无此操作权限</string>
+
     <string name="room_loading">加载中...</string>
 
     <string name="source_bluetooth">蓝牙</string>
     <string name="source_speaker">喇叭</string>
     <string name="source_headphone">耳机</string>
+
+    <string name="notification_user_online">%1$s 在线</string>
+    <string name="notification_joined_room">房间 %1$s 正在对讲</string>
+    <string name="notification_joining_room">正在进入房间 %1$s ...</string>
+    <string name="notification_user_logging_in">正在登陆...</string>
+    <string name="notification_rejoining_room">断线重连中...</string>
 </resources>

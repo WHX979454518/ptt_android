@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ext
 
 import android.content.Context
 import android.support.v4.app.FragmentActivity
+import android.util.Log
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
@@ -30,6 +31,8 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
                     .setMessage(context.getString(R.string.error_content, e.message))
                     .show(context.supportFragmentManager, FRAG_ERROR_DIALOG)
         }
+
+        Log.e("GlobalSubscriber", "Error: ${e.message}", e)
     }
 
     override fun onNext(t: T) {
@@ -66,5 +69,6 @@ fun <T> Observable<ResultSet>.mapToList(mapper: Func1<ResultSet, T>): Observable
 fun <T> Observable<T>.subscribeOnOptional(scheduler: Scheduler?): Observable<T> = scheduler?.let { subscribeOn(it) } ?: this
 
 fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
+fun <T> Observable<T>.subscribeOnMainThread() = subscribeOn(AndroidSchedulers.mainThread())
 
 fun <T> T?.toObservable(): Observable<T> = Observable.just(this)

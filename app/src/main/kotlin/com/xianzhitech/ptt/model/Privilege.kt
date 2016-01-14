@@ -8,9 +8,9 @@ import kotlin.text.split
 
 enum class Privilege {
     MAKE_CALL,
-    CREATE_GROUP,
+    CREATE_ROOM,
     RECEIVE_CALL,
-    RECEIVE_GROUP;
+    RECEIVE_ROOM;
 }
 
 fun String?.toPrivileges(): EnumSet<Privilege> {

@@ -29,7 +29,7 @@ android {
         if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
             buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
         } else {
-            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9001\"")
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://192.168.1.128:3000\"")
         }
     }
 

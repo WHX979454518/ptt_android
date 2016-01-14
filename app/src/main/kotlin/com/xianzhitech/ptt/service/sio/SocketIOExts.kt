@@ -133,7 +133,7 @@ internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
         }
 
         if (hasPrivilege("group")) {
-            result += Privilege.CREATE_GROUP
+            result += Privilege.CREATE_ROOM
         }
 
         if (hasPrivilege("recvCall")) {
@@ -141,7 +141,7 @@ internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
         }
 
         if (hasPrivilege("recvGroup")) {
-            result += Privilege.RECEIVE_GROUP
+            result += Privilege.RECEIVE_ROOM
         }
     }
 
