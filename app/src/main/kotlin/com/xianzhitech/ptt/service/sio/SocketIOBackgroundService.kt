@@ -394,10 +394,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
                 socket?.let {
                     it.sendEvent(EVENT_CLIENT_LEAVE_ROOM, { it }, JSONObject().put("roomId", roomId)).subscribe(GlobalSubscriber())
-                    roomState.onNext(state.copy(status = RoomState.Status.IDLE, activeRoomID = null, activeRoomOnlineMemberIDs = emptySet()))
                     onRoomQuited(roomId)
                 }
+
             }
+            roomState.onNext(state.copy(status = RoomState.Status.IDLE, activeRoomID = null, activeRoomOnlineMemberIDs = emptySet()))
         }
 
         currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
