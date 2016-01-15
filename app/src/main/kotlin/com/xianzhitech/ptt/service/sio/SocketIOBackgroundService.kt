@@ -45,12 +45,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     override var loginState = BehaviorSubject.create<LoginState>(LoginState())
     var serviceStateSubscription: Subscription? = null
     var loginSubscription : Subscription? = null
-    var joinRoomSubscription: Subscription? = null
     var roomSubscription: CompositeSubscription? = null
     var currentTalkEngine: TalkEngine? = null
 
     override fun peekRoomState() = roomState.value
     override fun peekLoginState() = loginState.value
+
+    var joinRoomRequest : JoinRoomRequest? = null
+    var joinRoomSubscription: Subscription? = null
 
     private lateinit var preferenceProvider : PreferenceStorageProvider
     private lateinit var userRepository : UserRepository
@@ -100,11 +102,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         serviceStateSubscription = Observable.combineLatest(
                 roomState.flatMap { state ->
-                    if (state.activeRoomID == null) {
+                    if (state.currentRoomID == null) {
                         Pair<RoomState, RoomWithMemberNames?>(state, null).toObservable()
                     }
                     else {
-                        roomRepository.getRoomWithMemberNames(state.activeRoomID, 3).map { Pair(state, it) }
+                        roomRepository.getRoomWithMemberNames(state.currentRoomID, 3).map { Pair(state, it) }
                     }
                 },
                 loginState,
@@ -213,7 +215,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         // Monitor user login
         loginSubscription = CompositeSubscription().apply {
-            add(newSocket.onEvent(EVENT_SERVER_USER_LOGON, { it?.let { User().readFrom(it) } ?: throw ServerException("No user returned") })
+            add(newSocket.onEvent(EVENT_SERVER_USER_LOGON, { User().readFrom(it) })
                     .flatMap { user ->
                         if (preferenceProvider.get(PREF_KEY_LAST_LOGIN_USER_ID) != user.id) {
                             // Clear room information if it's this user's first login
@@ -229,7 +231,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         // Do sync contacts
                         logd("Requesting syncing contacts")
                         newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS,
-                                { it?.toSyncContactsDto() ?: throw ServerException("No contacts returned") },
+                                { it.toSyncContactsDto() },
                                 JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
                                 .flatMap {
                                     logd("Received sync result: $it")
@@ -256,7 +258,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     }))
 
-            add(newSocket.onEvent(EVENT_SERVER_INVITE_TO_JOIN, { it?.getString("roomId") ?: throw ServerException("No roomId specified") })
+            add(newSocket.onEvent(EVENT_SERVER_INVITE_TO_JOIN, { it.getString("roomId") ?: throw ServerException("No roomId specified") })
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<String>() {
                         override fun onNext(t: String) {
@@ -333,15 +335,20 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     override fun onBind(intent: Intent?) : IBinder = object : Binder(), BackgroundServiceBinder by this {}
 
     override fun requestJoinRoom(request: JoinRoomRequest) = Observable.create<Unit> { subscriber ->
-        roomState.value.let { state ->
-            if (state.currentJoinRoomRequest == request) {
-                logd("Request $request is being requested. Aborted")
-                subscriber.onCompleted()
-                return@create
-            }
+        if (joinRoomRequest == request) {
+            logd("Request $request is being requested. Aborted")
+            subscriber.onCompleted()
+            return@create
+        }
 
-            // Cancel previous join room request if any
-            joinRoomSubscription = joinRoomSubscription?.let { it.unsubscribe(); null }
+        // Cancel previous join room request if any
+        joinRoomSubscription = joinRoomSubscription?.let { it.unsubscribe(); null }
+
+
+
+        roomState.value.let { state ->
+
+
             state.currentJoinRoomRequest?.let { roomState.onNext(state.copy(currentJoinRoomRequest = null)) }
 
             // If we don't have yet a room id, create one first
@@ -357,8 +364,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
             joinRoomSubscription = roomIdObservable
                     .flatMap { newRoomId ->
-                        if (state.activeRoomID != null) {
-                            roomRepository.getRoom(state.activeRoomID).map { Pair(it, newRoomId) }
+                        if (state.currentRoomID != null) {
+                            roomRepository.getRoom(state.currentRoomID).map { Pair(it, newRoomId) }
                         }
                         else {
                             Pair<Room?, String>(null, newRoomId).toObservable()
@@ -382,6 +389,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                     override fun onNext(t: Unit) {
                                         roomState.onNext(roomState.value.copy(currentJoinRoomRequest = null))
                                         subscriber.onNext(Unit)
+                                        subscriber.onCompleted()
                                     }
                                 })
                             }
@@ -394,7 +402,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun doQuitCurrentRoom() {
         checkMainThread()
         roomState.value?.let { state ->
-            state.activeRoomID?.let { roomId ->
+            state.currentRoomID?.let { roomId ->
                 roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
                 socket?.let {
                     it.sendEvent(EVENT_CLIENT_LEAVE_ROOM, { it }, JSONObject().put("roomId", roomId)).subscribe(GlobalSubscriber())
@@ -402,7 +410,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 }
 
             }
-            roomState.onNext(state.copy(status = RoomState.Status.IDLE, activeRoomID = null, activeRoomOnlineMemberIDs = emptySet()))
+            roomState.onNext(state.copy(status = RoomState.Status.IDLE, currentRoomID = null, currentRoomOnlineMemberIDs = emptySet()))
         }
 
         currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
@@ -419,7 +427,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
 
         return socket?.let {
-            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it ?: throw EmptyServerResponseException() }, request.toJSON())
+            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it }, request.toJSON())
                     .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
         } ?: Observable.error<Room>(IllegalStateException("Not connected to server"))
     }
@@ -430,20 +438,20 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
      */
     internal fun doJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
         doQuitCurrentRoom()
-        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, activeRoomID = roomId, activeRoomOnlineMemberIDs = emptySet()))
+        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
         roomSubscription = CompositeSubscription().apply {
             logd("Joining room $roomId")
             socket?.let {
 
                 // Listen for speaker changes
-                add(it.onEvent(EVENT_SERVER_SPEAKER_CHANGED, { it ?: throw EmptyServerResponseException() })
+                add(it.onEvent(EVENT_SERVER_SPEAKER_CHANGED, { it })
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<JSONObject>() {
                             override fun onNext(t: JSONObject) {
                                 val receivedRoomId = t.getString("roomId")
                                 val receivedSpeakerId = if (t.isNull("speaker")) null else t.getString("speaker")
-                                if (receivedRoomId == roomId && roomState.value.activeRoomSpeakerID != receivedSpeakerId) {
-                                    roomState.onNext(roomState.value.copy(activeRoomSpeakerID = receivedSpeakerId))
+                                if (receivedRoomId == roomId && roomState.value.currentRoomActiveSpeakerID != receivedSpeakerId) {
+                                    roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = receivedSpeakerId))
 
                                     if (receivedSpeakerId != null) {
                                         onMicActivated(false)
@@ -455,19 +463,19 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }))
 
                 // Listen for active member changes
-                add(it.onEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED, { it ?: throw EmptyServerResponseException() })
+                add(it.onEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED, { it })
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<JSONObject>() {
                             override fun onNext(t: JSONObject) {
                                 val receivedRoomId = t.getString("roomId")
                                 if (receivedRoomId == roomId) {
-                                    roomState.onNext(roomState.value.copy(activeRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet()))
+                                    roomState.onNext(roomState.value.copy(currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet()))
                                 }
                             }
                         }))
 
                 // Join the room!
-                add(it.sendEvent(EVENT_CLIENT_JOIN_ROOM, { it ?: throw EmptyServerResponseException() }, JSONObject().put("roomId", roomId))
+                add(it.sendEvent(EVENT_CLIENT_JOIN_ROOM, { it }, JSONObject().put("roomId", roomId))
                         .flatMap { response ->
                             logd("Joining room response: $response")
                             val server = response.getJSONObject("server")
@@ -497,8 +505,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                                 roomState.onNext(roomState.value.copy(
                                         status = RoomState.Status.JOINED,
-                                        activeRoomOnlineMemberIDs = t.activeMemberIDs,
-                                        activeRoomSpeakerID = t.currentSpeaker))
+                                        currentRoomOnlineMemberIDs = t.activeMemberIDs,
+                                        currentRoomActiveSpeakerID = t.currentSpeaker))
 
                                 onRoomJoined(t)
                             }
@@ -514,17 +522,17 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     override fun requestMic() = Observable.create<Unit> { subscriber ->
         socket?.let {
             roomState.value.let { state ->
-                state.activeRoomID?.let { roomId ->
+                state.currentRoomID?.let { roomId ->
                     roomState.onNext(state.copy(status = RoomState.Status.REQUESTING_MIC))
 
                     roomSubscription?.add(it.sendEvent(EVENT_CLIENT_CONTROL_MIC,
-                            { it?.getBoolean("success")?.and(it.getString("speaker") == loginState.value.currentUser?.id) ?: throw EmptyServerResponseException() },
+                            { it.getBoolean("success").and(it.getString("speaker") == loginState.value.currentUser?.id) },
                             JSONObject().put("roomId", roomId))
                             .onErrorReturn { false }
                             .observeOnMainThread()
                             .subscribe {
                                 if (it) {
-                                    roomState.onNext(state.copy(activeRoomSpeakerID = loginState.value.currentUser?.id))
+                                    roomState.onNext(state.copy(currentRoomActiveSpeakerID = loginState.value.currentUser?.id))
                                     onMicActivated(true)
                                 }
                                 subscriber.onNext(Unit)
@@ -539,15 +547,15 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     override fun releaseMic() = Observable.create<Unit> { subscriber ->
         socket?.let {
             roomState.value.let { state ->
-                state.activeRoomID?.let { roomId ->
+                state.currentRoomID?.let { roomId ->
                     roomSubscription?.add(it.sendEvent(EVENT_CLIENT_RELEASE_MIC, { it }, JSONObject().put("roomId", roomId))
                             .onErrorReturn { null }
                             .observeOnMainThread()
                             .subscribe())
                 } ?: subscriber.onError(IllegalStateException("Not in room"))
 
-                if (state.activeRoomSpeakerID == loginState.value.currentUser?.id) {
-                    roomState.onNext(state.copy(activeRoomSpeakerID = null))
+                if (state.currentRoomActiveSpeakerID == loginState.value.currentUser?.id) {
+                    roomState.onNext(state.copy(currentRoomActiveSpeakerID = null))
                     onMicReleased(true)
                 }
             }

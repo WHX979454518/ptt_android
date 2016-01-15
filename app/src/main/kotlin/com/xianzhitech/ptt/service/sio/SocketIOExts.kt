@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.service.EmptyServerResponseException
 import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.provider.JoinRoomFromContact
 import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
@@ -35,7 +36,7 @@ internal fun JSONObject.toSyncContactsDto() : SyncContactsDto {
 }
 
 internal inline fun <T> parseSeverResult(args : Array<Any?>, mapper : (JSONObject) -> T) : T {
-    val arg = args.getOrElse(0, { throw ServerException("No response") })
+    val arg = args.getOrElse(0, { throw EmptyServerResponseException() })
 
     if (arg is JSONObject && arg.has("error")) {
         throw ServerException(arg.getString("error"))
@@ -45,7 +46,7 @@ internal inline fun <T> parseSeverResult(args : Array<Any?>, mapper : (JSONObjec
 }
 
 
-internal inline fun <T> Socket.onEvent(event: String, crossinline mapper : (JSONObject?) -> T) = Observable.create<T> { subscriber ->
+internal fun <T> Socket.onEvent(event: String, mapper : (JSONObject) -> T) = Observable.create<T> { subscriber ->
     val listener: (Array<Any?>) -> Unit = {
         subscriber.onStart()
         try {
@@ -59,7 +60,7 @@ internal inline fun <T> Socket.onEvent(event: String, crossinline mapper : (JSON
     subscriber.add(Subscriptions.create { off(event, listener) })
 }
 
-internal fun <T> Socket.sendEvent(eventName: String, resultMapper: (JSONObject?) -> T, vararg args: Any?) = Observable.create<T> { subscriber ->
+internal fun <T> Socket.sendEvent(eventName: String, resultMapper: (JSONObject) -> T, vararg args: Any?) = Observable.create<T> { subscriber ->
     subscriber.onStart()
     emit(eventName, args, Ack { args: Array<Any?> ->
         try {

@@ -6,10 +6,9 @@ import rx.Observable
 import kotlin.collections.emptySet
 
 data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
-                     val activeRoomID: String? = null,
-                     val activeRoomSpeakerID: String? = null,
-                     val activeRoomOnlineMemberIDs: Set<String> = emptySet(),
-                     val currentJoinRoomRequest: JoinRoomRequest? = null) {
+                     val currentRoomID: String? = null,
+                     val currentRoomActiveSpeakerID: String? = null,
+                     val currentRoomOnlineMemberIDs: Set<String> = emptySet()) {
     enum class Status {
         IDLE,
         JOINING,

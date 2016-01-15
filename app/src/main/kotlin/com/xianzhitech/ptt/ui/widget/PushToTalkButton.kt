@@ -23,7 +23,7 @@ class PushToTalkButton : ImageButton {
     set(value) {
         if (field != value) {
             field = value
-            isEnabled = value?.status == RoomState.Status.JOINED && value?.activeRoomSpeakerID == null
+            isEnabled = value?.status == RoomState.Status.JOINED && value?.currentRoomActiveSpeakerID == null
             invalidate()
         }
     }
@@ -64,7 +64,7 @@ class PushToTalkButton : ImageButton {
         super.onDraw(canvas)
 
         paint.color = when {
-            roomState?.activeRoomSpeakerID != null -> android.R.color.holo_red_dark
+            roomState?.currentRoomActiveSpeakerID != null -> android.R.color.holo_red_dark
             roomState?.status == RoomState.Status.REQUESTING_MIC -> android.R.color.holo_orange_dark
             roomState?.status == RoomState.Status.JOINED -> android.R.color.holo_green_dark
             else  -> android.R.color.darker_gray

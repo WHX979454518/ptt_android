@@ -123,11 +123,11 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
         bgService.flatMap { Observable.combineLatest(
                 it.roomState.flatMap { state ->
-                    if (state.activeRoomID == null) {
+                    if (state.currentRoomID == null) {
                         ExtraRoomData(null, state).toObservable()
                     }
                     else {
-                        appComponent.roomRepository.getRoomWithMembers(state.activeRoomID).map { ExtraRoomData(it, state) }
+                        appComponent.roomRepository.getRoomWithMembers(state.currentRoomID).map { ExtraRoomData(it, state) }
                     }
                 },
                 it.loginState,
@@ -144,7 +144,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     internal fun updateRoomState(extraRoomData: ExtraRoomData, loginState: LoginState) {
-        adapter.setMembers(extraRoomData.roomWithMembers?.members ?: emptyList(), extraRoomData.roomState.activeRoomOnlineMemberIDs)
+        adapter.setMembers(extraRoomData.roomWithMembers?.members ?: emptyList(), extraRoomData.roomState.currentRoomOnlineMemberIDs)
         views?.apply {
             pttBtn.roomState = extraRoomData.roomState
             toolbar.title = extraRoomData.roomWithMembers?.getRoomName(context)
