@@ -16,9 +16,9 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
@@ -124,10 +124,10 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         bgService.flatMap { Observable.combineLatest(
                 it.roomState.flatMap { state ->
                     if (state.activeRoomID == null) {
-                        ExtraRoomData(null, state, emptyList<User>()).toObservable()
+                        ExtraRoomData(null, state).toObservable()
                     }
                     else {
-                        appComponent.roomRepository.getRoomWithMembers(state.activeRoomID).map { ExtraRoomData(it.first, state, it.second) }
+                        appComponent.roomRepository.getRoomWithMembers(state.activeRoomID).map { ExtraRoomData(it, state) }
                     }
                 },
                 it.loginState,
@@ -144,10 +144,10 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     internal fun updateRoomState(extraRoomData: ExtraRoomData, loginState: LoginState) {
-        adapter.setMembers(extraRoomData.roomMembers, extraRoomData.roomState.activeRoomOnlineMemberIDs)
+        adapter.setMembers(extraRoomData.roomWithMembers?.members ?: emptyList(), extraRoomData.roomState.activeRoomOnlineMemberIDs)
         views?.apply {
             pttBtn.roomState = extraRoomData.roomState
-            toolbar.title = extraRoomData.room?.name
+            toolbar.title = extraRoomData.roomWithMembers?.getRoomName(context)
         }
     }
 
@@ -224,9 +224,8 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         override fun getItemCount() = members.size
     }
 
-    internal data class ExtraRoomData(val room : Room?,
-                                     val roomState : RoomState,
-                                     val roomMembers : List<User>)
+    internal data class ExtraRoomData(val roomWithMembers: RoomWithMembers?,
+                                      val roomState : RoomState)
 
     private class ViewHolder(container: ViewGroup,
                              val imageView: ImageView = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false) as ImageView)

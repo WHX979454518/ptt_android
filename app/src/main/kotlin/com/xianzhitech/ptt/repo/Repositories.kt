@@ -35,7 +35,7 @@ interface RoomRepository {
     fun updateRoomMembers(roomId: String, memberIds: Iterable<String>): Observable<Unit>
     fun getRoomsWithMemberNames(maxMember: Int): Observable<List<RoomWithMemberNames>>
     fun getRoomWithMemberNames(roomId: String, maxMember: Int): Observable<RoomWithMemberNames?>
-    fun getRoomWithMembers(roomId: String) : Observable<Pair<Room?, List<User>>>
+    fun getRoomWithMembers(roomId: String) : Observable<RoomWithMembers?>
 }
 
 interface ContactRepository {
@@ -47,3 +47,6 @@ interface ContactRepository {
 data class RoomWithMemberNames(val room: Room,
                                val memberNames: List<String>,
                                val memberCount: Int)
+
+data class RoomWithMembers(val room: Room,
+                           val members : List<User>)

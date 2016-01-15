@@ -21,10 +21,7 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.ContactRepository
-import com.xianzhitech.ptt.repo.GroupRepository
-import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.repo.UserRepository
+import com.xianzhitech.ptt.repo.*
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.provider.*
 import com.xianzhitech.ptt.ui.MainActivity
@@ -101,17 +98,17 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         serviceStateSubscription = Observable.combineLatest(
                 roomState.flatMap { state ->
                     if (state.activeRoomID == null) {
-                        Pair<RoomState, Room?>(state, null).toObservable()
+                        Pair<RoomState, RoomWithMemberNames?>(state, null).toObservable()
                     }
                     else {
-                        roomRepository.getRoom(state.activeRoomID).map { Pair(state, it) }
+                        roomRepository.getRoomWithMemberNames(state.activeRoomID, 3).map { Pair(state, it) }
                     }
                 },
                 loginState,
                 { first, second -> Triple(first.first, first.second, second) })
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Triple<RoomState, Room?, LoginState>>() {
-                    override fun onNext(t: Triple<RoomState, Room?, LoginState>) {
+                .subscribe(object : GlobalSubscriber<Triple<RoomState, RoomWithMemberNames?, LoginState>>() {
+                    override fun onNext(t: Triple<RoomState, RoomWithMemberNames?, LoginState>) {
                         val roomState = t.first
                         val loginState = t.third
                         val context = this@SocketIOBackgroundService
@@ -134,7 +131,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 }
 
                                 else -> {
-                                    builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.second?.name))
+                                    builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.second?.getRoomName(context)))
                                     builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
                                 }
                             }
@@ -380,6 +377,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                                     override fun onNext(t: Unit) {
                                         roomState.onNext(roomState.value.copy(currentJoinRoomRequest = null))
+                                        subscriber.onNext(Unit)
                                     }
                                 })
                             }
@@ -489,7 +487,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             }
 
                             override fun onNext(t: JoinRoomResult) {
-                                subscriber.onNext(null)
+                                subscriber.onNext(Unit)
                                 subscriber.onCompleted()
 
                                 roomState.onNext(roomState.value.copy(
@@ -524,7 +522,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                     roomState.onNext(state.copy(activeRoomSpeakerID = loginState.value.currentUser?.id))
                                     onMicActivated(true)
                                 }
-                                subscriber.onNext(null)
+                                subscriber.onNext(Unit)
                                 subscriber.onCompleted()
                             })
                 } ?: subscriber.onError(IllegalStateException("Not in room"))

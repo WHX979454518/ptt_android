@@ -144,10 +144,10 @@ class LocalRepository(internal val db: Database)
 
     override fun getRoomWithMembers(roomId: String) = getRoom(roomId).flatMap { room : Room? ->
         if (room == null) {
-            Pair(null, emptyList<User>()).toObservable()
+            null.toObservable()
         }
         else {
-            getRoomMembers(roomId).map { Pair(room, it) }
+            getRoomMembers(roomId).map { RoomWithMembers(room, it) }
         }
     }
 
