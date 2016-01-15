@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.app.ProgressDialog
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -10,11 +12,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getMemberNames
-import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
+import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.room.RoomActivity
+import java.util.concurrent.TimeUnit
 import kotlin.collections.emptyList
 import kotlin.text.isNullOrBlank
 
@@ -34,9 +37,9 @@ class RoomListFragment : BaseFragment<Void>() {
         super.onStart()
 
         (context.applicationContext as AppComponent).roomRepository.getRoomsWithMemberNames(3)
-            .observeOnMainThread()
-            .compose(bindToLifecycle())
-            .subscribe { adapter.rooms = it }
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribe { adapter.rooms = it }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -57,8 +60,8 @@ class RoomListFragment : BaseFragment<Void>() {
         var rooms: List<RoomWithMemberNames> = emptyList()
             set(value) {
                 field = value
-            notifyDataSetChanged()
-        }
+                notifyDataSetChanged()
+            }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ConversationItemHolder {
             return ConversationItemHolder(parent)
@@ -67,8 +70,27 @@ class RoomListFragment : BaseFragment<Void>() {
         override fun onBindViewHolder(holder: ConversationItemHolder, position: Int) {
             holder.setConversation(rooms[position])
             holder.itemView.setOnClickListener { v ->
-//                startActivity(RoomActivity.builder(context,
-//                        JoinRoomFromExisting(rooms[position].room.id)))
+                val request = JoinRoomFromExisting(rooms[position].room.id)
+
+                val dialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context),
+                        R.string.joining_room.toFormattedString(context), true ,false)
+
+                (context.applicationContext as AppComponent).connectToBackgroundService()
+                        .flatMap { it.requestJoinRoom(request) }
+                        .first()
+                        .timeout(10, TimeUnit.SECONDS)
+                        .observeOnMainThread()
+                        .subscribe(object : GlobalSubscriber<Unit>(context) {
+                            override fun onError(e: Throwable) {
+                                super.onError(e)
+                                dialog.dismiss()
+                            }
+
+                            override fun onNext(t: Unit) {
+                                dialog.dismiss()
+                                startActivity(Intent(context, RoomActivity::class.java))
+                            }
+                        })
             }
         }
 

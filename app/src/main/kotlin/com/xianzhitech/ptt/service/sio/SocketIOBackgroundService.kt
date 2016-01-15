@@ -8,6 +8,7 @@ import android.media.SoundPool
 import android.os.Binder
 import android.os.IBinder
 import android.os.Looper
+import android.os.Vibrator
 import android.support.annotation.RawRes
 import android.support.v4.app.NotificationCompat
 import android.util.SparseIntArray
@@ -58,8 +59,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var roomRepository : RoomRepository
     private lateinit var talkEngineProvider: TalkEngineProvider
     private lateinit var btEngine: BtEngine
-
     private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
+    private var vibrator : Vibrator? = null
 
     private var socket : Socket? = null
 
@@ -74,6 +75,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         groupRepository = appComponent.groupRepository
         talkEngineProvider = appComponent.talkEngineProvider
         btEngine = appComponent.btEngine
+
+        vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
 
         soundPool = Pair(SoundPool(1, AudioManager.STREAM_MUSIC, 0), SparseIntArray()).apply {
             val context = this@SocketIOBackgroundService
@@ -302,7 +305,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
     }
 
-    internal fun onRoomQuited(room: String) {
+    internal fun onRoomQuited(roomId: String) {
         if (btEngine.isBtMicEnable) {
             btEngine.stopSCO()
         }
@@ -310,6 +313,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     internal fun onMicActivated(isSelf: Boolean) {
         if (isSelf) {
+            vibrator?.vibrate(120)
             playSound(R.raw.outgoing)
             currentTalkEngine?.startSend()
         } else {

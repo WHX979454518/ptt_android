@@ -1,18 +1,19 @@
 package com.xianzhitech.ptt.ext
 
+import android.app.Activity
 import android.content.Context
-import android.support.v4.app.FragmentActivity
 import android.util.Log
+import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.service.UserDescribableException
-import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import rx.Observable
 import rx.Scheduler
 import rx.Subscriber
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Func1
 import java.util.*
+import java.util.concurrent.TimeoutException
 
 /**
  * Created by fanchao on 17/12/15.
@@ -27,18 +28,19 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
 
     override fun onError(e: Throwable) {
         val message : CharSequence?
-        if (context != null && e is UserDescribableException) {
-            message = e.describe(context)
+        if (context != null) {
+            message = when (e) {
+                is UserDescribableException -> e.describe(context)
+                is TimeoutException -> R.string.error_timeout.toFormattedString(context)
+                else -> e.message
+            }
         }
         else {
             message = e.message
         }
 
-        if (context is FragmentActivity) {
-            AlertDialogFragment.Builder()
-                    .setTitle(context.getString(R.string.error_title))
-                    .setMessage(context.getString(R.string.error_content, message))
-                    .show(context.supportFragmentManager, FRAG_ERROR_DIALOG)
+        if (context is Activity) {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
 
         Log.e("GlobalSubscriber", "Error: ${message}", e)

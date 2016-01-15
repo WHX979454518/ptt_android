@@ -46,6 +46,10 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
                 callback?.onNeutralButtonClicked(this)
             }
         }
+
+        if (arguments.getBoolean(ARG_AUTO_DISMISS, true)) {
+            dismiss()
+        }
     }
 
     interface OnPositiveButtonClickListener {
@@ -66,11 +70,14 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
         private var btnPositive: CharSequence? = null
         private var btnNegative: CharSequence? = null
         private var btnNeutral: CharSequence? = null
+        private var autoDismiss : Boolean = true
 
         fun setTitle(title: CharSequence): Builder {
             this.title = title
             return this
         }
+
+        fun setAutoDismiss(autoDismiss : Boolean) = apply { this.autoDismiss = autoDismiss }
 
         fun setMessage(message: CharSequence): Builder {
             this.message = message
@@ -100,6 +107,7 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
             args.putCharSequence(ARG_BTN_POSITIVE, btnPositive)
             args.putCharSequence(ARG_BTN_NEGATIVE, btnNegative)
             args.putCharSequence(ARG_BTN_NEUTRAL, btnNeutral)
+            args.putBoolean(ARG_AUTO_DISMISS, autoDismiss)
             fragment.arguments = args
             return fragment
         }
@@ -118,5 +126,6 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
         val ARG_BTN_POSITIVE = "arg_btn_positive"
         val ARG_BTN_NEGATIVE = "arg_btn_negative"
         val ARG_BTN_NEUTRAL = "arg_btn_natural"
+        val ARG_AUTO_DISMISS = "arg_auto_dismiss"
     }
 }

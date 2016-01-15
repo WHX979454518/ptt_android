@@ -112,6 +112,8 @@ class ContactsFragment : BaseFragment<Void>() {
 
                 (context.applicationContext as AppComponent).connectToBackgroundService()
                         .flatMap { it.requestJoinRoom(request) }
+                        .first()
+                        .timeout(10, TimeUnit.SECONDS)
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<Unit>(context) {
                             override fun onNext(t: Unit) {

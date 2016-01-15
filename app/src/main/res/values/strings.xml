@@ -29,9 +29,10 @@
     <string name="error_title">出错啦</string>
     <string name="error_unknown">未知错误</string>
     <string name="error_retry">重试</string>
-    <string name="error_content">错误原因: %1$s</string>
+    <string name="error_content">%1$s</string>
     <string name="error_input_name">用户名不能为空</string>
     <string name="error_input_password">密码不能为空</string>
+    <string name="error_no_android_permission">录音权限被拒绝，对讲将无法工作, 请同意此权限</string>
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
     <string name="error_no_such_room">没有该房间</string>
@@ -40,6 +41,7 @@
     <string name="error_service_empty_response">服务器故障</string>
     <string name="error_room_is_important_to_quit">房间 %1$s 被管理员标记为重要房间, 当前不可退出</string>
     <string name="error_no_permission">当前用户无此操作权限</string>
+    <string name="error_timeout">操作超时</string>
 
     <string name="room_loading">加载中...</string>
 

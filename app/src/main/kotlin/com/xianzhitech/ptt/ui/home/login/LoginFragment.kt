@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
+import java.util.concurrent.TimeUnit
 
 /**
  * 登陆界面
@@ -64,9 +65,15 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
                     } else {
                         serviceBinder?.let {
                             it.login(nameEditText.getString(), passwordEditText.getString())
+                                    .timeout(10, TimeUnit.SECONDS)
                                     .observeOnMainThread()
                                     .compose(bindToLifecycle())
-                                    .subscribe(GlobalSubscriber<LoginState>(context))
+                                    .subscribe(object : GlobalSubscriber<LoginState>(context) {
+                                        override fun onError(e: Throwable) {
+                                            super.onError(e)
+                                            it.logout().subscribe(GlobalSubscriber())
+                                        }
+                                    })
                         }
                     }
                 }
