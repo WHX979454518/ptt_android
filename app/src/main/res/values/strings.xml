@@ -56,4 +56,5 @@
     <string name="notification_user_logging_in">正在登陆...</string>
     <string name="notification_rejoining_room">断线重连中...</string>
     <string name="logout">注销</string>
+    <string name="exit_room">退出房间</string>
 </resources>

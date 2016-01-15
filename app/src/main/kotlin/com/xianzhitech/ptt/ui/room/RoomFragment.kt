@@ -92,6 +92,16 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 pttBtn.callbacks = this@RoomFragment
 
                 speakerSourceView.adapter = speakSourceAdapter
+
+                toolbar.inflateMenu(R.menu.room)
+                toolbar.setOnMenuItemClickListener {
+                    if (it.itemId == R.id.room_exit) {
+                        backgroundServiceBinder?.requestQuitCurrentRoom()?.subscribe(GlobalSubscriber())
+                        activity?.finish()
+                    }
+
+                    true
+                }
             }
         }
     }
