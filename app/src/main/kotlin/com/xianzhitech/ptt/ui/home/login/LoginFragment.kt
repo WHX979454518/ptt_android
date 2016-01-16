@@ -1,14 +1,15 @@
 package com.xianzhitech.ptt.ui.home.login
 
+import android.app.ProgressDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
@@ -21,28 +22,17 @@ import java.util.concurrent.TimeUnit
 class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
         , AlertDialogFragment.OnNeutralButtonClickListener {
 
-    companion object {
-        const val TAG_LOGIN_ERROR_DIALOG = "tag_login_error_dialog"
-    }
-
     private var views: Views? = null
-    private var serviceBinder: BackgroundServiceBinder? = null
 
     override fun onStart() {
         super.onStart()
 
         callbacks?.setTitle(R.string.login.toFormattedString(context))
 
-        (context.applicationContext as AppComponent).connectToBackgroundService().flatMap { serviceBinder = it; it.loginState }
+        (context.applicationContext as AppComponent).connectToBackgroundService().flatMap { it.loginState }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe { updateLoginState(it) }
-    }
-
-    override fun onStop() {
-        super.onStop()
-
-        serviceBinder = null
     }
 
     internal fun updateLoginState(state: LoginState) {
@@ -63,18 +53,33 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
                     } else if (passwordEditText.isEmpty()) {
                         passwordEditText.error = R.string.error_input_password.toFormattedString(context)
                     } else {
-                        serviceBinder?.let {
-                            it.login(nameEditText.getString(), passwordEditText.getString())
-                                    .timeout(10, TimeUnit.SECONDS)
-                                    .observeOnMainThread()
-                                    .compose(bindToLifecycle())
-                                    .subscribe(object : GlobalSubscriber<LoginState>(context) {
-                                        override fun onError(e: Throwable) {
-                                            super.onError(e)
-                                            it.logout().subscribe(GlobalSubscriber())
-                                        }
-                                    })
-                        }
+                        val progressDialog = ProgressDialog.show(context,
+                                R.string.please_wait.toFormattedString(context),
+                                R.string.login_in_progress.toFormattedString(context),
+                                true,
+                                false)
+
+                        context.ensureConnectivity()
+                                .flatMap { (context.applicationContext as AppComponent).connectToBackgroundService() }
+                                .flatMap { binder ->
+                                    binder.login(nameEditText.getString(), passwordEditText.getString())
+                                            .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                                            .doOnError {
+                                                binder.logout().subscribe(GlobalSubscriber())
+                                            }
+                                }
+                                .observeOnMainThread()
+                                .compose(bindToLifecycle())
+                                .subscribe(object : GlobalSubscriber<Unit>(context) {
+                                    override fun onError(e: Throwable) {
+                                        super.onError(e)
+                                        progressDialog.dismiss()
+                                    }
+
+                                    override fun onNext(t: Unit) {
+                                        progressDialog.dismiss()
+                                    }
+                                })
                     }
                 }
             }

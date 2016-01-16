@@ -60,6 +60,21 @@ internal fun <T> Socket.onEvent(event: String, mapper : (JSONObject) -> T) = Obs
     subscriber.add(Subscriptions.create { off(event, listener) })
 }
 
+internal fun Socket.onJsonObjectEvent(event: String) = Observable.create<JSONObject> { subscriber ->
+    val listener: (Array<Any?>) -> Unit = {
+        subscriber.onStart()
+        try {
+            subscriber.onNext(parseSeverResult(it, { it }))
+        } catch(e: Exception) {
+            subscriber.onError(e)
+        }
+    }
+    on(event, listener)
+
+    subscriber.add(Subscriptions.create { off(event, listener) })
+}
+
+
 internal fun <T> Socket.sendEvent(eventName: String, resultMapper: (JSONObject) -> T, vararg args: Any?) = Observable.create<T> { subscriber ->
     subscriber.onStart()
     emit(eventName, args, Ack { args: Array<Any?> ->

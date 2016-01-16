@@ -8,24 +8,21 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.Toolbar
-import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 import kotlin.collections.forEachIndexed
+import kotlin.text.isNullOrEmpty
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
 
     private lateinit var toolbar: Toolbar
-    private lateinit var progress: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +31,6 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
 
         setContentView(R.layout.activity_main)
         toolbar = findView(R.id.main_toolbar)
-        progress = findView(R.id.main_progress)
         setSupportActionBar(toolbar)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -76,18 +72,15 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).connectToBackgroundService()
-                .flatMap { it.loginState }
+        (application as AppComponent).preferenceProvider.receiveUserToken()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {
-                    if (it.status == LoginState.Status.IDLE) {
+                    if (it.isNullOrEmpty()) {
                         displayFragment(LoginFragment::class.java)
-                    } else if (it.status == LoginState.Status.LOGGED_IN) {
+                } else {
                         displayFragment(HomeFragment::class.java)
                     }
-
-                    progress.setVisible(it.status == LoginState.Status.LOGIN_IN_PROGRESS)
                 }
     }
 

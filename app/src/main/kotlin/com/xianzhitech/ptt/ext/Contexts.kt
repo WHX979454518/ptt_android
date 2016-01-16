@@ -1,10 +1,13 @@
 package com.xianzhitech.ptt.ext
 
 import android.content.*
+import android.net.ConnectivityManager
 import android.os.IBinder
 import android.support.v4.content.LocalBroadcastManager
+import com.xianzhitech.ptt.service.ConnectivityException
 import rx.Observable
 import rx.Scheduler
+import rx.Subscriber
 import rx.subscriptions.Subscriptions
 import kotlin.collections.forEach
 
@@ -89,3 +92,56 @@ fun <T> Context.connectToService(intent: Intent, flags: Int): Observable<T> {
     }
 }
 
+fun ConnectivityManager.hasActiveConnection(): Boolean {
+    return activeNetworkInfo?.isConnected ?: false
+}
+
+
+fun Context.getConnectivity(): Observable<Boolean> {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    return Observable.create<Boolean> { subscriber ->
+        subscriber.onNext(connectivityManager.hasActiveConnection())
+
+        if (!subscriber.isUnsubscribed) {
+            subscriber.add(receiveBroadcasts(false, ConnectivityManager.CONNECTIVITY_ACTION)
+                    .subscribe(object : Subscriber<Intent>() {
+                        override fun onNext(t: Intent?) {
+                            subscriber.onNext(connectivityManager.hasActiveConnection())
+                        }
+
+                        override fun onError(e: Throwable?) {
+                            subscriber.onError(e)
+                        }
+
+                        override fun onCompleted() {
+                            subscriber.onCompleted()
+                        }
+                    }))
+        }
+    }
+}
+
+fun Context.ensureConnectivity(): Observable<Unit> {
+    return getConnectivity().first()
+            .map {
+                if (!it) throw ConnectivityException()
+                else Unit
+            }
+}
+
+fun SharedPreferences.receiveStringValue(key: String): Observable<String?> {
+    return Observable.create { subscriber ->
+        val listener = { sharedPreferences: SharedPreferences, changedKey: String ->
+            if (changedKey == key) {
+                subscriber.onNext(sharedPreferences.getString(changedKey, null))
+            }
+        }
+
+        listener(this, key)
+        if (!subscriber.isUnsubscribed) {
+            registerOnSharedPreferenceChangeListener(listener)
+            subscriber.add(Subscriptions.create { unregisterOnSharedPreferenceChangeListener(listener) })
+        }
+    }
+}

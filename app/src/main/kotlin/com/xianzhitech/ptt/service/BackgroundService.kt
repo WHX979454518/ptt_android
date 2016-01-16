@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.service
 
-import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.provider.JoinRoomRequest
 import rx.Observable
 import kotlin.collections.emptySet
@@ -18,7 +17,7 @@ data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
 }
 
 data class LoginState(val status : LoginState.Status = LoginState.Status.IDLE,
-                      val currentUser : User? = null) {
+                      val currentUserID: String? = null) {
     enum class Status {
         IDLE,
         LOGIN_IN_PROGRESS,
@@ -33,7 +32,7 @@ interface BackgroundServiceBinder {
     fun peekRoomState() : RoomState
     fun peekLoginState() : LoginState
 
-    fun login(username: String, password: String): Observable<LoginState>
+    fun login(username: String, password: String): Observable<Unit>
     fun logout(): Observable<Unit>
 
     fun requestJoinRoom(request: JoinRoomRequest): Observable<Unit>

@@ -13,6 +13,7 @@ import android.support.annotation.RawRes
 import android.support.v4.app.NotificationCompat
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
@@ -37,6 +38,7 @@ import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
+import java.util.concurrent.TimeUnit
 import kotlin.collections.*
 
 class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
@@ -90,9 +92,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
 
         val loginStateValue = loginState.value
-        if (loginStateValue.currentUser == null && loginStateValue.status == LoginState.Status.IDLE) {
-            preferenceProvider.get(PREF_KEY_LOGIN_TOKEN)?.let {
-                doLogin(it as Map<String, List<String>>).subscribe(GlobalSubscriber())
+        if (loginStateValue.currentUserID == null && loginStateValue.status == LoginState.Status.IDLE) {
+            val currentUserSessionToken = preferenceProvider.userSessionToken
+            val lastUserId = preferenceProvider.lastLoginUserId
+            if (currentUserSessionToken != null && lastUserId != null) {
+                loginState.onNext(LoginState(currentUserID = lastUserId))
+                doLogin(currentUserSessionToken.fromBase64ToSerializable() as Map<String, List<String>>).subscribe(GlobalSubscriber(this))
             }
         }
     }
@@ -102,20 +107,21 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         serviceStateSubscription = Observable.combineLatest(
                 roomState.flatMap { state ->
-                    if (state.currentRoomID == null) {
-                        Pair<RoomState, RoomWithMemberNames?>(state, null).toObservable()
-                    }
-                    else {
-                        roomRepository.getRoomWithMemberNames(state.currentRoomID, 3).map { Pair(state, it) }
-                    }
+                    state.currentRoomID?.let {
+                        roomRepository.getRoomWithMemberNames(it, Constants.MAX_MEMBER_DISPLAY_COUNT).map { ExtraRoomData(state, it) }
+                    } ?: ExtraRoomData(state).toObservable()
                 },
-                loginState,
-                { first, second -> Triple(first.first, first.second, second) })
+                loginState.flatMap { state ->
+                    state.currentUserID?.let {
+                        userRepository.getUser(it).map { ExtraLoginData(state, it) }
+                    } ?: ExtraLoginData(state).toObservable()
+                },
+                getConnectivity(),
+                { first, second, third -> Triple(first, second, third) })
+                .debounce(500, TimeUnit.MILLISECONDS)
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Triple<RoomState, RoomWithMemberNames?, LoginState>>() {
-                    override fun onNext(t: Triple<RoomState, RoomWithMemberNames?, LoginState>) {
-                        val roomState = t.first
-                        val loginState = t.third
+                .subscribe(object : GlobalSubscriber<Triple<ExtraRoomData, ExtraLoginData, Boolean>>() {
+                    override fun onNext(t: Triple<ExtraRoomData, ExtraLoginData, Boolean>) {
                         val context = this@SocketIOBackgroundService
                         val builder = NotificationCompat.Builder(context)
                         builder.setOngoing(true)
@@ -123,10 +129,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         builder.setSmallIcon(R.mipmap.ic_launcher)
                         builder.setContentTitle(R.string.app_name.toFormattedString(context))
 
-                        when (loginState.status) {
-                            LoginState.Status.LOGGED_IN -> when (roomState.status) {
+                        when {
+                            t.second.loginState.status == LoginState.Status.LOGGED_IN -> when (t.first.roomState.status) {
                                 RoomState.Status.IDLE -> {
-                                    builder.setContentText(R.string.notification_user_online.toFormattedString(context, loginState.currentUser?.name))
+                                    builder.setContentText(R.string.notification_user_online.toFormattedString(context, t.second.logonUser?.name))
                                     builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), 0))
                                 }
 
@@ -136,21 +142,27 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 }
 
                                 else -> {
-                                    builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.second?.getRoomName(context)))
+                                    builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.first.room?.getRoomName(context)))
                                     builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
                                 }
                             }
 
-                            LoginState.Status.LOGIN_IN_PROGRESS -> {
-                                if (roomState.status == RoomState.Status.IDLE) {
+                            t.second.loginState.status == LoginState.Status.LOGIN_IN_PROGRESS -> {
+                                if (t.third.not()) {
+                                    builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
+                                } else if (t.first.roomState.status == RoomState.Status.IDLE) {
                                     builder.setContentText(R.string.notification_user_logging_in.toFormattedString(context))
                                 } else {
                                     builder.setContentText(R.string.notification_rejoining_room.toFormattedString(context))
                                 }
                             }
 
-                            LoginState.Status.IDLE -> {
-                                stopForeground(true)
+                            t.second.loginState.status == LoginState.Status.IDLE -> {
+                                if (t.second.loginState.currentUserID == null) {
+                                    stopForeground(true)
+                                } else if (t.third.not() && t.second.logonUser != null) {
+                                    builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second?.logonUser?.name))
+                                }
                                 return
                             }
                         }
@@ -173,14 +185,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     override fun logout() = Observable.defer { doLogout().toObservable() }.subscribeOnMainThread()
 
     internal fun doLogout() {
-        loginState.value.currentUser?.let {
-            preferenceProvider.remove(PREF_KEY_LOGIN_TOKEN)
+        loginState.value.currentUserID?.let {
+            preferenceProvider.userSessionToken = null
             onUserLogout(it)
         }
 
-        if (loginState.value.status != LoginState.Status.IDLE) {
-            loginState.onNext(LoginState())
-        }
+        loginState.onNext(LoginState())
 
         socket = socket?.let {
             stopSelf()
@@ -191,18 +201,18 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         loginSubscription = loginSubscription?.let { it.unsubscribe(); null }
     }
 
-    override fun login(username: String, password: String): Observable<LoginState> {
-        return doLogin(mapOf(Pair("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))))
-    }
-
-    internal fun doLogin(headers: Map<String, List<String>> = emptyMap()) = Observable.create<LoginState> { subscriber ->
-        loginState.value.currentUser?.let {
+    override fun login(username: String, password: String) = Observable.defer {
+        loginState.value.currentUserID?.let {
             doLogout()
         }
 
+        doLogin(mapOf(Pair("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))))
+    }.subscribeOnMainThread()
+
+    internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
         val newSocket = IO.socket((application as AppComponent).signalServerEndpoint)
 
-        loginState.onNext(LoginState(LoginState.Status.LOGIN_IN_PROGRESS))
+        loginState.onNext(loginState.value.copy(status = LoginState.Status.LOGIN_IN_PROGRESS))
 
         // Process headers
         if (headers.isNotEmpty()) {
@@ -217,10 +227,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         loginSubscription = CompositeSubscription().apply {
             add(newSocket.onEvent(EVENT_SERVER_USER_LOGON, { User().readFrom(it) })
                     .flatMap { user ->
-                        if (preferenceProvider.get(PREF_KEY_LAST_LOGIN_USER_ID) != user.id) {
+                        if (preferenceProvider.lastLoginUserId != user.id) {
                             // Clear room information if it's this user's first login
                             logd("Clearing room database because different user has logged in")
-                            preferenceProvider.save(PREF_KEY_LAST_LOGIN_USER_ID, user.id)
+                            preferenceProvider.lastLoginUserId = user.id
                             roomRepository.clearRooms().map { user }
                         }
                         else {
@@ -245,14 +255,15 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     .subscribe(object : GlobalSubscriber<User>() {
                         override fun onError(e: Throwable) {
                             subscriber.onError(e)
-                            loginState.onNext(LoginState(LoginState.Status.IDLE, null))
+                            loginState.onNext(loginState.value.copy(status = LoginState.Status.IDLE))
                         }
 
                         override fun onNext(t: User) {
-                            val newLoginState = LoginState(LoginState.Status.LOGGED_IN, t)
-                            preferenceProvider.save(PREF_KEY_LOGIN_TOKEN, headers as Serializable)
+                            val newLoginState = LoginState(LoginState.Status.LOGGED_IN, t.id)
+                            preferenceProvider.userSessionToken = (headers as Serializable).serializeToBase64()
                             loginState.onNext(newLoginState)
-                            subscriber.onNext(newLoginState)
+                            subscriber.onNext(null)
+                            subscriber.onCompleted()
 
                             onUserLogon(t)
                         }
@@ -270,7 +281,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         socket = newSocket.connect()
     }.subscribeOnMainThread()
 
-    internal fun onUserLogout(user: User) {
+    internal fun onUserLogout(user: String) {
         logd("User $user has logged out")
         stopSelf()
     }
@@ -282,8 +293,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     internal fun onInviteToJoin(roomId: String) {
         logd("Received invite to join room $roomId")
-//        startActivity(RoomActivity.builder(this, JoinRoomFromExisting(roomId))
-//                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        //        startActivity(RoomActivity.builder(this, JoinRoomFromExisting(roomId))
+        //                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     internal fun onRoomJoined(result: JoinRoomResult) {
@@ -341,61 +352,62 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             return@create
         }
 
+        joinRoomRequest = request
+
         // Cancel previous join room request if any
         joinRoomSubscription = joinRoomSubscription?.let { it.unsubscribe(); null }
 
+        // If we don't have yet a room id, create one first
+        val newRoomIdObservable: Observable<String>
+        if (request is JoinRoomFromContact) {
+            newRoomIdObservable = doCreateRoom(request).map { it.id }
+        } else if (request is JoinRoomFromExisting) {
+            newRoomIdObservable = request.roomId.toObservable()
+        } else {
+            subscriber.onError(StaticUserException(R.string.error_join_room))
+            return@create
+        }
 
+        val currentRoomID = peekRoomState().currentRoomID
+        joinRoomSubscription = newRoomIdObservable
+                .flatMap { newRoomId ->
+                    if (currentRoomID != null) {
+                        roomRepository.getRoom(currentRoomID).map { Pair(it, newRoomId) }
+                    } else {
+                        Pair<Room?, String>(null, newRoomId).toObservable()
+                    }
+                }
+                .first()
+                .observeOnMainThread()
+                .subscribe(object : GlobalSubscriber<Pair<Room?, String>>() {
+                    override fun onError(e: Throwable) {
+                        subscriber.onError(e)
+                    }
 
-        roomState.value.let { state ->
-
-
-            state.currentJoinRoomRequest?.let { roomState.onNext(state.copy(currentJoinRoomRequest = null)) }
-
-            // If we don't have yet a room id, create one first
-            val roomIdObservable: Observable<String>
-            if (request is JoinRoomFromContact) {
-                roomIdObservable = doCreateRoom(request).map { it.id }.observeOnMainThread()
-            } else if (request is JoinRoomFromExisting) {
-                roomIdObservable = request.roomId.toObservable()
-            } else {
-                subscriber.onError(StaticUserException(R.string.error_join_room))
-                return@create
-            }
-
-            joinRoomSubscription = roomIdObservable
-                    .flatMap { newRoomId ->
-                        if (state.currentRoomID != null) {
-                            roomRepository.getRoom(state.currentRoomID).map { Pair(it, newRoomId) }
+                    override fun onNext(t: Pair<Room?, String>) {
+                        if (t.second == currentRoomID) {
+                            logd("The requested room ${t.second} already joined and active.")
+                            subscriber.onNext(Unit)
+                            subscriber.onCompleted()
+                        } else if (t.first?.important ?: false) {
+                            subscriber.onError(StaticUserException(R.string.error_room_is_important_to_quit))
                         }
                         else {
-                            Pair<Room?, String>(null, newRoomId).toObservable()
+                            doJoinRoom(t.second).observeOnMainThread().subscribe(object : GlobalSubscriber<Unit>() {
+                                override fun onError(e: Throwable) {
+                                    subscriber.onError(e)
+                                }
+
+                                override fun onNext(t: Unit) {
+                                    joinRoomRequest = null
+                                    subscriber.onNext(Unit)
+                                    subscriber.onCompleted()
+                                }
+                            })
                         }
                     }
-                    .subscribe(object : GlobalSubscriber<Pair<Room?, String>>() {
-                        override fun onError(e: Throwable) {
-                            subscriber.onError(e)
-                        }
+                })
 
-                        override fun onNext(t: Pair<Room?, String>) {
-                            if (t.first?.important ?: false) {
-                                subscriber.onError(StaticUserException(R.string.error_room_is_important_to_quit))
-                            }
-                            else {
-                                doJoinRoom(t.second).observeOnMainThread().subscribe(object : GlobalSubscriber<Unit>() {
-                                    override fun onError(e: Throwable) {
-                                        subscriber.onError(e)
-                                    }
-
-                                    override fun onNext(t: Unit) {
-                                        roomState.onNext(roomState.value.copy(currentJoinRoomRequest = null))
-                                        subscriber.onNext(Unit)
-                                        subscriber.onCompleted()
-                                    }
-                                })
-                            }
-                        }
-                    })
-        }
     }.subscribeOnMainThread()
 
 
@@ -422,14 +434,21 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun doCreateRoom(request: JoinRoomFromContact): Observable<Room> {
         checkMainThread()
         logd("Creating room with $request")
-        if (loginState.value.currentUser?.privileges?.contains(Privilege.CREATE_ROOM)?.not() ?: false) {
-            return Observable.error(StaticUserException(R.string.error_no_permission))
-        }
 
-        return socket?.let {
-            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it }, request.toJSON())
-                    .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
-        } ?: Observable.error<Room>(IllegalStateException("Not connected to server"))
+        val userObservable = loginState.value.currentUserID?.let { userRepository.getUser(it) } ?: Observable.just<User?>(null)
+
+        return userObservable
+                .observeOnMainThread()
+                .flatMap { user ->
+                    if (user?.privileges?.contains(Privilege.CREATE_ROOM)?.not() ?: false) {
+                        Observable.error<Room>(StaticUserException(R.string.error_no_permission))
+                    } else {
+                        socket?.let {
+                            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it }, request.toJSON())
+                                    .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
+                        } ?: Observable.error<Room>(IllegalStateException("Not connected to server"))
+                    }
+                }
     }
 
     /**
@@ -444,7 +463,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             socket?.let {
 
                 // Listen for speaker changes
-                add(it.onEvent(EVENT_SERVER_SPEAKER_CHANGED, { it })
+                add(it.onJsonObjectEvent(EVENT_SERVER_SPEAKER_CHANGED)
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<JSONObject>() {
                             override fun onNext(t: JSONObject) {
@@ -463,7 +482,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }))
 
                 // Listen for active member changes
-                add(it.onEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED, { it })
+                add(it.onJsonObjectEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED)
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<JSONObject>() {
                             override fun onNext(t: JSONObject) {
@@ -483,7 +502,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                             roomRepository.updateRoom(updatedRoom, memberIDs).map {
                                 val engineProperties = mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
-                                        Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, loginState.value.currentUser?.id ?: throw UserNotLogonException()),
+                                        Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, loginState.value.currentUserID ?: throw UserNotLogonException()),
                                         Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
                                         Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
 
@@ -500,15 +519,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             }
 
                             override fun onNext(t: JoinRoomResult) {
-                                subscriber.onNext(Unit)
-                                subscriber.onCompleted()
-
                                 roomState.onNext(roomState.value.copy(
                                         status = RoomState.Status.JOINED,
                                         currentRoomOnlineMemberIDs = t.activeMemberIDs,
                                         currentRoomActiveSpeakerID = t.currentSpeaker))
 
                                 onRoomJoined(t)
+                                subscriber.onNext(Unit)
+                                subscriber.onCompleted()
                             }
                         }))
 
@@ -526,13 +544,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     roomState.onNext(state.copy(status = RoomState.Status.REQUESTING_MIC))
 
                     roomSubscription?.add(it.sendEvent(EVENT_CLIENT_CONTROL_MIC,
-                            { it.getBoolean("success").and(it.getString("speaker") == loginState.value.currentUser?.id) },
+                            { it.getBoolean("success").and(it.getString("speaker") == loginState.value.currentUserID) },
                             JSONObject().put("roomId", roomId))
                             .onErrorReturn { false }
                             .observeOnMainThread()
                             .subscribe {
                                 if (it) {
-                                    roomState.onNext(state.copy(currentRoomActiveSpeakerID = loginState.value.currentUser?.id))
+                                    roomState.onNext(state.copy(currentRoomActiveSpeakerID = loginState.value.currentUserID))
                                     onMicActivated(true)
                                 }
                                 subscriber.onNext(Unit)
@@ -554,7 +572,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             .subscribe())
                 } ?: subscriber.onError(IllegalStateException("Not in room"))
 
-                if (state.currentRoomActiveSpeakerID == loginState.value.currentUser?.id) {
+                if (state.currentRoomActiveSpeakerID == loginState.value.currentUserID) {
                     roomState.onNext(state.copy(currentRoomActiveSpeakerID = null))
                     onMicReleased(true)
                 }
@@ -574,11 +592,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
     }
 
+    internal data class ExtraRoomData(val roomState: RoomState,
+                                      val room: RoomWithMemberNames? = null)
+
+    internal data class ExtraLoginData(val loginState: LoginState,
+                                       val logonUser: User? = null)
+
 
     companion object {
-        private const val PREF_KEY_LOGIN_TOKEN = "key_login_token"
-        private const val PREF_KEY_LAST_LOGIN_USER_ID = "key_last_login_user_id"
-
         private const val SERVICE_NOTIFICATION_ID = 100
 
         public const val EVENT_SERVER_USER_LOGON = "s_logon"

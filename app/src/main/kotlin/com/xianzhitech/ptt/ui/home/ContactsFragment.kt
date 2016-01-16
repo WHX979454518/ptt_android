@@ -12,6 +12,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
@@ -110,10 +111,13 @@ class ContactsFragment : BaseFragment<Void>() {
                 val dialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context),
                         R.string.joining_room.toFormattedString(context), true, false)
 
-                (context.applicationContext as AppComponent).connectToBackgroundService()
-                        .flatMap { it.requestJoinRoom(request) }
-                        .first()
-                        .timeout(10, TimeUnit.SECONDS)
+                context.ensureConnectivity()
+                        .flatMap { (context.applicationContext as AppComponent).connectToBackgroundService() }
+                        .flatMap { binder ->
+                            binder.requestJoinRoom(request)
+                                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                                    .doOnError { binder.requestQuitCurrentRoom() }
+                        }
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<Unit>(context) {
                             override fun onNext(t: Unit) {

@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.ext
 
-import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -39,7 +38,7 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
             message = e.message
         }
 
-        if (context is Activity) {
+        if (context != null) {
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
 

@@ -11,10 +11,7 @@ import android.view.*
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getColorCompat
-import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import kotlin.collections.forEachIndexed
 
@@ -34,11 +31,14 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
         Person(R.string.tab_me, R.drawable.ic_person, PersonFragment::class.java)
     }
 
+    internal class Views(rootView: View,
+                         val viewPager: ViewPager = rootView.findView(R.id.home_viewPager),
+                         val tabContainer: ViewGroup = rootView.findView(R.id.home_tabContainer),
+                         val errorBanner: View = rootView.findView(R.id.home_errorBanner))
 
-    internal lateinit var viewPager: ViewPager
-    internal lateinit var tabContainer: ViewGroup
     internal var selectedTintColor: Int = 0
     internal var normalTintColor: Int = 0
+    internal var views: Views? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,45 +48,50 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_home, container, false)?.apply {
-            viewPager = findView(R.id.home_viewPager)
-            tabContainer = findView(R.id.home_tabContainer)
             normalTintColor = context.getColorCompat(R.color.secondary_text)
             selectedTintColor = context.getColorCompat(R.color.primary)
 
-            val tabs = Tab.values()
-            tabs.forEachIndexed { i, tab ->
-                val tabView = inflater.inflate(R.layout.view_tab, tabContainer, false) as TextView
-                tabView.setCompoundDrawablesWithIntrinsicBounds(null, context.getTintedDrawable(tab.drawableRes, normalTintColor), null, null)
-                tabView.setText(tab.labelRes)
-                tabView.setOnClickListener { v -> viewPager.setCurrentItem(i, true) }
-                tabContainer.addView(tabView)
-            }
-
-            viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
-                override fun getItem(position: Int): Fragment {
-                    return Fragment.instantiate(context, tabs[position].fragmentClazz.name)
+            views = Views(this).apply {
+                val tabs = Tab.values()
+                tabs.forEachIndexed { i, tab ->
+                    val tabView = inflater.inflate(R.layout.view_tab, tabContainer, false) as TextView
+                    tabView.setCompoundDrawablesWithIntrinsicBounds(null, context.getTintedDrawable(tab.drawableRes, normalTintColor), null, null)
+                    tabView.setText(tab.labelRes)
+                    tabView.setOnClickListener { v -> viewPager.setCurrentItem(i, true) }
+                    tabContainer.addView(tabView)
                 }
 
-                override fun getCount(): Int {
-                    return tabs.size
-                }
-            }
+                viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
+                    override fun getItem(position: Int): Fragment {
+                        return Fragment.instantiate(context, tabs[position].fragmentClazz.name)
+                    }
 
-            viewPager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
-                override fun onPageSelected(position: Int) {
-                    var i = 0
-                    val childCount = tabContainer.childCount
-                    while (i < childCount) {
-                        setTabItemSelected(i, i == position)
-                        i++
+                    override fun getCount(): Int {
+                        return tabs.size
                     }
                 }
-            })
+
+                viewPager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
+                    override fun onPageSelected(position: Int) {
+                        var i = 0
+                        val childCount = tabContainer.childCount
+                        while (i < childCount) {
+                            setTabItemSelected(i, i == position)
+                            i++
+                        }
+                    }
+                })
+            }
 
             if (savedInstanceState == null) {
                 setTabItemSelected(0, true)
             }
         }
+    }
+
+    override fun onDestroyView() {
+        views = null
+        super.onDestroyView()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -110,12 +115,20 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
         super.onStart()
 
         callbacks?.setTitle(getString(R.string.app_name))
+        context.getConnectivity()
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribe {
+                    views?.errorBanner?.setVisible(it.not())
+                }
     }
 
     private fun setTabItemSelected(position: Int, selected: Boolean) {
-        val tabItem = tabContainer.getChildAt(position) as TextView
-        tabItem.isSelected = selected
-        DrawableCompat.setTint(tabItem.compoundDrawables[1], if (selected) selectedTintColor else normalTintColor)
+        views?.apply {
+            val tabItem = tabContainer.getChildAt(position) as TextView
+            tabItem.isSelected = selected
+            DrawableCompat.setTint(tabItem.compoundDrawables[1], if (selected) selectedTintColor else normalTintColor)
+        }
     }
 
     interface Callbacks {

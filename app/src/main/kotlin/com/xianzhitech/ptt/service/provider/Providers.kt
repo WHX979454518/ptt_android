@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.service.provider
 
 import com.xianzhitech.ptt.model.Room
+import rx.Observable
 import java.io.Serializable
 
 /**
@@ -44,7 +45,8 @@ data class JoinRoomResult(val room: Room,
  * 提供程序选项数据的永久存储
  */
 interface PreferenceStorageProvider {
-    fun save(key: String, value: Serializable?)
-    fun remove(key: String)
-    fun get(key: String): Serializable?
+    var userSessionToken: String?
+    var lastLoginUserId: String?
+
+    fun receiveUserToken(): Observable<String?>
 }
