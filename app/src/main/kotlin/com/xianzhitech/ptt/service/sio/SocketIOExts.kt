@@ -9,9 +9,9 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.EmptyServerResponseException
 import com.xianzhitech.ptt.service.ServerException
-import com.xianzhitech.ptt.service.provider.JoinRoomFromContact
-import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
-import com.xianzhitech.ptt.service.provider.JoinRoomFromUser
+import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
+import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
+import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import io.socket.client.Ack
 import io.socket.client.Socket
 import org.json.JSONArray
@@ -89,11 +89,11 @@ internal fun <T> Socket.sendEvent(eventName: String, resultMapper: (JSONObject) 
 }
 
 
-internal fun JoinRoomFromContact.toJSON(): JSONArray {
+internal fun CreateRoomRequest.toJSON(): JSONArray {
     // 0代表通讯组 1代表联系人
     return when (this) {
-        is JoinRoomFromUser -> JSONArray().put(JSONObject().put("srcType", 1).put("srcData", userId))
-        is JoinRoomFromGroup -> JSONArray().put(JSONObject().put("srcType", 0).put("srcData", groupId))
+        is CreateRoomFromUser -> JSONArray().put(JSONObject().put("srcType", 1).put("srcData", userId))
+        is CreateRoomFromGroup -> JSONArray().put(JSONObject().put("srcType", 0).put("srcData", groupId))
         else -> throw IllegalArgumentException("Unknown request type: " + this)
     }
 }

@@ -1,7 +1,5 @@
 package com.xianzhitech.ptt.ui.home
 
-import android.app.ProgressDialog
-import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -12,16 +10,15 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.provider.JoinRoomFromGroup
-import com.xianzhitech.ptt.service.provider.JoinRoomFromUser
+import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
+import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
 import java.util.*
@@ -98,44 +95,20 @@ class ContactsFragment : BaseFragment<Void>() {
             notifyDataSetChanged()
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContactHolder {
-            return ContactHolder(parent)
-        }
-
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ContactHolder(parent)
         override fun onBindViewHolder(holder: ContactHolder, position: Int) {
             val contactItem = contactItems[position]
             holder.iconView.setImageDrawable(contactItem.getIcon(holder.iconView.context))
             holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->
-                val request = if (contactItem is User) JoinRoomFromUser(contactItem.id) else JoinRoomFromGroup((contactItem as Group).id)
-                val dialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context),
-                        R.string.joining_room.toFormattedString(context), true, false)
-
-                context.ensureConnectivity()
-                        .flatMap { (context.applicationContext as AppComponent).connectToBackgroundService() }
-                        .flatMap { binder ->
-                            binder.requestJoinRoom(request)
-                                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                                    .doOnError { binder.requestQuitCurrentRoom() }
-                        }
-                        .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<Unit>(context) {
-                            override fun onNext(t: Unit) {
-                                dialog.dismiss()
-                                startActivity(Intent(context, RoomActivity::class.java))
-                            }
-
-                            override fun onError(e: Throwable) {
-                                super.onError(e)
-                                dialog.dismiss()
-                            }
-                        })
+                context.joinRoom(null,
+                        if (contactItem is User) CreateRoomFromUser(contactItem.id) else CreateRoomFromGroup((contactItem as Group).id),
+                        false,
+                        bindToLifecycle())
             }
         }
 
-        override fun getItemCount(): Int {
-            return contactItems.size
-        }
+        override fun getItemCount() = contactItems.size
     }
 
     internal class ContactHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false)) {

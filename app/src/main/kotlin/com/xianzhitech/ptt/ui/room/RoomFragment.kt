@@ -234,10 +234,4 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     interface Callbacks {
         fun onRoomQuited()
     }
-
-
-    companion object {
-        private const val TAG_SWITCHING_ROOM_CONFIRM = "tag_switching_room_confirm"
-        private const val TAG_PROMPT_IMPORTANT = "tag_prompt_important"
-    }
 }

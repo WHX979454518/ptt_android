@@ -25,7 +25,8 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.*
 import com.xianzhitech.ptt.service.*
-import com.xianzhitech.ptt.service.provider.*
+import com.xianzhitech.ptt.service.provider.CreateRoomRequest
+import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import io.socket.client.IO
@@ -52,9 +53,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     override fun peekRoomState() = roomState.value
     override fun peekLoginState() = loginState.value
-
-    var joinRoomRequest : JoinRoomRequest? = null
-    var joinRoomSubscription: Subscription? = null
 
     private lateinit var preferenceProvider : PreferenceStorageProvider
     private lateinit var userRepository : UserRepository
@@ -269,11 +267,15 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     }))
 
-            add(newSocket.onEvent(EVENT_SERVER_INVITE_TO_JOIN, { it.getString("roomId") ?: throw ServerException("No roomId specified") })
+            add(newSocket.onJsonObjectEvent(EVENT_SERVER_INVITE_TO_JOIN)
+                    .flatMap { response ->
+                        val (updatedRoom, memberIDs) = response.getJSONObject("roomInfo").let { Pair(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
+                        roomRepository.updateRoom(updatedRoom, memberIDs)
+                    }
                     .observeOnMainThread()
-                    .subscribe(object : GlobalSubscriber<String>() {
-                        override fun onNext(t: String) {
-                            onInviteToJoin(t)
+                    .subscribe(object : GlobalSubscriber<Room>() {
+                        override fun onNext(t: Room) {
+                            onInviteToJoin(t.id)
                         }
                     }))
         }
@@ -293,8 +295,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     internal fun onInviteToJoin(roomId: String) {
         logd("Received invite to join room $roomId")
-        //        startActivity(RoomActivity.builder(this, JoinRoomFromExisting(roomId))
-        //                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        startActivity(Intent(this, RoomActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(RoomActivity.EXTRA_JOIN_ROOM_ID, roomId)
+                .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }
 
     internal fun onRoomJoined(result: JoinRoomResult) {
@@ -345,71 +349,46 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     override fun onBind(intent: Intent?) : IBinder = object : Binder(), BackgroundServiceBinder by this {}
 
-    override fun requestJoinRoom(request: JoinRoomRequest) = Observable.create<Unit> { subscriber ->
-        if (joinRoomRequest == request) {
-            logd("Request $request is being requested. Aborted")
-            subscriber.onCompleted()
-            return@create
-        }
-
-        joinRoomRequest = request
-
-        // Cancel previous join room request if any
-        joinRoomSubscription = joinRoomSubscription?.let { it.unsubscribe(); null }
-
-        // If we don't have yet a room id, create one first
-        val newRoomIdObservable: Observable<String>
-        if (request is JoinRoomFromContact) {
-            newRoomIdObservable = doCreateRoom(request).map { it.id }
-        } else if (request is JoinRoomFromExisting) {
-            newRoomIdObservable = request.roomId.toObservable()
+    override fun requestJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
+        if (roomId == roomState.value.currentRoomID) {
+            logd("Room $roomId is previously joined and active")
+            subscriber.onSingleValue(Unit)
         } else {
-            subscriber.onError(StaticUserException(R.string.error_join_room))
-            return@create
-        }
-
-        val currentRoomID = peekRoomState().currentRoomID
-        joinRoomSubscription = newRoomIdObservable
-                .flatMap { newRoomId ->
-                    if (currentRoomID != null) {
-                        roomRepository.getRoom(currentRoomID).map { Pair(it, newRoomId) }
-                    } else {
-                        Pair<Room?, String>(null, newRoomId).toObservable()
-                    }
+            doJoinRoom(roomId).subscribe(object : GlobalSubscriber<Unit>() {
+                override fun onNext(t: Unit) {
+                    subscriber.onSingleValue(t)
                 }
-                .first()
-                .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Pair<Room?, String>>() {
-                    override fun onError(e: Throwable) {
-                        subscriber.onError(e)
-                    }
 
-                    override fun onNext(t: Pair<Room?, String>) {
-                        if (t.second == currentRoomID) {
-                            logd("The requested room ${t.second} already joined and active.")
-                            subscriber.onNext(Unit)
-                            subscriber.onCompleted()
-                        } else if (t.first?.important ?: false) {
-                            subscriber.onError(StaticUserException(R.string.error_room_is_important_to_quit))
-                        }
-                        else {
-                            doJoinRoom(t.second).observeOnMainThread().subscribe(object : GlobalSubscriber<Unit>() {
-                                override fun onError(e: Throwable) {
-                                    subscriber.onError(e)
-                                }
-
-                                override fun onNext(t: Unit) {
-                                    joinRoomRequest = null
-                                    subscriber.onNext(Unit)
-                                    subscriber.onCompleted()
-                                }
-                            })
-                        }
-                    }
-                })
-
+                override fun onError(e: Throwable) {
+                    subscriber.onError(e)
+                }
+            })
+        }
     }.subscribeOnMainThread()
 
+
+    /**
+     * Requests creating a room. If success, the room will be persisted to the local database.
+     */
+    override fun createRoom(request: CreateRoomRequest): Observable<String> {
+        logd("Creating room with $request")
+
+        val userObservable = loginState.value.currentUserID?.let { userRepository.getUser(it) } ?: Observable.just<User?>(null)
+
+        return userObservable
+                .observeOnMainThread()
+                .flatMap { user ->
+                    if (user?.privileges?.contains(Privilege.CREATE_ROOM)?.not() ?: false) {
+                        Observable.error<String>(StaticUserException(R.string.error_no_permission))
+                    } else {
+                        socket?.let {
+                            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it }, request.toJSON())
+                                    .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
+                                    .map { it.id }
+                        } ?: Observable.error<String>(IllegalStateException("Not connected to server"))
+                    }
+                }
+    }
 
     internal fun doQuitCurrentRoom() {
         checkMainThread()
@@ -428,28 +407,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
     }
 
-    /**
-     * Requests creating a room. If success, the room will be persisted to the local database.
-     */
-    internal fun doCreateRoom(request: JoinRoomFromContact): Observable<Room> {
-        checkMainThread()
-        logd("Creating room with $request")
 
-        val userObservable = loginState.value.currentUserID?.let { userRepository.getUser(it) } ?: Observable.just<User?>(null)
-
-        return userObservable
-                .observeOnMainThread()
-                .flatMap { user ->
-                    if (user?.privileges?.contains(Privilege.CREATE_ROOM)?.not() ?: false) {
-                        Observable.error<Room>(StaticUserException(R.string.error_no_permission))
-                    } else {
-                        socket?.let {
-                            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it }, request.toJSON())
-                                    .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
-                        } ?: Observable.error<Room>(IllegalStateException("Not connected to server"))
-                    }
-                }
-    }
 
     /**
      * Actually join room. This is assumed all pre-check has been done.
@@ -597,6 +555,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     internal data class ExtraLoginData(val loginState: LoginState,
                                        val logonUser: User? = null)
+
+    /**
+     * 加入房间的返回结果
+     */
+    data class JoinRoomResult(val room: Room,
+                              val activeMemberIDs: Set<String>,
+                              val currentSpeaker: String?,
+                              val engineProperties: Map<String, Any?>)
 
 
     companion object {

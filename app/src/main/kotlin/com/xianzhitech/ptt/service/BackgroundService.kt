@@ -1,6 +1,6 @@
 package com.xianzhitech.ptt.service
 
-import com.xianzhitech.ptt.service.provider.JoinRoomRequest
+import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import rx.Observable
 import kotlin.collections.emptySet
 
@@ -35,7 +35,9 @@ interface BackgroundServiceBinder {
     fun login(username: String, password: String): Observable<Unit>
     fun logout(): Observable<Unit>
 
-    fun requestJoinRoom(request: JoinRoomRequest): Observable<Unit>
+    fun createRoom(request: CreateRoomRequest): Observable<String>
+
+    fun requestJoinRoom(roomId: String): Observable<Unit>
     fun requestMic(): Observable<Unit>
     fun releaseMic() : Observable<Unit>
     fun requestQuitCurrentRoom(): Observable<Unit>

@@ -82,3 +82,8 @@ fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainTh
 fun <T> Observable<T>.subscribeOnMainThread() = subscribeOn(AndroidSchedulers.mainThread())
 
 fun <T> T?.toObservable(): Observable<T> = Observable.just(this)
+
+fun <T> Subscriber<T>.onSingleValue(value: T) {
+    onNext(value)
+    onCompleted()
+}

@@ -1,7 +1,5 @@
 package com.xianzhitech.ptt.ui.home
 
-import android.app.ProgressDialog
-import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -11,14 +9,13 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getMemberNames
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
-import com.xianzhitech.ptt.service.provider.JoinRoomFromExisting
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.room.RoomActivity
-import java.util.concurrent.TimeUnit
+import com.xianzhitech.ptt.ui.room.joinRoom
 import kotlin.collections.emptyList
 import kotlin.text.isNullOrBlank
 
@@ -71,29 +68,7 @@ class RoomListFragment : BaseFragment<Void>() {
         override fun onBindViewHolder(holder: ConversationItemHolder, position: Int) {
             holder.setConversation(rooms[position])
             holder.itemView.setOnClickListener { v ->
-                val request = JoinRoomFromExisting(rooms[position].room.id)
-                val dialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context),
-                        R.string.joining_room.toFormattedString(context), true ,false)
-
-                context.ensureConnectivity()
-                        .flatMap { (context.applicationContext as AppComponent).connectToBackgroundService() }
-                        .flatMap { binder ->
-                            binder.requestJoinRoom(request)
-                                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                                    .doOnError { binder.requestQuitCurrentRoom() }
-                        }
-                        .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<Unit>(context) {
-                            override fun onError(e: Throwable) {
-                                super.onError(e)
-                                dialog.dismiss()
-                            }
-
-                            override fun onNext(t: Unit) {
-                                dialog.dismiss()
-                                startActivity(Intent(context, RoomActivity::class.java))
-                            }
-                        })
+                context.joinRoom(rooms[position].room.id, null, false, bindToLifecycle())
             }
         }
 
