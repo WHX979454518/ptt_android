@@ -19,6 +19,8 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.repo.optRoomWithMembers
+import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
@@ -123,19 +125,18 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
         bgService.flatMap { Observable.combineLatest(
                 it.roomState.flatMap { state ->
-                    if (state.currentRoomID == null) {
-                        ExtraRoomData(null, state).toObservable()
-                    }
-                    else {
-                        appComponent.roomRepository.getRoomWithMembers(state.currentRoomID).map { ExtraRoomData(it, state) }
-                    }
+                    Observable.combineLatest(
+                            appComponent.roomRepository.optRoomWithMembers(state.currentRoomID),
+                            appComponent.userRepository.optUser(state.currentRoomActiveSpeakerID),
+                            { first, second -> RoomData(state, first, second) })
                 },
                 it.loginState,
-                { first, second -> Pair(first, second) }) }
+                { first, second -> first.pairWith(second) })
+        }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<Pair<ExtraRoomData, LoginState>>() {
-                    override fun onNext(t: Pair<ExtraRoomData, LoginState>) {
+                .subscribe(object : GlobalSubscriber<Pair<RoomData, LoginState>>() {
+                    override fun onNext(t: Pair<RoomData, LoginState>) {
                         updateRoomState(t.first, t.second)
                     }
                 })
@@ -143,11 +144,27 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         bgService.connect()
     }
 
-    internal fun updateRoomState(extraRoomData: ExtraRoomData, loginState: LoginState) {
-        adapter.setMembers(extraRoomData.roomWithMembers?.members ?: emptyList(), extraRoomData.roomState.currentRoomOnlineMemberIDs)
+    internal fun updateRoomState(roomData: RoomData, loginState: LoginState) {
+        adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), roomData.roomState.currentRoomOnlineMemberIDs)
         views?.apply {
-            pttBtn.roomState = extraRoomData.roomState
-            toolbar.title = extraRoomData.roomWithMembers?.getRoomName(context)
+            pttBtn.roomState = roomData.roomState
+            toolbar.title = roomData.roomWithMembers?.getRoomName(context)
+
+            val show: Boolean
+
+            if (roomData.roomState.currentRoomActiveSpeakerID == null) {
+                show = false
+            } else if (roomData.roomState.currentRoomActiveSpeakerID == loginState.currentUserID) {
+                show = true
+                roomStatusView.text = R.string.room_talking.toFormattedString(context)
+            } else if (roomData.currentActiveUser != null) {
+                show = true
+                roomStatusView.text = R.string.room_other_is_talking.toFormattedString(context, roomData.currentActiveUser.name)
+            } else {
+                show = false
+            }
+
+            roomStatusView.animate().alpha(if (show) 1f else 0f).start()
         }
     }
 
@@ -224,8 +241,9 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         override fun getItemCount() = members.size
     }
 
-    internal data class ExtraRoomData(val roomWithMembers: RoomWithMembers?,
-                                      val roomState : RoomState)
+    internal data class RoomData(val roomState: RoomState,
+                                 val roomWithMembers: RoomWithMembers?,
+                                 val currentActiveUser: User?)
 
     private class ViewHolder(container: ViewGroup,
                              val imageView: ImageView = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false) as ImageView)

@@ -30,20 +30,23 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     private fun handleIntent(intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITE, false)) {
+            intent.getStringExtra(EXTRA_JOIN_ROOM_ID).let {
+                if (it.isNullOrBlank().not()) {
+                    joinRoom(it, null, true, bindToLifecycle())
+                }
+
+                intent.removeExtra(EXTRA_JOIN_ROOM_ID)
+            }
+            intent.removeExtra(EXTRA_JOIN_ROOM_FROM_INVITE)
+        }
+
         supportFragmentManager.apply {
             if (findFragmentById(R.id.room_content) == null) {
                 beginTransaction()
                         .replace(R.id.room_content, RoomFragment())
                         .commit()
                 executePendingTransactions()
-            }
-        }
-
-        if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITE, false)) {
-            intent.getStringExtra(EXTRA_JOIN_ROOM_ID).let {
-                if (it.isNullOrBlank().not()) {
-                    joinRoom(it, null, true, bindToLifecycle())
-                }
             }
         }
     }

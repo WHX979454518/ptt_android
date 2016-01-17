@@ -133,7 +133,7 @@ fun Context.joinRoom(roomId: String?,
                         .compose(lifecycle)
                         .doOnEach {
                             if (it.hasThrowable()) {
-                                binder.requestQuitCurrentRoom()
+                                binder.requestQuitCurrentRoom().subscribe(GlobalSubscriber())
                             }
                             dialog.dismiss()
                         }

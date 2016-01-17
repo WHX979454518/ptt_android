@@ -18,7 +18,6 @@ import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 import kotlin.collections.forEachIndexed
-import kotlin.text.isNullOrEmpty
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
 
@@ -72,11 +71,12 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).preferenceProvider.receiveUserToken()
+        (application as AppComponent).connectToBackgroundService()
+                .flatMap { it.loginState }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {
-                    if (it.isNullOrEmpty()) {
+                    if (it.currentUserID == null) {
                         displayFragment(LoginFragment::class.java)
                 } else {
                         displayFragment(HomeFragment::class.java)

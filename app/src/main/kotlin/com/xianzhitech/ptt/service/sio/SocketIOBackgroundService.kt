@@ -13,7 +13,6 @@ import android.support.annotation.RawRes
 import android.support.v4.app.NotificationCompat
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
@@ -29,6 +28,7 @@ import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
@@ -38,6 +38,7 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
+import rx.subscriptions.Subscriptions
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 import kotlin.collections.*
@@ -62,9 +63,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var talkEngineProvider: TalkEngineProvider
     private lateinit var btEngine: BtEngine
     private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
+    private lateinit var audioManager: AudioManager
+    private lateinit var objectMapper: ObjectMapper
     private var vibrator : Vibrator? = null
 
-    private var socket : Socket? = null
+    private var socketSubject = BehaviorSubject.create<Socket>()
 
     override fun onCreate() {
         super.onCreate()
@@ -77,8 +80,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         groupRepository = appComponent.groupRepository
         talkEngineProvider = appComponent.talkEngineProvider
         btEngine = appComponent.btEngine
+        objectMapper = appComponent.objectMapper
 
         vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
+        audioManager = (getSystemService(AUDIO_SERVICE) as AudioManager)
 
         soundPool = Pair(SoundPool(1, AudioManager.STREAM_MUSIC, 0), SparseIntArray()).apply {
             val context = this@SocketIOBackgroundService
@@ -105,21 +110,17 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         serviceStateSubscription = Observable.combineLatest(
                 roomState.flatMap { state ->
-                    state.currentRoomID?.let {
-                        roomRepository.getRoomWithMemberNames(it, Constants.MAX_MEMBER_DISPLAY_COUNT).map { ExtraRoomData(state, it) }
-                    } ?: ExtraRoomData(state).toObservable()
+                    roomRepository.optRoomWithMemberNames(state.currentRoomID).map { ExtraRoomState(state, it) }
                 },
                 loginState.flatMap { state ->
-                    state.currentUserID?.let {
-                        userRepository.getUser(it).map { ExtraLoginData(state, it) }
-                    } ?: ExtraLoginData(state).toObservable()
+                    userRepository.optUser(state.currentUserID).map { ExtraLoginState(state, it) }
                 },
                 getConnectivity(),
                 { first, second, third -> Triple(first, second, third) })
                 .debounce(500, TimeUnit.MILLISECONDS)
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Triple<ExtraRoomData, ExtraLoginData, Boolean>>() {
-                    override fun onNext(t: Triple<ExtraRoomData, ExtraLoginData, Boolean>) {
+                .subscribe(object : GlobalSubscriber<Triple<ExtraRoomState, ExtraLoginState, Boolean>>() {
+                    override fun onNext(t: Triple<ExtraRoomState, ExtraLoginState, Boolean>) {
                         val context = this@SocketIOBackgroundService
                         val builder = NotificationCompat.Builder(context)
                         builder.setOngoing(true)
@@ -190,11 +191,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         loginState.onNext(LoginState())
 
-        socket = socket?.let {
-            stopSelf()
-            it.close();
-            null
-        }
+        socketSubject.value?.close()
+        socketSubject = BehaviorSubject.create()
+        stopSelf()
 
         loginSubscription = loginSubscription?.let { it.unsubscribe(); null }
     }
@@ -208,9 +207,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }.subscribeOnMainThread()
 
     internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
-        val newSocket = IO.socket((application as AppComponent).signalServerEndpoint)
-
-        loginState.onNext(loginState.value.copy(status = LoginState.Status.LOGIN_IN_PROGRESS))
+        val newSocket = IO.socket((application as AppComponent).signalServerEndpoint, IO.Options().apply {
+            reconnection = false
+        })
 
         // Process headers
         if (headers.isNotEmpty()) {
@@ -223,29 +222,43 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         // Monitor user login
         loginSubscription = CompositeSubscription().apply {
-            add(newSocket.onEvent(EVENT_SERVER_USER_LOGON, { User().readFrom(it) })
+            add(getConnectivity()
+                    .distinctUntilChanged()
+                    .observeOnMainThread()
+                    .subscribe {
+                        if (!it && newSocket.connected()) {
+                            newSocket.disconnect()
+                        }
+
+                        if (newSocket.connected().not()) {
+                            newSocket.connect()
+                            loginState.onNext(loginState.value.copy(status = LoginState.Status.LOGIN_IN_PROGRESS))
+                        }
+                    })
+
+            add(newSocket.receiveEvent<User>(EVENT_SERVER_USER_LOGON)
                     .flatMap { user ->
                         if (preferenceProvider.lastLoginUserId != user.id) {
                             // Clear room information if it's this user's first login
                             logd("Clearing room database because different user has logged in")
                             preferenceProvider.lastLoginUserId = user.id
                             roomRepository.clearRooms().map { user }
-                        }
-                        else {
+                        } else {
                             user.toObservable()
                         }
                     }
                     .flatMap { user ->
                         // Do sync contacts
                         logd("Requesting syncing contacts")
-                        newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS,
-                                { it.toSyncContactsDto() },
-                                JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
-                                .flatMap {
-                                    logd("Received sync result: $it")
-                                    userRepository.replaceAllUsers(it.users.toList() + user)
-                                            .concatWith(groupRepository.replaceAllGroups(it.groups, it.groupMemberMap))
-                                            .concatWith(contactRepository.replaceAllContacts(it.users.transform { it.id }, it.groups.transform { it.id }))
+                        newSocket.sendEvent<SyncContactsDTO>(EVENT_CLIENT_SYNC_CONTACTS, SyncContactsRequestDTO())
+                                .flatMap { syncContactDto ->
+                                    logd("Received sync result: $syncContactDto")
+                                    userRepository.replaceAllUsers(syncContactDto.users.addUsers.toList() + user)
+                                            .flatMap { groupRepository.replaceAllGroups(syncContactDto.groups.addGroups, syncContactDto.toGroupMemberMaps()) }
+                                            .flatMap {
+                                                contactRepository.replaceAllContacts(syncContactDto.users.addUsers.transform { it.id },
+                                                        syncContactDto.groups.addGroups.transform { it.id })
+                                            }
                                 }
                                 .map { user }
                     }
@@ -267,20 +280,18 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     }))
 
-            add(newSocket.onJsonObjectEvent(EVENT_SERVER_INVITE_TO_JOIN)
-                    .flatMap { response ->
-                        val (updatedRoom, memberIDs) = response.getJSONObject("roomInfo").let { Pair(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
-                        roomRepository.updateRoom(updatedRoom, memberIDs)
-                    }
+            add(newSocket.receiveEvent<RoomDTO>(EVENT_SERVER_INVITE_TO_JOIN)
+                    .flatMap { dto -> roomRepository.updateRoom(dto, dto.memberIDs).map { dto } }
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<Room>() {
                         override fun onNext(t: Room) {
                             onInviteToJoin(t.id)
                         }
                     }))
+
         }
 
-        socket = newSocket.connect()
+        socketSubject.onNext(newSocket)
     }.subscribeOnMainThread()
 
     internal fun onUserLogout(user: String) {
@@ -291,6 +302,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun onUserLogon(user : User) {
         logd("User $user has logged on")
         startService(Intent(this, javaClass))
+
+        roomState.value.let {
+            if (it.status != RoomState.Status.IDLE && it.currentRoomID != null) {
+                logd("User has re-logon, trying to re-join the room")
+                doJoinRoom(it.currentRoomID).subscribe(GlobalSubscriber(this))
+            }
+        }
     }
 
     internal fun onInviteToJoin(roomId: String) {
@@ -301,13 +319,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }
 
-    internal fun onRoomJoined(result: JoinRoomResult) {
-        currentTalkEngine = talkEngineProvider.createEngine().apply {
-            logd("Connecting to talk engine")
-            connect(result.room.id, result.engineProperties)
-        }
-
+    internal fun onRoomJoined(result: JoinRoomDTO) {
         if (btEngine.isBtMicEnable) {
+            audioManager.mode = AudioManager.MODE_NORMAL
             btEngine.startSCO()
             roomSubscription?.add(btEngine.btMessage
                     .observeOnMainThread()
@@ -319,6 +333,16 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             }
                         }
                     }))
+        } else {
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        }
+
+        currentTalkEngine = talkEngineProvider.createEngine().apply {
+            logd("Connecting to talk engine")
+            connect(result.room.id, result.voiceServerInfo.toWebRTCEngineProperties(hashMapOf()).apply {
+                this[WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID] = loginState.value.currentUserID
+            })
         }
     }
 
@@ -326,6 +350,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         if (btEngine.isBtMicEnable) {
             btEngine.stopSCO()
         }
+
+        audioManager.mode = AudioManager.MODE_NORMAL
     }
 
     internal fun onMicActivated(isSelf: Boolean) {
@@ -370,43 +396,42 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     /**
      * Requests creating a room. If success, the room will be persisted to the local database.
      */
-    override fun createRoom(request: CreateRoomRequest): Observable<String> {
+    override fun createRoom(request: CreateRoomRequest) = Observable.defer {
         logd("Creating room with $request")
+        val socket = socketSubject.value
+        val currentUserID = peekLoginState().currentUserID
 
-        val userObservable = loginState.value.currentUserID?.let { userRepository.getUser(it) } ?: Observable.just<User?>(null)
+        if (socket == null || currentUserID == null) {
+            return@defer Observable.error<String>(IllegalStateException())
+        }
 
-        return userObservable
-                .observeOnMainThread()
+        userRepository.getUser(currentUserID)
                 .flatMap { user ->
-                    if (user?.privileges?.contains(Privilege.CREATE_ROOM)?.not() ?: false) {
+                    if (user == null || user.privileges.contains(Privilege.CREATE_ROOM).not()) {
                         Observable.error<String>(StaticUserException(R.string.error_no_permission))
                     } else {
-                        socket?.let {
-                            it.sendEvent(EVENT_CLIENT_CREATE_ROOM, { it }, request.toJSON())
-                                    .flatMap { roomRepository.updateRoom(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
-                                    .map { it.id }
-                        } ?: Observable.error<String>(IllegalStateException("Not connected to server"))
+                        socket.sendRawEvent<RoomDTO>(EVENT_CLIENT_CREATE_ROOM, request.toJSON())
+                                .flatMap { roomRepository.updateRoom(it, it.memberIDs) }
+                                .map { it.id }
                     }
                 }
-    }
+    }.subscribeOnMainThread()
+
 
     internal fun doQuitCurrentRoom() {
         checkMainThread()
-        roomState.value?.let { state ->
-            state.currentRoomID?.let { roomId ->
-                roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
-                socket?.let {
-                    it.sendEvent(EVENT_CLIENT_LEAVE_ROOM, { it }, JSONObject().put("roomId", roomId)).subscribe(GlobalSubscriber())
-                    onRoomQuited(roomId)
-                }
+        val state = roomState.value
+        val socket = socketSubject.value
 
-            }
-            roomState.onNext(state.copy(status = RoomState.Status.IDLE, currentRoomID = null, currentRoomOnlineMemberIDs = emptySet()))
+        if (state.currentRoomID != null && socket != null) {
+            roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
+            socket.sendEventIgnoreReturn(EVENT_CLIENT_LEAVE_ROOM, JoinRoomRequestDTO(state.currentRoomID)).subscribe(GlobalSubscriber())
+            roomState.onNext(RoomState())
+            onRoomQuited(state.currentRoomID)
         }
 
         currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
     }
-
 
 
     /**
@@ -415,129 +440,108 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
      */
     internal fun doJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
         doQuitCurrentRoom()
+        logd("Joining room $roomId")
         roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
+
         roomSubscription = CompositeSubscription().apply {
-            logd("Joining room $roomId")
-            socket?.let {
-
-                // Listen for speaker changes
-                add(it.onJsonObjectEvent(EVENT_SERVER_SPEAKER_CHANGED)
+            add(socketSubject.flatMap { socket ->
+                // Subscribes to speaker change event
+                add(socket.receiveEvent<SpeakerChangeDTO>(EVENT_SERVER_SPEAKER_CHANGED)
                         .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<JSONObject>() {
-                            override fun onNext(t: JSONObject) {
-                                val receivedRoomId = t.getString("roomId")
-                                val receivedSpeakerId = if (t.isNull("speaker")) null else t.getString("speaker")
-                                if (receivedRoomId == roomId && roomState.value.currentRoomActiveSpeakerID != receivedSpeakerId) {
-                                    roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = receivedSpeakerId))
-
-                                    if (receivedSpeakerId != null) {
-                                        onMicActivated(false)
-                                    } else {
-                                        onMicReleased(false)
-                                    }
-                                }
+                        .subscribeSafe {
+                            val currentRoomState = peekRoomState()
+                            if (it.roomID == roomId && currentRoomState.currentRoomActiveSpeakerID != it.speakerID) {
+                                roomState.onNext(currentRoomState.copy(currentRoomActiveSpeakerID = it.speakerID))
+                                it.speakerID?.let { onMicActivated(false) } ?: onMicReleased(false)
                             }
-                        }))
+                        })
 
-                // Listen for active member changes
-                add(it.onJsonObjectEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED)
+                // Subscribes to active member changes
+                add(socket.receiveEvent<OnlineMemberChangeDTO>(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED)
                         .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<JSONObject>() {
-                            override fun onNext(t: JSONObject) {
-                                val receivedRoomId = t.getString("roomId")
-                                if (receivedRoomId == roomId) {
-                                    roomState.onNext(roomState.value.copy(currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet()))
-                                }
+                        .subscribeSafe {
+                            val currentRoomState = peekRoomState()
+                            if (it.roomID == currentRoomState.currentRoomID) {
+                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = it.onlineMemberIDs))
                             }
-                        }))
+                        })
 
-                // Join the room!
-                add(it.sendEvent(EVENT_CLIENT_JOIN_ROOM, { it }, JSONObject().put("roomId", roomId))
-                        .flatMap { response ->
-                            logd("Joining room response: $response")
-                            val server = response.getJSONObject("server")
-                            val (updatedRoom, memberIDs) = response.getJSONObject("roomInfo").let { Pair(Room().readFrom(it), it.getJSONArray("members").toStringIterable()) }
+                // Join the room
+                socket.sendEvent<JoinRoomDTO>(EVENT_CLIENT_JOIN_ROOM, JoinRoomRequestDTO(roomId))
+                        .flatMap { dto -> roomRepository.updateRoom(dto.room, dto.memberIDs).map { dto } }
+            }.observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<JoinRoomDTO>() {
+                        override fun onError(e: Throwable) = subscriber.onError(e)
+                        override fun onNext(t: JoinRoomDTO) {
+                            roomState.onNext(roomState.value.copy(
+                                    status = RoomState.Status.JOINED,
+                                    currentRoomOnlineMemberIDs = t.onlineMemberIDs,
+                                    currentRoomActiveSpeakerID = t.speakerID))
 
-                            roomRepository.updateRoom(updatedRoom, memberIDs).map {
-                                val engineProperties = mapOf(Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_IP, server.getString("host")),
-                                        Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, loginState.value.currentUserID ?: throw UserNotLogonException()),
-                                        Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, server.getInt("port")),
-                                        Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, server.getString("protocol")))
-
-                                val activeMemberIDs = response.getJSONArray("activeMembers").toStringIterable().toSet()
-                                val currentSpeaker = response.optString("speaker")
-
-                                JoinRoomResult(updatedRoom, activeMemberIDs, currentSpeaker, engineProperties)
-                            }
+                            onRoomJoined(t)
+                            subscriber.onSingleValue(Unit)
                         }
-                        .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<JoinRoomResult>() {
-                            override fun onError(e: Throwable) {
-                                subscriber.onError(e)
-                            }
-
-                            override fun onNext(t: JoinRoomResult) {
-                                roomState.onNext(roomState.value.copy(
-                                        status = RoomState.Status.JOINED,
-                                        currentRoomOnlineMemberIDs = t.activeMemberIDs,
-                                        currentRoomActiveSpeakerID = t.currentSpeaker))
-
-                                onRoomJoined(t)
-                                subscriber.onNext(Unit)
-                                subscriber.onCompleted()
-                            }
-                        }))
-
-
-            }
+                    }))
         }
+
     }.subscribeOnMainThread()
 
     override fun requestQuitCurrentRoom() = Observable.defer { doQuitCurrentRoom().toObservable() }.subscribeOnMainThread()
 
     override fun requestMic() = Observable.create<Unit> { subscriber ->
-        socket?.let {
-            roomState.value.let { state ->
-                state.currentRoomID?.let { roomId ->
-                    roomState.onNext(state.copy(status = RoomState.Status.REQUESTING_MIC))
+        val socket = socketSubject.value
+        val currRoomState = peekRoomState()
+        val currRoomSubscription = roomSubscription
+        val currUserId = loginState.value.currentUserID
 
-                    roomSubscription?.add(it.sendEvent(EVENT_CLIENT_CONTROL_MIC,
-                            { it.getBoolean("success").and(it.getString("speaker") == loginState.value.currentUserID) },
-                            JSONObject().put("roomId", roomId))
-                            .onErrorReturn { false }
-                            .observeOnMainThread()
-                            .subscribe {
-                                if (it) {
-                                    roomState.onNext(state.copy(currentRoomActiveSpeakerID = loginState.value.currentUserID))
-                                    onMicActivated(true)
-                                }
-                                subscriber.onNext(Unit)
-                                subscriber.onCompleted()
-                            })
-                } ?: subscriber.onError(IllegalStateException("Not in room"))
-            }
-        } ?: subscriber.onCompleted()
-    }.observeOnMainThread()
-
-
-    override fun releaseMic() = Observable.create<Unit> { subscriber ->
-        socket?.let {
-            roomState.value.let { state ->
-                state.currentRoomID?.let { roomId ->
-                    roomSubscription?.add(it.sendEvent(EVENT_CLIENT_RELEASE_MIC, { it }, JSONObject().put("roomId", roomId))
-                            .onErrorReturn { null }
-                            .observeOnMainThread()
-                            .subscribe())
-                } ?: subscriber.onError(IllegalStateException("Not in room"))
-
-                if (state.currentRoomActiveSpeakerID == loginState.value.currentUserID) {
-                    roomState.onNext(state.copy(currentRoomActiveSpeakerID = null))
-                    onMicReleased(true)
-                }
-            }
+        if (socket == null || currRoomState.currentRoomID == null ||
+                currRoomSubscription == null || currUserId == null) {
+            subscriber.onError(IllegalStateException())
+            return@create
         }
 
-        subscriber.onCompleted()
+        roomState.onNext(currRoomState.copy(status = RoomState.Status.REQUESTING_MIC))
+        currRoomSubscription.add(socket.sendEvent<MicResponseDTO>(EVENT_CLIENT_CONTROL_MIC, MicRequestDTO(currRoomState.currentRoomID))
+                .observeOnMainThread()
+                .subscribe(object : GlobalSubscriber<MicResponseDTO>() {
+                    override fun onError(e: Throwable) {
+                        subscriber.onError(e)
+                    }
+
+                    override fun onNext(t: MicResponseDTO) {
+                        if (t.success && t.speakerID == currUserId) {
+                            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = currUserId))
+                            onMicActivated(true)
+                        }
+
+                        subscriber.onSingleValue(Unit)
+                    }
+                }))
+
+    }.subscribeOnMainThread()
+
+
+    override fun releaseMic() = Observable.defer<Unit> {
+        val socket = socketSubject.value
+        val currRoomState = peekRoomState()
+        val currRoomSubscription = roomSubscription
+        val currUserId = loginState.value.currentUserID
+
+        if (socket == null || currRoomState.currentRoomID == null ||
+                currRoomSubscription == null || currUserId == null) {
+            return@defer Observable.error<Unit>(IllegalStateException())
+        }
+
+        currRoomSubscription.add(socket.sendEventIgnoreReturn(EVENT_CLIENT_RELEASE_MIC, MicRequestDTO(currRoomState.currentRoomID))
+                .observeOnMainThread()
+                .subscribe(GlobalSubscriber()))
+
+        if (currRoomState.currentRoomActiveSpeakerID == currUserId) {
+            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null))
+            onMicReleased(true)
+        }
+
+        Unit.toObservable()
     }.observeOnMainThread()
 
     internal fun checkMainThread() {
@@ -550,20 +554,72 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
     }
 
-    internal data class ExtraRoomData(val roomState: RoomState,
-                                      val room: RoomWithMemberNames? = null)
 
-    internal data class ExtraLoginData(val loginState: LoginState,
-                                       val logonUser: User? = null)
+    internal inline fun <reified T : Any> Socket.receiveEvent(eventName: String) = Observable.create<T> { subscriber ->
+        subscriber.onStart()
+        val listener = { args: Array<Any> ->
+            try {
+                val value = args.getOrElse(0, { throw EmptyServerResponseException() })
+                subscriber.onNext(objectMapper.convertValue<T>(value, T::class.java))
+            } catch(e: Exception) {
+                subscriber.onError(e)
+            }
+        }
+        on(eventName, listener)
+        subscriber.add(Subscriptions.create { off(eventName, listener) })
+    }
 
-    /**
-     * 加入房间的返回结果
-     */
-    data class JoinRoomResult(val room: Room,
-                              val activeMemberIDs: Set<String>,
-                              val currentSpeaker: String?,
-                              val engineProperties: Map<String, Any?>)
+    internal inline fun <reified T : Any> Socket.sendEvent(eventName: String, arg: Any? = null) = Observable.create<T> { subscriber ->
+        val convertedArg: JSONObject?
+        try {
+            convertedArg = objectMapper.convertValue(arg, JSONObject::class.java)
+        } catch(e: Exception) {
+            subscriber.onError(e)
+            return@create
+        }
 
+        logd("Sending event $eventName with arg $convertedArg")
+        emit(eventName, arrayOf(convertedArg),
+                Ack {
+                    try {
+                        it.ensureNoError()
+                        val value = objectMapper.convertValue(it.getOrNull(0), T::class.java)
+                        logd("Received $value for event $eventName with arg $arg")
+                        subscriber.onSingleValue(value)
+                    } catch(e: Exception) {
+                        subscriber.onError(e)
+                    }
+                })
+    }
+
+    internal inline fun <reified T : Any> Socket.sendRawEvent(eventName: String, arg: Any? = null) = Observable.create<T> { subscriber ->
+        logd("Sending event $eventName with arg $arg")
+        emit(eventName, arrayOf(arg),
+                Ack {
+                    try {
+                        it.ensureNoError()
+                        val convertValue = objectMapper.convertValue(it.getOrNull(0), T::class.java)
+                        logd("Received $convertValue for event $eventName with arg $arg")
+                        subscriber.onSingleValue(convertValue)
+
+                    } catch(e: Exception) {
+                        subscriber.onError(e)
+                    }
+                })
+    }
+
+    internal fun Socket.sendEventIgnoreReturn(eventName: String, arg: Any? = null) = Observable.create<Unit> { subscriber ->
+        logd("Sending event $eventName with arg $arg ignoring result")
+        emit(eventName, arrayOf(objectMapper.convertValue(arg, JSONObject::class.java)),
+                Ack {
+                    try {
+                        it.ensureNoError()
+                        subscriber.onSingleValue(Unit)
+                    } catch(e: Exception) {
+                        subscriber.onError(e)
+                    }
+                })
+    }
 
     companion object {
         private const val SERVICE_NOTIFICATION_ID = 100

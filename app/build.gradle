@@ -29,7 +29,7 @@ android {
         if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
             buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
         } else {
-            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://192.168.1.128:3000\"")
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9001\"")
         }
     }
 
@@ -74,7 +74,9 @@ android {
 
     packagingOptions {
         exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/LICENSE'
         exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/NOTICE'
     }
 }
 
@@ -99,6 +101,13 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
 //    compile 'com.android.support:percent:23.1.1'
+
+//    compile 'com.fasterxml.jackson.core:jackson-core:2.7.0'
+//    compile 'com.fasterxml.jackson.core:jackson-annotations:2.7.0'
+//    compile ('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.7.0') {
+//         excluding org.json which is provided by Android
+//        exclude group: 'org.json', module: 'json'
+//    }
 
     compile ('io.socket:socket.io-client:0.6.2') {
         // excluding org.json which is provided by Android

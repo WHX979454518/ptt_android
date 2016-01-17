@@ -47,7 +47,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         handler.post {
             mediaEngine = MediaEngine(context, property[PROPERTY_PROTOCOL]?.equals("tcp") ?: false)
             mediaEngine.setLocalSSRC(property[PROPERTY_LOCAL_USER_ID]?.toString()?.toInt() ?: throw IllegalArgumentException("User id is null"))
-            mediaEngine.setRemoteIp(property[PROPERTY_REMOTE_SERVER_IP]?.toString()?.resolveToIPAddress() ?: throw IllegalArgumentException("No server ip specified"))
+            mediaEngine.setRemoteIp(property[PROPERTY_REMOTE_SERVER_ADDRESS]?.toString()?.resolveToIPAddress() ?: throw IllegalArgumentException("No server ip specified"))
             mediaEngine.setAudioTxPort(property[PROPERTY_REMOTE_SERVER_PORT]?.toString()?.toInt() ?: throw IllegalArgumentException("No report port specified"))
             mediaEngine.setAudioRxPort(LOCAL_RTP_PORT, LOCAL_RTCP_PORT)
             mediaEngine.setAgc(true)
@@ -99,7 +99,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
         private val HEARTBEAT_INTERVAL_MILLS: Long = 5000
 
-        public const val PROPERTY_REMOTE_SERVER_IP = "server_ip"
+        public const val PROPERTY_REMOTE_SERVER_ADDRESS = "server_address"
         public const val PROPERTY_REMOTE_SERVER_PORT = "server_port"
         public const val PROPERTY_PROTOCOL = "protocol"
         public const val PROPERTY_LOCAL_USER_ID = "local_user_id"

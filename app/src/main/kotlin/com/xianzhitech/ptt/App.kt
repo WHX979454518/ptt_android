@@ -10,7 +10,6 @@ import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.connectToService
-import com.xianzhitech.ptt.ext.receiveStringValue
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
@@ -39,6 +38,13 @@ open class App : Application(), AppComponent {
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
 
+    override val objectMapper: ObjectMapper by lazy {
+        ObjectMapper().apply {
+            registerModule(JsonOrgModule())
+            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        }
+    }
+
     override fun connectToBackgroundService() = connectToService<BackgroundServiceBinder>(Intent(this, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE)
 
     override fun onCreate() {
@@ -62,8 +68,6 @@ open class App : Application(), AppComponent {
             set(value) {
                 pref.edit().putString(KEY_LAST_USER_ID, value).apply()
             }
-
-        override fun receiveUserToken() = pref.receiveStringValue(KEY_USER_TOKEN)
 
         companion object {
             const val KEY_USER_TOKEN = "session_token"

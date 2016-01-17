@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.service
 
+import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.RoomWithMemberNames
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import rx.Observable
 import kotlin.collections.emptySet
@@ -24,6 +26,12 @@ data class LoginState(val status : LoginState.Status = LoginState.Status.IDLE,
         LOGGED_IN,
     }
 }
+
+data class ExtraRoomState(val roomState: RoomState,
+                          val room: RoomWithMemberNames? = null)
+
+data class ExtraLoginState(val loginState: LoginState,
+                           val logonUser: User? = null)
 
 interface BackgroundServiceBinder {
     val roomState : Observable<RoomState>

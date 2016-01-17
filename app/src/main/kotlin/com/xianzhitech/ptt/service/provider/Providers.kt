@@ -1,7 +1,5 @@
 package com.xianzhitech.ptt.service.provider
 
-import rx.Observable
-
 
 /**
  * 新建一个会话的请求
@@ -28,6 +26,4 @@ data class CreateRoomFromGroup(val groupId: String, override val name: String? =
 interface PreferenceStorageProvider {
     var userSessionToken: String?
     var lastLoginUserId: String?
-
-    fun receiveUserToken(): Observable<String?>
 }

@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.repo
 
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Room
@@ -50,3 +51,12 @@ data class RoomWithMemberNames(val room: Room,
 
 data class RoomWithMembers(val room: Room,
                            val members : List<User>)
+
+fun RoomRepository.optRoomWithMembers(roomId: String?): Observable<RoomWithMembers?> =
+        roomId?.let { getRoomWithMembers(it) } ?: Observable.just<RoomWithMembers?>(null)
+
+fun RoomRepository.optRoomWithMemberNames(roomId: String?, maxMember: Int = Constants.MAX_MEMBER_DISPLAY_COUNT): Observable<RoomWithMemberNames?> =
+        roomId?.let { getRoomWithMemberNames(it, maxMember) } ?: Observable.just<RoomWithMemberNames?>(null)
+
+fun UserRepository.optUser(id: String?): Observable<User?> =
+        id?.let { getUser(id) } ?: Observable.just<User?>(null)

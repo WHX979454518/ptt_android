@@ -20,15 +20,15 @@
     <string name="dialog_cancel">取消</string>
     <string name="dialog_ok">知道了</string>
     <string name="dialog_yes_switch">切换</string>
-    <string name="dialog_navigate_to_current_room">切换至&quot;$1%s&quot;</string>
+    <string name="dialog_navigate_to_current_room">切换至&quot;%1$s&quot;</string>
 
     <string name="dialog_confirm_title">确定吗</string>
-    <string name="receive_invite_switch_confirm" formatted="false">您收到了加入&quot;$1%s&quot;房间的邀请, 但是当前您正处于房间&quot;$2%s&quot;对讲状态中, 确定是否切换至新的房间?</string>
+    <string name="receive_invite_switch_confirm">您收到了加入&quot;%1$s&quot;房间的邀请, 但是当前您正处于房间&quot;%2$s&quot;对讲状态中, 确定是否切换至新的房间?</string>
 
     <string name="room_talking">请讲话</string>
     <string name="room_other_is_talking">%1$s 正在讲话</string>
     <string name="room_prompt_switching">切换房间</string>
-    <string name="room_prompt_switching_message" formatted="false">您即将进入新房间&quot;%1$s&quot;, 并退出当前房间&quot;%2$s&quot;, 确定吗?</string>
+    <string name="room_prompt_switching_message">您即将进入新房间&quot;%1$s&quot;, 并退出当前房间&quot;%2$s&quot;, 确定吗?</string>
     <string name="room_prompt_important">当前房间不可退出</string>
     <string name="room_prompt_important_message">房间&quot;%1$s&quot;被管理员标记为重要房间, 当前不可退出</string>
 
