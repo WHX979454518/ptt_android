@@ -296,7 +296,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun onInviteToJoin(roomId: String) {
         logd("Received invite to join room $roomId")
         startActivity(Intent(this, RoomActivity::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_ID, roomId)
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }

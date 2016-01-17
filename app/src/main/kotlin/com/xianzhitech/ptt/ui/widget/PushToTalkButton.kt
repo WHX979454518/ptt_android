@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.ImageButton
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.toColorValue
 import com.xianzhitech.ptt.service.RoomState
 
@@ -62,6 +63,8 @@ class PushToTalkButton : ImageButton {
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+
+        logd("Paint ptt button roomStatus: $roomState")
 
         paint.color = when {
             roomState?.currentRoomActiveSpeakerID != null -> android.R.color.holo_red_dark
