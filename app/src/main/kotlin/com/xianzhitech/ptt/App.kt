@@ -38,13 +38,6 @@ open class App : Application(), AppComponent {
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
 
-    override val objectMapper: ObjectMapper by lazy {
-        ObjectMapper().apply {
-            registerModule(JsonOrgModule())
-            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        }
-    }
-
     override fun connectToBackgroundService() = connectToService<BackgroundServiceBinder>(Intent(this, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE)
 
     override fun onCreate() {

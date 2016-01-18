@@ -21,7 +21,6 @@ interface AppComponent {
     val httpClient: OkHttpClient
     val talkEngineProvider: TalkEngineProvider
     val preferenceProvider: PreferenceStorageProvider
-    val objectMapper: ObjectMapper
 
     // Configuration
     val signalServerEndpoint: String

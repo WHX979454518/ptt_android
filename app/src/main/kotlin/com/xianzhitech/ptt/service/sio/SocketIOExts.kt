@@ -1,18 +1,25 @@
 package com.xianzhitech.ptt.service.sio
 
 import android.support.v4.util.ArrayMap
+import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.onSingleValue
 import com.xianzhitech.ptt.ext.toStringIterable
 import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.service.EmptyServerResponseException
 import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
+import io.socket.client.Ack
+import io.socket.client.Socket
 import org.json.JSONArray
 import org.json.JSONObject
+import rx.Observable
+import rx.subscriptions.Subscriptions
 import java.util.*
 
 
@@ -110,4 +117,46 @@ internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
     }
 
     return result
+}
+
+internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObject> { subscriber ->
+    subscriber.onStart()
+    val listener = { args: Array<Any> ->
+        try {
+            val value = args.getOrNull(0) as? JSONObject ?: throw EmptyServerResponseException()
+            subscriber.onNext(value)
+        } catch(e: Exception) {
+            subscriber.onError(e)
+        }
+    }
+    on(eventName, listener)
+    subscriber.add(Subscriptions.create { off(eventName, listener) })
+}
+
+internal fun Socket.sendEvent(eventName: String, arg: Any? = null) = Observable.create<JSONObject> { subscriber ->
+    logd("Sending event $eventName with arg $arg")
+    emit(eventName, arrayOf(arg),
+            Ack {
+                try {
+                    it.ensureNoError()
+                    val value = (it.getOrNull(0) as? JSONObject) ?: throw EmptyServerResponseException()
+                    logd("Received $value for event $eventName with arg $arg")
+                    subscriber.onSingleValue(value)
+                } catch(e: Exception) {
+                    subscriber.onError(e)
+                }
+            })
+}
+
+internal fun Socket.sendEventIgnoreReturn(eventName: String, arg: Any? = null) = Observable.create<Unit> { subscriber ->
+    logd("Sending event $eventName with arg $arg ignoring result")
+    emit(eventName, arrayOf(arg),
+            Ack {
+                try {
+                    it.ensureNoError()
+                    subscriber.onSingleValue(Unit)
+                } catch(e: Exception) {
+                    subscriber.onError(e)
+                }
+            })
 }

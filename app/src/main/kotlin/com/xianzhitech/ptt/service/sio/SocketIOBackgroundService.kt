@@ -29,7 +29,6 @@ import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
-import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
@@ -39,7 +38,6 @@ import rx.Observable
 import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
-import rx.subscriptions.Subscriptions
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
@@ -662,49 +660,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     private fun playSound(@RawRes res: Int) {
         soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
-    }
-
-
-    internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObject> { subscriber ->
-        subscriber.onStart()
-        val listener = { args: Array<Any> ->
-            try {
-                val value = args.getOrNull(0) as? JSONObject ?: throw EmptyServerResponseException()
-                subscriber.onNext(value)
-            } catch(e: Exception) {
-                subscriber.onError(e)
-            }
-        }
-        on(eventName, listener)
-        subscriber.add(Subscriptions.create { off(eventName, listener) })
-    }
-
-    internal fun Socket.sendEvent(eventName: String, arg: Any? = null) = Observable.create<JSONObject> { subscriber ->
-        logd("Sending event $eventName with arg $arg")
-        emit(eventName, arrayOf(arg),
-                Ack {
-                    try {
-                        it.ensureNoError()
-                        val value = (it.getOrNull(0) as? JSONObject) ?: throw EmptyServerResponseException()
-                        logd("Received $value for event $eventName with arg $arg")
-                        subscriber.onSingleValue(value)
-                    } catch(e: Exception) {
-                        subscriber.onError(e)
-                    }
-                })
-    }
-
-    internal fun Socket.sendEventIgnoreReturn(eventName: String, arg: Any? = null) = Observable.create<Unit> { subscriber ->
-        logd("Sending event $eventName with arg $arg ignoring result")
-        emit(eventName, arrayOf(arg),
-                Ack {
-                    try {
-                        it.ensureNoError()
-                        subscriber.onSingleValue(Unit)
-                    } catch(e: Exception) {
-                        subscriber.onError(e)
-                    }
-                })
     }
 
     companion object {
