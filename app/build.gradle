@@ -26,10 +26,22 @@ android {
         versionCode 1
         versionName "1.0"
 
+
         if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
             buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
         } else {
-            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9001\"")
+            Properties properties = new Properties()
+            try {
+                properties.load(project.rootProject.file('local.properties').newDataInputStream())
+            } catch (Exception e) {
+            }
+            def signalServerEndpoint = properties.getProperty("server.signal")
+            if (signalServerEndpoint != null && !signalServerEndpoint.isEmpty()) {
+                buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + signalServerEndpoint + "\"")
+            }
+            else {
+                buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9001\"")
+            }
         }
     }
 
