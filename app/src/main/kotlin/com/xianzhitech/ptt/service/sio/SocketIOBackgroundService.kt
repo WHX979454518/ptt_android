@@ -13,6 +13,7 @@ import android.support.annotation.RawRes
 import android.support.v4.app.NotificationCompat
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
@@ -205,7 +206,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
         val newSocket = IO.socket((application as AppComponent).signalServerEndpoint, IO.Options().apply {
             reconnection = true
-            forceNew = true
         })
 
         // Process headers
@@ -227,18 +227,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         // Monitor user login
         loginSubscription = CompositeSubscription().apply {
-            add(getConnectivity()
-                .distinctUntilChanged()
-                .observeOnMainThread()
-                .subscribe {
-                    if (it && newSocket.connected().not()) {
-                        socketSubject.onNext(newSocket.connect())
-                    }
-                    else if (it.not() && newSocket.connected()) {
-                        newSocket.disconnect()
-                    }
-                })
-
             add(newSocket.receiveEvent(EVENT_SERVER_USER_LOGON)
                     .flatMap { response ->
                         logd("Login response: $response")
@@ -330,12 +318,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         /**
                          * Response:
                          *  {
-                         *    Room Object,
-                         *    members : [user ids]
+                         *    roomInfo : { roomObject, members: [user IDs] },
+                         *    activeMembers: [active user IDs],
+                         *    speaker: "speaker ID"
                          *  }
                          */
-                        val room = Room().readFrom(response)
-                        roomRepository.updateRoom(room, response.getJSONArray("members").toStringIterable()).map { room }
+                        val roomInfoJsonObj = response.getJSONObject("roomInfo")
+                        val room = Room().readFrom(roomInfoJsonObj)
+                        roomRepository.updateRoom(room, roomInfoJsonObj.getJSONArray("members").toStringIterable()).map { room }
                     }
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<Room>() {
@@ -343,6 +333,20 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             onInviteToJoin(t.id)
                         }
                     }))
+
+            // This must be in the end!
+            add(getConnectivity()
+                    .distinctUntilChanged()
+                    .observeOnMainThread()
+                    .subscribe {
+                        logd("Has connectivity: $it, isConnected ${newSocket.connected()}")
+                        if (it && newSocket.connected().not()) {
+                            socketSubject.onNext(newSocket.connect())
+                        }
+                        else if (it.not() && newSocket.connected()) {
+                            newSocket.disconnect()
+                        }
+                    })
 
         }
 
@@ -381,7 +385,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     }))
         } else {
-            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            audioManager.mode = AudioManager.MODE_IN_CALL
             audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         }
 
@@ -478,9 +482,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         checkMainThread()
         val state = roomState.value
         val socket = socketSubject.value
+        roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
 
         if (state.currentRoomID != null && socket != null) {
-            roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
             /**
              * Quit room:
              * Request: { roomId : "room ID" }
@@ -505,11 +509,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
 
         roomSubscription = CompositeSubscription().apply {
-            add(socketSubject.flatMap { socket ->
-                // Subscribes to speaker change event
-                add(socket.receiveEvent(EVENT_SERVER_SPEAKER_CHANGED)
-                        .observeOnMainThread()
-                        .subscribeSafe { response ->
+            val socketObservable = socketSubject.publish()
+
+            // Subscribes to speaker change event
+            add(socketObservable
+                    .flatMap { socket -> socket.receiveEvent(EVENT_SERVER_SPEAKER_CHANGED) }
+                    .observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<JSONObject>() {
+                        override fun onNext(t: JSONObject) {
                             /**
                              * Speaker change response:
                              * {
@@ -517,19 +524,23 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                              *      speaker: "speaker ID"
                              * }
                              */
-                            val speakerChangeRoomID = response.getString("roomId")
-                            val newSpeakerID = if (response.isNull("speaker").not()) response.optString("speaker") else null
+                            val speakerChangeRoomID = t.getString("roomId")
+                            val newSpeakerID = if (t.isNull("speaker").not()) t.optString("speaker") else null
                             val currentRoomState = peekRoomState()
                             if (speakerChangeRoomID == roomId && currentRoomState.currentRoomActiveSpeakerID != newSpeakerID) {
-                                roomState.onNext(currentRoomState.copy(currentRoomActiveSpeakerID = newSpeakerID))
+                                roomState.onNext(currentRoomState.copy(currentRoomActiveSpeakerID = newSpeakerID,
+                                        status = newSpeakerID?.let { RoomState.Status.ACTIVE } ?: RoomState.Status.JOINED))
                                 newSpeakerID?.let { onMicActivated(false) } ?: onMicReleased(false)
                             }
-                        })
+                        }
+                    }))
 
-                // Subscribes to active member changes
-                add(socket.receiveEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED)
-                        .observeOnMainThread()
-                        .subscribeSafe { response ->
+            // Subscribes to active member changes
+            add(socketObservable
+                    .flatMap { socket -> socket.receiveEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED) }
+                    .observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<JSONObject>() {
+                        override fun onNext(t: JSONObject) {
                             /**
                              * Online member change response:
                              * {
@@ -539,40 +550,48 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                              *
                              */
                             val currentRoomState = peekRoomState()
-                            if (response.getString("roomId") == currentRoomState.currentRoomID) {
-                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = response.getJSONArray("activeMembers").toStringIterable().toSet()))
+                            if (t.getString("roomId") == currentRoomState.currentRoomID) {
+                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet()))
                             }
-                        })
-
-                // Join the room
-                socket.sendEvent(EVENT_CLIENT_JOIN_ROOM, JSONObject().put("roomId", roomId))
-                        .flatMap { response ->
-                            /**
-                             * Join room request: { roomId : "room ID" }
-                             * Response:
-                             * {
-                             *      roomInfo: { room object, members: [user IDs] },
-                             *      activeMembers: [user IDs],
-                             *      speaker: "speaker ID",
-                             *      server: {
-                             *          host: "webrtc host",
-                             *          port: 9002,
-                             *          protocol: "udp"
-                             *      }
-                             * }
-                             *
-                             */
-                            val roomInfoJsonObj = response.getJSONObject("roomInfo")
-                            roomRepository.updateRoom(Room().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable()).map { response }
                         }
-            }.observeOnMainThread()
+                    }))
+
+            // Kicks off joining room event
+            add(socketObservable
+                    .flatMap { socket ->
+                        // Join the room
+                        socket.sendEvent(EVENT_CLIENT_JOIN_ROOM, JSONObject().put("roomId", roomId))
+                                .flatMap { response ->
+                                    /**
+                                     * Join room request: { roomId : "room ID" }
+                                     * Response:
+                                     * {
+                                     *      roomInfo: { room object, members: [user IDs] },
+                                     *      activeMembers: [user IDs],
+                                     *      speaker: "speaker ID",
+                                     *      server: {
+                                     *          host: "webrtc host",
+                                     *          port: 9002,
+                                     *          protocol: "udp"
+                                     *      }
+                                     * }
+                                     *
+                                     */
+                                    val roomInfoJsonObj = response.getJSONObject("roomInfo")
+                                    roomRepository.updateRoom(Room().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable())
+                                            .map { response }
+                                }
+                    }
+                    .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<JSONObject>() {
                         override fun onError(e: Throwable) = subscriber.onError(e)
                         override fun onNext(t: JSONObject) {
+                            val activeSpeakerID = if (t.isNull("speaker")) null else t.optString("speaker")
                             roomState.onNext(roomState.value.copy(
-                                    status = RoomState.Status.JOINED,
-                                    currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet(),
-                                    currentRoomActiveSpeakerID = if (t.isNull("speaker")) null else t.optString("speaker")))
+                                    status = activeSpeakerID?.let { RoomState.Status.ACTIVE } ?: RoomState.Status.JOINED,
+                                    currentRoomActiveSpeakerID = activeSpeakerID,
+                                    currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet()
+                            ))
 
                             val voiceServerObj = t.getJSONObject("server")
 
@@ -584,6 +603,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             subscriber.onSingleValue(Unit)
                         }
                     }))
+
+            // Kicks the socket observable off
+            socketObservable.connect()
         }
 
     }.subscribeOnMainThread()
@@ -599,15 +621,22 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         if (socket == null || currRoomState.currentRoomID == null ||
                 currRoomSubscription == null || currUserId == null) {
             subscriber.onError(IllegalStateException())
+            playSound(R.raw.pttup_offline)
             return@create
         }
 
-        roomState.onNext(currRoomState.copy(status = RoomState.Status.REQUESTING_MIC))
-        currRoomSubscription.add(socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, JSONObject().put("roomId", currRoomState.currentRoomID))
+        roomState.onNext(roomState.value.copy(status = RoomState.Status.REQUESTING_MIC))
+        val micRequest = JSONObject().put("roomId", currRoomState.currentRoomID)
+        currRoomSubscription.add(socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, micRequest)
+                .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<JSONObject>() {
                     override fun onError(e: Throwable) {
                         subscriber.onError(e)
+                        // When error happens, always requests release mic to prevent further damage to the state
+                        socket.sendEventIgnoreReturn(EVENT_CLIENT_RELEASE_MIC, micRequest).subscribe(GlobalSubscriber())
+                        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINED))
+                        playSound(R.raw.pttup_offline)
                     }
 
                     override fun onNext(t: JSONObject) {
@@ -618,7 +647,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                         val newSpeakerID = if (t.isNull("speaker").not()) t.optString("speaker") else null
                         if (t.getBoolean("success") && newSpeakerID == currUserId) {
-                            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = currUserId))
+                            roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = currUserId, status = RoomState.Status.ACTIVE))
                             onMicActivated(true)
                         }
 
@@ -649,7 +678,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .subscribe(GlobalSubscriber()))
 
         if (currRoomState.currentRoomActiveSpeakerID == currUserId) {
-            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null))
+            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null, status = RoomState.Status.JOINED))
             onMicReleased(true)
         }
 

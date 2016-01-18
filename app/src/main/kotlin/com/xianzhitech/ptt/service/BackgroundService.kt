@@ -4,7 +4,6 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import rx.Observable
-import kotlin.collections.emptySet
 
 data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
                      val currentRoomID: String? = null,
@@ -15,6 +14,7 @@ data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
         JOINING,
         JOINED,
         REQUESTING_MIC,
+        ACTIVE,
     }
 }
 

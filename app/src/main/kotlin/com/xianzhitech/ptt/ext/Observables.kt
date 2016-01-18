@@ -12,7 +12,6 @@ import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Func1
-import rx.observers.SafeSubscriber
 import java.util.*
 import java.util.concurrent.TimeoutException
 
@@ -77,12 +76,6 @@ fun <T> Observable<ResultSet>.mapToList(mapper: Func1<ResultSet, T>): Observable
         }
     }
 }
-
-fun <T> Observable<T>.subscribeSafe(action: (T) -> Unit) = SafeSubscriber(object : GlobalSubscriber<T>() {
-    override fun onNext(t: T) {
-        action(t)
-    }
-})
 
 fun <T> Observable<T>.subscribeOnOptional(scheduler: Scheduler?): Observable<T> = scheduler?.let { subscribeOn(it) } ?: this
 
