@@ -19,6 +19,7 @@ interface UserRepository {
     fun getUsers(ids : Iterable<String>) : Observable<List<User>>
     fun getAllUsers(): Observable<List<User>>
     fun replaceAllUsers(users: Iterable<User>): Observable<Unit>
+    fun saveUser(user : User) : Observable<User>
 }
 
 interface GroupRepository {

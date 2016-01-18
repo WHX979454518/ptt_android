@@ -7,7 +7,6 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.EmptyServerResponseException
 import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
@@ -15,13 +14,10 @@ import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.*
-import kotlin.collections.emptyMap
-import kotlin.collections.getOrElse
-import kotlin.collections.plusAssign
 
 
 internal fun Array<Any?>.ensureNoError() {
-    val arg = getOrElse(0, { throw EmptyServerResponseException() })
+    val arg = getOrNull(0)
 
     if (arg is JSONObject && arg.has("error")) {
         throw ServerException(arg.getString("error"))

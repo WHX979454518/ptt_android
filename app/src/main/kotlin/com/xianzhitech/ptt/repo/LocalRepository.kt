@@ -11,7 +11,6 @@ import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.Executors
-import kotlin.collections.*
 
 /**
  *
@@ -115,6 +114,11 @@ class LocalRepository(internal val db: Database)
         users.forEach {
             insert(User.TABLE_NAME, cacheValues.apply { clear(); it.toValues(this) })
         }
+    }
+
+    override fun saveUser(user: User) = updateInTransaction {
+        insert(User.TABLE_NAME, hashMapOf<String, Any?>().apply { user.toValues(this) })
+        user
     }
 
     override fun getGroupMembers(groupId: String) = createQuery(

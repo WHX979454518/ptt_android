@@ -19,6 +19,7 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Privilege
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
@@ -41,7 +42,6 @@ import rx.subscriptions.CompositeSubscription
 import rx.subscriptions.Subscriptions
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
-import kotlin.collections.*
 
 class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
@@ -64,7 +64,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var btEngine: BtEngine
     private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
     private lateinit var audioManager: AudioManager
-    private lateinit var objectMapper: ObjectMapper
     private var vibrator : Vibrator? = null
 
     private var socketSubject = BehaviorSubject.create<Socket>()
@@ -80,7 +79,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         groupRepository = appComponent.groupRepository
         talkEngineProvider = appComponent.talkEngineProvider
         btEngine = appComponent.btEngine
-        objectMapper = appComponent.objectMapper
 
         vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
         audioManager = (getSystemService(AUDIO_SERVICE) as AudioManager)
@@ -236,8 +234,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     })
 
-            add(newSocket.receiveEvent<User>(EVENT_SERVER_USER_LOGON)
-                    .flatMap { user ->
+            add(newSocket.receiveEvent(EVENT_SERVER_USER_LOGON)
+                    .flatMap { response ->
+                        /**
+                         * Response: { userObject }
+                         */
+                        val user = User().readFrom(response)
+
                         if (preferenceProvider.lastLoginUserId != user.id) {
                             // Clear room information if it's this user's first login
                             logd("Clearing room database because different user has logged in")
@@ -247,20 +250,54 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             user.toObservable()
                         }
                     }
-                    .flatMap { user ->
+                    .flatMap { loggedInUser ->
                         // Do sync contacts
+                        /**
+                         * Request:
+                         * {
+                         *      enterMemberVersion: 1,
+                         *      enterGroupVersion: 1
+                         * }
+                         *
+                         * Response:
+                         * {
+                         *       enterpriseMembers: {
+                         *           version: 1,
+                         *           reset: true,
+                         *           add: [user objects]
+                         *       },
+                         *       enterpriseGroups: {
+                         *           version: 1,
+                         *           reset: true,
+                         *           add: [
+                         *              {
+                         *                inline groupObject,
+                         *                members: [user IDs]
+                         *              },
+                         *              ...
+                         *           ]
+                         *       }
+                         *   }
+                         */
                         logd("Requesting syncing contacts")
-                        newSocket.sendEvent<SyncContactsDTO>(EVENT_CLIENT_SYNC_CONTACTS, SyncContactsRequestDTO())
-                                .flatMap { syncContactDto ->
-                                    logd("Received sync result: $syncContactDto")
-                                    userRepository.replaceAllUsers(syncContactDto.users.addUsers.toList() + user)
-                                            .flatMap { groupRepository.replaceAllGroups(syncContactDto.groups.addGroups, syncContactDto.toGroupMemberMaps()) }
+                        newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
+                                .flatMap { response ->
+                                    logd("Received sync result: $response")
+                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { User().readFrom(it as JSONObject) }.toArrayList()
+                                    val addGroupJsonArray = response.getJSONObject("enterpriseGroups").getJSONArray("add")
+                                    val groups : MutableList<Any> = addGroupJsonArray.transform { Group().readFrom(it as JSONObject) }.toArrayList()
+                                    val groupMembers = addGroupJsonArray.toGroupsAndMembers()
+
+                                    userRepository.replaceAllUsers(users as List<User>)
+                                            .flatMap { userRepository.saveUser(loggedInUser) }
+                                            .flatMap { groupRepository.replaceAllGroups(groups as List<Group>, groupMembers) }
                                             .flatMap {
-                                                contactRepository.replaceAllContacts(syncContactDto.users.addUsers.transform { it.id },
-                                                        syncContactDto.groups.addGroups.transform { it.id })
+                                                users.forEachIndexed { i, any -> users[i] = any.id }
+                                                groups.forEachIndexed { i, any -> groups[i] = (any as Group).id }
+                                                contactRepository.replaceAllContacts(users as List<String>, groups as List<String>)
                                             }
                                 }
-                                .map { user }
+                                .map { loggedInUser }
                     }
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<User>() {
@@ -280,8 +317,18 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     }))
 
-            add(newSocket.receiveEvent<RoomDTO>(EVENT_SERVER_INVITE_TO_JOIN)
-                    .flatMap { dto -> roomRepository.updateRoom(dto, dto.memberIDs).map { dto } }
+            add(newSocket.receiveEvent(EVENT_SERVER_INVITE_TO_JOIN)
+                    .flatMap { response ->
+                        /**
+                         * Response:
+                         *  {
+                         *    Room Object,
+                         *    members : [user ids]
+                         *  }
+                         */
+                        val room = Room().readFrom(response)
+                        roomRepository.updateRoom(room, response.getJSONArray("members").transform { it as String }).map { room }
+                    }
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<Room>() {
                         override fun onNext(t: Room) {
@@ -319,7 +366,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }
 
-    internal fun onRoomJoined(result: JoinRoomDTO) {
+    internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
         if (btEngine.isBtMicEnable) {
             audioManager.mode = AudioManager.MODE_NORMAL
             btEngine.startSCO()
@@ -340,9 +387,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         currentTalkEngine = talkEngineProvider.createEngine().apply {
             logd("Connecting to talk engine")
-            connect(result.room.id, result.voiceServerInfo.toWebRTCEngineProperties(hashMapOf()).apply {
-                this[WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID] = loginState.value.currentUserID
-            })
+            connect(roomId, talkEngineProperties)
         }
     }
 
@@ -410,9 +455,18 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     if (user == null || user.privileges.contains(Privilege.CREATE_ROOM).not()) {
                         Observable.error<String>(StaticUserException(R.string.error_no_permission))
                     } else {
-                        socket.sendRawEvent<RoomDTO>(EVENT_CLIENT_CREATE_ROOM, request.toJSON())
-                                .flatMap { roomRepository.updateRoom(it, it.memberIDs) }
-                                .map { it.id }
+                        socket.sendEvent(EVENT_CLIENT_CREATE_ROOM, request.toJSON())
+                                .flatMap { response ->
+                                    /**
+                                     * Response:
+                                     * {
+                                     *      Room object,
+                                     *      members : [user IDs]
+                                     * }
+                                     */
+                                    val room = Room().readFrom(response)
+                                    roomRepository.updateRoom(room, response.getJSONArray("members").transform { it as String }).map { it.id }
+                                }
                     }
                 }
     }.subscribeOnMainThread()
@@ -425,7 +479,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         if (state.currentRoomID != null && socket != null) {
             roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
-            socket.sendEventIgnoreReturn(EVENT_CLIENT_LEAVE_ROOM, JoinRoomRequestDTO(state.currentRoomID)).subscribe(GlobalSubscriber())
+            /**
+             * Quit room:
+             * Request: { roomId : [roomId] }
+             * Response: Ignored
+             */
+            socket.sendEventIgnoreReturn(EVENT_CLIENT_LEAVE_ROOM, JSONObject().put("roomId", state.currentRoomID)).subscribe(GlobalSubscriber())
             roomState.onNext(RoomState())
             onRoomQuited(state.currentRoomID)
         }
@@ -446,39 +505,80 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         roomSubscription = CompositeSubscription().apply {
             add(socketSubject.flatMap { socket ->
                 // Subscribes to speaker change event
-                add(socket.receiveEvent<SpeakerChangeDTO>(EVENT_SERVER_SPEAKER_CHANGED)
+                add(socket.receiveEvent(EVENT_SERVER_SPEAKER_CHANGED)
                         .observeOnMainThread()
-                        .subscribeSafe {
+                        .subscribeSafe { response ->
+                            /**
+                             * Speaker change response:
+                             * {
+                             *      roomId: "room ID",
+                             *      speaker: "speaker ID"
+                             * }
+                             */
+                            val speakerChangeRoomID = response.getString("roomId")
+                            val newSpeakerID = if (response.isNull("speaker").not()) response.optString("speaker") else null
                             val currentRoomState = peekRoomState()
-                            if (it.roomID == roomId && currentRoomState.currentRoomActiveSpeakerID != it.speakerID) {
-                                roomState.onNext(currentRoomState.copy(currentRoomActiveSpeakerID = it.speakerID))
-                                it.speakerID?.let { onMicActivated(false) } ?: onMicReleased(false)
+                            if (speakerChangeRoomID == roomId && currentRoomState.currentRoomActiveSpeakerID != newSpeakerID) {
+                                roomState.onNext(currentRoomState.copy(currentRoomActiveSpeakerID = newSpeakerID))
+                                newSpeakerID?.let { onMicActivated(false) } ?: onMicReleased(false)
                             }
                         })
 
                 // Subscribes to active member changes
-                add(socket.receiveEvent<OnlineMemberChangeDTO>(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED)
+                add(socket.receiveEvent(EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED)
                         .observeOnMainThread()
-                        .subscribeSafe {
+                        .subscribeSafe { response ->
+                            /**
+                             * Online member change response:
+                             * {
+                             *      roomId: "room ID",
+                             *      activeMembers: [user IDs]
+                             * }
+                             *
+                             */
                             val currentRoomState = peekRoomState()
-                            if (it.roomID == currentRoomState.currentRoomID) {
-                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = it.onlineMemberIDs))
+                            if (response.getString("roomId") == currentRoomState.currentRoomID) {
+                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = response.getJSONArray("activeMembers").transform { it as String }.toSet()))
                             }
                         })
 
                 // Join the room
-                socket.sendEvent<JoinRoomDTO>(EVENT_CLIENT_JOIN_ROOM, JoinRoomRequestDTO(roomId))
-                        .flatMap { dto -> roomRepository.updateRoom(dto.room, dto.memberIDs).map { dto } }
+                socket.sendEvent(EVENT_CLIENT_JOIN_ROOM, JSONObject().put("roomId", roomId))
+                        .flatMap { response ->
+                            /**
+                             * Join room request: { roomId : "room ID" }
+                             * Response:
+                             * {
+                             *      roomInfo: { room object, members: [user IDs] },
+                             *      activeMembers: [user IDs],
+                             *      speaker: "speaker ID",
+                             *      server: {
+                             *          host: "webrtc host",
+                             *          port: 9002,
+                             *          protocol: "udp"
+                             *      }
+                             * }
+                             *
+                             */
+                            val roomInfoJsonObj = response.getJSONObject("roomInfo")
+                            roomRepository.updateRoom(Room().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").transform { it as String }).map { response }
+                        }
             }.observeOnMainThread()
-                    .subscribe(object : GlobalSubscriber<JoinRoomDTO>() {
+                    .subscribe(object : GlobalSubscriber<JSONObject>() {
                         override fun onError(e: Throwable) = subscriber.onError(e)
-                        override fun onNext(t: JoinRoomDTO) {
+                        override fun onNext(t: JSONObject) {
                             roomState.onNext(roomState.value.copy(
                                     status = RoomState.Status.JOINED,
-                                    currentRoomOnlineMemberIDs = t.onlineMemberIDs,
-                                    currentRoomActiveSpeakerID = t.speakerID))
+                                    currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").transform { it as String }.toSet(),
+                                    currentRoomActiveSpeakerID = if (t.isNull("speaker")) null else t.optString("speaker")))
 
-                            onRoomJoined(t)
+                            val voiceServerObj = t.getJSONObject("server")
+
+                            onRoomJoined(roomId, hashMapOf(Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, loginState.value.currentUserID),
+                                    Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS, voiceServerObj.getString("host")),
+                                    Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, voiceServerObj.getInt("port")),
+                                    Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, voiceServerObj.getString("protocol"))))
+
                             subscriber.onSingleValue(Unit)
                         }
                     }))
@@ -501,15 +601,21 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
 
         roomState.onNext(currRoomState.copy(status = RoomState.Status.REQUESTING_MIC))
-        currRoomSubscription.add(socket.sendEvent<MicResponseDTO>(EVENT_CLIENT_CONTROL_MIC, MicRequestDTO(currRoomState.currentRoomID))
+        currRoomSubscription.add(socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, JSONObject().put("roomId", currRoomState.currentRoomID))
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<MicResponseDTO>() {
+                .subscribe(object : GlobalSubscriber<JSONObject>() {
                     override fun onError(e: Throwable) {
                         subscriber.onError(e)
                     }
 
-                    override fun onNext(t: MicResponseDTO) {
-                        if (t.success && t.speakerID == currUserId) {
+                    override fun onNext(t: JSONObject) {
+                        /**
+                         * Mic request: { roomId : "roomId" }
+                         * Response: { success: true, speaker: "speaker ID" }
+                         */
+
+                        val newSpeakerID = if (t.isNull("speaker").not()) t.optString("speaker") else null
+                        if (t.getBoolean("success") && newSpeakerID == currUserId) {
                             roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = currUserId))
                             onMicActivated(true)
                         }
@@ -532,7 +638,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             return@defer Observable.error<Unit>(IllegalStateException())
         }
 
-        currRoomSubscription.add(socket.sendEventIgnoreReturn(EVENT_CLIENT_RELEASE_MIC, MicRequestDTO(currRoomState.currentRoomID))
+        /**
+         * Mic release request: { roomId : "roomId" }
+         * Response: Ignored.
+         */
+        currRoomSubscription.add(socket.sendEventIgnoreReturn(EVENT_CLIENT_RELEASE_MIC, JSONObject().put("roomId", currRoomState.currentRoomID))
                 .observeOnMainThread()
                 .subscribe(GlobalSubscriber()))
 
@@ -555,12 +665,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
 
-    internal inline fun <reified T : Any> Socket.receiveEvent(eventName: String) = Observable.create<T> { subscriber ->
+    internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObject> { subscriber ->
         subscriber.onStart()
         val listener = { args: Array<Any> ->
             try {
-                val value = args.getOrElse(0, { throw EmptyServerResponseException() })
-                subscriber.onNext(objectMapper.convertValue<T>(value, T::class.java))
+                val value = args.getOrNull(0) as? JSONObject ?: throw EmptyServerResponseException()
+                subscriber.onNext(value)
             } catch(e: Exception) {
                 subscriber.onError(e)
             }
@@ -569,21 +679,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         subscriber.add(Subscriptions.create { off(eventName, listener) })
     }
 
-    internal inline fun <reified T : Any> Socket.sendEvent(eventName: String, arg: Any? = null) = Observable.create<T> { subscriber ->
-        val convertedArg: JSONObject?
-        try {
-            convertedArg = objectMapper.convertValue(arg, JSONObject::class.java)
-        } catch(e: Exception) {
-            subscriber.onError(e)
-            return@create
-        }
-
-        logd("Sending event $eventName with arg $convertedArg")
-        emit(eventName, arrayOf(convertedArg),
+    internal fun Socket.sendEvent(eventName: String, arg: Any? = null) = Observable.create<JSONObject> { subscriber ->
+        logd("Sending event $eventName with arg $arg")
+        emit(eventName, arrayOf(arg),
                 Ack {
                     try {
                         it.ensureNoError()
-                        val value = objectMapper.convertValue(it.getOrNull(0), T::class.java)
+                        val value = (it.getOrNull(0) as? JSONObject) ?: throw EmptyServerResponseException()
                         logd("Received $value for event $eventName with arg $arg")
                         subscriber.onSingleValue(value)
                     } catch(e: Exception) {
@@ -592,25 +694,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 })
     }
 
-    internal inline fun <reified T : Any> Socket.sendRawEvent(eventName: String, arg: Any? = null) = Observable.create<T> { subscriber ->
-        logd("Sending event $eventName with arg $arg")
-        emit(eventName, arrayOf(arg),
-                Ack {
-                    try {
-                        it.ensureNoError()
-                        val convertValue = objectMapper.convertValue(it.getOrNull(0), T::class.java)
-                        logd("Received $convertValue for event $eventName with arg $arg")
-                        subscriber.onSingleValue(convertValue)
-
-                    } catch(e: Exception) {
-                        subscriber.onError(e)
-                    }
-                })
-    }
-
     internal fun Socket.sendEventIgnoreReturn(eventName: String, arg: Any? = null) = Observable.create<Unit> { subscriber ->
         logd("Sending event $eventName with arg $arg ignoring result")
-        emit(eventName, arrayOf(objectMapper.convertValue(arg, JSONObject::class.java)),
+        emit(eventName, arrayOf(arg),
                 Ack {
                     try {
                         it.ensureNoError()
