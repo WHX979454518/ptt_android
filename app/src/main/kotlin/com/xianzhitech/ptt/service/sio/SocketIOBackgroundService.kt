@@ -204,7 +204,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
         val newSocket = IO.socket((application as AppComponent).signalServerEndpoint, IO.Options().apply {
-            reconnection = false
+            reconnection = true
+            forceNew = true
         })
 
         // Process headers
@@ -216,24 +217,32 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             })
         }
 
+        newSocket.io().on(Manager.EVENT_RECONNECTING, {
+            logd("Reconnecting to server...")
+        })
+
+        newSocket.io().on(Manager.EVENT_RECONNECT, {
+            socketSubject.onNext(newSocket)
+        })
+
         // Monitor user login
         loginSubscription = CompositeSubscription().apply {
             add(getConnectivity()
-                    .distinctUntilChanged()
-                    .observeOnMainThread()
-                    .subscribe {
-                        if (!it && newSocket.connected()) {
-                            newSocket.disconnect()
-                        }
-
-                        if (newSocket.connected().not()) {
-                            newSocket.connect()
-                            loginState.onNext(loginState.value.copy(status = LoginState.Status.LOGIN_IN_PROGRESS))
-                        }
-                    })
+                .distinctUntilChanged()
+                .observeOnMainThread()
+                .subscribe {
+                    if (it && newSocket.connected().not()) {
+                        socketSubject.onNext(newSocket.connect())
+                    }
+                    else if (it.not() && newSocket.connected()) {
+                        newSocket.disconnect()
+                    }
+                })
 
             add(newSocket.receiveEvent(EVENT_SERVER_USER_LOGON)
                     .flatMap { response ->
+                        logd("Login response: $response")
+
                         /**
                          * Response: { userObject }
                          */
@@ -290,6 +299,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                             .flatMap { userRepository.saveUser(loggedInUser) }
                                             .flatMap { groupRepository.replaceAllGroups(groups as List<Group>, groupMembers) }
                                             .flatMap {
+                                                // Replaces users, groups with id.
                                                 users.forEachIndexed { i, any -> users[i] = any.id }
                                                 groups.forEachIndexed { i, any -> groups[i] = (any as Group).id }
                                                 contactRepository.replaceAllContacts(users as List<String>, groups as List<String>)
@@ -325,7 +335,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                          *  }
                          */
                         val room = Room().readFrom(response)
-                        roomRepository.updateRoom(room, response.getJSONArray("members").transform { it as String }).map { room }
+                        roomRepository.updateRoom(room, response.getJSONArray("members").toStringIterable()).map { room }
                     }
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<Room>() {
@@ -336,7 +346,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         }
 
-        socketSubject.onNext(newSocket)
     }.subscribeOnMainThread()
 
     internal fun onUserLogout(user: String) {
@@ -347,13 +356,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun onUserLogon(user : User) {
         logd("User $user has logged on")
         startService(Intent(this, javaClass))
-
-        roomState.value.let {
-            if (it.status != RoomState.Status.IDLE && it.currentRoomID != null) {
-                logd("User has re-logon, trying to re-join the room")
-                doJoinRoom(it.currentRoomID).subscribe(GlobalSubscriber(this))
-            }
-        }
     }
 
     internal fun onInviteToJoin(roomId: String) {
@@ -438,6 +440,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     /**
      * Requests creating a room. If success, the room will be persisted to the local database.
+     * Calling this method has no effect on current room state
      */
     override fun createRoom(request: CreateRoomRequest) = Observable.defer {
         logd("Creating room with $request")
@@ -449,6 +452,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
 
         userRepository.getUser(currentUserID)
+                .first()
                 .flatMap { user ->
                     if (user == null || user.privileges.contains(Privilege.CREATE_ROOM).not()) {
                         Observable.error<String>(StaticUserException(R.string.error_no_permission))
@@ -463,7 +467,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                      * }
                                      */
                                     val room = Room().readFrom(response)
-                                    roomRepository.updateRoom(room, response.getJSONArray("members").transform { it as String }).map { it.id }
+                                    roomRepository.updateRoom(room, response.getJSONArray("members").toStringIterable()).map { it.id }
                                 }
                     }
                 }
@@ -479,7 +483,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             roomSubscription = roomSubscription?.let { it.unsubscribe(); null }
             /**
              * Quit room:
-             * Request: { roomId : [roomId] }
+             * Request: { roomId : "room ID" }
              * Response: Ignored
              */
             socket.sendEventIgnoreReturn(EVENT_CLIENT_LEAVE_ROOM, JSONObject().put("roomId", state.currentRoomID)).subscribe(GlobalSubscriber())
@@ -536,7 +540,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                              */
                             val currentRoomState = peekRoomState()
                             if (response.getString("roomId") == currentRoomState.currentRoomID) {
-                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = response.getJSONArray("activeMembers").transform { it as String }.toSet()))
+                                roomState.onNext(currentRoomState.copy(currentRoomOnlineMemberIDs = response.getJSONArray("activeMembers").toStringIterable().toSet()))
                             }
                         })
 
@@ -559,7 +563,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                              *
                              */
                             val roomInfoJsonObj = response.getJSONObject("roomInfo")
-                            roomRepository.updateRoom(Room().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").transform { it as String }).map { response }
+                            roomRepository.updateRoom(Room().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable()).map { response }
                         }
             }.observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<JSONObject>() {
@@ -567,7 +571,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         override fun onNext(t: JSONObject) {
                             roomState.onNext(roomState.value.copy(
                                     status = RoomState.Status.JOINED,
-                                    currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").transform { it as String }.toSet(),
+                                    currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet(),
                                     currentRoomActiveSpeakerID = if (t.isNull("speaker")) null else t.optString("speaker")))
 
                             val voiceServerObj = t.getJSONObject("server")

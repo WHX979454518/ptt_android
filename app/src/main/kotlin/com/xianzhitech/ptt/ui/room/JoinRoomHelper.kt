@@ -41,11 +41,14 @@ fun Context.joinRoom(roomId: String?,
                 }
 
                 val roomIdObservable = roomId?.let { roomId.toObservable() } ?:
-                        binder.createRoom(createRoomRequest!!).observeOnMainThread().doOnSubscribe {
-                            progressDialog.show()
-                        }.doOnEach {
-                            progressDialog.dismiss()
-                        }
+                        binder.createRoom(createRoomRequest!!)
+                                .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                                .observeOnMainThread()
+                                .doOnSubscribe {
+                                    progressDialog.show()
+                                }.doOnEach {
+                                    progressDialog.dismiss()
+                                }
 
                 roomIdObservable.flatMap { appComponent.roomRepository.getRoomWithMemberNames(it, Constants.MAX_MEMBER_DISPLAY_COUNT) }
                         .map { it?.let { binder.pairWith(it) } ?: throw StaticUserException(R.string.error_unable_to_get_room_info) }
