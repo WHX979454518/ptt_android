@@ -5,8 +5,6 @@ import com.xianzhitech.ptt.ext.transform
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
-import kotlin.collections.*
-import kotlin.text.isNullOrEmpty
 
 /**
  * Created by fanchao on 10/01/16.
@@ -70,18 +68,19 @@ class JDBCDatabase(url: String) : Database {
             entries.joinToString(separator = ",", transform = { "${it.key} = ?" })
 
     private class JDBCResultSet(val resultSet: java.sql.ResultSet) : ResultSet {
+        private val names = Array<String>(resultSet.metaData.columnCount, { resultSet.metaData.getColumnName(it + 1) })
+
         override fun getCount() = resultSet.fetchSize
 
-        override fun getColumnNames() = Array<String>(resultSet.metaData.columnCount, { resultSet.metaData.getColumnName(it + 1) })
+        override fun getColumnNames() = names
 
         override fun moveToFirst() = if (resultSet.isBeforeFirst) moveToNext() else false
         override fun moveToNext() = resultSet.next()
-        override fun getColumnIndexOrThrow(columnName: String) = getColumnNames().indexOf(columnName).let {
-            if (it < 0) throw IllegalArgumentException()
-            it
+        override fun getColumnIndexOrThrow(columnName: String) = names.indexOf(columnName).apply {
+            if (this < 0) throw IllegalArgumentException()
         }
 
-        override fun getColumnIndex(columnName: String) = getColumnNames().indexOf(columnName)
+        override fun getColumnIndex(columnName: String) = names.indexOf(columnName)
 
         override fun getString(columnIndex: Int) = resultSet.getString(columnIndex + 1)
         override fun getShort(columnIndex: Int) = resultSet.getShort(columnIndex + 1)

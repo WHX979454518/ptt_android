@@ -128,7 +128,7 @@ class LocalRepository(internal val db: Database)
             .mapToList(User.MAPPER)
 
     override fun updateGroupMembers(groupId: String, memberIds: Iterable<String>) = updateInTransaction {
-        delete(GroupMembers.TABLE_NAME, "${GroupMembers.COL_GROUP_ID} = ? AND ${GroupMembers.COL_PERSON_ID} NOT IN ${memberIds.toSqlSet()}", groupId)
+        delete(GroupMembers.TABLE_NAME, "${GroupMembers.COL_GROUP_ID} = ?", groupId)
         doAddGroupMembers(groupId, memberIds)
     }
 
@@ -139,7 +139,7 @@ class LocalRepository(internal val db: Database)
 
     override fun getRoom(roomId: String) =
             createQuery(Room.TABLE_NAME, "SELECT * FROM ${Room.TABLE_NAME} WHERE ${Room.COL_ID} = ? LIMIT 1", roomId)
-                    .mapToOne(Room.MAPPER)
+                    .mapToOneOrDefault(Room.MAPPER, null)
 
     override fun getRoomMembers(roomId: String) =
             createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME),

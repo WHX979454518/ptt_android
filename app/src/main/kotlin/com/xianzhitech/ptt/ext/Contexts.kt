@@ -9,7 +9,6 @@ import rx.Observable
 import rx.Scheduler
 import rx.Subscriber
 import rx.subscriptions.Subscriptions
-import kotlin.collections.forEach
 
 /**
  * Created by fanchao on 30/12/15.
@@ -128,20 +127,4 @@ fun Context.ensureConnectivity(): Observable<Unit> {
                 if (!it) throw ConnectivityException()
                 else Unit
             }
-}
-
-fun SharedPreferences.receiveStringValue(key: String): Observable<String?> {
-    return Observable.create { subscriber ->
-        val listener = { sharedPreferences: SharedPreferences, changedKey: String ->
-            if (changedKey == key) {
-                subscriber.onNext(sharedPreferences.getString(changedKey, null))
-            }
-        }
-
-        listener(this, key)
-        if (!subscriber.isUnsubscribed) {
-            registerOnSharedPreferenceChangeListener(listener)
-            subscriber.add(Subscriptions.create { unregisterOnSharedPreferenceChangeListener(listener) })
-        }
-    }
 }

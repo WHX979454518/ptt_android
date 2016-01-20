@@ -22,10 +22,6 @@ import java.util.concurrent.TimeoutException
 fun <T> Observable<T>.toBlockingFirst() = toBlocking().first()
 
 open class GlobalSubscriber<T>(private val context: Context? = null) : Subscriber<T>() {
-    companion object {
-        public const val FRAG_ERROR_DIALOG = "frag_error_dialog"
-    }
-
     override fun onError(e: Throwable) {
         val message : CharSequence?
         if (context != null) {
@@ -55,8 +51,12 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
 
 fun <T> Observable<ResultSet>.mapToOne(mapper: Func1<ResultSet, T>) = map {
     it.use {
-        it.moveToFirst()
-        mapper.call(it)
+        if (it.moveToFirst()) {
+            mapper.call(it)
+        }
+        else {
+            throw NoSuchElementException()
+        }
     }
 }
 
@@ -83,6 +83,10 @@ fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainTh
 fun <T> Observable<T>.subscribeOnMainThread() = subscribeOn(AndroidSchedulers.mainThread())
 
 fun <T> T?.toObservable(): Observable<T> = Observable.just(this)
+
+fun <T, R> Observable<T>.combineWith(other : Observable<R>) = Observable.combineLatest(
+        this, other, {first, second -> Pair(first, second)}
+)
 
 fun <T> Subscriber<T>.onSingleValue(value: T) {
     onNext(value)

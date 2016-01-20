@@ -6,7 +6,6 @@ import android.database.Cursor
 import android.database.CursorWrapper
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import kotlin.collections.forEach
 
 /**
  * Created by fanchao on 10/01/16.
