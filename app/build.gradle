@@ -25,29 +25,11 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
-
-
-        if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
-            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
-        } else {
-            Properties properties = new Properties()
-            try {
-                properties.load(project.rootProject.file('local.properties').newDataInputStream())
-            } catch (Exception e) {
-            }
-            def signalServerEndpoint = properties.getProperty("server.signal")
-            if (signalServerEndpoint != null && !signalServerEndpoint.isEmpty()) {
-                buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + signalServerEndpoint + "\"")
-            }
-            else {
-                buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9001\"")
-            }
-        }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -62,6 +44,23 @@ android {
     productFlavors {
         dev {
             applicationId 'com.xianzhitech.ptt.dev'
+
+            if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
+                buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
+            } else {
+                Properties properties = new Properties()
+                try {
+                    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+                } catch (Exception e) {
+                }
+                def signalServerEndpoint = properties.getProperty("server.signal")
+                if (signalServerEndpoint != null && !signalServerEndpoint.isEmpty()) {
+                    buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + signalServerEndpoint + "\"")
+                }
+                else {
+                    buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9005\"")
+                }
+            }
         }
 
         uat {
@@ -81,6 +80,8 @@ android {
             if (System.getenv("BUILD_TAG") != null) {
                 versionName System.getenv("BUILD_TAG")
             }
+
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9003\"")
         }
     }
 

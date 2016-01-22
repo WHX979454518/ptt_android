@@ -34,7 +34,6 @@
     @butterknife.* <methods>;
 }
 
-# Logansquare
--keep class com.bluelinelabs.logansquare.** { *; }
--keep @com.bluelinelabs.logansquare.annotation.JsonObject class *
--keep class **$$JsonObjectMapper { *; }
+
+# hockeyapp
+-keep class net.hockeyapp.**
