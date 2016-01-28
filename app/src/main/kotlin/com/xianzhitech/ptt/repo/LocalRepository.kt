@@ -25,13 +25,20 @@ class LocalRepository(internal val db: Database)
         , RoomRepository
         , ContactRepository {
 
+    // 查询数据库操作的线程池. 线程数 = CPU核心数
     private val queryScheduler = Schedulers.computation()
+
+    // 写入数据库操作的线程池, 只有一个线程
     private val modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
     private val tableSubjects = hashMapOf<String, PublishSubject<Unit?>>()
+
+    // 用于存储当前事务下的表格表格变化通知. 所有事务中的通知都会缓存, 当事务完成后一起将通知发出
     private val pendingNotificationTables = object : ThreadLocal<HashSet<String>>() {
         override fun initialValue() = hashSetOf<String>()
     }
+
+    // 指示当前线程是否处在一个事务下
     private val inTransaction = object : ThreadLocal<Boolean>() {
         override fun initialValue() = false
     }

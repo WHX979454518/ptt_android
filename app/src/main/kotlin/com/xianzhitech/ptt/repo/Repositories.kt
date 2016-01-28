@@ -14,6 +14,9 @@ import rx.Observable
  * Created by fanchao on 9/01/16.
  */
 
+/**
+ * 用户相关的接口
+ */
 interface UserRepository {
     fun getUser(id: String): Observable<User?>
     fun getUsers(ids : Iterable<String>) : Observable<List<User>>
@@ -22,6 +25,9 @@ interface UserRepository {
     fun saveUser(user : User) : Observable<User>
 }
 
+/**
+ * 群相关的接口
+ */
 interface GroupRepository {
     fun getGroup(groupId: String): Observable<Group?>
     fun getGroupMembers(groupId: String): Observable<List<User>>
@@ -29,6 +35,9 @@ interface GroupRepository {
     fun replaceAllGroups(groups: Iterable<Group>, groupMembers: Map<String, Iterable<String>>): Observable<Unit>
 }
 
+/**
+ * 会话数据的接口
+ */
 interface RoomRepository {
     fun clearRooms() : Observable<Unit>
     fun getRoom(roomId: String): Observable<Room?>
@@ -40,24 +49,42 @@ interface RoomRepository {
     fun getRoomWithMembers(roomId: String) : Observable<RoomWithMembers?>
 }
 
+/**
+ * 联系人接口
+ */
 interface ContactRepository {
     fun getContactItems(): Observable<List<ContactItem>>
     fun searchContactItems(searchTerm: String): Observable<List<ContactItem>>
     fun replaceAllContacts(userIds: Iterable<String>, groupIds: Iterable<String>): Observable<Unit>
 }
 
+/**
+ * 一个包括了房间信息和局部成员名的数据结构
+ */
 data class RoomWithMemberNames(val room: Room,
                                val memberNames: List<String>,
                                val memberCount: Int)
 
+/**
+ * 一个包括了房间信息和成员信息的数据结构
+ */
 data class RoomWithMembers(val room: Room,
                            val members : List<User>)
 
+/**
+ * 提供一个参数可为空的查询房间成员的方法
+ */
 fun RoomRepository.optRoomWithMembers(roomId: String?): Observable<RoomWithMembers?> =
         roomId?.let { getRoomWithMembers(it) } ?: Observable.just<RoomWithMembers?>(null)
 
+/**
+ * 提供一个参数可为空的查询房间成员名的方法
+ */
 fun RoomRepository.optRoomWithMemberNames(roomId: String?, maxMember: Int = Constants.MAX_MEMBER_DISPLAY_COUNT): Observable<RoomWithMemberNames?> =
         roomId?.let { getRoomWithMemberNames(it, maxMember) } ?: Observable.just<RoomWithMemberNames?>(null)
 
+/**
+ * 提供一个参数可为空的查询用户的方法
+ */
 fun UserRepository.optUser(id: String?): Observable<User?> =
         id?.let { getUser(id) } ?: Observable.just<User?>(null)

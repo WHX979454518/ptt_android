@@ -15,12 +15,11 @@ import rx.functions.Func1
 import java.util.*
 import java.util.concurrent.TimeoutException
 
-/**
- * Created by fanchao on 17/12/15.
- */
-
 fun <T> Observable<T>.toBlockingFirst() = toBlocking().first()
 
+/**
+ * 一个有全局错误处理的Observeable结果处理对象. 如果提供了Context, 错误将通过Toast报告
+ */
 open class GlobalSubscriber<T>(private val context: Context? = null) : Subscriber<T>() {
     override fun onError(e: Throwable) {
         val message : CharSequence?

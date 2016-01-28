@@ -6,7 +6,6 @@ import android.os.IBinder
 import android.support.v4.content.LocalBroadcastManager
 import com.xianzhitech.ptt.service.ConnectivityException
 import rx.Observable
-import rx.Scheduler
 import rx.Subscriber
 import rx.subscriptions.Subscriptions
 
@@ -53,20 +52,6 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
     }
 }
 
-/**
- * 连接到一个服务, 从Binder获取一个值, 并监听相应的广播获取新的值
- */
-fun <T, S> Context.retrieveServiceValue(intent: Intent,
-                                        valueRetriever: (S) -> T,
-                                        useLocalBroadcast: Boolean,
-                                        scheduler: Scheduler?,
-                                        vararg broadcastActions: String) =
-        Observable.combineLatest(
-                connectToService<S>(intent, Context.BIND_AUTO_CREATE).subscribeOnOptional(scheduler),
-                receiveBroadcasts(useLocalBroadcast, *broadcastActions).subscribeOnOptional(scheduler).mergeWith(null.toObservable()),
-                { serviceBinder, intent -> serviceBinder })
-                .map { valueRetriever(it) }
-                .distinctUntilChanged()
 
 fun <T> Context.connectToService(intent: Intent, flags: Int): Observable<T> {
     return Observable.create {
@@ -94,7 +79,6 @@ fun <T> Context.connectToService(intent: Intent, flags: Int): Observable<T> {
 fun ConnectivityManager.hasActiveConnection(): Boolean {
     return activeNetworkInfo?.isConnected ?: false
 }
-
 
 fun Context.getConnectivity(): Observable<Boolean> {
     val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
