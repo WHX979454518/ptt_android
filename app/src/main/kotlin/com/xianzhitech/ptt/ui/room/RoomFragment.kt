@@ -30,10 +30,6 @@ import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import rx.Observable
 import java.util.*
-import kotlin.collections.arrayListOf
-import kotlin.collections.emptyList
-import kotlin.collections.hashSetOf
-import kotlin.collections.sortWith
 
 class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         , PushToTalkButton.Callbacks
@@ -131,23 +127,24 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                             { first, second -> RoomData(state, first, second) })
                 },
                 it.loginState,
-                { first, second -> first.pairWith(second) })
+                context.getConnectivity(),
+                { first, second, third -> first.pairWith(second).tripleWith(third) })
         }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<Pair<RoomData, LoginState>>() {
-                    override fun onNext(t: Pair<RoomData, LoginState>) {
-                        updateRoomState(t.first, t.second)
+                .subscribe(object : GlobalSubscriber<Triple<RoomData, LoginState, Boolean>>() {
+                    override fun onNext(t: Triple<RoomData, LoginState, Boolean>) {
+                        updateRoomState(t.first, t.second, t.third)
                     }
                 })
 
         bgService.connect()
     }
 
-    internal fun updateRoomState(roomData: RoomData, loginState: LoginState) {
-        adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), roomData.roomState.currentRoomOnlineMemberIDs)
+    internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
+        adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
-            pttBtn.roomState = roomData.roomState
+            pttBtn.roomState = if (hasConnectivity) roomData.roomState else roomData.roomState.copy(status = RoomState.Status.IDLE)
             toolbar.title = roomData.roomWithMembers?.getRoomName(context)
 
             val show: Boolean
