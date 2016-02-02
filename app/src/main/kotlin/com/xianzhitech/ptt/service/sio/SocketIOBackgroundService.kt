@@ -157,7 +157,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 if (t.second.loginState.currentUserID == null) {
                                     stopForeground(true)
                                 } else if (t.third.not() && t.second.logonUser != null) {
-                                    builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second?.logonUser?.name))
+                                    builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
                                 }
                                 return
                             }
@@ -206,6 +206,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
         val newSocket = IO.socket((application as AppComponent).signalServerEndpoint, IO.Options().apply {
             reconnection = true
+            forceNew = true
         })
 
         // Process headers
@@ -278,9 +279,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
                                 .flatMap { response ->
                                     logd("Received sync result: $response")
-                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { User().readFrom(it as JSONObject) }.toArrayList()
+                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { User().readFrom(it as JSONObject) }.toMutableList()
                                     val addGroupJsonArray = response.getJSONObject("enterpriseGroups").getJSONArray("add")
-                                    val groups : MutableList<Any> = addGroupJsonArray.transform { Group().readFrom(it as JSONObject) }.toArrayList()
+                                    val groups : MutableList<Any> = addGroupJsonArray.transform { Group().readFrom(it as JSONObject) }.toMutableList()
                                     val groupMembers = addGroupJsonArray.toGroupsAndMembers()
 
                                     userRepository.replaceAllUsers(users as List<User>)
@@ -696,20 +697,20 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
     companion object {
-        private const val SERVICE_NOTIFICATION_ID = 100
+        const val SERVICE_NOTIFICATION_ID = 100
 
-        public const val EVENT_SERVER_USER_LOGON = "s_logon"
-        public const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
-        public const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
-        public const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
-        public const val EVENT_SERVER_INVITE_TO_JOIN = "s_invite_to_join"
+        const val EVENT_SERVER_USER_LOGON = "s_logon"
+        const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
+        const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
+        const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
+        const val EVENT_SERVER_INVITE_TO_JOIN = "s_invite_to_join"
 
-        public const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
-        public const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"
-        public const val EVENT_CLIENT_JOIN_ROOM = "c_join_room"
-        public const val EVENT_CLIENT_LEAVE_ROOM = "c_leave_room"
-        public const val EVENT_CLIENT_CONTROL_MIC = "c_control_mic"
-        public const val EVENT_CLIENT_RELEASE_MIC = "c_release_mic"
+        const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
+        const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"
+        const val EVENT_CLIENT_JOIN_ROOM = "c_join_room"
+        const val EVENT_CLIENT_LEAVE_ROOM = "c_leave_room"
+        const val EVENT_CLIENT_CONTROL_MIC = "c_control_mic"
+        const val EVENT_CLIENT_RELEASE_MIC = "c_release_mic"
     }
 
 }

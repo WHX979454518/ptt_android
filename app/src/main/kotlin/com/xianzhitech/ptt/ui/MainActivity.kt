@@ -17,7 +17,6 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
-import kotlin.collections.forEachIndexed
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
 
@@ -37,9 +36,9 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
-        permissions?.forEachIndexed { i, s ->
-            if (s == Manifest.permission.RECORD_AUDIO && grantResults!![i] == PackageManager.PERMISSION_DENIED) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        permissions.forEachIndexed { i, s ->
+            if (s == Manifest.permission.RECORD_AUDIO && grantResults[i] == PackageManager.PERMISSION_DENIED) {
                 onPermissionDenied()
             }
         }
