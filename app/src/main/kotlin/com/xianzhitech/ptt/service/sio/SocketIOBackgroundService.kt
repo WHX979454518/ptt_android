@@ -128,24 +128,29 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         val builder = NotificationCompat.Builder(context)
                         builder.setOngoing(true)
                         builder.setAutoCancel(false)
-                        builder.setSmallIcon(R.mipmap.ic_launcher)
                         builder.setContentTitle(R.string.app_name.toFormattedString(context))
+                        val icon : Int
 
                         when (t.second.loginState.status) {
-                            LoginState.Status.LOGGED_IN -> when (t.first.roomState.status) {
-                                RoomState.Status.IDLE -> {
-                                    builder.setContentText(R.string.notification_user_online.toFormattedString(context, t.second.logonUser?.name))
-                                    builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), 0))
-                                }
+                            LoginState.Status.LOGGED_IN -> {
+                                when (t.first.roomState.status) {
+                                    RoomState.Status.IDLE -> {
+                                        builder.setContentText(R.string.notification_user_online.toFormattedString(context, t.second.logonUser?.name))
+                                        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), 0))
+                                        icon = R.drawable.ic_notification_logged_on
+                                    }
 
-                                RoomState.Status.JOINING -> {
-                                    builder.setContentText(R.string.notification_joining_room.toFormattedString(context))
-                                    builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
-                                }
+                                    RoomState.Status.JOINING -> {
+                                        builder.setContentText(R.string.notification_joining_room.toFormattedString(context))
+                                        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
+                                        icon = R.drawable.ic_notification_joined_room
+                                    }
 
-                                else -> {
-                                    builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.first.room?.getRoomName(context)))
-                                    builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
+                                    else -> {
+                                        builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.first.room?.getRoomName(context)))
+                                        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
+                                        icon = R.drawable.ic_notification_joined_room
+                                    }
                                 }
                             }
 
@@ -157,10 +162,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 } else {
                                     builder.setContentText(R.string.notification_rejoining_room.toFormattedString(context))
                                 }
+
+                                icon = R.drawable.ic_notification_logged_on
                             }
 
                             LoginState.Status.OFFLINE -> {
                                 builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
+                                icon = R.drawable.ic_notification_offline
                             }
 
                             LoginState.Status.IDLE -> {
@@ -173,6 +181,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             }
                         }
 
+                        builder.setSmallIcon(icon)
                         startForeground(SERVICE_NOTIFICATION_ID, builder.build())
                     }
                 })
