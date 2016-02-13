@@ -47,7 +47,7 @@ class ServerException(val serverMsg: String) : RuntimeException(serverMsg), User
     override fun describe(context: Context) = serverMsg
 }
 
-class ConnectivityException() : StaticUserException(R.string.error_no_connection)
+class ConnectivityException() : StaticUserException(R.string.error_unable_to_connect)
 
 class EmptyServerResponseException() : StaticUserException(R.string.error_service_empty_response)
 class InvalidSavedTokenException : RuntimeException()

@@ -15,6 +15,7 @@ data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
         JOINED,
         REQUESTING_MIC,
         ACTIVE,
+        OFFLINE,
     }
 }
 
@@ -24,6 +25,7 @@ data class LoginState(val status : LoginState.Status = LoginState.Status.IDLE,
         IDLE,
         LOGIN_IN_PROGRESS,
         LOGGED_IN,
+        OFFLINE,
     }
 }
 

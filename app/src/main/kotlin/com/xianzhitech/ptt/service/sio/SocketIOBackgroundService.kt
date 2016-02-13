@@ -13,6 +13,7 @@ import android.support.annotation.RawRes
 import android.support.v4.app.NotificationCompat
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.BtEngine
@@ -96,9 +97,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             val currentUserSessionToken = preferenceProvider.userSessionToken
             val lastUserId = preferenceProvider.lastLoginUserId
             if (currentUserSessionToken != null && lastUserId != null) {
-                loginState.onNext(LoginState(currentUserID = lastUserId))
+                loginState.onNext(LoginState(currentUserID = lastUserId, status = LoginState.Status.LOGIN_IN_PROGRESS))
                 doLogin(currentUserSessionToken.fromBase64ToSerializable() as Map<String, List<String>>).subscribe(GlobalSubscriber(this))
             }
+        }
+
+        if (BuildConfig.DEBUG) {
+            loginState.subscribe { logd("Login state: $it") }
+            roomState.subscribe { logd("Room state: $it") }
         }
     }
 
@@ -125,8 +131,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         builder.setSmallIcon(R.mipmap.ic_launcher)
                         builder.setContentTitle(R.string.app_name.toFormattedString(context))
 
-                        when {
-                            t.second.loginState.status == LoginState.Status.LOGGED_IN -> when (t.first.roomState.status) {
+                        when (t.second.loginState.status) {
+                            LoginState.Status.LOGGED_IN -> when (t.first.roomState.status) {
                                 RoomState.Status.IDLE -> {
                                     builder.setContentText(R.string.notification_user_online.toFormattedString(context, t.second.logonUser?.name))
                                     builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), 0))
@@ -143,7 +149,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 }
                             }
 
-                            t.second.loginState.status == LoginState.Status.LOGIN_IN_PROGRESS -> {
+                            LoginState.Status.LOGIN_IN_PROGRESS -> {
                                 if (t.third.not()) {
                                     builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
                                 } else if (t.first.roomState.status == RoomState.Status.IDLE) {
@@ -153,7 +159,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                 }
                             }
 
-                            t.second.loginState.status == LoginState.Status.IDLE -> {
+                            LoginState.Status.OFFLINE -> {
+                                builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
+                            }
+
+                            LoginState.Status.IDLE -> {
                                 if (t.second.loginState.currentUserID == null) {
                                     stopForeground(true)
                                 } else if (t.third.not() && t.second.logonUser != null) {
@@ -218,16 +228,20 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             })
         }
 
-        newSocket.io().on(Manager.EVENT_RECONNECTING, {
-            logd("Reconnecting to server...")
-        })
-
-        newSocket.io().on(Manager.EVENT_RECONNECT, {
-            socketSubject.onNext(newSocket)
-        })
-
         // Monitor user login
         loginSubscription = CompositeSubscription().apply {
+            add(newSocket.io().receiveEvent(Manager.EVENT_RECONNECT)
+                    .subscribe {
+                        logd("Reconnecting to server...")
+                        socketSubject.onNext(newSocket)
+                    })
+
+            add(newSocket.io().receiveEvent(Manager.EVENT_CONNECT_ERROR)
+                    .observeOnMainThread()
+                    .subscribe {
+                        loginState.onNext(loginState.value.copy(status = LoginState.Status.OFFLINE))
+                    })
+
             add(newSocket.receiveEvent(EVENT_SERVER_USER_LOGON)
                     .flatMap { response ->
                         logd("Login response: $response")
@@ -336,16 +350,30 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     }))
 
             // This must be in the end!
-            add(getConnectivity()
+            add(getActiveNetwork()
                     .distinctUntilChanged()
                     .observeOnMainThread()
                     .subscribe {
-                        logd("Has connectivity: $it, isConnected ${newSocket.connected()}")
-                        if (it && newSocket.connected().not()) {
+                        logd("New active network: $it")
+                        newSocket.disconnect()
+                        if (it != null && it.isConnected) {
+                            loginState.onNext(loginState.value.copy(status = LoginState.Status.LOGIN_IN_PROGRESS))
                             socketSubject.onNext(newSocket.connect())
                         }
-                        else if (it.not() && newSocket.connected()) {
-                            newSocket.disconnect()
+                        else {
+                            // Dispose talk engine while connection is lost
+                            currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
+                            roomState.value?.let {
+                                if (it.status != RoomState.Status.IDLE) {
+                                    roomState.onNext(it.copy(status = RoomState.Status.OFFLINE))
+                                }
+                            }
+
+                            loginState.value?.let {
+                                if (it.status != LoginState.Status.IDLE) {
+                                    loginState.onNext(it.copy(status = LoginState.Status.OFFLINE))
+                                }
+                            }
                         }
                     })
 
@@ -514,7 +542,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
             // Subscribes to speaker change event
             add(socketObservable
-                    .flatMap { socket -> socket.receiveEvent(EVENT_SERVER_SPEAKER_CHANGED) }
+                    .flatMap { it.receiveEvent(EVENT_SERVER_SPEAKER_CHANGED) }
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<JSONObject>() {
                         override fun onNext(t: JSONObject) {
@@ -560,6 +588,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             // Kicks off joining room event
             add(socketObservable
                     .flatMap { socket ->
+                        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
+
                         // Join the room
                         socket.sendEvent(EVENT_CLIENT_JOIN_ROOM, JSONObject().put("roomId", roomId))
                                 .flatMap { response ->
@@ -604,6 +634,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             subscriber.onSingleValue(Unit)
                         }
                     }))
+
 
             // Kicks the socket observable off
             socketObservable.connect()

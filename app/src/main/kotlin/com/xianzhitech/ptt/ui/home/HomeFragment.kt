@@ -12,8 +12,8 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import kotlin.collections.forEachIndexed
 
 /**
 
@@ -34,7 +34,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
     internal class Views(rootView: View,
                          val viewPager: ViewPager = rootView.findView(R.id.home_viewPager),
                          val tabContainer: ViewGroup = rootView.findView(R.id.home_tabContainer),
-                         val errorBanner: View = rootView.findView(R.id.home_errorBanner))
+                         val topBanner: TextView = rootView.findView(R.id.home_topBanner))
 
     internal var selectedTintColor: Int = 0
     internal var normalTintColor: Int = 0
@@ -115,12 +115,25 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
         super.onStart()
 
         callbacks?.setTitle(getString(R.string.app_name))
-        context.getConnectivity()
-                .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe {
-                    views?.errorBanner?.setVisible(it.not())
+
+        (context.applicationContext as AppComponent).connectToBackgroundService()
+            .flatMap { it.loginState }
+            .compose(bindToLifecycle())
+            .subscribe { loginState ->
+                views?.topBanner?.apply {
+                    when (loginState.status) {
+                        LoginState.Status.LOGIN_IN_PROGRESS -> {
+                            setVisible(true)
+                            setText(R.string.connecting_to_server)
+                        }
+                        LoginState.Status.OFFLINE -> {
+                            setVisible(true)
+                            setText(R.string.error_unable_to_connect)
+                        }
+                        else -> setVisible(false)
+                    }
                 }
+            }
     }
 
     private fun setTabItemSelected(position: Int, selected: Boolean) {

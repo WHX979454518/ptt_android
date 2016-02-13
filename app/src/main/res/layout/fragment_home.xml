@@ -5,8 +5,8 @@
               android:layout_height="match_parent">
 
     <TextView
-        android:id="@+id/home_errorBanner"
-        android:text="@string/error_no_connection"
+        android:id="@+id/home_topBanner"
+        android:text="@string/error_unable_to_connect"
         android:visibility="gone"
         android:gravity="center"
         android:padding="@dimen/unit_one"

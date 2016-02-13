@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ui.room
 
+import android.app.ProgressDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.view.ViewCompat
@@ -56,6 +57,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private val adapter = Adapter()
     private lateinit var roomRepository: RoomRepository
     private var backgroundServiceBinder : BackgroundServiceBinder? = null
+    private var joiningProgressDialog : ProgressDialog? = null
 
     private val speakSourceAdapter = object : BaseAdapter() {
         var speakerModes: List<SpeakerMode> = emptyList()
@@ -128,7 +130,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 },
                 it.loginState,
                 context.getConnectivity(),
-                { first, second, third -> first.pairWith(second).tripleWith(third) })
+                { first, second, third -> Triple(first, second, third) })
         }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
@@ -137,6 +139,21 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                         updateRoomState(t.first, t.second, t.third)
                     }
                 })
+
+        bgService.flatMap { it.roomState }
+            .observeOnMainThread()
+            .compose(bindToLifecycle())
+            .subscribe(object : GlobalSubscriber<RoomState>() {
+                override fun onNext(t: RoomState) {
+                    if (t.status == RoomState.Status.JOINING && joiningProgressDialog == null) {
+                        joiningProgressDialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context), R.string.joining_room.toFormattedString(context))
+                    }
+                    else if (t.status != RoomState.Status.JOINING && joiningProgressDialog != null) {
+                        joiningProgressDialog!!.dismiss()
+                        joiningProgressDialog = null
+                    }
+                }
+            })
 
         bgService.connect()
     }

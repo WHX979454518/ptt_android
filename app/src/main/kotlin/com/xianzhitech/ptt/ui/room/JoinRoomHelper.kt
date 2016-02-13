@@ -128,8 +128,8 @@ fun Context.joinRoom(roomId: String?,
             }
             .flatMap {
                 val (binder, roomToJoin) = it
-                val dialog = ProgressDialog.show(this, R.string.please_wait.toFormattedString(this),
-                        R.string.joining_room.toFormattedString(this), true, false)
+//                val dialog = ProgressDialog.show(this, R.string.please_wait.toFormattedString(this),
+//                        R.string.joining_room.toFormattedString(this), true, false)
                 binder.requestJoinRoom(roomToJoin)
                         .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .observeOnMainThread()
@@ -138,7 +138,7 @@ fun Context.joinRoom(roomId: String?,
                             if (it.hasThrowable()) {
                                 binder.requestQuitCurrentRoom().subscribe(GlobalSubscriber())
                             }
-                            dialog.dismiss()
+//                            dialog.dismiss()
                         }
 
             }

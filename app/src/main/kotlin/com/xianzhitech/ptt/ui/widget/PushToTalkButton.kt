@@ -25,11 +25,14 @@ class PushToTalkButton : ImageButton {
         if (field != value) {
             field = value
             isEnabled = value?.status == RoomState.Status.JOINED && value?.currentRoomActiveSpeakerID == null
+            if (!isEnabled) {
+                removeCallbacks(requestFocusRunnable)
+            }
             invalidate()
         }
     }
 
-    public var callbacks: Callbacks? = null
+    var callbacks: Callbacks? = null
 
     private val requestFocusRunnable = Runnable {
         callbacks?.requestMic()
@@ -77,12 +80,14 @@ class PushToTalkButton : ImageButton {
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when (event?.action) {
-            MotionEvent.ACTION_DOWN -> postDelayed(requestFocusRunnable, 100)
+        if (isEnabled) {
+            when (event?.action) {
+                MotionEvent.ACTION_DOWN -> postDelayed(requestFocusRunnable, 100)
 
-            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                removeCallbacks(requestFocusRunnable)
-                callbacks?.releaseMic()
+                MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
+                    removeCallbacks(requestFocusRunnable)
+                    callbacks?.releaseMic()
+                }
             }
         }
 

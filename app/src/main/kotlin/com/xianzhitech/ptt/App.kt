@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Intent
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
-import com.squareup.okhttp.OkHttpClient
 import com.xianzhitech.ptt.db.AndroidDatabase
 import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
@@ -17,6 +16,7 @@ import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
+import okhttp3.OkHttpClient
 
 
 open class App : Application(), AppComponent {

@@ -15,6 +15,7 @@ import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import io.socket.client.Ack
+import io.socket.client.Manager
 import io.socket.client.Socket
 import org.json.JSONArray
 import org.json.JSONObject
@@ -119,6 +120,15 @@ internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
     return result
 }
 
+internal fun Manager.receiveEvent(eventName: String) = Observable.create<Array<Any>> { subscribe ->
+    subscribe.onStart()
+    val listener = { args: Array<Any> ->
+        subscribe.onNext(args)
+    }
+    on(eventName, listener)
+    subscribe.add(Subscriptions.create { off(eventName, listener) })
+}
+
 internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObject> { subscriber ->
     subscriber.onStart()
     val listener = { args: Array<Any> ->
@@ -133,7 +143,7 @@ internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObje
     on(eventName, listener)
     subscriber.add(Subscriptions.create {
         logd("Unregister listening to event $eventName")
-        off(eventName)
+        off(eventName, listener)
     })
 }
 
