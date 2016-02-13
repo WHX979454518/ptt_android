@@ -21,16 +21,16 @@ import com.xianzhitech.ptt.service.RoomState
  */
 class PushToTalkButton : ImageButton {
     var roomState : RoomState? = null
-    set(value) {
-        if (field != value) {
-            field = value
-            isEnabled = value?.status == RoomState.Status.JOINED && value?.currentRoomActiveSpeakerID == null
-            if (!isEnabled) {
-                removeCallbacks(requestFocusRunnable)
+        set(value) {
+            if (field != value) {
+                field = value
+                isEnabled = value?.status == RoomState.Status.JOINED && value?.currentRoomActiveSpeakerID == null
+                if (!isEnabled) {
+                    removeCallbacks(requestFocusRunnable)
+                }
+                invalidate()
             }
-            invalidate()
         }
-    }
 
     var callbacks: Callbacks? = null
 
@@ -80,14 +80,16 @@ class PushToTalkButton : ImageButton {
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (isEnabled) {
-            when (event?.action) {
-                MotionEvent.ACTION_DOWN -> postDelayed(requestFocusRunnable, 100)
+        when (event?.action) {
+            MotionEvent.ACTION_DOWN -> if (isEnabled) {
+                postDelayed(requestFocusRunnable, 100)
+                return true
+            }
+            else return false
 
-                MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                    removeCallbacks(requestFocusRunnable)
-                    callbacks?.releaseMic()
-                }
+            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
+                removeCallbacks(requestFocusRunnable)
+                callbacks?.releaseMic()
             }
         }
 
