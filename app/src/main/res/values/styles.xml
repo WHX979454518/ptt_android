@@ -49,9 +49,23 @@
         <item name="android:layout_height">@dimen/divider_normal</item>
     </style>
 
+    <style name="Divider.Lighter">
+        <item name="android:alpha">0.5</item>
+    </style>
+
     <style name="Divider.Vertical">
         <item name="android:layout_width">@dimen/divider_normal</item>
         <item name="android:layout_height">match_parent</item>
+    </style>
+
+    <style name="ProfileButton" parent="Text.Button">
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:drawablePadding">@dimen/unit_one</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:paddingTop">@dimen/unit_one</item>
+        <item name="android:paddingBottom">@dimen/unit_one</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
     </style>
 
 </resources>

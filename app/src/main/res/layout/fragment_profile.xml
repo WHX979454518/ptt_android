@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fillViewport="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/unit_two"
+        android:paddingRight="@dimen/unit_two"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_marginTop="@dimen/unit_two"
+            android:layout_gravity="center"
+            android:layout_width="@dimen/profile_icon_size"
+            android:layout_height="@dimen/profile_icon_size"
+            android:id="@+id/profile_icon"/>
+
+        <TextView
+            style="@style/Text.Body2"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/unit_one"
+            android:maxLines="1"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/profile_name"/>
+
+        <TextView
+            style="@style/Text.Caption"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/unit_one"
+            android:maxLines="1"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/profile_company"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_marginTop="@dimen/unit_one"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:layout_gravity="center"
+                android:text="@string/profile_edit"
+                android:drawableLeft="@drawable/ic_mode_edit_black"
+                android:drawableStart="@drawable/ic_mode_edit_black"
+                android:id="@+id/profile_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <Button
+                android:id="@+id/profile_logout"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:text="@string/log_out_current_user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+
+        <View
+            style="@style/Divider"
+            android:layout_marginTop="@dimen/unit_one" />
+
+        <Button
+            android:id="@+id/profile_settings"
+            style="@style/ProfileButton"
+            android:drawableLeft="@drawable/ic_settings_black"
+            android:drawableStart="@drawable/ic_settings_black"
+            android:text="@string/settings" />
+
+        <View
+            style="@style/Divider.Lighter" />
+
+        <Button
+            style="@style/ProfileButton"
+            android:id="@+id/profile_feedback"
+            android:drawableLeft="@drawable/ic_feedback_black"
+            android:drawableStart="@drawable/ic_feedback_black"
+            android:text="@string/feedback" />
+
+        <View
+            style="@style/Divider.Lighter" />
+
+        <Button
+            android:id="@+id/profile_about"
+            style="@style/ProfileButton"
+            android:drawableLeft="@drawable/ic_info_black"
+            android:drawableStart="@drawable/ic_info_black"
+            android:text="@string/about" />
+
+    </LinearLayout>
+</ScrollView>

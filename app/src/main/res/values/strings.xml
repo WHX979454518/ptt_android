@@ -69,4 +69,9 @@
     <string name="notification_user_offline">%1$s 离线</string>
     <string name="logout">注销</string>
     <string name="exit_room">退出房间</string>
+    <string name="profile_edit">修改个人资料</string>
+    <string name="settings">设置</string>
+    <string name="feedback">反馈</string>
+    <string name="about">关于</string>
+    <string name="log_out_current_user">注销当前用户</string>
 </resources>
