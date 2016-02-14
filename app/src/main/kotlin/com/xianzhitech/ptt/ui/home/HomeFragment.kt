@@ -7,11 +7,16 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.graphics.drawable.DrawableCompat
 import android.support.v4.view.ViewPager
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getColorCompat
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.ui.base.BaseFragment
 
@@ -43,7 +48,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setHasOptionsMenu(true)
+//        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -94,22 +99,22 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
         super.onDestroyView()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        super.onCreateOptionsMenu(menu, inflater)
-
-        inflater?.inflate(R.menu.home, menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item?.itemId == R.id.home_logout) {
-            (context.applicationContext as AppComponent).connectToBackgroundService()
-                .flatMap { it.logout() }
-                .first()
-                .subscribe(GlobalSubscriber())
-        }
-
-        return super.onOptionsItemSelected(item)
-    }
+//    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+//        super.onCreateOptionsMenu(menu, inflater)
+//
+//        inflater?.inflate(R.menu.home, menu)
+//    }
+//
+//    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+//        if (item?.itemId == R.id.home_logout) {
+//            (context.applicationContext as AppComponent).connectToBackgroundService()
+//                .flatMap { it.logout() }
+//                .first()
+//                .subscribe(GlobalSubscriber())
+//        }
+//
+//        return super.onOptionsItemSelected(item)
+//    }
 
     override fun onStart() {
         super.onStart()
