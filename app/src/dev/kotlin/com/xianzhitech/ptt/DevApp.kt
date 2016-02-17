@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import com.android.debug.hv.ViewServer
+import com.facebook.stetho.Stetho
 
 /**
  * Created by fanchao on 7/12/15.
@@ -13,6 +14,7 @@ class DevApp : App() {
     override fun onCreate() {
         super.onCreate()
 
+        Stetho.initializeWithDefaults(this)
 
         registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {

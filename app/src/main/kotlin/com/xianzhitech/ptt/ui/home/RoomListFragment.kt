@@ -10,21 +10,18 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getMemberNames
-import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.repo.RoomWithMemberNames
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
-import kotlin.collections.emptyList
-import kotlin.text.isNullOrBlank
 
 /**
  * 显示会话列表(Room)的界面
  */
-class RoomListFragment : BaseFragment<Void>() {
+class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
 
     private var listView: RecyclerView? = null
+    private var errorView : View? = null
     private val adapter = Adapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,12 +34,18 @@ class RoomListFragment : BaseFragment<Void>() {
         (context.applicationContext as AppComponent).roomRepository.getRoomsWithMemberNames(3)
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe { adapter.rooms = it }
+                .subscribe {
+                    adapter.rooms = it
+                    errorView?.setVisible(it.isEmpty())
+                }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater?.inflate(R.layout.fragment_conversation_list, container, false)?.apply {
-            listView = findView<RecyclerView>(R.id.conversationList_recyclerView).apply {
+        return inflater?.inflate(R.layout.fragment_room_list, container, false)?.apply {
+            errorView = findViewById(R.id.roomList_emptyView).apply {
+                setOnClickListener { callbacks?.navigateToContactList() }
+            }
+            listView = findView<RecyclerView>(R.id.roomList_recyclerView).apply {
                 this.layoutManager = LinearLayoutManager(context)
                 this.adapter = this@RoomListFragment.adapter
             }
@@ -51,22 +54,23 @@ class RoomListFragment : BaseFragment<Void>() {
 
     override fun onDestroyView() {
         listView = null
+        errorView = null
         super.onDestroyView()
     }
 
-    private inner class Adapter : RecyclerView.Adapter<ConversationItemHolder>() {
+    private inner class Adapter : RecyclerView.Adapter<RoomItemHolder>() {
         var rooms: List<RoomWithMemberNames> = emptyList()
             set(value) {
                 field = value
                 notifyDataSetChanged()
             }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ConversationItemHolder {
-            return ConversationItemHolder(parent)
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomItemHolder {
+            return RoomItemHolder(parent)
         }
 
-        override fun onBindViewHolder(holder: ConversationItemHolder, position: Int) {
-            holder.setConversation(rooms[position])
+        override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
+            holder.setRoom(rooms[position])
             holder.itemView.setOnClickListener { v ->
                 context.joinRoom(rooms[position].room.id, null, false, bindToLifecycle())
             }
@@ -77,26 +81,21 @@ class RoomListFragment : BaseFragment<Void>() {
         }
     }
 
-    internal class ConversationItemHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_group_list_item, container, false)) {
+    private class RoomItemHolder(container: ViewGroup,
+                                 rootView : View = container.inflate(R.layout.view_group_list_item),
+                                 private val memberView: TextView = rootView.findView(R.id.groupListItem_members),
+                                 private val nameView: TextView = rootView.findView(R.id.groupListItem_name),
+                                 private val iconView: ImageView = rootView.findView(R.id.groupListItem_icon))
+    : RecyclerView.ViewHolder(rootView) {
 
-        var memberView: TextView
-        var nameView: TextView
-        var iconView: ImageView
+        fun setRoom(room: RoomWithMemberNames) {
+            val memberText = room.getMemberNames(itemView.context)
 
-        init {
-            memberView = itemView.findView(R.id.groupListItem_members)
-            nameView = itemView.findView(R.id.groupListItem_name)
-            iconView = itemView.findView(R.id.groupListItem_icon)
-        }
-
-        fun setConversation(info: RoomWithMemberNames) {
-            val memberText = info.getMemberNames(itemView.context)
-
-            if (info.room.name.isNullOrBlank()) {
+            if (room.room.name.isNullOrBlank()) {
                 nameView.text = memberText
                 memberView.visibility = View.GONE
             } else {
-                nameView.text = info.room.name
+                nameView.text = room.room.name
                 //            Picasso.with(itemView.getContext())
                 //                    .load(info.group.getImageUri())
                 //                    .fit()
@@ -107,5 +106,9 @@ class RoomListFragment : BaseFragment<Void>() {
             }
 
         }
+    }
+
+    interface Callbacks {
+        fun navigateToContactList()
     }
 }

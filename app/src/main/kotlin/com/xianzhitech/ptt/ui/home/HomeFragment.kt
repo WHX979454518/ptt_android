@@ -26,7 +26,7 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 
  * Created by fanchao on 17/12/15.
  */
-class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
+class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Callbacks {
 
     private enum class Tab private constructor(@StringRes
                                                val labelRes: Int, @DrawableRes
@@ -94,12 +94,17 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>() {
         }
     }
 
+
     override fun onDestroyView() {
         views = null
         super.onDestroyView()
     }
 
-//    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+    override fun navigateToContactList() {
+        views?.viewPager?.setCurrentItem(Tab.Contacts.ordinal, true)
+    }
+
+    //    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
 //        super.onCreateOptionsMenu(menu, inflater)
 //
 //        inflater?.inflate(R.menu.home, menu)

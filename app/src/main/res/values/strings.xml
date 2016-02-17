@@ -75,4 +75,5 @@
     <string name="about">关于</string>
     <string name="log_out_current_user">注销当前用户</string>
     <string name="log_out_confirm_message">注销后将接收不到其他人的呼叫，确定吗?</string>
+    <string name="error_no_rooms">查看通讯录以开始对讲</string>
 </resources>

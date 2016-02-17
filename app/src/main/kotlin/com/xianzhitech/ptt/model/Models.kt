@@ -7,7 +7,6 @@ import com.xianzhitech.ptt.ext.optStringValue
 import rx.functions.Func1
 import java.io.Serializable
 import java.util.*
-import kotlin.text.isNullOrEmpty
 
 /**
  *
@@ -58,13 +57,13 @@ class Contacts {
 class Room() : Model {
 
     companion object {
-        public const val TABLE_NAME = "conversations"
+        public const val TABLE_NAME = "rooms"
 
-        public const val COL_ID = "conv_id"
-        public const val COL_NAME = "conv_name"
-        public const val COL_DESC = "conv_desc"
-        public const val COL_OWNER_ID = "conv_owner_id"
-        public const val COL_IMPORTANT = "conv_important"
+        public const val COL_ID = "room_id"
+        public const val COL_NAME = "room_name"
+        public const val COL_DESC = "room_desc"
+        public const val COL_OWNER_ID = "room_owner_id"
+        public const val COL_IMPORTANT = "room_important"
 
         public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
                 "$COL_ID TEXT PRIMARY KEY," +

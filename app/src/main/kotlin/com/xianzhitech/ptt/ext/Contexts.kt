@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.ext
 
 import android.content.*
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
 import android.os.IBinder
 import android.support.v4.content.LocalBroadcastManager
 import com.xianzhitech.ptt.service.ConnectivityException
@@ -81,11 +80,11 @@ fun ConnectivityManager.hasActiveConnection(): Boolean {
     return activeNetworkInfo?.isConnected ?: false
 }
 
-fun Context.getActiveNetwork() : Observable<NetworkInfo?> {
+fun Context.getActiveNetwork() : Observable<NetworkInfoData?> {
     val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     return receiveBroadcasts(false, ConnectivityManager.CONNECTIVITY_ACTION)
-            .map { connectivityManager.activeNetworkInfo }
-            .startWith(connectivityManager.activeNetworkInfo)
+            .map { connectivityManager.activeNetworkInfo?.let { NetworkInfoData(it) } }
+            .startWith(connectivityManager.activeNetworkInfo?.let { NetworkInfoData(it) })
 }
 
 fun Context.getConnectivity(): Observable<Boolean> {
