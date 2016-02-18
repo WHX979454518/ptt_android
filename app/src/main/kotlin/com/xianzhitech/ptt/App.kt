@@ -40,15 +40,6 @@ open class App : Application(), AppComponent {
 
     override fun connectToBackgroundService() = connectToService<BackgroundServiceBinder>(Intent(this, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE)
 
-    override fun onCreate() {
-        super.onCreate()
-
-        //        Picasso.setSingletonInstance(
-        //                Picasso.Builder(this).downloader(OkHttpDownloader(httpClient)).build())
-
-
-    }
-
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : PreferenceStorageProvider {
         override var userSessionToken: String?
             get() = pref.getString(KEY_USER_TOKEN, null)

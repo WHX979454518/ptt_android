@@ -16,24 +16,12 @@
 #   public *;
 #}
 
-# Retro lambda
--dontwarn java.lang.invoke.*
-
--dontwarn com.squareup.okhttp.**
-
-# Butterknife
--keep class butterknife.** { *; }
--dontwarn butterknife.internal.**
--keep class **$$ViewBinder { *; }
-
--keepclasseswithmembernames class * {
-    @butterknife.* <fields>;
+# Glide
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public enum com.bumptech.glide.load.resource.bitmap.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
 }
-
--keepclasseswithmembernames class * {
-    @butterknife.* <methods>;
-}
-
 
 # hockeyapp
 -keep class net.hockeyapp.**

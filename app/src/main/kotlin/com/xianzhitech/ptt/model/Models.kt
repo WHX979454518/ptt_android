@@ -27,16 +27,16 @@ interface ContactItem {
 
 class Contacts {
     companion object {
-        public const val TABLE_NAME = "contacts";
+        const val TABLE_NAME = "contacts";
 
-        public const val COL_GROUP_ID = "contact_group_id"
-        public const val COL_PERSON_ID = "contact_person_id"
-        public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
+        const val COL_GROUP_ID = "contact_group_id"
+        const val COL_PERSON_ID = "contact_person_id"
+        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
                 "$COL_GROUP_ID TEXT REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) UNIQUE ON CONFLICT IGNORE," +
                 "$COL_PERSON_ID TEXT REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
                 ")"
 
-        public @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
+        @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
             if (cursor?.optStringValue(COL_GROUP_ID).isNullOrEmpty().not()) {
                 Group.MAPPER.call(cursor)
             } else if (cursor?.optStringValue(COL_PERSON_ID).isNullOrEmpty().not()) {
@@ -57,15 +57,15 @@ class Contacts {
 class Room() : Model {
 
     companion object {
-        public const val TABLE_NAME = "rooms"
+        const val TABLE_NAME = "rooms"
 
-        public const val COL_ID = "room_id"
-        public const val COL_NAME = "room_name"
-        public const val COL_DESC = "room_desc"
-        public const val COL_OWNER_ID = "room_owner_id"
-        public const val COL_IMPORTANT = "room_important"
+        const val COL_ID = "room_id"
+        const val COL_NAME = "room_name"
+        const val COL_DESC = "room_desc"
+        const val COL_OWNER_ID = "room_owner_id"
+        const val COL_IMPORTANT = "room_important"
 
-        public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
+        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
                 "$COL_ID TEXT PRIMARY KEY," +
                 "$COL_NAME TEXT," +
                 "$COL_DESC TEXT," +
@@ -73,7 +73,7 @@ class Room() : Model {
                 "$COL_IMPORTANT INTEGER NOT NULL" +
                 ")"
 
-        public @JvmStatic val MAPPER = Func1<ResultSet, Room> { Room().from(it) }
+        @JvmStatic val MAPPER = Func1<ResultSet, Room> { Room().from(it) }
     }
 
     var id: String = ""
@@ -125,15 +125,15 @@ class Room() : Model {
  */
 class Group() : Model, ContactItem {
     companion object {
-        public const val TABLE_NAME = "groups"
+        const val TABLE_NAME = "groups"
 
-        public const val COL_ID = "group_id"
-        public const val COL_NAME = "group_name"
-        public const val COL_DESCRIPTION = "group_desc"
+        const val COL_ID = "group_id"
+        const val COL_NAME = "group_name"
+        const val COL_DESCRIPTION = "group_desc"
 
-        public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID INTEGER PRIMARY KEY NOT NULL,$COL_NAME TEXT NOT NULL,$COL_DESCRIPTION TEXT)"
+        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID INTEGER PRIMARY KEY NOT NULL,$COL_NAME TEXT NOT NULL,$COL_DESCRIPTION TEXT)"
 
-        public @JvmField val MAPPER = Func1<ResultSet, Group> { Group().from(it) }
+        @JvmField val MAPPER = Func1<ResultSet, Group> { Group().from(it) }
     }
 
     var id: String = ""
@@ -172,16 +172,16 @@ class Group() : Model, ContactItem {
 
 class User() : Model, ContactItem, Serializable {
     companion object {
-        public const val TABLE_NAME = "users"
+        const val TABLE_NAME = "users"
 
-        public const val COL_ID = "person_id"
-        public const val COL_NAME = "person_name"
-        public const val COL_PRIV = "person_priv"
-        public const val COL_AVATAR = "person_avatar"
+        const val COL_ID = "person_id"
+        const val COL_NAME = "person_name"
+        const val COL_PRIV = "person_priv"
+        const val COL_AVATAR = "person_avatar"
 
-        public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID TEXT PRIMARY KEY NOT NULL, $COL_NAME TEXT NOT NULL, $COL_AVATAR TEXT, $COL_PRIV INTEGER NOT NULL)"
+        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME ($COL_ID TEXT PRIMARY KEY NOT NULL, $COL_NAME TEXT NOT NULL, $COL_AVATAR TEXT, $COL_PRIV INTEGER NOT NULL)"
 
-        public @JvmField val MAPPER = Func1<ResultSet, User> {
+        @JvmField val MAPPER = Func1<ResultSet, User> {
             User().from(it)
         }
     }
@@ -225,12 +225,12 @@ class User() : Model, ContactItem, Serializable {
 
 class GroupMembers {
     companion object {
-        public const val TABLE_NAME = "group_members"
+        const val TABLE_NAME = "group_members"
 
-        public const val COL_GROUP_ID = "gm_group_id"
-        public const val COL_PERSON_ID = "gm_person_id"
+        const val COL_GROUP_ID = "gm_group_id"
+        const val COL_PERSON_ID = "gm_person_id"
 
-        public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME(" +
+        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME(" +
                 "$COL_GROUP_ID TEXT NOT NULL REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) ON DELETE CASCADE," +
                 "$COL_PERSON_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) ON DELETE CASCADE, " +
                 "UNIQUE ($COL_GROUP_ID,$COL_PERSON_ID) ON CONFLICT REPLACE" +
@@ -240,12 +240,12 @@ class GroupMembers {
 
 class RoomMembers {
     companion object {
-        public const val TABLE_NAME = "room_members"
+        const val TABLE_NAME = "room_members"
 
-        public const val COL_ROOM_ID = "rm_room_id"
-        public const val COL_USER_ID = "rm_user_id"
+        const val COL_ROOM_ID = "rm_room_id"
+        const val COL_USER_ID = "rm_user_id"
 
-        public const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
+        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
                 "$COL_ROOM_ID TEXT NOT NULL REFERENCES ${Room.TABLE_NAME}(${Room.COL_ID})," +
                 "$COL_USER_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID})" +
                 ")"

@@ -76,7 +76,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //        speakSourceAdapter.speakerModes = SpeakerMode.values().toList()
+        speakSourceAdapter.speakerModes = SpeakerMode.values().toList()
         roomRepository = (activity.application as AppComponent).roomRepository
     }
 
