@@ -31,6 +31,7 @@ interface UserRepository {
 interface GroupRepository {
     fun getGroup(groupId: String): Observable<Group?>
     fun getGroupMembers(groupId: String): Observable<List<User>>
+    fun getGroupsWithMembers(groupIds: Iterable<String>, maxMember: Int) : Observable<List<GroupWithMembers>>
     fun updateGroupMembers(groupId: String, memberIds: Iterable<String>): Observable<Unit>
     fun replaceAllGroups(groups: Iterable<Group>, groupMembers: Map<String, Iterable<String>>): Observable<Unit>
 }
@@ -70,6 +71,12 @@ data class RoomWithMemberNames(val room: Room,
  */
 data class RoomWithMembers(val room: Room,
                            val members : List<User>)
+
+/**
+ * 一个包括了群组信息和成员信息的数据结构
+ */
+data class GroupWithMembers(val group : Group,
+                            val members : List<User>)
 
 /**
  * 提供一个参数可为空的查询房间成员的方法

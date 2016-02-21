@@ -15,17 +15,15 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.GroupWithMembers
 import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
+import com.xianzhitech.ptt.ui.widget.MultiDrawable
 import com.xianzhitech.ptt.util.ContactComparator
-import rx.Observable
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.arrayListOf
-import kotlin.collections.sortWith
-import kotlin.text.isNullOrBlank
 
 class ContactsFragment : BaseFragment<Void>() {
     private class Views(rootView: View,
@@ -61,10 +59,7 @@ class ContactsFragment : BaseFragment<Void>() {
 
         views?.apply {
             val contactRepository = (context.applicationContext as AppComponent).contactRepository
-
-            Observable.merge(
-                    searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS),
-                    searchBox.getString().toObservable())
+            searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchBox.getString())
                     .flatMap {
                         if (it.isNullOrBlank()) {
                             contactRepository.getContactItems()
@@ -85,9 +80,9 @@ class ContactsFragment : BaseFragment<Void>() {
     }
 
     private inner class Adapter : RecyclerView.Adapter<ContactHolder>() {
-        var contactItems = arrayListOf<ContactItem>()
+        var contactItems = arrayListOf<Any>()
 
-        fun setContactItems(newItems: Collection<ContactItem>) {
+        fun setContactItems(newItems: Collection<Any>) {
             contactItems.clear()
             contactItems.addAll(newItems)
             contactItems.sortWith(ContactComparator(Locale.CHINESE))
@@ -98,6 +93,17 @@ class ContactsFragment : BaseFragment<Void>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ContactHolder(parent)
         override fun onBindViewHolder(holder: ContactHolder, position: Int) {
             val contactItem = contactItems[position]
+
+            if (contactItem is GroupWithMembers && contactItem.avatar.isNullOrBlank()) {
+                val groupDrawable : MultiDrawable = if (holder.iconView.drawable is MultiDrawable) {
+                    holder.iconView.drawable as MultiDrawable
+                } else {
+                    MultiDrawable(holder.iconView.context).apply { holder.iconView.setImageDrawable(this) }
+                }
+
+                groupDrawable.children = emptyList()
+            }
+
             holder.iconView.setImageDrawable(contactItem.getIcon(holder.iconView.context))
             holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->

@@ -109,6 +109,37 @@ class LocalRepository(internal val db: Database)
                 .mapToOneOrDefault(Group.MAPPER, null)
     }
 
+    override fun getGroupsWithMembers(groupIds: Iterable<String>, maxMember: Int): Observable<List<GroupWithMembers>> {
+        return createQuery(listOf(Group.TABLE_NAME, User.TABLE_NAME), "SELECT G.*, U.* FROM ${GroupMembers.TABLE_NAME} AS GM " +
+                "INNER JOIN ${Group.TABLE_NAME} AS G ON GM.${GroupMembers.COL_GROUP_ID} = G.${Group.COL_ID} " +
+                "LEFT JOIN ${User.TABLE_NAME} AS U ON GM.${GroupMembers.COL_PERSON_ID} = U.${User.COL_ID} " +
+                "WHERE ${GroupMembers.COL_GROUP_ID} IN ${groupIds.toSqlSet()}")
+            .map {
+                var currGroup : Group? = null
+                var currMembers : MutableList<User> = arrayListOf()
+                val result = arrayListOf<GroupWithMembers>()
+                it.use {
+                    while (it.moveToNext()) {
+                        val groupId = it.getStringValue(Group.COL_ID)
+                        if (currGroup == null) {
+                            currGroup = Group().from(it)
+                        }
+                        else if (currGroup!!.id != groupId) {
+                            result += GroupWithMembers(currGroup!!, currMembers)
+                            currGroup = Group().from(it)
+                            currMembers = arrayListOf()
+                        }
+                    }
+                }
+
+                if (currGroup != null) {
+                    result += GroupWithMembers(currGroup!!, currMembers)
+                }
+
+                result
+            }
+    }
+
     override fun getAllUsers(): Observable<List<User>> {
         return createQuery(User.TABLE_NAME, "SELECT * FROM ${User.TABLE_NAME}")
                 .mapToList(User.MAPPER)
@@ -212,13 +243,13 @@ class LocalRepository(internal val db: Database)
                     })
 
     override fun getContactItems() = createQuery(Contacts.TABLE_NAME,
-            "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${User.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${User.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID}")
+            "SELECT * FROM ${Contacts.TABLE_NAME}")
             .mapToList(Contacts.MAPPER)
 
     override fun searchContactItems(searchTerm: String): Observable<List<ContactItem>> {
         val formattedSearchTerm = "%$searchTerm%"
         return createQuery(Contacts.TABLE_NAME,
-                "SELECT * FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${User.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${User.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID} WHERE (P.${User.COL_NAME} LIKE ? OR G.${Group.COL_NAME} LIKE ? )", formattedSearchTerm, formattedSearchTerm)
+                "SELECT CI.* FROM ${Contacts.TABLE_NAME} AS CI LEFT JOIN ${User.TABLE_NAME} AS P ON CI.${Contacts.COL_PERSON_ID} = P.${User.COL_ID} LEFT JOIN ${Group.TABLE_NAME} AS G ON CI.${Contacts.COL_GROUP_ID} = G.${Group.COL_ID} WHERE (P.${User.COL_NAME} LIKE ? OR G.${Group.COL_NAME} LIKE ? )", formattedSearchTerm, formattedSearchTerm)
                 .mapToList(Contacts.MAPPER)
     }
 

@@ -20,10 +20,11 @@ interface Model {
     fun from(cursor: ResultSet): Model
 }
 
-interface ContactItem {
-    val name: CharSequence
-    val avatar: String?
-}
+
+interface ContactItem
+
+data class GroupContactItem(val groupId : String) : ContactItem
+data class UserContactItem(val userId : String) : ContactItem
 
 class Contacts {
     companion object {
@@ -37,16 +38,21 @@ class Contacts {
                 ")"
 
         @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
-            if (cursor?.optStringValue(COL_GROUP_ID).isNullOrEmpty().not()) {
-                Group.MAPPER.call(cursor)
-            } else if (cursor?.optStringValue(COL_PERSON_ID).isNullOrEmpty().not()) {
-                User.MAPPER.call(cursor)
-            } else {
-                throw IllegalArgumentException("ResultSet $cursor is not a valid contact")
+            var id = cursor?.optStringValue(COL_GROUP_ID)
+            if (id?.isNotEmpty() ?: false) {
+                return@Func1 GroupContactItem(id!!)
             }
+
+            id = cursor?.optStringValue(COL_PERSON_ID)
+            if (id?.isNotEmpty() ?: false) {
+                return@Func1 UserContactItem(id!!)
+            }
+
+            throw IllegalArgumentException("ResultSet $cursor is not a valid contact")
         }
     }
 }
+
 
 /**
  *
@@ -123,7 +129,7 @@ class Room() : Model {
  *
  * Created by fanchao on 17/12/15.
  */
-class Group() : Model, ContactItem {
+class Group() : Model {
     companion object {
         const val TABLE_NAME = "groups"
 
@@ -138,8 +144,8 @@ class Group() : Model, ContactItem {
 
     var id: String = ""
     var description: String? = null
-    override var name = ""
-    override var avatar: String? = null
+    var name = ""
+    var avatar: String? = null
 
     constructor(id: String, name: String) : this() {
         this.id = id
@@ -170,7 +176,7 @@ class Group() : Model, ContactItem {
     }
 }
 
-class User() : Model, ContactItem, Serializable {
+class User() : Model, Serializable {
     companion object {
         const val TABLE_NAME = "users"
 
@@ -187,8 +193,8 @@ class User() : Model, ContactItem, Serializable {
     }
 
     var id: String = ""
-    override var name = ""
-    override var avatar: String? = ""
+    var name = ""
+    var avatar: String? = ""
     var privileges = EnumSet.noneOf(Privilege::class.java)
 
     constructor(id: String, name: String, privileges: EnumSet<Privilege>) : this() {
