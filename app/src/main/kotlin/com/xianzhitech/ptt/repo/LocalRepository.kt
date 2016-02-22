@@ -114,11 +114,11 @@ class LocalRepository(internal val db: Database)
                 "INNER JOIN ${Group.TABLE_NAME} AS G ON GM.${GroupMembers.COL_GROUP_ID} = G.${Group.COL_ID} " +
                 "LEFT JOIN ${User.TABLE_NAME} AS U ON GM.${GroupMembers.COL_PERSON_ID} = U.${User.COL_ID} " +
                 "WHERE ${GroupMembers.COL_GROUP_ID} IN ${groupIds.toSqlSet()}")
-            .map {
+            .map { cursor ->
                 var currGroup : Group? = null
                 var currMembers : MutableList<User> = arrayListOf()
                 val result = arrayListOf<GroupWithMembers>()
-                it.use {
+                cursor.use {
                     while (it.moveToNext()) {
                         val groupId = it.getStringValue(Group.COL_ID)
                         if (currGroup == null) {
@@ -128,6 +128,10 @@ class LocalRepository(internal val db: Database)
                             result += GroupWithMembers(currGroup!!, currMembers)
                             currGroup = Group().from(it)
                             currMembers = arrayListOf()
+                        }
+
+                        if (it.getColumnIndex(User.COL_ID) >= 0) {
+                            currMembers.add(User().from(it))
                         }
                     }
                 }

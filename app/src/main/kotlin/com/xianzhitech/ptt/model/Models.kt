@@ -20,36 +20,33 @@ interface Model {
     fun from(cursor: ResultSet): Model
 }
 
-
 interface ContactItem
 
 data class GroupContactItem(val groupId : String) : ContactItem
 data class UserContactItem(val userId : String) : ContactItem
 
-class Contacts {
-    companion object {
-        const val TABLE_NAME = "contacts";
+object Contacts {
+    const val TABLE_NAME = "contacts";
 
-        const val COL_GROUP_ID = "contact_group_id"
-        const val COL_PERSON_ID = "contact_person_id"
-        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
-                "$COL_GROUP_ID TEXT REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) UNIQUE ON CONFLICT IGNORE," +
-                "$COL_PERSON_ID TEXT REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
-                ")"
+    const val COL_GROUP_ID = "contact_group_id"
+    const val COL_PERSON_ID = "contact_person_id"
+    const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
+            "$COL_GROUP_ID TEXT REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) UNIQUE ON CONFLICT IGNORE," +
+            "$COL_PERSON_ID TEXT REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) UNIQUE ON CONFLICT IGNORE" +
+            ")"
 
-        @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
-            var id = cursor?.optStringValue(COL_GROUP_ID)
-            if (id?.isNotEmpty() ?: false) {
-                return@Func1 GroupContactItem(id!!)
-            }
-
-            id = cursor?.optStringValue(COL_PERSON_ID)
-            if (id?.isNotEmpty() ?: false) {
-                return@Func1 UserContactItem(id!!)
-            }
-
-            throw IllegalArgumentException("ResultSet $cursor is not a valid contact")
+    @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
+        var id = cursor?.optStringValue(COL_GROUP_ID)
+        if (id?.isNotEmpty() ?: false) {
+            return@Func1 GroupContactItem(id!!)
         }
+
+        id = cursor?.optStringValue(COL_PERSON_ID)
+        if (id?.isNotEmpty() ?: false) {
+            return@Func1 UserContactItem(id!!)
+        }
+
+        throw IllegalArgumentException("ResultSet $cursor is not a valid contact")
     }
 }
 
@@ -229,31 +226,27 @@ class User() : Model, Serializable {
     }
 }
 
-class GroupMembers {
-    companion object {
-        const val TABLE_NAME = "group_members"
+object GroupMembers {
+    const val TABLE_NAME = "group_members"
 
-        const val COL_GROUP_ID = "gm_group_id"
-        const val COL_PERSON_ID = "gm_person_id"
+    const val COL_GROUP_ID = "gm_group_id"
+    const val COL_PERSON_ID = "gm_person_id"
 
-        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME(" +
-                "$COL_GROUP_ID TEXT NOT NULL REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) ON DELETE CASCADE," +
-                "$COL_PERSON_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) ON DELETE CASCADE, " +
-                "UNIQUE ($COL_GROUP_ID,$COL_PERSON_ID) ON CONFLICT REPLACE" +
-                ")"
-    }
+    const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME(" +
+            "$COL_GROUP_ID TEXT NOT NULL REFERENCES ${Group.TABLE_NAME}(${Group.COL_ID}) ON DELETE CASCADE," +
+            "$COL_PERSON_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID}) ON DELETE CASCADE, " +
+            "UNIQUE ($COL_GROUP_ID,$COL_PERSON_ID) ON CONFLICT REPLACE" +
+            ")"
 }
 
-class RoomMembers {
-    companion object {
-        const val TABLE_NAME = "room_members"
+object RoomMembers {
+    const val TABLE_NAME = "room_members"
 
-        const val COL_ROOM_ID = "rm_room_id"
-        const val COL_USER_ID = "rm_user_id"
+    const val COL_ROOM_ID = "rm_room_id"
+    const val COL_USER_ID = "rm_user_id"
 
-        const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
-                "$COL_ROOM_ID TEXT NOT NULL REFERENCES ${Room.TABLE_NAME}(${Room.COL_ID})," +
-                "$COL_USER_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID})" +
-                ")"
-    }
+    const val CREATE_TABLE_SQL = "CREATE TABLE $TABLE_NAME (" +
+            "$COL_ROOM_ID TEXT NOT NULL REFERENCES ${Room.TABLE_NAME}(${Room.COL_ID})," +
+            "$COL_USER_ID TEXT NOT NULL REFERENCES ${User.TABLE_NAME}(${User.COL_ID})" +
+            ")"
 }
