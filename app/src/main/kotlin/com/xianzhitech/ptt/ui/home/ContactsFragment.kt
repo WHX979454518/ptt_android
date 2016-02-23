@@ -129,6 +129,8 @@ class ContactsFragment : BaseFragment<Void>() {
 
                     }
                 }
+
+                holder.nameView.text = contactItem.group.name
             }
             else if (contactItem is User) {
 

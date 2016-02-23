@@ -6,11 +6,7 @@ import android.graphics.drawable.Drawable
 import android.text.TextPaint
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.toDimen
-import kotlin.collections.contains
 
-/**
- * Created by fanchao on 30/12/15.
- */
 class TextDrawable(context: Context, private val text: String, private val tintColor: Int) : Drawable() {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
