@@ -14,7 +14,7 @@ class MultiDrawable(val context: Context,
                     children : List<Drawable> = emptyList(),
                     @ColorInt val backgroundColor : Int = ContextCompat.getColor(context, R.color.grey_500),
                     val gridSpacerSize: Int = context.resources.getDimensionPixelSize(R.dimen.divider_normal),
-                    val columnCount: Int = 3) : Drawable() {
+                    val columnCount: Int = 2) : Drawable() {
 
     var children : List<Drawable> = children
     set(value) {
@@ -87,9 +87,11 @@ class MultiDrawable(val context: Context,
                 drawRow(firstRowLeftPadding, padding, childSize, canvas, 0, firstRowColumnCount)
 
                 // Draw rest row
+                var y = padding
                 for (i in 1..rowCount - 1) {
+                    y += childSize + gridSpacerSize
                     val rowStartIndex = (children.size - firstRowColumnCount) / rowCount * i
-                    drawRow(padding, padding, childSize, canvas, rowStartIndex, columnCount)
+                    drawRow(padding, y, childSize, canvas, rowStartIndex, columnCount)
                 }
             }
             else {
@@ -100,10 +102,10 @@ class MultiDrawable(val context: Context,
     }
 
     private fun drawRow(x : Int, y : Int, childSize : Int, canvas : Canvas, childStartIndex : Int, childCount : Int) {
+        var childX = x
         for (i in 0..childCount - 1) {
-            var childX = x + i * childSize
             if (i > 0) {
-                childX += (i - 1) * gridSpacerSize
+                childX += childSize + gridSpacerSize
             }
             drawChild(childX, y, childSize, canvas, children[childStartIndex + i])
         }

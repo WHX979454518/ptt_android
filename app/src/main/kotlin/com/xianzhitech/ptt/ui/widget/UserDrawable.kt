@@ -21,7 +21,7 @@ import rx.subjects.BehaviorSubject
 
 class UserDrawable private constructor(private val context : Any,
                                        private val userId : String,
-                                       var user : User?) : DrawableWrapper(), Target<GlideDrawable> {
+                                       private var user : User?) : DrawableWrapper(), Target<GlideDrawable> {
 
     companion object {
         private val BASE_TEXT_AVATAR = Uri.parse("drawable://text/")
@@ -42,17 +42,21 @@ class UserDrawable private constructor(private val context : Any,
     private var request : Request? = null
     private var sizeSubject = BehaviorSubject.create<Rect>()
     private var subscription : Subscription? = null
-    private var avatar : Uri? = user?.let { if (it.avatar.isNullOrBlank()) BASE_TEXT_AVATAR.buildUpon().appendPath(it.name.first().toString()).build() else Uri.parse(it.avatar) }
+    private var avatar : Uri? = null
     set(value) {
         if (field != value) {
             Glide.clear(this)
             field = value
-            if (value != null && value.scheme == BASE_TEXT_AVATAR.scheme && value.host == BASE_TEXT_AVATAR.host && value.pathSegments.isNotEmpty()) {
-                drawable = TextDrawable(realContext, value.pathSegments[0], value.pathSegments[0].hashCode())
-            }
-            else if (value != null) {
-                requestManager.load(value).crossFade().into(this)
-            }
+            applyAvatar()
+        }
+    }
+
+    private fun applyAvatar() {
+        val localAvatar = avatar
+        if (localAvatar != null && localAvatar.scheme == BASE_TEXT_AVATAR.scheme && localAvatar.host == BASE_TEXT_AVATAR.host && localAvatar.pathSegments.isNotEmpty()) {
+            drawable = TextDrawable(realContext, localAvatar.pathSegments[0], localAvatar.pathSegments[0].hashCode())
+        } else if (localAvatar != null) {
+            requestManager.load(localAvatar).crossFade().into(this)
         }
     }
 
@@ -71,7 +75,13 @@ class UserDrawable private constructor(private val context : Any,
             userObservable = userObservable.startWith(user)
         }
         subscription = userObservable.subscribe {
-            avatar = if (it == null) null else it.avatar?.let { Uri.parse(it) } ?: BASE_TEXT_AVATAR.buildUpon().appendPath(it.name.first().toString()).build()
+            avatar = when {
+                it == null -> null
+                it.avatar.isNullOrBlank() -> BASE_TEXT_AVATAR.buildUpon().appendPath(it.name.first().toString()).build()
+                else -> Uri.parse(it.avatar)
+            }
+
+            user = it
         }
     }
 

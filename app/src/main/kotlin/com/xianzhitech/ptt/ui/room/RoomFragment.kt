@@ -29,6 +29,7 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.PushToTalkButton
+import com.xianzhitech.ptt.ui.widget.UserDrawable
 import rx.Observable
 import java.util.*
 
@@ -246,7 +247,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
             holder?.imageView?.let {
                 val person = members[position]
-                it.setImageDrawable(person.getIcon(it.context))
+                it.setImageDrawable(UserDrawable(it.context, person.id, person))
                 it.isEnabled = activeMembers.contains(person.id)
                 it.isSelected = currentSpeakerId == person.id
             }

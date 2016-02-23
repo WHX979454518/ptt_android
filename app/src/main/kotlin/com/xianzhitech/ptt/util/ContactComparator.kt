@@ -1,6 +1,6 @@
 package com.xianzhitech.ptt.util
 
-import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.GroupWithMembers
 import java.text.Collator
 import java.util.*
@@ -20,10 +20,12 @@ class ContactComparator : Comparator<Any> {
     }
 
     override fun compare(lhs: Any, rhs: Any): Int {
-        val lhsIsGroup = lhs is Group || lhs is GroupWithMembers
-        val rhsIsGroup = rhs is Group || rhs is Group
+        val lhsIsGroup = lhs is GroupWithMembers
+        val rhsIsGroup = rhs is GroupWithMembers
+        val lhsName = if (lhs is GroupWithMembers) lhs.group.name else (lhs as User).name
+        val rhsName = if (rhs is GroupWithMembers) rhs.group.name else (rhs as User).name
         if (lhsIsGroup && rhsIsGroup || (!lhsIsGroup && !rhsIsGroup)) {
-            return collator.compare(lhs.name, rhs.name)
+            return collator.compare(lhsName, rhsName)
         } else if (lhsIsGroup) {
             return -1
         } else {

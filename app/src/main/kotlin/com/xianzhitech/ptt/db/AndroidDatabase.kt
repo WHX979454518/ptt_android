@@ -20,12 +20,12 @@ class AndroidDatabase(context: Context, name: String, version: Int) : Database {
                 db?.apply {
                     beginTransaction()
                     try {
-                        execSQL(com.xianzhitech.ptt.model.User.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Group.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.GroupMembers.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Room.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.RoomMembers.Companion.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Contacts.Companion.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.User.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.Group.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.GroupMembers.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.Room.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.RoomMembers.CREATE_TABLE_SQL)
+                        execSQL(com.xianzhitech.ptt.model.Contacts.CREATE_TABLE_SQL)
                         setTransactionSuccessful()
                     } finally {
                         endTransaction()

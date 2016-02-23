@@ -53,19 +53,23 @@ class TextDrawable(context: Context, private val text: String, private val tintC
         } ?: false
     }
 
-    override fun draw(canvas: Canvas?) {
-        canvas?.apply {
-            val halfWidth = width / 2f
-            val halfHeight = height / 2f
-            val radius = Math.min(halfHeight, halfWidth) - strokePaint.strokeWidth / 2f
-            drawCircle(halfWidth, halfHeight, radius, paint)
+    override fun draw(canvas: Canvas) {
+        val width = bounds.width()
+        val height = bounds.height()
 
-            if (selected) {
-                drawCircle(halfWidth, halfHeight, radius, strokePaint)
-            }
-
-            drawText(text, halfWidth, halfHeight - textBounds.exactCenterY(), textPaint)
+        if (width <= 0 || height <= 0) {
+            return
         }
+
+        val cx = bounds.exactCenterX()
+        val cy = bounds.exactCenterY()
+        canvas.drawRect(bounds, paint)
+
+        if (selected) {
+            canvas.drawRect(bounds, strokePaint)
+        }
+
+        canvas.drawText(text, cx, cy - textBounds.exactCenterY(), textPaint)
     }
 
     override fun setAlpha(alpha: Int) {

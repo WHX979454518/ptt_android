@@ -13,7 +13,6 @@ import com.bumptech.glide.Glide
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.GroupContactItem
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.model.UserContactItem
@@ -23,6 +22,7 @@ import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
+import com.xianzhitech.ptt.ui.widget.UserDrawable
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
 import java.util.*
@@ -117,30 +117,25 @@ class ContactsFragment : BaseFragment<Void>() {
                         MultiDrawable(holder.iconView.context).apply { holder.iconView.setImageDrawable(this) }
                     }
 
-                    groupDrawable.children = emptyList()
+                    groupDrawable.children = contactItem.members.map { UserDrawable(this@ContactsFragment, it.id, it) }
                 }
                 else {
                     Glide.with(this@ContactsFragment)
                             .load(contactItem.group.avatar)
                             .crossFade()
                             .into(holder.iconView)
-
-                    if (contactItem !is Group) {
-
-                    }
                 }
 
                 holder.nameView.text = contactItem.group.name
             }
             else if (contactItem is User) {
-
+                holder.iconView.setImageDrawable(UserDrawable(this@ContactsFragment, contactItem.id, contactItem))
+                holder.nameView.text = contactItem.name
             }
 
-            holder.iconView.setImageDrawable(contactItem.getIcon(holder.iconView.context))
-            holder.nameView.text = contactItem.name
             holder.itemView.setOnClickListener { v ->
                 context.joinRoom(null,
-                        if (contactItem is User) CreateRoomFromUser(contactItem.id) else CreateRoomFromGroup((contactItem as Group).id),
+                        if (contactItem is User) CreateRoomFromUser(contactItem.id) else CreateRoomFromGroup((contactItem as GroupWithMembers).group.id),
                         false,
                         bindToLifecycle())
             }

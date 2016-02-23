@@ -84,7 +84,7 @@ internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
 
     val size = length()
     val result = ArrayMap<String, Iterable<String>>(size)
-    for (i in 1..size - 1) {
+    for (i in 0..size - 1) {
         val groupObject = getJSONObject(i)
         result.put(groupObject.getString("idNumber"), groupObject.optJSONArray("members").toStringIterable())
     }
