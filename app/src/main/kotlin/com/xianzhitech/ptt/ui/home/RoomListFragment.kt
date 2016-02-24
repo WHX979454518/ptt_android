@@ -11,9 +11,12 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.repo.RoomWithMemberNames
+import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
+import com.xianzhitech.ptt.ui.widget.MultiDrawable
+import com.xianzhitech.ptt.ui.widget.UserDrawable
+import rx.Observable
 
 /**
  * 显示会话列表(Room)的界面
@@ -31,12 +34,17 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
     override fun onStart() {
         super.onStart()
 
-        (context.applicationContext as AppComponent).roomRepository.getRoomsWithMemberNames(3)
+        val appComponent = context.applicationContext as AppComponent
+        Observable.combineLatest(
+                appComponent.roomRepository.getRoomsWithMembers(9),
+                appComponent.connectToBackgroundService().flatMap { it.loginState }.first { it.currentUserID != null },
+                { first, second -> first.to(second) })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {
-                    adapter.rooms = it
-                    errorView?.setVisible(it.isEmpty())
+                    adapter.currentUserId = it.second.currentUserID!!
+                    adapter.rooms = it.first
+                    errorView?.setVisible(it.first.isEmpty())
                 }
     }
 
@@ -59,7 +67,8 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
     }
 
     private inner class Adapter : RecyclerView.Adapter<RoomItemHolder>() {
-        var rooms: List<RoomWithMemberNames> = emptyList()
+        lateinit var currentUserId: String
+        var rooms: List<RoomWithMembers> = emptyList()
             set(value) {
                 field = value
                 notifyDataSetChanged()
@@ -70,7 +79,7 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
         }
 
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
-            holder.setRoom(rooms[position])
+            holder.setRoom(rooms[position], currentUserId)
             holder.itemView.setOnClickListener { v ->
                 context.joinRoom(rooms[position].room.id, null, false, bindToLifecycle())
             }
@@ -81,14 +90,14 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
         }
     }
 
-    private class RoomItemHolder(container: ViewGroup,
+    private inner class RoomItemHolder(container: ViewGroup,
                                  rootView : View = container.inflate(R.layout.view_group_list_item),
                                  private val memberView: TextView = rootView.findView(R.id.groupListItem_members),
                                  private val nameView: TextView = rootView.findView(R.id.groupListItem_name),
                                  private val iconView: ImageView = rootView.findView(R.id.groupListItem_icon))
     : RecyclerView.ViewHolder(rootView) {
 
-        fun setRoom(room: RoomWithMemberNames) {
+        fun setRoom(room: RoomWithMembers, currentUserId: String) {
             val memberText = room.getMemberNames(itemView.context)
 
             if (room.room.name.isNullOrBlank()) {
@@ -96,13 +105,18 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
                 memberView.visibility = View.GONE
             } else {
                 nameView.text = room.room.name
-                //            Picasso.with(itemView.getContext())
-                //                    .load(info.group.getImageUri())
-                //                    .fit()
-                //                    .into(iconView);
-
                 memberView.text = memberText
                 memberView.visibility = View.VISIBLE
+            }
+
+            if (room.memberCount > 2) {
+                val roomDrawable = if (iconView.drawable is MultiDrawable) iconView.drawable as MultiDrawable
+                else MultiDrawable(itemView.context).apply { iconView.setImageDrawable(this) }
+                roomDrawable.children = room.members.map { UserDrawable(this@RoomListFragment, it.id, it) }
+            }
+            else {
+                val nonSelfUser = room.members.first { it.id != currentUserId }
+                iconView.setImageDrawable(UserDrawable(this@RoomListFragment, nonSelfUser.id, nonSelfUser))
             }
 
         }

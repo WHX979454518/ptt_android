@@ -8,11 +8,9 @@
     <ImageView
         android:layout_width="@dimen/group_list_icon_size"
         android:layout_height="@dimen/group_list_icon_size"
-        android:tint="@color/secondary_text"
-        android:src="@drawable/ic_account_box"
         android:id="@+id/groupListItem_icon"
         android:layout_centerVertical="true"
-        android:layout_marginLeft="@dimen/unit_two" />
+        android:layout_marginLeft="@dimen/unit_one" />
 
     <LinearLayout
         android:id="@+id/groupListItem_titleContainer"
@@ -31,14 +29,14 @@
             android:text="群组1"
             android:id="@+id/groupListItem_name"
             style="@style/Text.Subhead"
-            android:layout_marginLeft="@dimen/unit_two"/>
+            android:layout_marginLeft="@dimen/unit_one"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="成员1 成员2 成员3"
             android:id="@+id/groupListItem_members"
-            android:layout_marginLeft="@dimen/unit_two"
+            android:layout_marginLeft="@dimen/unit_one"
             android:layout_marginTop="@dimen/unit_one"
             style="@style/Text.Caption"/>
 
@@ -56,8 +54,8 @@
         android:layout_height="wrap_content" />
 
     <View
-        style="@style/Divider"
-        android:layout_marginTop="@dimen/unit_two"
+        style="@style/Divider.Lighter"
+        android:layout_marginTop="@dimen/unit_one"
         android:layout_below="@+id/groupListItem_titleContainer"/>
 
 </RelativeLayout>

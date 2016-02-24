@@ -46,6 +46,7 @@ interface RoomRepository {
     fun updateRoom(room: Room, memberIds: Iterable<String>): Observable<Room>
     fun updateRoomMembers(roomId: String, memberIds: Iterable<String>): Observable<Unit>
     fun getRoomsWithMemberNames(maxMember: Int): Observable<List<RoomWithMemberNames>>
+    fun getRoomsWithMembers(maxMember: Int): Observable<List<RoomWithMembers>>
     fun getRoomWithMemberNames(roomId: String, maxMember: Int): Observable<RoomWithMemberNames?>
     fun getRoomWithMembers(roomId: String) : Observable<RoomWithMembers?>
 }
@@ -70,13 +71,15 @@ data class RoomWithMemberNames(val room: Room,
  * 一个包括了房间信息和成员信息的数据结构
  */
 data class RoomWithMembers(val room: Room,
-                           val members : List<User>)
+                           val members : List<User>,
+                           val memberCount : Int)
 
 /**
  * 一个包括了群组信息和成员信息的数据结构
  */
 data class GroupWithMembers(val group : Group,
-                            val members : List<User>)
+                            val members : List<User>,
+                            val memberCount : Int)
 
 /**
  * 提供一个参数可为空的查询房间成员的方法

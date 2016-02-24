@@ -110,38 +110,13 @@ class LocalRepository(internal val db: Database)
     }
 
     override fun getGroupsWithMembers(groupIds: Iterable<String>, maxMember: Int): Observable<List<GroupWithMembers>> {
-        return createQuery(listOf(Group.TABLE_NAME, User.TABLE_NAME), "SELECT G.*, U.* FROM ${GroupMembers.TABLE_NAME} AS GM " +
-                "INNER JOIN ${Group.TABLE_NAME} AS G ON GM.${GroupMembers.COL_GROUP_ID} = G.${Group.COL_ID} " +
-                "LEFT JOIN ${User.TABLE_NAME} AS U ON GM.${GroupMembers.COL_PERSON_ID} = U.${User.COL_ID} " +
-                "WHERE ${GroupMembers.COL_GROUP_ID} IN ${groupIds.toSqlSet()}")
-            .map { cursor ->
-                var currGroup : Group? = null
-                var currMembers : MutableList<User> = arrayListOf()
-                val result = arrayListOf<GroupWithMembers>()
-                cursor.use {
-                    while (it.moveToNext()) {
-                        val groupId = it.getStringValue(Group.COL_ID)
-                        if (currGroup == null) {
-                            currGroup = Group().from(it)
-                        }
-                        else if (currGroup!!.id != groupId) {
-                            result += GroupWithMembers(currGroup!!, currMembers)
-                            currGroup = Group().from(it)
-                            currMembers = arrayListOf()
-                        }
-
-                        if (it.getColumnIndex(User.COL_ID) >= 0) {
-                            currMembers.add(User().from(it))
-                        }
-                    }
-                }
-
-                if (currGroup != null) {
-                    result += GroupWithMembers(currGroup!!, currMembers)
-                }
-
-                result
-            }
+        return createQuery(listOf(Group.TABLE_NAME, GroupMembers.TABLE_NAME, User.TABLE_NAME), "SELECT * FROM ${Group.TABLE_NAME} WHERE ${Group.COL_ID} IN ${groupIds.toSqlSet()}")
+                .mapToList(Func1 {
+                    GroupWithMembers(
+                            Group().from(it),
+                            db.query("SELECT * FROM ${User.TABLE_NAME} AS U INNER JOIN ${GroupMembers.TABLE_NAME} AS GM ON GM.${GroupMembers.COL_PERSON_ID} = U.${User.COL_ID} LIMIT $maxMember").mapAndClose { User().from(it) },
+                            db.query("SELECT COUNT(*) FROM ${User.TABLE_NAME} AS U INNER JOIN ${GroupMembers.TABLE_NAME} AS GM ON GM.${GroupMembers.COL_PERSON_ID} = U.${User.COL_ID}").countAndClose())
+                })
     }
 
     override fun getAllUsers(): Observable<List<User>> {
@@ -193,7 +168,7 @@ class LocalRepository(internal val db: Database)
             null.toObservable()
         }
         else {
-            getRoomMembers(roomId).map { RoomWithMembers(room, it) }
+            getRoomMembers(roomId).map { RoomWithMembers(room, it, it.size) }
         }
     }
 
@@ -242,6 +217,17 @@ class LocalRepository(internal val db: Database)
                         RoomWithMemberNames(
                                 conversation,
                                 db.query("SELECT P.${User.COL_NAME} FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
+                                db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
+                        )
+                    })
+
+    override fun getRoomsWithMembers(maxMember: Int) =
+            createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Room.TABLE_NAME}")
+                    .mapToList(Func1<ResultSet, RoomWithMembers> {
+                        val conversation = Room.MAPPER.call(it)
+                        RoomWithMembers(
+                                conversation,
+                                db.query("SELECT P.* FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { User().from(it) },
                                 db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
                         )
                     })
