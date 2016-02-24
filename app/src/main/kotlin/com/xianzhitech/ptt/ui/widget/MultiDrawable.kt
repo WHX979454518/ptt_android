@@ -12,9 +12,9 @@ import com.xianzhitech.ptt.R
 
 class MultiDrawable(val context: Context,
                     children : List<Drawable> = emptyList(),
-                    @ColorInt val backgroundColor : Int = ContextCompat.getColor(context, R.color.grey_500),
+                    @ColorInt val backgroundColor : Int = ContextCompat.getColor(context, R.color.grey_300),
                     val gridSpacerSize: Int = context.resources.getDimensionPixelSize(R.dimen.divider_normal),
-                    val columnCount: Int = 2) : Drawable() {
+                    val maxColumnCount: Int = 2) : Drawable() {
 
     var children : List<Drawable> = children
     set(value) {
@@ -49,8 +49,8 @@ class MultiDrawable(val context: Context,
     }
 
     init {
-        if (columnCount < 1) {
-            throw IllegalArgumentException("Column count must be no less than 1, currently it's $columnCount")
+        if (maxColumnCount < 2) {
+            throw IllegalArgumentException("Max column count must be no less than 2, currently it's $maxColumnCount")
         }
 
         if (gridSpacerSize < 0) {
@@ -70,6 +70,11 @@ class MultiDrawable(val context: Context,
         canvas.drawColor(backgroundColor)
 
         if (children.isNotEmpty()) {
+            val columnCount = when {
+                children.size < 4 -> 2
+                else -> maxColumnCount
+            }
+            
             var childSize = Math.floor((width - (columnCount - 1 + 2) * gridSpacerSize) / columnCount.toDouble()).toInt()
             val padding = (width - childSize * columnCount - gridSpacerSize * (columnCount - 1)) / 2
 
