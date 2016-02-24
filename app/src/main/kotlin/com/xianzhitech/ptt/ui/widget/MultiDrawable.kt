@@ -14,7 +14,7 @@ class MultiDrawable(val context: Context,
                     children : List<Drawable> = emptyList(),
                     @ColorInt val backgroundColor : Int = ContextCompat.getColor(context, R.color.grey_300),
                     val gridSpacerSize: Int = context.resources.getDimensionPixelSize(R.dimen.divider_normal),
-                    val maxColumnCount: Int = 2) : Drawable() {
+                    val maxColumnCount: Int = 3) : Drawable() {
 
     var children : List<Drawable> = children
     set(value) {
@@ -78,12 +78,12 @@ class MultiDrawable(val context: Context,
             var childSize = Math.floor((width - (columnCount - 1 + 2) * gridSpacerSize) / columnCount.toDouble()).toInt()
             val padding = (width - childSize * columnCount - gridSpacerSize * (columnCount - 1)) / 2
 
-            val rowCount = Math.ceil(children.size / columnCount.toDouble()).toInt()
+            val rowCount = Math.min(columnCount, Math.ceil(children.size / columnCount.toDouble()).toInt())
             if (rowCount > 1) {
-                val firstRowColumnCount = (children.size % columnCount).let {
+                val firstRowColumnCount = if (rowCount * columnCount > children.size) (children.size % columnCount).let {
                     if (it == 0) columnCount
                     else it
-                }
+                } else columnCount
 
                 // Draw first row
                 val firstRowLeftPadding =
