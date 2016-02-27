@@ -80,7 +80,7 @@ class PushToTalkButton : ImageButton {
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when (event?.action) {
+        when (event?.actionMasked) {
             MotionEvent.ACTION_DOWN -> if (isEnabled) {
                 postDelayed(requestFocusRunnable, 100)
                 return true
