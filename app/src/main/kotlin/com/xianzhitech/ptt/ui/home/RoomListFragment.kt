@@ -15,7 +15,6 @@ import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
-import com.xianzhitech.ptt.ui.widget.UserDrawable
 import rx.Observable
 
 /**
@@ -112,11 +111,11 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
             if (room.memberCount > 2) {
                 val roomDrawable = if (iconView.drawable is MultiDrawable) iconView.drawable as MultiDrawable
                 else MultiDrawable(itemView.context).apply { iconView.setImageDrawable(this) }
-                roomDrawable.children = room.members.map { UserDrawable(this@RoomListFragment, it.id, it) }
+                roomDrawable.children = room.members.map { it.createAvatarDrawable(this@RoomListFragment) }
             }
             else {
                 val nonSelfUser = room.members.first { it.id != currentUserId }
-                iconView.setImageDrawable(UserDrawable(this@RoomListFragment, nonSelfUser.id, nonSelfUser))
+                iconView.setImageDrawable(nonSelfUser.createAvatarDrawable(this@RoomListFragment))
             }
 
         }

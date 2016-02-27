@@ -22,7 +22,6 @@ import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
-import com.xianzhitech.ptt.ui.widget.UserDrawable
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
 import java.util.*
@@ -117,7 +116,7 @@ class ContactsFragment : BaseFragment<Void>() {
                         MultiDrawable(holder.iconView.context).apply { holder.iconView.setImageDrawable(this) }
                     }
 
-                    groupDrawable.children = contactItem.members.map { UserDrawable(this@ContactsFragment, it.id, it) }
+                    groupDrawable.children = contactItem.members.map { it.createAvatarDrawable(this@ContactsFragment) }
                 }
                 else {
                     Glide.with(this@ContactsFragment)
@@ -129,7 +128,7 @@ class ContactsFragment : BaseFragment<Void>() {
                 holder.nameView.text = contactItem.group.name
             }
             else if (contactItem is User) {
-                holder.iconView.setImageDrawable(UserDrawable(this@ContactsFragment, contactItem.id, contactItem))
+                holder.iconView.setImageDrawable(contactItem.createAvatarDrawable(this@ContactsFragment))
                 holder.nameView.text = contactItem.name
             }
 

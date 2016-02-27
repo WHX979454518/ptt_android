@@ -64,7 +64,7 @@ class PushToTalkButton : ImageButton {
     }
 
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         logd("Paint ptt button roomStatus: $roomState")
@@ -76,24 +76,24 @@ class PushToTalkButton : ImageButton {
             else  -> android.R.color.darker_gray
         }.toColorValue(context)
 
-        canvas?.drawCircle(width / 2f, height / 2f, width / 2f, paint)
+        canvas.drawCircle(width / 2f, height / 2f, width / 2f, paint)
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when (event?.actionMasked) {
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> if (isEnabled) {
                 postDelayed(requestFocusRunnable, 100)
                 return true
-            }
-            else return false
+            } else return false
 
-            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
+            MotionEvent.ACTION_CANCEL,
+            MotionEvent.ACTION_UP -> {
                 removeCallbacks(requestFocusRunnable)
                 callbacks?.releaseMic()
             }
         }
 
-        return super.onTouchEvent(event)
+        return true;
     }
 
     interface Callbacks {
