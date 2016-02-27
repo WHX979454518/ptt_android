@@ -114,7 +114,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         serviceStateSubscription = Observable.combineLatest(
                 roomState.flatMap { state ->
-                    roomRepository.optRoomWithMemberNames(state.currentRoomID).map { ExtraRoomState(state, it) }
+                    roomRepository.optRoomWithMembers(state.currentRoomID).map { ExtraRoomState(state, it) }
                 },
                 loginState.flatMap { state ->
                     userRepository.optUser(state.currentUserID).map { ExtraLoginState(state, it) }

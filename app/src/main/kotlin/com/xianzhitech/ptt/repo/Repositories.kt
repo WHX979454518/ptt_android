@@ -45,10 +45,8 @@ interface RoomRepository {
     fun getRoomMembers(roomId: String): Observable<List<User>>
     fun updateRoom(room: Room, memberIds: Iterable<String>): Observable<Room>
     fun updateRoomMembers(roomId: String, memberIds: Iterable<String>): Observable<Unit>
-    fun getRoomsWithMemberNames(maxMember: Int): Observable<List<RoomWithMemberNames>>
     fun getRoomsWithMembers(maxMember: Int): Observable<List<RoomWithMembers>>
-    fun getRoomWithMemberNames(roomId: String, maxMember: Int): Observable<RoomWithMemberNames?>
-    fun getRoomWithMembers(roomId: String) : Observable<RoomWithMembers?>
+    fun getRoomWithMembers(roomId: String, maxMember: Int) : Observable<RoomWithMembers?>
 }
 
 /**
@@ -60,12 +58,6 @@ interface ContactRepository {
     fun replaceAllContacts(userIds: Iterable<String>, groupIds: Iterable<String>): Observable<Unit>
 }
 
-/**
- * 一个包括了房间信息和局部成员名的数据结构
- */
-data class RoomWithMemberNames(val room: Room,
-                               val memberNames: List<String>,
-                               val memberCount: Int)
 
 /**
  * 一个包括了房间信息和成员信息的数据结构
@@ -81,17 +73,12 @@ data class GroupWithMembers(val group : Group,
                             val members : List<User>,
                             val memberCount : Int)
 
-/**
- * 提供一个参数可为空的查询房间成员的方法
- */
-fun RoomRepository.optRoomWithMembers(roomId: String?): Observable<RoomWithMembers?> =
-        roomId?.let { getRoomWithMembers(it) } ?: Observable.just<RoomWithMembers?>(null)
 
 /**
  * 提供一个参数可为空的查询房间成员名的方法
  */
-fun RoomRepository.optRoomWithMemberNames(roomId: String?, maxMember: Int = Constants.MAX_MEMBER_DISPLAY_COUNT): Observable<RoomWithMemberNames?> =
-        roomId?.let { getRoomWithMemberNames(it, maxMember) } ?: Observable.just<RoomWithMemberNames?>(null)
+fun RoomRepository.optRoomWithMembers(roomId: String?, maxMember: Int = Constants.MAX_MEMBER_DISPLAY_COUNT): Observable<RoomWithMembers?> =
+        roomId?.let { getRoomWithMembers(it, maxMember) } ?: Observable.just<RoomWithMembers?>(null)
 
 /**
  * 提供一个参数可为空的查询用户的方法

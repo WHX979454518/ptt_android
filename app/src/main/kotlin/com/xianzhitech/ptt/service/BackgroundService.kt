@@ -1,7 +1,7 @@
 package com.xianzhitech.ptt.service
 
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.RoomWithMemberNames
+import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import rx.Observable
 
@@ -30,7 +30,7 @@ data class LoginState(val status : LoginState.Status = LoginState.Status.IDLE,
 }
 
 data class ExtraRoomState(val roomState: RoomState,
-                          val room: RoomWithMemberNames? = null)
+                          val room: RoomWithMembers? = null)
 
 data class ExtraLoginState(val loginState: LoginState,
                            val logonUser: User? = null)

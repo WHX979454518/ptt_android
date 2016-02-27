@@ -163,12 +163,19 @@ class LocalRepository(internal val db: Database)
                     "SELECT P.* FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
                     .mapToList(User.MAPPER)
 
-    override fun getRoomWithMembers(roomId: String) = getRoom(roomId).flatMap { room : Room? ->
+    override fun getRoomWithMembers(roomId: String, maxMember: Int) = getRoom(roomId).flatMap { room : Room? ->
         if (room == null) {
             null.toObservable()
         }
         else {
-            getRoomMembers(roomId).map { RoomWithMembers(room, it, it.size) }
+            getRoomMembers(roomId).map {
+                RoomWithMembers(room,
+                        db.query("SELECT P.* FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", roomId)
+                                .mapAndClose { User().from(it) },
+                        db.query("SELECT COUNT(P.*) FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
+                                .countAndClose()
+                )
+            }
         }
     }
 
@@ -197,29 +204,6 @@ class LocalRepository(internal val db: Database)
             insert(RoomMembers.TABLE_NAME, cacheContentValues.apply { put(RoomMembers.COL_USER_ID, it) })
         }
     }
-
-    override fun getRoomWithMemberNames(roomId: String, maxMember: Int) =
-            createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Room.TABLE_NAME} WHERE ${Room.COL_ID} = ?", roomId)
-                    .mapToOneOrDefault(Func1<ResultSet, RoomWithMemberNames> {
-                        val conversation = Room.MAPPER.call(it)
-                        RoomWithMemberNames(
-                                conversation,
-                                db.query("SELECT P.${User.COL_NAME} FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
-                                db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
-                        )
-                    }, null)
-
-
-    override fun getRoomsWithMemberNames(maxMember: Int) =
-            createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Room.TABLE_NAME}")
-                    .mapToList(Func1<ResultSet, RoomWithMemberNames> {
-                        val conversation = Room.MAPPER.call(it)
-                        RoomWithMemberNames(
-                                conversation,
-                                db.query("SELECT P.${User.COL_NAME} FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { it.getString(0) },
-                                db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
-                        )
-                    })
 
     override fun getRoomsWithMembers(maxMember: Int) =
             createQuery(listOf(Room.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Room.TABLE_NAME}")

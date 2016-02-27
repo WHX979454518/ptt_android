@@ -98,9 +98,10 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
 
         fun setRoom(room: RoomWithMembers, currentUserId: String) {
             val memberText = room.getMemberNames(itemView.context)
+            val nonSelfUser = room.members.first { it.id != currentUserId }
 
             if (room.room.name.isNullOrBlank()) {
-                nameView.text = memberText
+                nameView.text = if (room.memberCount == 2) nonSelfUser.name else memberText
                 memberView.visibility = View.GONE
             } else {
                 nameView.text = room.room.name
@@ -114,7 +115,6 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
                 roomDrawable.children = room.members.map { it.createAvatarDrawable(this@RoomListFragment) }
             }
             else {
-                val nonSelfUser = room.members.first { it.id != currentUserId }
                 iconView.setImageDrawable(nonSelfUser.createAvatarDrawable(this@RoomListFragment))
             }
 

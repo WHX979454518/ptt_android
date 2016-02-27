@@ -50,12 +50,12 @@ fun Context.joinRoom(roomId: String?,
                                     progressDialog.dismiss()
                                 }
 
-                roomIdObservable.flatMap { appComponent.roomRepository.getRoomWithMemberNames(it, Constants.MAX_MEMBER_DISPLAY_COUNT) }
+                roomIdObservable.flatMap { appComponent.roomRepository.getRoomWithMembers(it, Constants.MAX_MEMBER_DISPLAY_COUNT) }
                         .map { it?.let { binder.pairWith(it) } ?: throw StaticUserException(R.string.error_unable_to_get_room_info) }
             }
             .flatMap { resultPair ->
                 resultPair.first.peekRoomState().currentRoomID?.let {
-                    appComponent.roomRepository.getRoomWithMemberNames(it, Constants.MAX_MEMBER_DISPLAY_COUNT)
+                    appComponent.roomRepository.getRoomWithMembers(it, Constants.MAX_MEMBER_DISPLAY_COUNT)
                             .map { resultPair.tripleWith(it) }
                 } ?: resultPair.tripleWith(null).toObservable()
             }
