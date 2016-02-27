@@ -16,10 +16,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.engine.BtEngine
-import com.xianzhitech.ptt.engine.TalkEngine
-import com.xianzhitech.ptt.engine.TalkEngineProvider
-import com.xianzhitech.ptt.engine.WebRtcTalkEngine
+import com.xianzhitech.ptt.engine.*
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Privilege
@@ -62,7 +59,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var contactRepository : ContactRepository
     private lateinit var roomRepository : RoomRepository
     private lateinit var talkEngineProvider: TalkEngineProvider
-    private lateinit var btEngine: BtEngine
+    private lateinit var btEngine: NewBtEngine
     private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
     private lateinit var audioManager: AudioManager
     private var vibrator : Vibrator? = null
@@ -409,27 +406,26 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }
 
-    fun startPTTSubscriber(): Subscription? {
-        return btEngine.startSCO()
+    private fun startPTTSubscriber(): Subscription {
+        return btEngine.receiveCommand()
+                .retry { retriedCount, throwable -> retriedCount < Constants.BLUETOOTH_SCO_RETRY_COUNT && throwable !is UnsupportedOperationException }
                 .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<String>()
                 {
                     override fun onNext(t: String) {
                         when (t) {
-                            com.xianzhitech.ptt.engine.BtEngine.MESSAGE_DEV_PTT_OK -> audioManager.mode = android.media.AudioManager.MODE_NORMAL
-                            com.xianzhitech.ptt.engine.BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(com.xianzhitech.ptt.ext.GlobalSubscriber())
-                            com.xianzhitech.ptt.engine.BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(com.xianzhitech.ptt.ext.GlobalSubscriber())
+                            BtEngine.MESSAGE_DEV_PTT_OK -> audioManager.mode = android.media.AudioManager.MODE_NORMAL
+                            BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
+                            BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
                         }
                     }
-                    override fun onError(e: kotlin.Throwable)
+                    override fun onError(e: Throwable)
                     {
 //                        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
 //                        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                         //设备不支持蓝牙,UnsupportedOperationException
                         if(e is UnsupportedOperationException)
                             return
-                        btEngine.stopSCO();
-                        btSubscription = startPTTSubscriber()
                     }
                 })
     }
@@ -438,8 +434,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         //roomSubscription?.add()
         btSubscription = startPTTSubscriber()
         //        roomSubscription?.add(btSubscription)
-        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
-        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        audioManager.mode = AudioManager.MODE_IN_CALL
+        audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
 
         currentTalkEngine = talkEngineProvider.createEngine().apply {
             logd("Connecting to talk engine")
@@ -448,16 +444,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
     internal fun onRoomQuited(roomId: String) {
-        //        if (btEngine.isBtMicEnable)
-        //        {
-        //            btEngine.stopSCO()
-        //        }
-        if(!btSubscription?.isUnsubscribed()!!)
-        {
-            btSubscription?.unsubscribe()
-            //            btSubscription = null
-            btEngine.stopSCO();
-        }
+        btSubscription?.unsubscribe()
+        btSubscription = null
         audioManager.mode = AudioManager.MODE_NORMAL
     }
 

@@ -49,6 +49,12 @@
 
         <service android:name=".service.sio.SocketIOBackgroundService"/>
 
+        <receiver android:name=".MediaButtonEventReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
