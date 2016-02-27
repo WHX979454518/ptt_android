@@ -172,7 +172,7 @@ class LocalRepository(internal val db: Database)
                 RoomWithMembers(room,
                         db.query("SELECT P.* FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", roomId)
                                 .mapAndClose { User().from(it) },
-                        db.query("SELECT COUNT(P.*) FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
+                        db.query("SELECT COUNT(*) FROM ${User.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${User.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
                                 .countAndClose()
                 )
             }
