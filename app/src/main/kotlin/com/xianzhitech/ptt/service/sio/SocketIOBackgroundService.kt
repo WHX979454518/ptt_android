@@ -51,6 +51,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     var loginSubscription : Subscription? = null
     var roomSubscription: CompositeSubscription? = null
     var currentTalkEngine: TalkEngine? = null
+    var btSubscription : Subscription? = null
 
     override fun peekRoomState() = roomState.value
     override fun peekLoginState() = loginState.value
@@ -408,24 +409,37 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }
 
-    internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
-        if (btEngine.isBtMicEnable) {
-            audioManager.mode = AudioManager.MODE_NORMAL
-            btEngine.startSCO()
-            roomSubscription?.add(btEngine.btMessage
-                    .observeOnMainThread()
-                    .subscribe(object : GlobalSubscriber<String>() {
-                        override fun onNext(t: String) {
-                            when (t) {
-                                BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
-                                BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
-                            }
+    fun startPTTSubscriber(): Subscription? {
+        return btEngine.startSCO()
+                .observeOnMainThread()
+                .subscribe(object : GlobalSubscriber<String>()
+                {
+                    override fun onNext(t: String) {
+                        when (t) {
+                            com.xianzhitech.ptt.engine.BtEngine.MESSAGE_DEV_PTT_OK -> audioManager.mode = android.media.AudioManager.MODE_NORMAL
+                            com.xianzhitech.ptt.engine.BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(com.xianzhitech.ptt.ext.GlobalSubscriber())
+                            com.xianzhitech.ptt.engine.BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(com.xianzhitech.ptt.ext.GlobalSubscriber())
                         }
-                    }))
-        } else {
-            audioManager.mode = AudioManager.MODE_IN_CALL
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-        }
+                    }
+                    override fun onError(e: kotlin.Throwable)
+                    {
+//                        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
+//                        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                        //设备不支持蓝牙,UnsupportedOperationException
+                        if(e is UnsupportedOperationException)
+                            return
+                        btEngine.stopSCO();
+                        btSubscription = startPTTSubscriber()
+                    }
+                })
+    }
+
+    internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
+        //roomSubscription?.add()
+        btSubscription = startPTTSubscriber()
+        //        roomSubscription?.add(btSubscription)
+        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
+        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
 
         currentTalkEngine = talkEngineProvider.createEngine().apply {
             logd("Connecting to talk engine")
@@ -434,10 +448,16 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
     internal fun onRoomQuited(roomId: String) {
-        if (btEngine.isBtMicEnable) {
-            btEngine.stopSCO()
+        //        if (btEngine.isBtMicEnable)
+        //        {
+        //            btEngine.stopSCO()
+        //        }
+        if(!btSubscription?.isUnsubscribed()!!)
+        {
+            btSubscription?.unsubscribe()
+            //            btSubscription = null
+            btEngine.stopSCO();
         }
-
         audioManager.mode = AudioManager.MODE_NORMAL
     }
 
