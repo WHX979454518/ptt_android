@@ -41,6 +41,7 @@ import rx.Subscription
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
@@ -65,6 +66,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var btEngine: BtEngine
     private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
     private lateinit var audioManager: AudioManager
+    private val soundPlayExecutor = Executors.newSingleThreadExecutor()
     private var vibrator : Vibrator? = null
 
     private var socketSubject = BehaviorSubject.create<Socket>()
@@ -753,7 +755,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
     private fun playSound(@RawRes res: Int) {
-        soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
+        soundPlayExecutor.submit {
+            soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
+        }
     }
 
     companion object {
