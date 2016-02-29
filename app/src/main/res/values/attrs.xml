@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CircleShadowView">
+        <attr name="circleRadius" format="dimension" />
+        <attr name="shadowColor" format="color" />
+        <attr name="fgColor" format="color" />
+    </declare-styleable>
+</resources>

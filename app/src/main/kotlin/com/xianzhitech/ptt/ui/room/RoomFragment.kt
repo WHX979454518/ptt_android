@@ -3,7 +3,6 @@ package com.xianzhitech.ptt.ui.room
 import android.app.ProgressDialog
 import android.graphics.Color
 import android.os.Bundle
-import android.support.v4.view.ViewCompat
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
@@ -42,9 +41,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private class Views(rootView: View,
                         val toolbar: Toolbar = rootView.findView(R.id.room_toolbar),
                         val pttBtn: PushToTalkButton = rootView.findView(R.id.room_pushToTalkButton),
-                        val appBar: ViewGroup = rootView.findView(R.id.room_appBar),
                         val speakerSourceView: Spinner = rootView.findView(R.id.room_speakerSource),
-                        val roomStatusView: TextView = rootView.findView(R.id.room_status),
                         val memberView: RecyclerView = rootView.findView(R.id.room_memberList))
 
     private enum class SpeakerMode(val titleResId: Int) {
@@ -88,7 +85,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
                 toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
                 toolbar.setNavigationOnClickListener { v -> activity.finish() }
-                ViewCompat.setElevation(pttBtn, ViewCompat.getElevation(appBar) + resources.getDimension(R.dimen.divider_normal))
                 pttBtn.callbacks = this@RoomFragment
 
                 speakerSourceView.adapter = speakSourceAdapter
@@ -121,17 +117,17 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
             }
         })
 
-        bgService.flatMap { Observable.combineLatest(
-                it.roomState.flatMap { state ->
-                    Observable.combineLatest(
-                            appComponent.roomRepository.optRoomWithMembers(state.currentRoomID),
-                            appComponent.userRepository.optUser(state.currentRoomActiveSpeakerID),
-                            { first, second -> RoomData(state, first, second) })
-                },
-                it.loginState,
-                context.getConnectivity(),
-                { first, second, third -> Triple(first, second, third) })
-        }
+        bgService.flatMap {
+            Observable.combineLatest(
+                    it.roomState.flatMap { state ->
+                        Observable.combineLatest(
+                                appComponent.roomRepository.optRoomWithMembers(state.currentRoomID),
+                                appComponent.userRepository.optUser(state.currentRoomActiveSpeakerID),
+                                { first, second -> RoomData(state, first, second) })
+                    },
+                    it.loginState,
+                    context.getConnectivity(),
+                    { first, second, third -> Triple(first, second, third) }) }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe(object : GlobalSubscriber<Triple<RoomData, LoginState, Boolean>>() {
@@ -141,19 +137,19 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 })
 
         bgService.flatMap { it.roomState }
-            .observeOnMainThread()
-            .compose(bindToLifecycle())
-            .subscribe(object : GlobalSubscriber<RoomState>() {
-                override fun onNext(t: RoomState) {
-                    if (t.status == RoomState.Status.JOINING && joiningProgressDialog == null) {
-                        joiningProgressDialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context), R.string.joining_room.toFormattedString(context))
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribe(object : GlobalSubscriber<RoomState>() {
+                    override fun onNext(t: RoomState) {
+                        if (t.status == RoomState.Status.JOINING && joiningProgressDialog == null) {
+                            joiningProgressDialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context), R.string.joining_room.toFormattedString(context))
+                        }
+                        else if (t.status != RoomState.Status.JOINING && joiningProgressDialog != null) {
+                            joiningProgressDialog!!.dismiss()
+                            joiningProgressDialog = null
+                        }
                     }
-                    else if (t.status != RoomState.Status.JOINING && joiningProgressDialog != null) {
-                        joiningProgressDialog!!.dismiss()
-                        joiningProgressDialog = null
-                    }
-                }
-            })
+                })
 
         bgService.connect()
     }
@@ -170,15 +166,13 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 show = false
             } else if (roomData.roomState.currentRoomActiveSpeakerID == loginState.currentUserID) {
                 show = true
-                roomStatusView.text = R.string.room_talking.toFormattedString(context)
             } else if (roomData.currentActiveUser != null) {
                 show = true
-                roomStatusView.text = R.string.room_other_is_talking.toFormattedString(context, roomData.currentActiveUser.name)
             } else {
                 show = false
             }
 
-            roomStatusView.animate().alpha(if (show) 1f else 0f).start()
+//            roomStatusView.animate().alpha(if (show) 1f else 0f).start()
         }
     }
 

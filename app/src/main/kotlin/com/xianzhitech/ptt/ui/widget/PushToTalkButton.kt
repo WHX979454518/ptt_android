@@ -76,7 +76,7 @@ class PushToTalkButton : ImageButton {
             else  -> android.R.color.darker_gray
         }.toColorValue(context)
 
-        canvas.drawCircle(width / 2f, height / 2f, width / 2f, paint)
+        canvas.drawCircle(width / 2f, height / 2f, (width - paint.strokeWidth)/ 2f, paint)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
