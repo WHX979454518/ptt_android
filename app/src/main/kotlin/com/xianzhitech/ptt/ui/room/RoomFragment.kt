@@ -3,7 +3,7 @@ package com.xianzhitech.ptt.ui.room
 import android.app.ProgressDialog
 import android.graphics.Color
 import android.os.Bundle
-import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
@@ -80,7 +80,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_room, container, false)?.apply {
             views = Views(this).apply {
-                memberView.layoutManager = GridLayoutManager(context, 7)
+                memberView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
                 memberView.adapter = adapter
 
                 toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
@@ -254,8 +254,9 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                                  val currentActiveUser: User?)
 
     private class ViewHolder(container: ViewGroup,
-                             val imageView: ImageView = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false) as ImageView)
-    : RecyclerView.ViewHolder(imageView)
+                             rootView: View = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false),
+                             val imageView: ImageView = rootView.findView(R.id.roomMemberItem_icon))
+    : RecyclerView.ViewHolder(rootView)
 
     interface Callbacks {
         fun onRoomQuited()

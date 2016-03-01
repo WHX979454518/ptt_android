@@ -1,76 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<FrameLayout
+<android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:clipChildren="false"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.design.widget.CoordinatorLayout
-        android:clipChildren="false"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <LinearLayout
-            android:orientation="vertical"
-            android:clipChildren="false"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/room_dark_height">
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0dip"
-                android:background="?attr/colorPrimary"
-                android:layout_weight="1" />
-
-            <com.xianzhitech.ptt.ui.widget.CircleShadowView
-                android:id="@+id/room_circleShadow"
-                app:fgColor="?attr/colorPrimary"
-                android:layerType="software"
-                app:circleRadius="110dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
-        </LinearLayout>
-
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/room_toolbar"
-            android:background="@android:color/transparent"
-            app:title="@string/room_loading"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <com.xianzhitech.ptt.ui.widget.PushToTalkButton
-            android:id="@+id/room_pushToTalkButton"
-            android:src="@drawable/ic_voice_large"
-            android:scaleType="center"
-            android:tint="?attr/colorPrimary"
-            app:layout_anchor="@+id/room_circleShadow"
-            app:layout_anchorGravity="bottom|center_horizontal"
-            android:background="@drawable/bg_push_button"
-            android:layout_width="200dp"
-            android:layout_height="200dp"/>
-
-    </android.support.design.widget.CoordinatorLayout>
-
     <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/room_dark_height">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dip"
+            android:background="?attr/colorPrimary"
+            android:layout_weight="1" />
+
+        <com.xianzhitech.ptt.ui.widget.CircleShadowView
+            android:id="@+id/room_circleShadow"
+            app:fgColor="?attr/colorPrimary"
+            android:layerType="software"
+            app:circleRadius="110dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/room_toolbar"
+        android:background="@android:color/transparent"
+        app:title="@string/room_loading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.xianzhitech.ptt.ui.widget.PushToTalkButton
+        android:id="@+id/room_pushToTalkButton"
+        android:src="@drawable/ic_voice_large"
+        android:scaleType="center"
+        android:tint="?attr/colorPrimary"
+        app:layout_anchor="@+id/room_circleShadow"
+        app:layout_anchorGravity="bottom|center_horizontal"
+        android:background="@drawable/bg_push_button"
+        android:layout_width="200dp"
+        android:layout_height="200dp"/>
+
+    <RelativeLayout
         android:layout_gravity="bottom"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <Spinner
+            android:layout_alignParentLeft="true"
+            android:layout_above="@+id/room_memberList"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/room_speakerSource"/>
 
         <android.support.v7.widget.RecyclerView
+            android:background="?attr/colorPrimary"
             android:id="@+id/room_memberList"
-            android:layout_weight="1"
-            android:layout_width="0dip"
-            android:layout_height="100dp"/>
+            android:layout_alignParentBottom="true"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"/>
 
-    </LinearLayout>
+    </RelativeLayout>
 
 
-</FrameLayout>
+</android.support.design.widget.CoordinatorLayout>
+
