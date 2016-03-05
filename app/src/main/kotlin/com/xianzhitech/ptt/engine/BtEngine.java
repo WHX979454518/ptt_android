@@ -1,7 +1,5 @@
 package com.xianzhitech.ptt.engine;
 
-import android.accounts.OperationCanceledException;
-import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
@@ -17,11 +15,9 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.UUID;
 
 import rx.Observable;
-import rx.Scheduler;
 import rx.Subscriber;
 import rx.schedulers.Schedulers;
 
@@ -169,8 +165,9 @@ public class BtEngine {
             e.printStackTrace();
         }
     }
+
     //请求启用sco
-    public void startSCO_() {
+    private void startSCO_() {
         audioManager.registerMediaButtonEventReceiver(mRemoteControlClientReceiverComponent);
         audioManager.stopBluetoothSco();
         //这儿主要是想开启外置蓝牙扬声器。
