@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import com.xianzhitech.ptt.db.AndroidDatabase
+import com.xianzhitech.ptt.db.DatabaseFactory
+import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.engine.NewBtEngineImpl
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
@@ -25,7 +27,11 @@ open class App : Application(), AppComponent {
         override fun createEngine() = WebRtcTalkEngine(this@App)
     }
 
-    override val userRepository by lazy { LocalRepository(AndroidDatabase(this@App, Constants.DB_NAME, Constants.DB_VERSION)) }
+    override val userRepository by lazy {
+        LocalRepository(object : DatabaseFactory {
+            override fun createDatabase(tables: Array<TableDefinition>, version: Int) = AndroidDatabase(this@App, tables, Constants.DB_NAME, version)
+        })
+    }
     override val groupRepository: GroupRepository
         get() = userRepository
     override val roomRepository: RoomRepository

@@ -5,10 +5,7 @@ import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.onSingleValue
 import com.xianzhitech.ptt.ext.toStringIterable
 import com.xianzhitech.ptt.ext.transform
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Privilege
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.EmptyServerResponseException
 import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
@@ -48,12 +45,12 @@ internal data class SyncContactsDTO(val groups: Iterable<Group>,
 internal fun JSONObject.toSyncContactsDto(): SyncContactsDTO {
     val groupJsonArray = getJSONObject("enterpriseGroups").getJSONArray("add")
     return SyncContactsDTO(
-            groupJsonArray.transform { Group().readFrom(it as JSONObject) },
-            getJSONObject("enterpriseMembers").getJSONArray("add").transform { User().readFrom(it as JSONObject) },
+            groupJsonArray.transform { MutableGroup().readFrom(it as JSONObject) },
+            getJSONObject("enterpriseMembers").getJSONArray("add").transform { MutableUser().readFrom(it as JSONObject) },
             groupJsonArray.toGroupsAndMembers())
 }
 
-internal fun Group.readFrom(obj: JSONObject): Group {
+internal fun MutableGroup.readFrom(obj: JSONObject): MutableGroup {
     id = obj.getString("idNumber")
     description = obj.optString("description")
     name = obj.getString("name")
@@ -69,7 +66,7 @@ internal fun User.readFrom(obj: JSONObject): User {
     return this
 }
 
-internal fun Room.readFrom(obj: JSONObject): Room {
+internal fun MutableRoom.readFrom(obj: JSONObject): MutableRoom {
     id = obj.getString("idNumber")
     name = obj.getString("name")
     ownerId = obj.getString("owner")

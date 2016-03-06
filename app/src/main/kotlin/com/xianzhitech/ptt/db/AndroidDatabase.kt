@@ -7,10 +7,8 @@ import android.database.CursorWrapper
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-/**
- * Created by fanchao on 10/01/16.
- */
-class AndroidDatabase(context: Context, name: String, version: Int) : Database {
+
+class AndroidDatabase(context: Context, tables : Array<TableDefinition>, name: String, version: Int) : Database {
     private val dbHelper: SQLiteOpenHelper
 
     init {
@@ -20,12 +18,7 @@ class AndroidDatabase(context: Context, name: String, version: Int) : Database {
                 db?.apply {
                     beginTransaction()
                     try {
-                        execSQL(com.xianzhitech.ptt.model.User.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Group.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.GroupMembers.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Room.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.RoomMembers.CREATE_TABLE_SQL)
-                        execSQL(com.xianzhitech.ptt.model.Contacts.CREATE_TABLE_SQL)
+                        tables.forEach { execSQL(it.creationSql) }
                         setTransactionSuccessful()
                     } finally {
                         endTransaction()

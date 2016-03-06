@@ -18,10 +18,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.*
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Privilege
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.*
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
@@ -258,7 +255,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         /**
                          * Response: { userObject }
                          */
-                        val user = User().readFrom(response)
+                        val user = MutableUser().readFrom(response)
 
                         if (preferenceProvider.lastLoginUserId != user.id) {
                             // Clear room information if it's this user's first login
@@ -302,9 +299,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
                                 .flatMap { response ->
                                     logd("Received sync result: $response")
-                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { User().readFrom(it as JSONObject) }.toMutableList()
+                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { MutableUser().readFrom(it as JSONObject) }.toMutableList()
                                     val addGroupJsonArray = response.getJSONObject("enterpriseGroups").getJSONArray("add")
-                                    val groups : MutableList<Any> = addGroupJsonArray.transform { Group().readFrom(it as JSONObject) }.toMutableList()
+                                    val groups : MutableList<Any> = addGroupJsonArray.transform { MutableGroup().readFrom(it as JSONObject) }.toMutableList()
                                     val groupMembers = addGroupJsonArray.toGroupsAndMembers()
 
                                     userRepository.replaceAllUsers(users as List<User>)
@@ -348,7 +345,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                          *  }
                          */
                         val roomInfoJsonObj = response.getJSONObject("roomInfo")
-                        val room = Room().readFrom(roomInfoJsonObj)
+                        val room = MutableRoom().readFrom(roomInfoJsonObj)
                         roomRepository.updateRoom(room, roomInfoJsonObj.getJSONArray("members").toStringIterable()).map { room }
                     }
                     .observeOnMainThread()
@@ -518,7 +515,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                      *      members : [user IDs]
                                      * }
                                      */
-                                    val room = Room().readFrom(response)
+                                    val room = MutableRoom().readFrom(response)
                                     roomRepository.updateRoom(room, response.getJSONArray("members").toStringIterable()).map { it.id }
                                 }
                     }
@@ -628,7 +625,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                                      *
                                      */
                                     val roomInfoJsonObj = response.getJSONObject("roomInfo")
-                                    roomRepository.updateRoom(Room().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable())
+                                    roomRepository.updateRoom(MutableRoom().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable())
                                             .map { response }
                                 }
                     }

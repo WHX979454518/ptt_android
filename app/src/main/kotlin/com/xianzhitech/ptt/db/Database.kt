@@ -11,3 +11,11 @@ interface Database : Closeable {
     fun execute(sql: String, vararg args: Any?): Unit
     fun delete(table: String, whereClause: String, vararg whereArgs: Any?): Int
 }
+
+interface TableDefinition {
+    val creationSql : String
+}
+
+interface DatabaseFactory {
+    fun createDatabase(tables : Array<TableDefinition>, version: Int) : Database
+}

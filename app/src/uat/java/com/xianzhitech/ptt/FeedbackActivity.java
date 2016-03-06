@@ -4,7 +4,7 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 
 import com.xianzhitech.ptt.ext.GlobalSubscriber;
-import com.xianzhitech.ptt.model.User;
+import com.xianzhitech.ptt.model.UserModel;
 import com.xianzhitech.ptt.repo.RepositoriesKt;
 import com.xianzhitech.ptt.service.BackgroundServiceBinder;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
