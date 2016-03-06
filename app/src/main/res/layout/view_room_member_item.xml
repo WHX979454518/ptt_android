@@ -6,7 +6,9 @@
 
     <com.xianzhitech.ptt.ui.widget.SquareImageView
         android:id="@+id/roomMemberItem_icon"
-        android:layout_margin="@dimen/unit_one"
+        android:layout_marginTop="@dimen/unit_one"
+        android:layout_marginBottom="@dimen/unit_one"
+        android:layout_marginLeft="@dimen/unit_one"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"/>
 

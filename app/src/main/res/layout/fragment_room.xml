@@ -64,7 +64,7 @@
             android:id="@+id/room_memberList"
             android:layout_alignParentBottom="true"
             android:layout_width="match_parent"
-            android:layout_height="60dp"/>
+            android:layout_height="48dp"/>
 
     </RelativeLayout>
 
