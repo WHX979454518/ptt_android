@@ -45,10 +45,10 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
                         .flatMap { appComponent.userRepository.getUser(it.currentUserID!!) }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
                         .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<User>(context) {
-                            override fun onNext(t: User) {
-                                iconView.setImageDrawable(t.createAvatarDrawable(this@ProfileFragment))
-                                nameView.text = t.name
+                        .subscribe(object : GlobalSubscriber<User?>(context) {
+                            override fun onNext(t: User?) {
+                                iconView.setImageDrawable(t?.createAvatarDrawable(this@ProfileFragment))
+                                nameView.text = t?.name
                             }
                         })
             }
