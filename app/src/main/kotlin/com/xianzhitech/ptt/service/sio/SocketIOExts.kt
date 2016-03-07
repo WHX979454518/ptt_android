@@ -58,7 +58,7 @@ internal fun MutableGroup.readFrom(obj: JSONObject): MutableGroup {
     return this
 }
 
-internal fun User.readFrom(obj: JSONObject): User {
+internal fun MutableUser.readFrom(obj: JSONObject): MutableUser {
     id = obj.getString("idNumber")
     name = obj.getString("name")
     avatar = obj.optString("avatar")

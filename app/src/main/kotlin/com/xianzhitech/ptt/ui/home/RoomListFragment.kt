@@ -1,8 +1,10 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
+import android.support.v7.util.SortedList
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.util.SortedListAdapterCallback
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +18,8 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
 import rx.Observable
+import java.text.Collator
+import java.util.*
 
 /**
  * 显示会话列表(Room)的界面
@@ -25,6 +29,34 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
     private var listView: RecyclerView? = null
     private var errorView : View? = null
     private val adapter = Adapter()
+    private val adapterCallback = object : SortedListAdapterCallback<RoomWithMembers>(adapter) {
+        private val collator = Collator.getInstance()
+
+        override fun areItemsTheSame(p0: RoomWithMembers, p1: RoomWithMembers) = p0.room.id == p1.room.id
+
+        override fun compare(p0: RoomWithMembers, p1: RoomWithMembers): Int {
+            if (areItemsTheSame(p0, p1)) {
+                return 0
+            }
+
+            var rc : Int = p0.room.lastActiveTime.timeOrZero().compareTo(p1.room.lastActiveTime.timeOrZero())
+            if (rc != 0) {
+                return rc
+            }
+
+            rc = collator.compare(p0.getRoomName(context), p1.getRoomName(context))
+            if (rc != 0) {
+                return rc
+            }
+
+            return p0.room.id.compareTo(p1.room.id)
+        }
+
+        override fun areContentsTheSame(p0: RoomWithMembers, p1: RoomWithMembers) = areItemsTheSame(p0, p1)
+
+        private fun Date?.timeOrZero() = this?.time ?: 0
+    }
+    private val roomList = SortedList<RoomWithMembers>(RoomWithMembers::class.java, SortedList.BatchedCallback(adapterCallback))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,12 +69,15 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
         Observable.combineLatest(
                 appComponent.roomRepository.getRoomsWithMembers(9),
                 appComponent.connectToBackgroundService().flatMap { it.loginState }.first { it.currentUserID != null },
-                { first, second -> first.to(second) })
+                { first, second -> first to second })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {
                     adapter.currentUserId = it.second.currentUserID!!
-                    adapter.rooms = it.first
+                    roomList.beginBatchedUpdates()
+                    roomList.clear()
+                    roomList.addAll(it.first)
+                    roomList.endBatchedUpdates()
                     errorView?.setVisible(it.first.isEmpty())
                 }
     }
@@ -53,8 +88,8 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
                 setOnClickListener { callbacks?.navigateToContactList() }
             }
             listView = findView<RecyclerView>(R.id.roomList_recyclerView).apply {
-                this.layoutManager = LinearLayoutManager(context)
-                this.adapter = this@RoomListFragment.adapter
+                layoutManager = LinearLayoutManager(context)
+                adapter = this@RoomListFragment.adapter
             }
         }
     }
@@ -65,27 +100,24 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
         super.onDestroyView()
     }
 
+
+
     private inner class Adapter : RecyclerView.Adapter<RoomItemHolder>() {
         lateinit var currentUserId: String
-        var rooms: List<RoomWithMembers> = emptyList()
-            set(value) {
-                field = value
-                notifyDataSetChanged()
-            }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomItemHolder {
             return RoomItemHolder(parent)
         }
 
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
-            holder.setRoom(rooms[position], currentUserId)
+            holder.setRoom(roomList[position], currentUserId)
             holder.itemView.setOnClickListener { v ->
-                context.joinRoom(rooms[position].room.id, null, false, bindToLifecycle())
+                context.joinRoom(roomList[position].room.id, null, false, bindToLifecycle())
             }
         }
 
         override fun getItemCount(): Int {
-            return rooms.size
+            return roomList.size()
         }
     }
 

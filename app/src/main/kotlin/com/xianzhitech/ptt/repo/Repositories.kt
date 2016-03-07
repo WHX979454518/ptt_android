@@ -45,6 +45,7 @@ interface RoomRepository {
     fun getRoomMembers(roomId: String): Observable<List<User>>
     fun updateRoom(room: Room, memberIds: Iterable<String>): Observable<Room>
     fun updateRoomMembers(roomId: String, memberIds: Iterable<String>): Observable<Unit>
+    fun updateRoomLastActiveUser(roomId: String, activeUserId: String) : Observable<Unit>
     fun getRoomsWithMembers(maxMember: Int): Observable<List<RoomWithMembers>>
     fun getRoomWithMembers(roomId: String, maxMember: Int) : Observable<RoomWithMembers?>
 }

@@ -103,6 +103,18 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             loginState.subscribe { logd("Login state: $it") }
             roomState.subscribe { logd("Room state: $it") }
         }
+
+        // Record last active speaker to database
+        roomState.distinctUntilChanged { it.currentRoomActiveSpeakerID }
+                .flatMap {
+                    if (it.currentRoomID != null && it.currentRoomActiveSpeakerID != null) {
+                        roomRepository.updateRoomLastActiveUser(it.currentRoomID, it.currentRoomActiveSpeakerID)
+                    }
+                    else {
+                        Observable.empty()
+                    }
+                }
+                .subscribe(GlobalSubscriber())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -420,8 +432,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     }
                     override fun onError(e: Throwable)
                     {
-//                        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
-//                        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                        //                        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
+                        //                        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                         //设备不支持蓝牙,UnsupportedOperationException
                         if(e is UnsupportedOperationException)
                             return

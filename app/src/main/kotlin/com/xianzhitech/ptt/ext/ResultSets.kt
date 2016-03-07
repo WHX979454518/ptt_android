@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.ext
 
 import com.xianzhitech.ptt.db.ResultSet
 import java.util.*
-import kotlin.collections.plusAssign
 
 /**
  * Created by fanchao on 17/12/15.

@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.util.threadLocal
 import rx.Observable
 import rx.functions.Func1
 import rx.schedulers.Schedulers
@@ -45,9 +46,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
     }
 
     // 指示当前线程是否处在一个事务下
-    private val inTransaction = object : ThreadLocal<Boolean>() {
-        override fun initialValue() = false
-    }
+    private var inTransaction : Boolean by threadLocal { false }
 
     private fun getTableSubject(tableName: String): PublishSubject<Unit?> {
         synchronized(tableSubjects, {
@@ -57,11 +56,11 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
 
     private fun <T> updateInTransaction(func: () -> T?): Observable<T> {
         return Observable.defer<T> {
-            inTransaction.set(true)
+            inTransaction = true
             try {
                 db.executeInTransaction(func).toObservable()
             } finally {
-                inTransaction.set(false)
+                inTransaction = false
                 pendingNotificationTables.get().apply {
                     forEach { getTableSubject(it).onNext(null) }
                     clear()
@@ -81,7 +80,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
     private fun createQuery(tableName: String, sql: String, vararg args: Any?) = createQuery(listOf(tableName), sql, *args)
 
     private fun notifyTable(tableName: String) {
-        if (inTransaction.get()) {
+        if (inTransaction) {
             pendingNotificationTables.get().add(tableName)
         } else {
             getTableSubject(tableName).onNext(null)
@@ -211,6 +210,14 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         }
     }
 
+    override fun updateRoomLastActiveUser(roomId: String, activeUserId: String) = updateInTransaction {
+        db.update(Rooms.TABLE_NAME,
+                mapOf(Rooms.COL_LAST_ACTIVE_USER_ID.to(activeUserId), Rooms.COL_LAST_ACTIVE_TIME.to(System.currentTimeMillis())),
+                "${Rooms.COL_ID} = ?",
+                roomId)
+        Unit
+    }
+
     override fun getRoomsWithMembers(maxMember: Int) =
             createQuery(listOf(Rooms.TABLE_NAME, RoomMembers.TABLE_NAME), "SELECT * FROM ${Rooms.TABLE_NAME}")
                     .mapToList(Func1<ResultSet, RoomWithMembers> {
@@ -310,13 +317,17 @@ private object Rooms : TableDefinition {
     const val COL_DESC = "room_desc"
     const val COL_OWNER_ID = "room_owner_id"
     const val COL_IMPORTANT = "room_important"
+    const val COL_LAST_ACTIVE_USER_ID = "room_last_active_user_id"
+    const val COL_LAST_ACTIVE_TIME = "room_last_active_time"
 
     override val creationSql = "CREATE TABLE $TABLE_NAME (" +
             "$COL_ID TEXT PRIMARY KEY," +
             "$COL_NAME TEXT," +
             "$COL_DESC TEXT," +
             "$COL_OWNER_ID TEXT NOT NULL REFERENCES ${Users.TABLE_NAME}(${Users.COL_ID})," +
-            "$COL_IMPORTANT INTEGER NOT NULL" +
+            "$COL_IMPORTANT INTEGER NOT NULL," +
+            "$COL_LAST_ACTIVE_USER_ID TEXT," +
+            "$COL_LAST_ACTIVE_TIME INTEGER" +
             ")"
 
     @JvmStatic val MAPPER = Func1<ResultSet, Room> { MutableRoom().from(it) }
@@ -328,6 +339,8 @@ private fun Room.toValues(values: MutableMap<String, Any?>) {
     values.put(Rooms.COL_DESC, description)
     values.put(Rooms.COL_OWNER_ID, ownerId)
     values.put(Rooms.COL_IMPORTANT, important)
+    values.put(Rooms.COL_LAST_ACTIVE_TIME, lastActiveTime?.time ?: 0)
+    values.put(Rooms.COL_LAST_ACTIVE_USER_ID, lastActiveUserId)
 }
 
 private fun MutableRoom.from(cursor: ResultSet): MutableRoom {
@@ -336,6 +349,8 @@ private fun MutableRoom.from(cursor: ResultSet): MutableRoom {
     description = cursor.optStringValue(Rooms.COL_DESC)
     ownerId = cursor.getStringValue(Rooms.COL_OWNER_ID)
     important = cursor.getIntValue(Rooms.COL_IMPORTANT) != 0
+    lastActiveTime = cursor.getLongValue(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null }
+    lastActiveUserId = cursor.optStringValue(Rooms.COL_LAST_ACTIVE_USER_ID)
     return this
 }
 
