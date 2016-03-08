@@ -90,7 +90,7 @@ android {
                 versionName System.getenv("BUILD_TAG")
             }
 
-            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9003\"")
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://netptt.cn:10000\"")
         }
     }
 
