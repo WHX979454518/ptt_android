@@ -7,7 +7,6 @@ import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
-import com.xianzhitech.ptt.util.threadLocal
 import rx.Observable
 import rx.functions.Func1
 import rx.schedulers.Schedulers
@@ -41,9 +40,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
     private val tableSubjects = hashMapOf<String, PublishSubject<Unit?>>()
 
     // 用于存储当前事务下的表格表格变化通知. 所有事务中的通知都会缓存, 当事务完成后一起将通知发出
-    private val pendingNotificationTables = object : ThreadLocal<HashSet<String>>() {
-        override fun initialValue() = hashSetOf<String>()
-    }
+    private val pendingNotificationTables : MutableSet<String> by threadLocal { hashSetOf<String>() }
 
     // 指示当前线程是否处在一个事务下
     private var inTransaction : Boolean by threadLocal { false }
@@ -61,7 +58,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
                 db.executeInTransaction(func).toObservable()
             } finally {
                 inTransaction = false
-                pendingNotificationTables.get().apply {
+                pendingNotificationTables.apply {
                     forEach { getTableSubject(it).onNext(null) }
                     clear()
                 }
@@ -81,7 +78,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
 
     private fun notifyTable(tableName: String) {
         if (inTransaction) {
-            pendingNotificationTables.get().add(tableName)
+            pendingNotificationTables.add(tableName)
         } else {
             getTableSubject(tableName).onNext(null)
         }

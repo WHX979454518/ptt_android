@@ -419,7 +419,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     private fun startPTTSubscriber(): Subscription {
         return btEngine.receiveCommand()
-                .retry { retriedCount, throwable -> retriedCount < Constants.BLUETOOTH_SCO_RETRY_COUNT && throwable !is UnsupportedOperationException }
+                .retry { i, throwable ->
+                    logd("Got $throwable while listening for bluetooth event. Retrying time $i...")
+                    throwable !is UnsupportedOperationException
+                }
                 .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<String>()
                 {

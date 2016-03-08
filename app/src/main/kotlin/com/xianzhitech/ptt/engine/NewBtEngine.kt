@@ -9,7 +9,10 @@ import android.content.Intent
 import android.media.AudioManager
 import android.support.v4.media.session.MediaSessionCompat
 import com.xianzhitech.ptt.MediaButtonEventReceiver
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.receiveBroadcasts
+import com.xianzhitech.ptt.ext.subscribeOnMainThread
 import rx.Observable
 import rx.functions.Func1
 import rx.schedulers.Schedulers
@@ -56,17 +59,18 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
             queryBluetoothDevice(btAdapter)
                     .first() // 只关心第一个找到的设备
                     .flatMap { bluetoothDevice ->
+                        logd("Got bluetooth device: {name: ${bluetoothDevice.name}, addr: ${bluetoothDevice.address}")
+
                         Observable.create<String> { subscriber ->
                             // 1. 发送该设备已激活的消息
                             subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_OK)
 
                             // 2. 绑定媒体按键事件
-                            subscriber.add(retrieveMediaButtonEvent().subscribe {
-                                //TODO: 处理媒体按键事件
-                            })
+                            subscriber.add(retrieveMediaButtonEvent().subscribe(GlobalSubscriber<Intent>()))
 
                             // 3. 绑定处理SCO音频信息更新的广播事件. 在收到连接状态时打开音频管理器的SCO
                             subscriber.add(context.receiveBroadcasts(false, AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED).subscribe {
+                                logd("SCO AUDIO STATE UPDATED: $it")
                                 if (it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1) == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                                     audioManager.isBluetoothScoOn = true
                                 }
@@ -78,12 +82,14 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
 
                             try {
                                 // 5. 连接到蓝牙socket
+                                logd("Connecting to bluetooth socket")
                                 bluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)?.use { socket ->
 
                                     // 取消蓝牙发现以便加速连接
                                     btAdapter.cancelDiscovery()
 
                                     socket.connect()
+                                    logd("Connected to bluetooth socket")
                                     socket.inputStream.use { stream ->
                                         val buffer = ByteArray(100)
 
@@ -107,13 +113,12 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 subscriber.onError(throwable)
                             }
                             finally {
+                                audioManager.isBluetoothScoOn = false
                                 audioManager.stopBluetoothSco()
                             }
 
                         }
                     }
-
-
                     .subscribeOn(bluetoothScheduler)
         } ?: Observable.error<String>(UnsupportedOperationException())
     }
@@ -126,9 +131,13 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
             if (BluetoothProfile.STATE_CONNECTED != btAdapter.getProfileConnectionState(BluetoothProfile.A2DP) ||
                     BluetoothProfile.STATE_CONNECTED != btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) ||
                     audioManager.isBluetoothScoAvailableOffCall.not()) {
+                logd("Bluetooth device query: Adapter is not connected to any A2Dp or HEADSET devices")
                 null
             } else {
-                btAdapter.bondedDevices?.firstOrNull { it.name.contains("PTT") }
+                logd("Bluetooth device query: bonded devices: ${btAdapter.bondedDevices?.map { "{${it.name}, ${it.address}}" }}")
+                btAdapter.bondedDevices?.firstOrNull {
+                    it.name.contains("PTT")
+                }
             }
         }
 
@@ -140,7 +149,7 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
     }
 
     private fun retrieveMediaButtonEvent() : Observable<Intent> {
-        return Observable.create { subscriber ->
+        return Observable.create<Intent> { subscriber ->
             val mediaSession = MediaSessionCompat(context, "BtEngine", ComponentName(context, MediaButtonEventReceiver::class.java), null)
 
             mediaSession.setCallback(object : MediaSessionCompat.Callback() {
@@ -153,7 +162,7 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
             subscriber.add(Subscriptions.create {
                 mediaSession.release()
             })
-        }
+        }.subscribeOnMainThread()
     }
 
 }
