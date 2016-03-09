@@ -14,7 +14,6 @@ import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.ext.subscribeOnMainThread
 import rx.Observable
-import rx.functions.Func1
 import rx.schedulers.Schedulers
 import rx.subscriptions.Subscriptions
 import java.util.*
@@ -90,20 +89,37 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
 
                                     socket.connect()
                                     logd("Connected to bluetooth socket")
-                                    socket.inputStream.use { stream ->
-                                        val buffer = ByteArray(100)
+                                    socket.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                                        val allCommands = listOf(NewBtEngine.MESSAGE_PUSH_DOWN, NewBtEngine.MESSAGE_PUSH_RELEASE)
+                                        val matchedCommands = allCommands.toMutableList()
+                                        var matchedSize = 0
 
                                         // 一直死循环读取数据直到取消订阅为止
                                         while (subscriber.isUnsubscribed.not()) {
-                                            val readCount = stream.read(buffer)
-
-                                            if (readCount > 0) {
-                                                //TODO: 是否可能有两个很快连续的命令过来?
-                                                subscriber.onNext(String(buffer, 0, readCount))
+                                            val char : Char = reader.read().let {
+                                                if (it < 0) {
+                                                    // -1表明这个流已经读完了. 在实际中, 这个属于一个异常, 因为我们总期待蓝牙一直连接
+                                                    throw InterruptedException("Bluetooth stream ended")
+                                                }
+                                                else {
+                                                    it.toChar()
+                                                }
                                             }
-                                            else if (readCount < 0) {
-                                                // 这个流已经读完了. 在实际中, 这个属于一个异常, 因为我们总期待蓝牙一直连接
-                                                throw InterruptedException("Bluetooth stream interrupted")
+
+                                            // 去除不匹配当前字符的消息
+                                            matchedCommands.removeAll { it.length <= matchedSize || it[matchedSize] != char }
+
+                                            if (matchedCommands.isEmpty()) {
+                                                throw RuntimeException("Unknown command $char received from bluetooth adapter")
+                                            }
+
+                                            matchedSize++
+
+                                            if (matchedCommands.size == 1 && matchedSize == matchedCommands[0].length) {
+                                                subscriber.onNext(matchedCommands[0])
+                                                matchedSize = 0
+                                                matchedCommands.clear()
+                                                matchedCommands.addAll(allCommands)
                                             }
                                         }
                                     }
@@ -116,7 +132,6 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 audioManager.isBluetoothScoOn = false
                                 audioManager.stopBluetoothSco()
                             }
-
                         }
                     }
                     .subscribeOn(bluetoothScheduler)
@@ -124,28 +139,36 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
     }
 
     /**
-     * 查找已配对的手咪设备
+     * 查找已连接的手咪设备
      */
     internal fun queryBluetoothDevice(btAdapter : BluetoothAdapter) : Observable<BluetoothDevice> {
-        val query = Func1<Any?, BluetoothDevice?> {
-            if (BluetoothProfile.STATE_CONNECTED != btAdapter.getProfileConnectionState(BluetoothProfile.A2DP) ||
-                    BluetoothProfile.STATE_CONNECTED != btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) ||
-                    audioManager.isBluetoothScoAvailableOffCall.not()) {
-                logd("Bluetooth device query: Adapter is not connected to any A2Dp or HEADSET devices")
-                null
-            } else {
-                logd("Bluetooth device query: bonded devices: ${btAdapter.bondedDevices?.map { "{${it.name}, ${it.address}}" }}")
-                btAdapter.bondedDevices?.firstOrNull {
-                    it.name.contains("PTT")
-                }
-            }
+        if (audioManager.isBluetoothScoAvailableOffCall.not()) {
+            return Observable.error(UnsupportedOperationException())
         }
 
-        return (context.receiveBroadcasts(false, BluetoothDevice.ACTION_ACL_CONNECTED)
-                .map(query)
-                .startWith(query.call(null))
-                .filter { it != null })
-                as Observable<BluetoothDevice>
+        return context.receiveBroadcasts(false, BluetoothDevice.ACTION_ACL_CONNECTED)
+                .map { it.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) }
+                .mergeWith(getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.A2DP))
+                .mergeWith(getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.HEADSET))
+                .doOnNext { logd("Checking for bluetooth device ${it?.name} : ${it?.address}") }
+                .filter { it != null && it.name.contains("PTT") }
+    }
+
+    internal fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int) : Observable<BluetoothDevice> {
+        return Observable.create { subscriber ->
+            btAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
+                override fun onServiceDisconnected(profile: Int) {
+                }
+
+                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                    if (profile == profileRequested) {
+                        proxy.connectedDevices?.forEach { subscriber.onNext(it) }
+                    }
+                    subscriber.onCompleted()
+                    btAdapter.closeProfileProxy(profile, proxy)
+                }
+            }, profileRequested)
+        }
     }
 
     private fun retrieveMediaButtonEvent() : Observable<Intent> {
