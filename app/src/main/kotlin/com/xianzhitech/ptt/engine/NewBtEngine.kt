@@ -3,12 +3,11 @@ package com.xianzhitech.ptt.engine
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothProfile
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
-import android.support.v4.media.session.MediaSessionCompat
-import com.xianzhitech.ptt.MediaButtonEventReceiver
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.receiveBroadcasts
@@ -172,19 +171,18 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
 
     private fun retrieveMediaButtonEvent() : Observable<Intent> {
         return Observable.create<Intent> { subscriber ->
-            val mediaSession = MediaSessionCompat(context, "BtEngine", ComponentName(context, MediaButtonEventReceiver::class.java), null)
-
-            mediaSession.setCallback(object : MediaSessionCompat.Callback() {
-                override fun onMediaButtonEvent(mediaButtonEvent: Intent): Boolean {
-                    subscriber.onNext(mediaButtonEvent)
-                    return true
-                }
-            })
+            val componentName = ComponentName(context, RemoteControlClientReceive::class.java.name)
+            audioManager.registerMediaButtonEventReceiver(componentName)
 
             subscriber.add(Subscriptions.create {
-                mediaSession.release()
+                audioManager.unregisterMediaButtonEventReceiver(componentName)
             })
         }.subscribeOnMainThread()
+    }
+
+    class RemoteControlClientReceive : BroadcastReceiver() {
+        override fun onReceive(content: Context, intent: Intent) {
+        }
     }
 
 }
