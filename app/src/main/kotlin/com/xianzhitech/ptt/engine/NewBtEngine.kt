@@ -132,9 +132,8 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 audioManager.isBluetoothScoOn = false
                                 audioManager.stopBluetoothSco()
                             }
-                        }
+                        }.subscribeOn(bluetoothScheduler)
                     }
-                    .subscribeOn(bluetoothScheduler)
         } ?: Observable.error<String>(UnsupportedOperationException())
     }
 
