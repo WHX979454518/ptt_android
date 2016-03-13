@@ -5,7 +5,6 @@ import android.os.Bundle
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import kotlin.text.isNullOrBlank
 
 /**
  * 房间对话界面

@@ -22,6 +22,7 @@ import java.util.concurrent.Executors
 interface NewBtEngine {
     companion object {
         const val MESSAGE_DEV_PTT_OK = "DEV_PTT_OK"
+        const val MESSAGE_DEV_PTT_DISCONNECTED = "DEV_PTT_DISCONNECTED"
         const val MESSAGE_PUSH_DOWN = "+PTT=P"
         const val MESSAGE_PUSH_RELEASE = "+PTT=R"
     }
@@ -88,50 +89,66 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                             try {
                                 // 5. 连接到蓝牙socket
                                 logd("Connecting to bluetooth socket")
-                                bluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)?.use { socket ->
+                                if (bluetoothDevice.name.contains("PTT")) {
+                                    bluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)?.use { socket ->
 
-                                    // 取消蓝牙发现以便加速连接
-                                    btAdapter.cancelDiscovery()
+                                        // 取消蓝牙发现以便加速连接
+                                        btAdapter.cancelDiscovery()
 
-                                    socket.connect()
-                                    logd("Connected to bluetooth socket")
-                                    socket.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                                        val allCommands = listOf(NewBtEngine.MESSAGE_PUSH_DOWN, NewBtEngine.MESSAGE_PUSH_RELEASE)
-                                        val matchedCommands = allCommands.toMutableList()
-                                        var matchedSize = 0
+                                        socket.connect()
+                                        logd("Connected to bluetooth socket")
+                                        socket.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                                            val allCommands = listOf(NewBtEngine.MESSAGE_PUSH_DOWN, NewBtEngine.MESSAGE_PUSH_RELEASE)
+                                            val matchedCommands = allCommands.toMutableList()
+                                            var matchedSize = 0
 
-                                        subscriber.add(Subscriptions.create {
-                                            socket.close()
-                                        })
+                                            subscriber.add(Subscriptions.create {
+                                                socket.close()
+                                            })
 
-                                        // 一直死循环读取数据直到取消订阅为止
-                                        while (subscriber.isUnsubscribed.not() && Thread.interrupted().not()) {
-                                            val char : Char = reader.read().let {
-                                                if (it < 0) {
-                                                    // -1表明这个流已经读完了. 在实际中, 这个属于一个异常, 因为我们总期待蓝牙一直连接
-                                                    throw InterruptedException("Bluetooth stream ended")
+                                            // 一直死循环读取数据直到取消订阅为止
+                                            while (subscriber.isUnsubscribed.not() && Thread.interrupted().not()) {
+                                                val char: Char = reader.read().let {
+                                                    if (it < 0) {
+                                                        // -1表明这个流已经读完了. 在实际中, 这个属于一个异常, 因为我们总期待蓝牙一直连接
+                                                        throw InterruptedException("Bluetooth stream ended")
+                                                    } else {
+                                                        it.toChar()
+                                                    }
                                                 }
-                                                else {
-                                                    it.toChar()
+
+                                                // 去除不匹配当前字符的消息
+                                                matchedCommands.removeAll { it.length <= matchedSize || it[matchedSize] != char }
+
+                                                if (matchedCommands.isEmpty()) {
+                                                    throw RuntimeException("Unknown command $char received from bluetooth adapter")
                                                 }
-                                            }
 
-                                            // 去除不匹配当前字符的消息
-                                            matchedCommands.removeAll { it.length <= matchedSize || it[matchedSize] != char }
+                                                matchedSize++
 
-                                            if (matchedCommands.isEmpty()) {
-                                                throw RuntimeException("Unknown command $char received from bluetooth adapter")
-                                            }
-
-                                            matchedSize++
-
-                                            if (matchedCommands.size == 1 && matchedSize == matchedCommands[0].length) {
-                                                subscriber.onNext(matchedCommands[0])
-                                                matchedSize = 0
-                                                matchedCommands.clear()
-                                                matchedCommands.addAll(allCommands)
+                                                if (matchedCommands.size == 1 && matchedSize == matchedCommands[0].length) {
+                                                    subscriber.onNext(matchedCommands[0])
+                                                    matchedSize = 0
+                                                    matchedCommands.clear()
+                                                    matchedCommands.addAll(allCommands)
+                                                }
                                             }
                                         }
+                                    }
+                                }
+                                else { // 非PTT设备
+                                    // 监听蓝牙断开信号, 如果这个设备断开了, 直接结束这个流
+                                    subscriber.add(context.receiveBroadcasts(false, BluetoothDevice.ACTION_ACL_DISCONNECTED).subscribeOnMainThread()
+                                            .map { it.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) }
+                                            .subscribe {
+                                                logd("Bluetooth device $it disconnected")
+                                                if (it.address == bluetoothDevice.address) {
+                                                    subscriber.unsubscribe()
+                                                }
+                                            })
+
+                                    while (subscriber.isUnsubscribed.not() && Thread.interrupted().not()) {
+                                        Thread.sleep(500)
                                     }
                                 }
                             }
@@ -142,6 +159,9 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 audioManager.isBluetoothScoOn = false
                                 audioManager.stopBluetoothSco()
                             }
+
+                            // 设备出错或者已经断开
+                            subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_DISCONNECTED)
                         }.subscribeOn(bluetoothScheduler)
                     }
         } ?: Observable.error<String>(UnsupportedOperationException())
@@ -160,21 +180,23 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                 .mergeWith(getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.A2DP))
                 .mergeWith(getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.HEADSET))
                 .doOnNext { logd("Checking for bluetooth device ${it?.name} : ${it?.address}") }
-                .filter { it != null && it.name.contains("PTT") }
+                .filter { it != null /*&& it.name.contains("PTT")*/ }
     }
 
     internal fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int) : Observable<BluetoothDevice> {
-        return Observable.create<BluetoothProfile> { subscriber ->
+        return Observable.create { subscriber ->
             btAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
                 override fun onServiceDisconnected(profile: Int) { }
 
-                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-                    subscriber.onNext(proxy)
-                    subscriber.onCompleted()
-                    btAdapter.closeProfileProxy(profile, proxy)
+                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+                    if (profile == profileRequested && proxy != null) {
+                        proxy.connectedDevices.forEach { subscriber.onNext(it) }
+                        subscriber.onCompleted()
+                        btAdapter.closeProfileProxy(profile, proxy)
+                    }
                 }
             }, profileRequested)
-        }.observeOn(Schedulers.io()).flatMap { Observable.from(it.connectedDevices) }
+        }
     }
 
     private fun retrieveMediaButtonEvent() : Observable<Intent> {

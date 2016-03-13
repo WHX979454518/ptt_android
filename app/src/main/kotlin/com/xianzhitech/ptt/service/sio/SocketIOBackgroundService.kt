@@ -16,7 +16,10 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.engine.*
+import com.xianzhitech.ptt.engine.NewBtEngine
+import com.xianzhitech.ptt.engine.TalkEngine
+import com.xianzhitech.ptt.engine.TalkEngineProvider
+import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.*
@@ -32,6 +35,7 @@ import io.socket.engineio.client.Transport
 import org.json.JSONObject
 import rx.Observable
 import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
@@ -417,8 +421,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
     }
 
-    private fun startPTTSubscriber(): Subscription {
-        return btEngine.receiveCommand()
+
+    internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
+        //roomSubscription?.add()
+        btSubscription =  btEngine.receiveCommand()
                 .retry { i, throwable ->
                     logd("Got $throwable while listening for bluetooth event. Retrying time $i...")
                     throwable !is UnsupportedOperationException
@@ -428,9 +434,15 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 {
                     override fun onNext(t: String) {
                         when (t) {
-                            BtEngine.MESSAGE_DEV_PTT_OK -> audioManager.mode = android.media.AudioManager.MODE_NORMAL
-                            BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
-                            BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
+                            NewBtEngine.MESSAGE_DEV_PTT_OK -> {
+                                audioManager.mode = android.media.AudioManager.MODE_NORMAL
+                                createTalkEngine(roomId, talkEngineProperties, true)
+                            }
+                            NewBtEngine.MESSAGE_DEV_PTT_DISCONNECTED -> {
+                                createTalkEngine(roomId, talkEngineProperties, true)
+                            }
+                            NewBtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
+                            NewBtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
                         }
                     }
                     override fun onError(e: Throwable)
@@ -442,18 +454,29 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             return
                     }
                 })
-    }
-
-    internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
-        //roomSubscription?.add()
-        btSubscription = startPTTSubscriber()
         //        roomSubscription?.add(btSubscription)
 //        audioManager.mode = AudioManager.MODE_IN_CALL
         audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
 
+        createTalkEngine(roomId, talkEngineProperties, false)
+    }
+
+    internal fun createTalkEngine(roomId : String, talkEngineProperties: Map<String, Any?>, applyCurrentState : Boolean) {
+        currentTalkEngine?.let { it.dispose() }
         currentTalkEngine = talkEngineProvider.createEngine().apply {
             logd("Connecting to talk engine")
             connect(roomId, talkEngineProperties)
+
+            if (applyCurrentState) {
+                val roomState = peekRoomState()
+                val userState = peekLoginState()
+                if (roomState.status == RoomState.Status.ACTIVE && roomState.currentRoomActiveSpeakerID == userState.currentUserID) {
+                    startSend()
+                }
+                else {
+                    stopSend()
+                }
+            }
         }
     }
 
@@ -467,7 +490,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         if (isSelf) {
             vibrator?.vibrate(120)
             playSound(R.raw.outgoing)
-            currentTalkEngine?.startSend()
+            Observable.timer(500, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).subscribe {
+                currentTalkEngine?.startSend()
+            }
         } else {
             playSound(R.raw.incoming)
         }
