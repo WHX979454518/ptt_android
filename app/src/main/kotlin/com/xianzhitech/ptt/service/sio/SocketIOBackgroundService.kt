@@ -35,7 +35,6 @@ import io.socket.engineio.client.Transport
 import org.json.JSONObject
 import rx.Observable
 import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
@@ -490,9 +489,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         if (isSelf) {
             vibrator?.vibrate(120)
             playSound(R.raw.outgoing)
-            Observable.timer(500, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).subscribe {
-                currentTalkEngine?.startSend()
-            }
+            currentTalkEngine?.startSend()
         } else {
             playSound(R.raw.incoming)
         }
