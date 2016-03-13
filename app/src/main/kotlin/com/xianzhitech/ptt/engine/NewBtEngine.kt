@@ -68,14 +68,20 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
 
                             // 3. 绑定处理SCO音频信息更新的广播事件. 在收到连接状态时打开音频管理器的SCO
                             subscriber.add(context.receiveBroadcasts(false, AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED).subscribe {
-                                logd("SCO AUDIO STATE UPDATED: $it")
-                                if (it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1) == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                                logd("SCO AUDIO STATE UPDATED: action = ${it.action}, extra = ${it.extras}")
+                                val state = it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
+                                if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                                     audioManager.isBluetoothScoOn = true
+                                    audioManager.isSpeakerphoneOn = true
+                                    audioManager.mode = AudioManager.MODE_IN_CALL
+                                }
+                                else if (state == AudioManager.SCO_AUDIO_STATE_DISCONNECTED) {
+                                    audioManager.isSpeakerphoneOn = false
+                                    audioManager.isBluetoothScoOn = false
                                 }
                             })
 
                             // 4. 开启外围蓝牙扬声器
-                            audioManager.stopBluetoothSco()
                             audioManager.startBluetoothSco()
 
                             try {
@@ -93,8 +99,12 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                         val matchedCommands = allCommands.toMutableList()
                                         var matchedSize = 0
 
+                                        subscriber.add(Subscriptions.create {
+                                            socket.close()
+                                        })
+
                                         // 一直死循环读取数据直到取消订阅为止
-                                        while (subscriber.isUnsubscribed.not()) {
+                                        while (subscriber.isUnsubscribed.not() && Thread.interrupted().not()) {
                                             val char : Char = reader.read().let {
                                                 if (it < 0) {
                                                     // -1表明这个流已经读完了. 在实际中, 这个属于一个异常, 因为我们总期待蓝牙一直连接
@@ -153,20 +163,17 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
     }
 
     internal fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int) : Observable<BluetoothDevice> {
-        return Observable.create { subscriber ->
+        return Observable.create<BluetoothProfile> { subscriber ->
             btAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
-                override fun onServiceDisconnected(profile: Int) {
-                }
+                override fun onServiceDisconnected(profile: Int) { }
 
                 override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-                    if (profile == profileRequested) {
-                        proxy.connectedDevices?.forEach { subscriber.onNext(it) }
-                    }
+                    subscriber.onNext(proxy)
                     subscriber.onCompleted()
                     btAdapter.closeProfileProxy(profile, proxy)
                 }
             }, profileRequested)
-        }
+        }.observeOn(Schedulers.io()).flatMap { Observable.from(it.connectedDevices) }
     }
 
     private fun retrieveMediaButtonEvent() : Observable<Intent> {
