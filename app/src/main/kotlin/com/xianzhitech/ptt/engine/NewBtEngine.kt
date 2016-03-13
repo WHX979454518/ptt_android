@@ -59,8 +59,6 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                     .first() // 只关心第一个找到的设备
                     .flatMap { bluetoothDevice ->
                         Observable.create<String> { subscriber ->
-                            // 1. 发送该设备已激活的消息
-                            subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_OK)
 
                             // 2. 绑定媒体按键事件
                             subscriber.add(retrieveMediaButtonEvent().subscribe(GlobalSubscriber<Intent>()))
@@ -72,6 +70,9 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 if (scoState == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                                     logd("Sco audio state activated")
                                     audioManager.isBluetoothScoOn = true
+
+                                    //  发送该设备已激活的消息
+                                    subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_OK)
                                 }
                             })
 

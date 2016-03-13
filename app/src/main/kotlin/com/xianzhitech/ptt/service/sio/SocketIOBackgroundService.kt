@@ -35,6 +35,7 @@ import io.socket.engineio.client.Transport
 import org.json.JSONObject
 import rx.Observable
 import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
@@ -48,6 +49,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     var serviceStateSubscription: Subscription? = null
     var loginSubscription : Subscription? = null
     var roomSubscription: CompositeSubscription? = null
+    var requestMicSubscription : Subscription? = null
     var currentTalkEngine: TalkEngine? = null
     var btSubscription : Subscription? = null
 
@@ -454,7 +456,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     }
                 })
         //        roomSubscription?.add(btSubscription)
-//        audioManager.mode = AudioManager.MODE_IN_CALL
+        //        audioManager.mode = AudioManager.MODE_IN_CALL
         audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
 
         createTalkEngine(roomId, talkEngineProperties, false)
@@ -710,9 +712,15 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             return@create
         }
 
-        roomState.onNext(roomState.value.copy(status = RoomState.Status.REQUESTING_MIC))
         val micRequest = JSONObject().put("roomId", currRoomState.currentRoomID)
-        currRoomSubscription.add(socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, micRequest)
+
+        requestMicSubscription?.unsubscribe()
+
+        requestMicSubscription = Observable.timer(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                .flatMap {
+                    roomState.onNext(roomState.value.copy(status = RoomState.Status.REQUESTING_MIC))
+                    socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, micRequest)
+                }
                 .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<JSONObject>() {
@@ -738,8 +746,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                         subscriber.onSingleValue(Unit)
                     }
-                }))
+                })
 
+        currRoomSubscription.add(requestMicSubscription)
     }.subscribeOnMainThread()
 
 
@@ -748,6 +757,9 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         val currRoomState = peekRoomState()
         val currRoomSubscription = roomSubscription
         val currUserId = loginState.value.currentUserID
+
+        requestMicSubscription?.unsubscribe()
+        requestMicSubscription = null
 
         if (socket == null || currRoomState.currentRoomID == null ||
                 currRoomSubscription == null || currUserId == null) {
