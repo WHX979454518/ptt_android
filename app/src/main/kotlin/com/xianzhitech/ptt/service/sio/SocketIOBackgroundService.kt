@@ -36,6 +36,7 @@ import org.json.JSONObject
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import rx.observers.SafeSubscriber
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
@@ -437,10 +438,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         when (t) {
                             NewBtEngine.MESSAGE_DEV_PTT_OK -> {
                                 audioManager.mode = android.media.AudioManager.MODE_NORMAL
-                                createTalkEngine(roomId, talkEngineProperties, true)
-                            }
-                            NewBtEngine.MESSAGE_DEV_PTT_DISCONNECTED -> {
-                                createTalkEngine(roomId, talkEngineProperties, true)
                             }
                             NewBtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
                             NewBtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
@@ -720,10 +717,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .flatMap {
                     roomState.onNext(roomState.value.copy(status = RoomState.Status.REQUESTING_MIC))
                     socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, micRequest)
+                            .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 }
-                .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<JSONObject>() {
+                .subscribe(SafeSubscriber(object : GlobalSubscriber<JSONObject>() {
                     override fun onError(e: Throwable) {
                         subscriber.onError(e)
                         // When error happens, always requests release mic to prevent further damage to the state
@@ -740,13 +737,19 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                         val newSpeakerID = if (t.isNull("speaker").not()) t.optString("speaker") else null
                         if (t.getBoolean("success") && newSpeakerID == currUserId) {
-                            roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = currUserId, status = RoomState.Status.ACTIVE))
-                            onMicActivated(true)
+                            if (isUnsubscribed || roomState.value.status != RoomState.Status.REQUESTING_MIC)  {
+                                // 如果返回的时候我们已经不是请求状态了, 必须发回服务器一个RELEASE做最后保证
+                                releaseMic().subscribe(GlobalSubscriber())
+                            }
+                            else {
+                                roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = currUserId, status = RoomState.Status.ACTIVE))
+                                onMicActivated(true)
+                            }
                         }
 
                         subscriber.onSingleValue(Unit)
                     }
-                })
+                }))
 
         currRoomSubscription.add(requestMicSubscription)
     }.subscribeOnMainThread()
@@ -774,13 +777,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .observeOnMainThread()
                 .subscribe(GlobalSubscriber()))
 
-        if (currRoomState.currentRoomActiveSpeakerID == currUserId) {
+        if (currRoomState.currentRoomActiveSpeakerID == currUserId || currRoomState.currentRoomActiveSpeakerID == null) {
             roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null, status = RoomState.Status.JOINED))
             onMicReleased(true)
         }
 
         Unit.toObservable()
-    }.observeOnMainThread()
+    }.subscribeOnMainThread()
 
     internal fun checkMainThread() {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
