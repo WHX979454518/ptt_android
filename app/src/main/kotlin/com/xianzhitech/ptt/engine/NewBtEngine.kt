@@ -95,6 +95,9 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                         var matchedSize = 0
 
                                         subscriber.add(Subscriptions.create {
+                                            audioManager.isBluetoothScoOn = false
+                                            audioManager.stopBluetoothSco()
+
                                             socket.close()
                                         })
 
