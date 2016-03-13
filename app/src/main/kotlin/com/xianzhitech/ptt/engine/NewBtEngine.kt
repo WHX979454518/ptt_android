@@ -67,7 +67,9 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
 
                             // 3. 绑定处理SCO音频信息更新的广播事件. 在收到连接状态时打开音频管理器的SCO
                             subscriber.add(context.receiveBroadcasts(false, AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED).subscribe {
-                                if (it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1) == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                                val scoState = it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
+                                logd("Sco state changed to " + scoState)
+                                if (scoState == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                                     logd("Sco audio state activated")
                                     audioManager.isBluetoothScoOn = true
                                 }
