@@ -72,17 +72,18 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 val state = it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
                                 if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                                     audioManager.isBluetoothScoOn = true
-                                    audioManager.isSpeakerphoneOn = true
-                                    audioManager.mode = AudioManager.MODE_IN_CALL
+                                    //audioManager.isSpeakerphoneOn = true
+//                                    audioManager.mode = AudioManager.MODE_IN_CALL
                                 }
                                 else if (state == AudioManager.SCO_AUDIO_STATE_DISCONNECTED) {
-                                    audioManager.isSpeakerphoneOn = false
-                                    audioManager.isBluetoothScoOn = false
+                                    //audioManager.isSpeakerphoneOn = false
+                                    //audioManager.isBluetoothScoOn = false
                                 }
                             })
 
                             // 4. 开启外围蓝牙扬声器
                             audioManager.startBluetoothSco()
+                            audioManager.mode = AudioManager.MODE_NORMAL
 
                             try {
                                 // 5. 连接到蓝牙socket

@@ -448,7 +448,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         //roomSubscription?.add()
         btSubscription = startPTTSubscriber()
         //        roomSubscription?.add(btSubscription)
-        audioManager.mode = AudioManager.MODE_IN_CALL
+//        audioManager.mode = AudioManager.MODE_IN_CALL
         audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
 
         currentTalkEngine = talkEngineProvider.createEngine().apply {
