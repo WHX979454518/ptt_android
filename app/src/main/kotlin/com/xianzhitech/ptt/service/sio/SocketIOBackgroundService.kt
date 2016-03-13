@@ -84,7 +84,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
         audioManager = (getSystemService(AUDIO_SERVICE) as AudioManager)
 
-        soundPool = Pair(SoundPool(1, AudioManager.STREAM_MUSIC, 0), SparseIntArray()).apply {
+        soundPool = Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
             val context = this@SocketIOBackgroundService
             second.put(R.raw.incoming, first.load(context, R.raw.incoming, 0))
             second.put(R.raw.outgoing, first.load(context, R.raw.outgoing, 0))
