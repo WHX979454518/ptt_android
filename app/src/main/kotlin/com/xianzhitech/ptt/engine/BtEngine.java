@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -154,7 +155,12 @@ public class BtEngine {
                     subscriber.onError(connectException);
                 }
             }
-        }).subscribeOn(Schedulers.io());
+        }).subscribeOn(Schedulers.io()).map(new Func1<String, String>() {
+            @Override
+            public String call(String s) {
+                return null;
+            }
+        });
     }
 
     private void sleep(long time)
