@@ -76,8 +76,10 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                             })
 
                             // 4. 开启外围蓝牙扬声器
-                            audioManager.startBluetoothSco()
                             audioManager.mode = AudioManager.MODE_NORMAL
+//                            audioManager.isBluetoothScoOn = true
+                            audioManager.startBluetoothSco()
+//                            audioManager.mode = AudioManager.MODE_NORMAL
 
                             try {
                                 // 5. 连接到蓝牙socket
@@ -97,7 +99,7 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                         subscriber.add(Subscriptions.create {
                                             audioManager.isBluetoothScoOn = false
                                             audioManager.stopBluetoothSco()
-
+                                            logd("close BTSocket")
                                             socket.close()
                                         })
 
@@ -122,6 +124,16 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                             matchedSize++
 
                                             if (matchedCommands.size == 1 && matchedSize == matchedCommands[0].length) {
+                                                if(audioManager.isBluetoothScoOn)
+                                                {
+                                                    logd("SCO ON")
+                                                }else
+                                                {
+                                                    logd("SCO OFF")
+                                                    audioManager.mode = AudioManager.MODE_NORMAL
+                                                    audioManager.isBluetoothScoOn = true
+                                                    audioManager.startBluetoothSco()
+                                                }
                                                 subscriber.onNext(matchedCommands[0])
                                                 matchedSize = 0
                                                 matchedCommands.clear()
@@ -142,11 +154,11 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_DISCONNECTED)
                                 subscriber.onError(throwable)
                             }
-                            finally {
-                                logd("Shutting down bluetooth device $bluetoothDevice")
-                                audioManager.isBluetoothScoOn = false
-                                audioManager.stopBluetoothSco()
-                            }
+//                            finally {//功能与上面订阅重复
+//                                logd("Shutting down bluetooth device $bluetoothDevice")
+//                                audioManager.isBluetoothScoOn = false
+//                                audioManager.stopBluetoothSco()
+//                            }
                         }.subscribeOn(bluetoothScheduler)
                     }
         }?.doOnEach { logd("Received command $it") } ?: Observable.error<String>(UnsupportedOperationException())
