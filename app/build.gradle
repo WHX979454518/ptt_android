@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 buildscript {
-    ext.kotlin_version = '1.0.0'
+    ext.kotlin_version = '1.0.1'
 
     repositories {
         // required for this library, don't use mavenCentral()
@@ -90,7 +90,7 @@ android {
                 versionName System.getenv("BUILD_TAG")
             }
 
-            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9003\"")
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://netptt.cn:10000\"")
         }
     }
 
@@ -119,10 +119,10 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
 //    compile 'com.google.guava:guava:19.0'
-    compile 'com.android.support:appcompat-v7:23.1.1'
-    compile 'com.android.support:recyclerview-v7:23.1.1'
-    compile 'com.android.support:design:23.1.1'
-    compile 'com.android.support:percent:23.1.1'
+    compile 'com.android.support:appcompat-v7:23.2.1'
+    compile 'com.android.support:recyclerview-v7:23.2.1'
+    compile 'com.android.support:design:23.2.1'
+    compile 'com.android.support:percent:23.2.1'
 
 //    compile 'com.fasterxml.jackson.core:jackson-core:2.7.0'
 //    compile 'com.fasterxml.jackson.core:jackson-annotations:2.7.0'
