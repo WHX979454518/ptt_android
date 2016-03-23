@@ -127,14 +127,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         serviceStateSubscription?.unsubscribe()
 
         serviceStateSubscription = Observable.combineLatest(
-                roomState.flatMap { state ->
-                    roomRepository.optRoomWithMembers(state.currentRoomID).map { ExtraRoomState(state, it) }
-                },
-                loginState.flatMap { state ->
-                    userRepository.optUser(state.currentUserID).map { ExtraLoginState(state, it) }
-                },
+                roomState,
+                roomState.distinct { it.currentRoomID }.flatMap { roomRepository.optRoomWithMembers(it.currentRoomID) },
+                loginState,
+                loginState.distinct { it.currentUserID }.flatMap { userRepository.optUser(it.currentUserID) },
                 getConnectivity(),
-                { first, second, third -> Triple(first, second, third) })
+                { roomState, room, loginState, user, connectivity -> Triple(ExtraRoomState(roomState, room), ExtraLoginState(loginState, user), connectivity) })
                 .debounce(500, TimeUnit.MILLISECONDS)
                 .observeOnMainThread()
                 .subscribe(object : GlobalSubscriber<Triple<ExtraRoomState, ExtraLoginState, Boolean>>() {

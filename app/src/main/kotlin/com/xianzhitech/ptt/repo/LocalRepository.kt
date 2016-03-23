@@ -37,7 +37,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
     // 写入数据库操作的线程池, 只有一个线程
     private val modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
-    private val tableSubjects = hashMapOf<String, PublishSubject<Unit?>>()
+    private val tableSubjects = hashMapOf<String, PublishSubject<Unit>>()
 
     // 用于存储当前事务下的表格表格变化通知. 所有事务中的通知都会缓存, 当事务完成后一起将通知发出
     private val pendingNotificationTables : MutableSet<String> by threadLocal { hashSetOf<String>() }
@@ -45,9 +45,9 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
     // 指示当前线程是否处在一个事务下
     private var inTransaction : Boolean by threadLocal { false }
 
-    private fun getTableSubject(tableName: String): PublishSubject<Unit?> {
-        synchronized(tableSubjects, {
-            return tableSubjects.getOrPut(tableName, { PublishSubject.create<Unit?>() })
+    private fun getTableSubject(tableName: String): PublishSubject<Unit> {
+        return synchronized(tableSubjects, {
+            tableSubjects.getOrPut(tableName, { PublishSubject.create<Unit>() })
         })
     }
 
@@ -59,7 +59,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
             } finally {
                 inTransaction = false
                 pendingNotificationTables.apply {
-                    forEach { getTableSubject(it).onNext(null) }
+                    forEach { getTableSubject(it).onNext(Unit) }
                     clear()
                 }
             }
@@ -68,11 +68,8 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
 
     private fun createQuery(tableNames: Iterable<String>, sql: String, vararg args: Any?) =
             Observable.merge(tableNames.transform { getTableSubject(it) }).mergeWith(Observable.just(null))
-                    .flatMap {
-                        Observable.defer<ResultSet> {
-                            db.query(sql, *args).toObservable()
-                        }.subscribeOn(queryScheduler)
-                    }
+                    .observeOn(queryScheduler)
+                    .map { db.query(sql, *args) }
 
     private fun createQuery(tableName: String, sql: String, vararg args: Any?) = createQuery(listOf(tableName), sql, *args)
 
@@ -80,7 +77,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         if (inTransaction) {
             pendingNotificationTables.add(tableName)
         } else {
-            getTableSubject(tableName).onNext(null)
+            getTableSubject(tableName).onNext(Unit)
         }
     }
 

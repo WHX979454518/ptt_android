@@ -142,7 +142,7 @@ dependencies {
     }
 
     compile 'io.reactivex:rxandroid:1.1.0'
-    compile 'io.reactivex:rxjava:1.1.1'
+    compile 'io.reactivex:rxjava:1.1.2'
     compile 'com.trello:rxlifecycle:0.4.0'
 //    compile 'com.squareup.picasso:picasso:2.5.2'
 //    compile 'com.squareup.okhttp:okhttp:2.6.0'

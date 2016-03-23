@@ -143,6 +143,7 @@ fun Context.joinRoom(roomId: String?,
 
             }
             .observeOnMainThread()
+            .compose(lifecycle)
             .subscribe(object : GlobalSubscriber<Unit>(this@joinRoom) {
                 override fun onNext(t: Unit) {
                     startActivity(Intent(this@joinRoom, RoomActivity::class.java))

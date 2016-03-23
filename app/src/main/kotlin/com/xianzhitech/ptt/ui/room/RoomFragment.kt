@@ -21,7 +21,6 @@ import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.repo.optUser
-import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -53,7 +52,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     private var views: Views? = null
     private val adapter = Adapter()
     private lateinit var roomRepository: RoomRepository
-    private var backgroundServiceBinder : BackgroundServiceBinder? = null
     private var joiningProgressDialog : ProgressDialog? = null
 
     private val speakSourceAdapter = object : BaseAdapter() {
@@ -92,7 +90,9 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 toolbar.inflateMenu(R.menu.room)
                 toolbar.setOnMenuItemClickListener {
                     if (it.itemId == R.id.room_exit) {
-                        backgroundServiceBinder?.requestQuitCurrentRoom()?.subscribe(GlobalSubscriber())
+                        (context.applicationContext as AppComponent).connectToBackgroundService()
+                                .flatMap { it.requestQuitCurrentRoom() }
+                                .subscribe(GlobalSubscriber())
                         activity?.finish()
                     }
 
@@ -109,26 +109,17 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         val bgService = appComponent
                 .connectToBackgroundService()
                 .observeOnMainThread()
-                .publish()
 
-        bgService.compose(bindToLifecycle()).subscribe(object : GlobalSubscriber<BackgroundServiceBinder>() {
-            override fun onNext(t: BackgroundServiceBinder) {
-                backgroundServiceBinder = t
-            }
-        })
-
-        bgService.flatMap {
-            Observable.combineLatest(
-                    it.roomState.flatMap { state ->
-                        Observable.combineLatest(
-                                appComponent.roomRepository.optRoomWithMembers(state.currentRoomID),
-                                appComponent.userRepository.optUser(state.currentRoomActiveSpeakerID),
-                                { first, second -> RoomData(state, first, second) })
-                    },
-                    it.loginState,
-                    context.getConnectivity(),
-                    { first, second, third -> Triple(first, second, third) }) }
-                .observeOnMainThread()
+        bgService.flatMap { Observable.combineLatest(
+                it.roomState.flatMap { roomState ->
+                    Observable.combineLatest(
+                            appComponent.roomRepository.optRoomWithMembers(roomState.currentRoomID),
+                            appComponent.userRepository.optUser(roomState.currentRoomActiveSpeakerID),
+                            { roomWithMembers, currentActiveUser -> RoomData(roomState, roomWithMembers, currentActiveUser) }) },
+                it.loginState,
+                context.getConnectivity(),
+                { roomData, loginState, connectivity -> Triple(roomData, loginState, connectivity) })
+        }.observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe(object : GlobalSubscriber<Triple<RoomData, LoginState, Boolean>>() {
                     override fun onNext(t: Triple<RoomData, LoginState, Boolean>) {
@@ -150,8 +141,6 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                         }
                     }
                 })
-
-        bgService.connect()
     }
 
     internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
@@ -176,22 +165,20 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         }
     }
 
-    override fun onStop() {
-        backgroundServiceBinder = null
-
-        super.onStop()
-    }
-
     override fun onBackPressed(): Boolean {
         return false
     }
 
     override fun requestMic() {
-        backgroundServiceBinder?.requestMic()?.subscribe(GlobalSubscriber())
+        (context.applicationContext as AppComponent).connectToBackgroundService()
+            .flatMap { it.requestMic() }
+            .subscribe(GlobalSubscriber())
     }
 
     override fun releaseMic() {
-        backgroundServiceBinder?.releaseMic()?.subscribe(GlobalSubscriber())
+        (context.applicationContext as AppComponent).connectToBackgroundService()
+                .flatMap { it.releaseMic() }
+                .subscribe(GlobalSubscriber())
     }
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {

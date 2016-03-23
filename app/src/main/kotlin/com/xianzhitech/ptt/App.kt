@@ -19,9 +19,13 @@ import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import okhttp3.OkHttpClient
+import rx.subjects.BehaviorSubject
 
 
 open class App : Application(), AppComponent {
+
+    private var backgroundServiceSubject : BehaviorSubject<BackgroundServiceBinder>? = null
+
     override val httpClient by lazy { OkHttpClient() }
     override val talkEngineProvider = object : TalkEngineProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)
@@ -44,7 +48,15 @@ open class App : Application(), AppComponent {
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
 
-    override fun connectToBackgroundService() = connectToService<BackgroundServiceBinder>(Intent(this, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE)
+    override fun connectToBackgroundService() = synchronized(this, {
+        if (backgroundServiceSubject == null) {
+            backgroundServiceSubject = BehaviorSubject.create<BackgroundServiceBinder>().apply {
+                connectToService<BackgroundServiceBinder>(Intent(this@App, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE).subscribe(this)
+            }
+        }
+
+        backgroundServiceSubject!!
+    })
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : PreferenceStorageProvider {
         override var userSessionToken: String?
