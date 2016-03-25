@@ -34,22 +34,35 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 0)
         }
-    }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        permissions.forEachIndexed { i, s ->
-            if (s == Manifest.permission.RECORD_AUDIO && grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                onPermissionDenied()
-            }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE, Manifest.permission.READ_PHONE_STATE), 0)
         }
     }
 
-    private fun onPermissionDenied() {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        permissions.forEachIndexed { i, permission ->
+            if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                onPermissionDenied(permission)
+            }
+        }
+
+        if (permissions.firstOrNull() == Manifest.permission.READ_PHONE_STATE &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            PhoneCallHandler.register(this)
+        }
+    }
+
+    private fun onPermissionDenied(permission: String) {
         AlertDialog.Builder(this)
                 .setTitle(R.string.error_title)
-                .setMessage(R.string.error_no_android_permission)
+                .setMessage(when (permission) {
+                    Manifest.permission.RECORD_AUDIO -> R.string.error_no_record_permission
+                    else -> R.string.error_no_phone_permission
+                })
                 .setPositiveButton(R.string.dialog_confirm, { first, second ->
-                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 0)
+                    ActivityCompat.requestPermissions(this, arrayOf(permission), 0)
                 })
                 .setNegativeButton(R.string.dialog_cancel, { first, second ->
                     finish()

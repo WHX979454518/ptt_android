@@ -1,9 +1,12 @@
 package com.xianzhitech.ptt
 
+import android.Manifest
 import android.app.Application
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.preference.PreferenceManager
+import android.support.v4.app.ActivityCompat
 import com.xianzhitech.ptt.db.AndroidDatabase
 import com.xianzhitech.ptt.db.DatabaseFactory
 import com.xianzhitech.ptt.db.TableDefinition
@@ -19,6 +22,7 @@ import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.NotificationHandler
+import com.xianzhitech.ptt.ui.PhoneCallHandler
 import okhttp3.OkHttpClient
 import rx.subjects.BehaviorSubject
 
@@ -63,6 +67,11 @@ open class App : Application(), AppComponent {
         super.onCreate()
 
         NotificationHandler(this)
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            PhoneCallHandler.register(this)
+        }
     }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : PreferenceStorageProvider {

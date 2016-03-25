@@ -1,8 +1,6 @@
 package com.xianzhitech.ptt.service
 
 import android.app.Notification
-import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import rx.Observable
 
@@ -29,12 +27,6 @@ data class LoginState(val status : LoginState.Status = LoginState.Status.IDLE,
         OFFLINE,
     }
 }
-
-data class ExtraRoomState(val roomState: RoomState,
-                          val room: RoomWithMembers? = null)
-
-data class ExtraLoginState(val loginState: LoginState,
-                           val logonUser: User? = null)
 
 interface BackgroundServiceBinder {
     val roomState : Observable<RoomState>

@@ -1,7 +1,7 @@
 package com.xianzhitech.ptt.ui
 
+import android.app.Application
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
@@ -24,19 +24,19 @@ import java.util.concurrent.TimeUnit
 
 
 /**
- * 处理通知栏显示房间状态、处理点击事件的类，必须在[Application#onCreate]中创建
+ * 处理通知栏显示房间状态、处理点击事件的类，必须在[android.app.Application]的初始化中创建
  */
-class NotificationHandler(private val appContext: Context) {
+class NotificationHandler(private val app: Application) {
     init {
-        val appComponent = appContext.applicationContext as AppComponent
-        (appComponent).connectToBackgroundService()
+        val appComponent = app as AppComponent
+        appComponent.connectToBackgroundService()
                 .flatMap { service ->
                     Observable.combineLatest(
                             service.roomState,
                             service.roomState.distinct { it.currentRoomID }.flatMap { appComponent.roomRepository.optRoomWithMembers(it.currentRoomID) },
                             service.loginState,
                             service.loginState.distinct { it.currentUserID }.flatMap { appComponent.userRepository.optUser(it.currentUserID) },
-                            appContext.getConnectivity(),
+                            app.getConnectivity(),
                             { roomState, currRoom, loginState, currUser, connectivity -> service to State(roomState, currRoom, loginState, currUser, connectivity) }
                     )
                 }
@@ -49,30 +49,30 @@ class NotificationHandler(private val appContext: Context) {
 
     internal fun onStateChanged(service : BackgroundServiceBinder, state : State) {
         logd("State changed to $state")
-        val builder = NotificationCompat.Builder(appContext)
+        val builder = NotificationCompat.Builder(app)
         builder.setOngoing(true)
         builder.setAutoCancel(false)
-        builder.setContentTitle(R.string.app_name.toFormattedString(appContext))
+        builder.setContentTitle(R.string.app_name.toFormattedString(app))
         val icon : Int
 
         when (state.loginState.status) {
             LoginState.Status.LOGGED_IN -> {
                 when (state.roomState.status) {
                     RoomState.Status.IDLE -> {
-                        builder.setContentText(R.string.notification_user_online.toFormattedString(appContext, state.currUser?.name ?: ""))
-                        builder.setContentIntent(PendingIntent.getActivity(appContext, 0, Intent(appContext, MainActivity::class.java), 0))
+                        builder.setContentText(R.string.notification_user_online.toFormattedString(app, state.currUser?.name ?: ""))
+                        builder.setContentIntent(PendingIntent.getActivity(app, 0, Intent(app, MainActivity::class.java), 0))
                         icon = R.drawable.ic_notification_logged_on
                     }
 
                     RoomState.Status.JOINING -> {
-                        builder.setContentText(R.string.notification_joining_room.toFormattedString(appContext))
-                        builder.setContentIntent(PendingIntent.getActivity(appContext, 0, Intent(appContext, RoomActivity::class.java), 0))
+                        builder.setContentText(R.string.notification_joining_room.toFormattedString(app))
+                        builder.setContentIntent(PendingIntent.getActivity(app, 0, Intent(app, RoomActivity::class.java), 0))
                         icon = R.drawable.ic_notification_joined_room
                     }
 
                     else -> {
-                        builder.setContentText(R.string.notification_joined_room.toFormattedString(appContext, state.currRoom?.getRoomName(appContext) ?: ""))
-                        builder.setContentIntent(PendingIntent.getActivity(appContext, 0, Intent(appContext, RoomActivity::class.java), 0))
+                        builder.setContentText(R.string.notification_joined_room.toFormattedString(app, state.currRoom?.getRoomName(app) ?: ""))
+                        builder.setContentIntent(PendingIntent.getActivity(app, 0, Intent(app, RoomActivity::class.java), 0))
                         icon = R.drawable.ic_notification_joined_room
                     }
                 }
@@ -80,18 +80,18 @@ class NotificationHandler(private val appContext: Context) {
 
             LoginState.Status.LOGIN_IN_PROGRESS -> {
                 if (state.connectivity.not()) {
-                    builder.setContentText(R.string.notification_user_offline.toFormattedString(appContext, state.currUser?.name ?: ""))
+                    builder.setContentText(R.string.notification_user_offline.toFormattedString(app, state.currUser?.name ?: ""))
                 } else if (state.roomState.status == RoomState.Status.IDLE) {
-                    builder.setContentText(R.string.notification_user_logging_in.toFormattedString(appContext))
+                    builder.setContentText(R.string.notification_user_logging_in.toFormattedString(app))
                 } else {
-                    builder.setContentText(R.string.notification_rejoining_room.toFormattedString(appContext))
+                    builder.setContentText(R.string.notification_rejoining_room.toFormattedString(app))
                 }
 
                 icon = R.drawable.ic_notification_logged_on
             }
 
             LoginState.Status.OFFLINE -> {
-                builder.setContentText(R.string.notification_user_offline.toFormattedString(appContext, state.currUser?.name ?: ""))
+                builder.setContentText(R.string.notification_user_offline.toFormattedString(app, state.currUser?.name ?: ""))
                 icon = R.drawable.ic_notification_offline
             }
 
@@ -99,7 +99,7 @@ class NotificationHandler(private val appContext: Context) {
                 if (state.loginState.currentUserID == null) {
                     service.stopForeground(true)
                 } else if (state.connectivity.not() && state.currUser != null) {
-                    builder.setContentText(R.string.notification_user_offline.toFormattedString(appContext, state.currUser.name))
+                    builder.setContentText(R.string.notification_user_offline.toFormattedString(app, state.currUser.name))
                 }
                 return
             }
