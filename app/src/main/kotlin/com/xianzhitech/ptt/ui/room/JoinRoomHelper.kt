@@ -31,7 +31,7 @@ fun Context.joinRoom(roomId: String?,
     val appComponent = applicationContext as AppComponent
 
     ensureConnectivity()
-            .flatMap { appComponent.connectToBackgroundService() }
+            .flatMap { appComponent.backgroundService }
             .flatMap { binder ->
                 val progressDialog = ProgressDialog(this).apply {
                     setTitle(R.string.please_wait)

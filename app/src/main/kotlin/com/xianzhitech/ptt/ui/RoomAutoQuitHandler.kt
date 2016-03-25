@@ -19,7 +19,7 @@ class RoomAutoQuitHandler(private val application: Application) {
     private var lastRoomState : RoomState? = null
 
     init {
-        (application as AppComponent).connectToBackgroundService()
+        (application as AppComponent).backgroundService
                 .flatMap { it.roomState }
                 .doOnNext { logd("Current online members are: ${it.currentRoomOnlineMemberIDs}") }
                 .distinctUntilChanged { it.currentRoomOnlineMemberIDs }
@@ -59,7 +59,7 @@ class RoomAutoQuitHandler(private val application: Application) {
                 roomState.currentRoomOnlineMemberIDs.size <= 1 &&
                 (application as AppComponent).preference.autoExit) {
 
-            application.connectToBackgroundService()
+            application.backgroundService
                     .flatMap { it.requestQuitCurrentRoom() }
                     .subscribe(GlobalSubscriber())
 

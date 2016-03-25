@@ -33,5 +33,5 @@ interface AppComponent {
     val contactRepository: ContactRepository
 
     // Service
-    fun connectToBackgroundService(): Observable<BackgroundServiceBinder>
+    val backgroundService: Observable<BackgroundServiceBinder>
 }

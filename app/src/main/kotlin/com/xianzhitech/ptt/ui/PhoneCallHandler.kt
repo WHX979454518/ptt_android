@@ -48,7 +48,7 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
                 appContext.receiveBroadcasts(false, TelephonyManager.ACTION_PHONE_STATE_CHANGED)
                         .map { telephonyManager.callState }
                         .startWith(telephonyManager.callState),
-                appComponent.connectToBackgroundService()
+                appComponent.backgroundService
                         .flatMap { it.roomState },
                 { callState, roomState -> callState to roomState }
         ).subscribe {

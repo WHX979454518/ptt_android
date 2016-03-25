@@ -33,7 +33,7 @@ public class FeedbackActivity extends BaseActivity {
         final ProgressDialog show = ProgressDialog.show(this, getString(R.string.please_wait), null, true);
 
         final AppComponent appComponent = (AppComponent) getApplication();
-        appComponent.connectToBackgroundService()
+        appComponent.backgroundService
                 .flatMap(new Func1<BackgroundServiceBinder, Observable<User>>() {
                     @Override
                     public Observable<User> call(final BackgroundServiceBinder backgroundServiceBinder) {

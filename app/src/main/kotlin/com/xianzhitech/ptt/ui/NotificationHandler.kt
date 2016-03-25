@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 class NotificationHandler(private val app: Application) {
     init {
         val appComponent = app as AppComponent
-        appComponent.connectToBackgroundService()
+        appComponent.backgroundService
                 .flatMap { service ->
                     Observable.combineLatest(
                             service.roomState,

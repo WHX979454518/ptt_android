@@ -83,7 +83,7 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).connectToBackgroundService()
+        (application as AppComponent).backgroundService
                 .flatMap { it.loginState }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())

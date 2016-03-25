@@ -41,7 +41,7 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
 
             views = Views(this).apply {
 
-                appComponent.connectToBackgroundService()
+                appComponent.backgroundService
                         .flatMap { it.loginState }
                         .filter { it.currentUserID != null }
                         .flatMap { appComponent.userRepository.getUser(it.currentUserID!!) }
@@ -66,16 +66,17 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
         when (view.id) {
             R.id.profile_logout -> {
                 AlertDialog.Builder(context)
-                    .setTitle(R.string.dialog_confirm_title)
-                    .setMessage(R.string.log_out_confirm_message)
-                    .setPositiveButton(R.string.logout, { dialogInterface: DialogInterface, i: Int ->
-                        appComponent.connectToBackgroundService()
-                            .flatMap { it.logout() }
-                            .subscribe(GlobalSubscriber<Unit>())
-                        dialogInterface.dismiss()
-                    })
-                    .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss()})
-                    .show()
+                        .setTitle(R.string.dialog_confirm_title)
+                        .setMessage(R.string.log_out_confirm_message)
+                        .setPositiveButton(R.string.logout, { dialogInterface: DialogInterface, i: Int ->
+                            appComponent.backgroundService
+                                    .first()
+                                    .flatMap { it.logout() }
+                                    .subscribe(GlobalSubscriber<Unit>())
+                            dialogInterface.dismiss()
+                        })
+                        .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss()})
+                        .show()
             }
             R.id.profile_settings -> {
                 startActivity(Intent(context, SettingsActivity::class.java))

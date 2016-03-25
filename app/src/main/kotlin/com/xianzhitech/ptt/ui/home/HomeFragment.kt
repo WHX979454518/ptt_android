@@ -112,7 +112,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Ca
 //
 //    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
 //        if (item?.itemId == R.id.home_logout) {
-//            (context.applicationContext as AppComponent).connectToBackgroundService()
+//            (context.applicationContext as AppComponent).connectTobackgroundService
 //                .flatMap { it.logout() }
 //                .first()
 //                .subscribe(GlobalSubscriber())
@@ -126,7 +126,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Ca
 
         callbacks?.setTitle(getString(R.string.app_name))
 
-        (context.applicationContext as AppComponent).connectToBackgroundService()
+        (context.applicationContext as AppComponent).backgroundService
             .flatMap { it.loginState }
             .compose(bindToLifecycle())
             .subscribe { loginState ->

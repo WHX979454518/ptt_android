@@ -24,6 +24,7 @@ import com.xianzhitech.ptt.ui.NotificationHandler
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
 import okhttp3.OkHttpClient
+import rx.Observable
 import rx.subjects.BehaviorSubject
 
 
@@ -53,7 +54,8 @@ open class App : Application(), AppComponent {
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
 
-    override fun connectToBackgroundService() = synchronized(this, {
+    override val backgroundService : Observable<BackgroundServiceBinder>
+    get() = synchronized(this, {
         if (backgroundServiceSubject == null) {
             backgroundServiceSubject = BehaviorSubject.create<BackgroundServiceBinder>().apply {
                 connectToService<BackgroundServiceBinder>(Intent(this@App, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE).subscribe(this)

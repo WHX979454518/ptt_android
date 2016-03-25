@@ -29,7 +29,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
 
         callbacks?.setTitle(R.string.login.toFormattedString(context))
 
-        (context.applicationContext as AppComponent).connectToBackgroundService().flatMap { it.loginState }
+        (context.applicationContext as AppComponent).backgroundService.flatMap { it.loginState }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe { updateLoginState(it) }
@@ -60,7 +60,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
                                 false)
 
                         context.ensureConnectivity()
-                                .flatMap { (context.applicationContext as AppComponent).connectToBackgroundService() }
+                                .flatMap { (context.applicationContext as AppComponent).backgroundService }
                                 .flatMap { binder ->
                                     binder.login(nameEditText.getString(), passwordEditText.getString())
                                             .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)

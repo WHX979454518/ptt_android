@@ -90,7 +90,8 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 toolbar.inflateMenu(R.menu.room)
                 toolbar.setOnMenuItemClickListener {
                     if (it.itemId == R.id.room_exit) {
-                        (context.applicationContext as AppComponent).connectToBackgroundService()
+                        (context.applicationContext as AppComponent).backgroundService
+                                .first()
                                 .flatMap { it.requestQuitCurrentRoom() }
                                 .subscribe(GlobalSubscriber())
                         activity?.finish()
@@ -107,7 +108,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
 
         val appComponent = context.applicationContext as AppComponent
         val bgService = appComponent
-                .connectToBackgroundService()
+                .backgroundService
                 .observeOnMainThread()
 
         bgService.flatMap { Observable.combineLatest(
@@ -161,7 +162,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 show = false
             }
 
-//            roomStatusView.animate().alpha(if (show) 1f else 0f).start()
+            //            roomStatusView.animate().alpha(if (show) 1f else 0f).start()
         }
     }
 
@@ -170,13 +171,15 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     override fun requestMic() {
-        (context.applicationContext as AppComponent).connectToBackgroundService()
-            .flatMap { it.requestMic() }
-            .subscribe(GlobalSubscriber())
+        (context.applicationContext as AppComponent).backgroundService
+                .first()
+                .flatMap { it.requestMic() }
+                .subscribe(GlobalSubscriber())
     }
 
     override fun releaseMic() {
-        (context.applicationContext as AppComponent).connectToBackgroundService()
+        (context.applicationContext as AppComponent).backgroundService
+                .first()
                 .flatMap { it.releaseMic() }
                 .subscribe(GlobalSubscriber())
     }
