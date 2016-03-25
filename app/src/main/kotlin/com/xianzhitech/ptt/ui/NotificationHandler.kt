@@ -33,9 +33,9 @@ class NotificationHandler(private val app: Application) {
                 .flatMap { service ->
                     Observable.combineLatest(
                             service.roomState,
-                            service.roomState.distinct { it.currentRoomID }.flatMap { appComponent.roomRepository.optRoomWithMembers(it.currentRoomID) },
+                            service.roomState.distinctUntilChanged { it.currentRoomID }.flatMap { appComponent.roomRepository.optRoomWithMembers(it.currentRoomID) },
                             service.loginState,
-                            service.loginState.distinct { it.currentUserID }.flatMap { appComponent.userRepository.optUser(it.currentUserID) },
+                            service.loginState.distinctUntilChanged { it.currentUserID }.flatMap { appComponent.userRepository.optUser(it.currentUserID) },
                             app.getConnectivity(),
                             { roomState, currRoom, loginState, currUser, connectivity -> service to State(roomState, currRoom, loginState, currUser, connectivity) }
                     )

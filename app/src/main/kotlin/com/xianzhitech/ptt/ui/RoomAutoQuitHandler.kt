@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import java.lang.ref.WeakReference
@@ -21,7 +22,8 @@ class RoomAutoQuitHandler(private val application: Application) {
     init {
         (application as AppComponent).connectToBackgroundService()
                 .flatMap { it.roomState }
-                .distinct { it.currentRoomOnlineMemberIDs }
+                .doOnNext { logd("Current online members are: ${it.currentRoomOnlineMemberIDs}") }
+                .distinctUntilChanged { it.currentRoomOnlineMemberIDs }
                 .subscribe { onRoomStateChanged(it) }
 
         application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
@@ -53,9 +55,9 @@ class RoomAutoQuitHandler(private val application: Application) {
     }
 
     internal fun onRoomStateChanged(roomState: RoomState) {
-        if (lastRoomState?.currentRoomOnlineMemberIDs?.size ?: 0 > 1 &&
+        if (lastRoomState?.let { it.currentRoomID == roomState.currentRoomID && it.currentRoomOnlineMemberIDs.size > 1 } ?: false &&
                 roomState.status.inRoom &&
-                roomState.currentRoomOnlineMemberIDs.size == 1 &&
+                roomState.currentRoomOnlineMemberIDs.size <= 1 &&
                 PreferenceManager.getDefaultSharedPreferences(application).getBoolean("auto_exit", true)) {
 
             (application as AppComponent).connectToBackgroundService()
