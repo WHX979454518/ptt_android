@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ui.home.login
 
 import android.app.ProgressDialog
 import android.os.Bundle
+import android.support.design.widget.TextInputLayout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -97,8 +98,8 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
 
     private class Views(
             rootView: View
-            , val nameEditText: EditText = rootView.findView(R.id.login_nameField)
-            , val passwordEditText: EditText = rootView.findView(R.id.login_passwordField)
+            , val nameEditText: EditText = (rootView.findView<TextInputLayout>(R.id.login_nameField)).editText!!
+            , val passwordEditText: EditText = (rootView.findView<TextInputLayout>(R.id.login_passwordField)).editText!!
             , val loginButton: View = rootView.findView(R.id.login_loginBtn)
     )
 

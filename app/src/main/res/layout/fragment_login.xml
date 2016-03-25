@@ -7,32 +7,44 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
+    <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="@dimen/unit_two"
         android:layout_marginRight="@dimen/unit_two"
         android:layout_marginTop="@dimen/unit_two"
-        android:imeOptions="actionNext"
-        android:singleLine="true"
-        android:hint="@string/user_name_hint"
-        android:ems="10"
-        android:id="@+id/login_nameField"
-        style="@style/Text.Body2"/>
+        android:id="@+id/login_nameField">
 
-    <EditText
+        <android.support.design.widget.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionNext"
+            android:singleLine="true"
+            android:hint="@string/user_name_hint"
+            android:ems="10"
+            style="@style/Text.Body2" />
+
+    </android.support.design.widget.TextInputLayout>
+
+    <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="numberPassword"
-        android:imeOptions="actionDone"
-        android:singleLine="true"
-        android:ems="10"
-        android:hint="@string/user_password_hint"
         android:id="@+id/login_passwordField"
+        android:layout_marginTop="@dimen/unit_one"
         android:layout_marginLeft="@dimen/unit_two"
-        android:layout_marginRight="@dimen/unit_two"
-        android:layout_marginTop="@dimen/unit_two"
-        style="@style/Text.Body2"/>
+        android:layout_marginRight="@dimen/unit_two">
+
+        <android.support.design.widget.TextInputEditText
+            style="@style/Text.Body2"
+            android:inputType="numberPassword"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
+            android:ems="10"
+            android:hint="@string/user_password_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </android.support.design.widget.TextInputLayout>
 
     <LinearLayout
         android:orientation="horizontal"
