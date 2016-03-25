@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.view.LayoutInflater
@@ -18,6 +19,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.settings.SettingsActivity
 
 class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
     private var views : Views? = null
@@ -75,10 +77,12 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
                     .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss()})
                     .show()
             }
+            R.id.profile_settings -> {
+                startActivity(Intent(context, SettingsActivity::class.java))
+            }
             R.id.profile_edit,
             R.id.profile_feedback,
-            R.id.profile_about,
-            R.id.profile_settings ->
+            R.id.profile_about ->
                 Toast.makeText(context, "TODO", Toast.LENGTH_LONG).show()
         }
     }

@@ -19,7 +19,7 @@ import java.util.*
 import java.util.concurrent.Executors
 
 
-interface NewBtEngine {
+interface BtEngine {
     companion object {
         const val MESSAGE_DEV_PTT_OK = "DEV_PTT_OK"
         const val MESSAGE_DEV_PTT_DISCONNECTED = "DEV_PTT_DISCONNECTED"
@@ -37,7 +37,7 @@ interface NewBtEngine {
 }
 
 
-class NewBtEngineImpl(private val context: Context) : NewBtEngine {
+class BtEngineImpl(private val context: Context) : BtEngine {
     companion object {
         private val BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     }
@@ -60,7 +60,7 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                     .flatMap { bluetoothDevice ->
                         Observable.create<String> { subscriber ->
                             //  发送该设备已激活的消息
-                            subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_OK)
+                            subscriber.onNext(BtEngine.MESSAGE_DEV_PTT_OK)
 
                             // 2. 绑定媒体按键事件
                             subscriber.add(retrieveMediaButtonEvent().subscribe(GlobalSubscriber<Intent>()))
@@ -92,7 +92,7 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                     socket.connect()
                                     logd("Connected to bluetooth socket")
                                     socket.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                                        val allCommands = listOf(NewBtEngine.MESSAGE_PUSH_DOWN, NewBtEngine.MESSAGE_PUSH_RELEASE)
+                                        val allCommands = listOf(BtEngine.MESSAGE_PUSH_DOWN, BtEngine.MESSAGE_PUSH_RELEASE)
                                         val matchedCommands = allCommands.toMutableList()
                                         var matchedSize = 0
 
@@ -144,14 +144,14 @@ class NewBtEngineImpl(private val context: Context) : NewBtEngine {
                                 }
 
                                 // 设备已经断开
-                                subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_DISCONNECTED)
+                                subscriber.onNext(BtEngine.MESSAGE_DEV_PTT_DISCONNECTED)
                                 subscriber.onCompleted()
                                 logd("Bluetooth disconnected")
                             }
                             catch (throwable : Throwable) {
                                 logd("Bluetooth socket error: $throwable")
                                 // 设备出错或者已经断开
-                                subscriber.onNext(NewBtEngine.MESSAGE_DEV_PTT_DISCONNECTED)
+                                subscriber.onNext(BtEngine.MESSAGE_DEV_PTT_DISCONNECTED)
                                 subscriber.onError(throwable)
                             }
 //                            finally {//功能与上面订阅重复

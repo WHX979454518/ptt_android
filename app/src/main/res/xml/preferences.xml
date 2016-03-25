@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:key="general" android:title="@string/general_settings">
+
+        <CheckBoxPreference android:title="@string/auto_exit"
+                            android:key="auto_exit"
+                            android:defaultValue="true"
+                            android:summary="@string/auto_exit_summary" />
+
+        <CheckBoxPreference android:title="@string/block_call"
+                            android:summary="@string/block_call_summary"
+                            android:defaultValue="true"
+                            android:key="block_call" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:key="shortcuts" android:title="@string/shortcut_settings">
+
+        <PreferenceScreen android:title="@string/select_shortcuts" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

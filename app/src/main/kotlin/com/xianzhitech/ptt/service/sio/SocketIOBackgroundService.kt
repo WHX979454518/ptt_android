@@ -16,7 +16,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.engine.NewBtEngine
+import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
@@ -63,7 +63,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     private lateinit var contactRepository : ContactRepository
     private lateinit var roomRepository : RoomRepository
     private lateinit var talkEngineProvider: TalkEngineProvider
-    private lateinit var btEngine: NewBtEngine
+    private lateinit var btEngine: BtEngine
     private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
     private lateinit var audioManager: AudioManager
     private val soundPlayExecutor = Executors.newSingleThreadExecutor()
@@ -434,11 +434,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 {
                     override fun onNext(t: String) {
                         when (t) {
-                            NewBtEngine.MESSAGE_DEV_PTT_OK -> {
+                            BtEngine.MESSAGE_DEV_PTT_OK -> {
                                 audioManager.mode = android.media.AudioManager.MODE_NORMAL
                             }
-                            NewBtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
-                            NewBtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
+                            BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
+                            BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
                         }
                     }
                     override fun onError(e: Throwable)

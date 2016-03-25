@@ -7,7 +7,7 @@ import android.preference.PreferenceManager
 import com.xianzhitech.ptt.db.AndroidDatabase
 import com.xianzhitech.ptt.db.DatabaseFactory
 import com.xianzhitech.ptt.db.TableDefinition
-import com.xianzhitech.ptt.engine.NewBtEngineImpl
+import com.xianzhitech.ptt.engine.BtEngineImpl
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.connectToService
@@ -44,7 +44,7 @@ open class App : Application(), AppComponent {
         get() = userRepository
     override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
 
-    override val btEngine by lazy { NewBtEngineImpl(this) }
+    override val btEngine by lazy { BtEngineImpl(this) }
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
 

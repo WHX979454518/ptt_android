@@ -4,6 +4,7 @@ apply plugin: 'kotlin-android'
 
 buildscript {
     ext.kotlin_version = '1.0.1'
+    ext.support_library_version = '23.2.1'
 
     repositories {
         // required for this library, don't use mavenCentral()
@@ -119,10 +120,12 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
 //    compile 'com.google.guava:guava:19.0'
-    compile 'com.android.support:appcompat-v7:23.2.1'
-    compile 'com.android.support:recyclerview-v7:23.2.1'
-    compile 'com.android.support:design:23.2.1'
-    compile 'com.android.support:percent:23.2.1'
+    compile "com.android.support:appcompat-v7:$support_library_version"
+    compile "com.android.support:preference-v7:$support_library_version"
+    compile "com.android.support:preference-v14:$support_library_version"
+    compile "com.android.support:recyclerview-v7:$support_library_version"
+    compile "com.android.support:design:$support_library_version"
+    compile "com.android.support:percent:$support_library_version"
 
 //    compile 'com.fasterxml.jackson.core:jackson-core:2.7.0'
 //    compile 'com.fasterxml.jackson.core:jackson-annotations:2.7.0'

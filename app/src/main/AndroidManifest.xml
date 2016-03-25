@@ -47,6 +47,11 @@
             android:launchMode="singleTask"
             android:name=".ui.room.RoomActivity" />
 
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:label="@string/settings" />
+
+
         <service android:name=".service.sio.SocketIOBackgroundService"/>
     </application>
 

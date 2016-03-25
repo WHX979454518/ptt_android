@@ -76,4 +76,11 @@
     <string name="log_out_current_user">注销当前用户</string>
     <string name="log_out_confirm_message">注销后将接收不到其他人的呼叫，确定吗?</string>
     <string name="error_no_rooms">查看通讯录以开始对讲</string>
+    <string name="auto_exit_summary">当房间只剩下最后一个人时，自动退出房间</string>
+    <string name="auto_exit">自动退出</string>
+    <string name="block_call">对讲优先于通话</string>
+    <string name="block_call_summary">开启后，来电讲不能打断对讲会话</string>
+    <string name="general_settings">常规设置</string>
+    <string name="shortcut_settings">快捷拨号设置</string>
+    <string name="select_shortcuts">选择快捷拨号键</string>
 </resources>
