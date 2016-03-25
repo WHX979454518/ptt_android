@@ -10,10 +10,7 @@ import android.os.Looper
 import android.os.Vibrator
 import android.support.annotation.RawRes
 import android.util.SparseIntArray
-import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.BuildConfig
-import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.*
 import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
@@ -29,7 +26,6 @@ import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
-import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -59,7 +55,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     override fun peekRoomState() = roomState.value
     override fun peekLoginState() = loginState.value
 
-    private lateinit var preferenceProvider : PreferenceStorageProvider
+    private lateinit var preferenceProvider : Preference
     private lateinit var userRepository : UserRepository
     private lateinit var groupRepository : GroupRepository
     private lateinit var contactRepository : ContactRepository
@@ -77,7 +73,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         super.onCreate()
 
         val appComponent = application as AppComponent
-        preferenceProvider = appComponent.preferenceProvider
+        preferenceProvider = appComponent.preference
         contactRepository = appComponent.contactRepository
         roomRepository = appComponent.roomRepository
         userRepository = appComponent.userRepository

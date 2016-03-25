@@ -3,7 +3,6 @@ package com.xianzhitech.ptt.ui
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import android.preference.PreferenceManager
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
@@ -58,9 +57,9 @@ class RoomAutoQuitHandler(private val application: Application) {
         if (lastRoomState?.let { it.currentRoomID == roomState.currentRoomID && it.currentRoomOnlineMemberIDs.size > 1 } ?: false &&
                 roomState.status.inRoom &&
                 roomState.currentRoomOnlineMemberIDs.size <= 1 &&
-                PreferenceManager.getDefaultSharedPreferences(application).getBoolean("auto_exit", true)) {
+                (application as AppComponent).preference.autoExit) {
 
-            (application as AppComponent).connectToBackgroundService()
+            application.connectToBackgroundService()
                     .flatMap { it.requestQuitCurrentRoom() }
                     .subscribe(GlobalSubscriber())
 

@@ -19,7 +19,6 @@ import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
-import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.NotificationHandler
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -48,7 +47,7 @@ open class App : Application(), AppComponent {
         get() = userRepository
     override val contactRepository: ContactRepository
         get() = userRepository
-    override val preferenceProvider: PreferenceStorageProvider by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
+    override val preference: Preference by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
 
     override val btEngine by lazy { BtEngineImpl(this) }
     override val signalServerEndpoint: String
@@ -77,7 +76,7 @@ open class App : Application(), AppComponent {
         RoomAutoQuitHandler(this)
     }
 
-    private class SharedPreferenceProvider(private val pref: SharedPreferences) : PreferenceStorageProvider {
+    private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
         override var userSessionToken: String?
             get() = pref.getString(KEY_USER_TOKEN, null)
             set(value) {
@@ -90,9 +89,23 @@ open class App : Application(), AppComponent {
                 pref.edit().putString(KEY_LAST_USER_ID, value).apply()
             }
 
+        override var blockCalls: Boolean
+            get() = pref.getBoolean(KEY_BLOCK_CALLS, true)
+            set(value) {
+                pref.edit().putBoolean(KEY_BLOCK_CALLS, value).apply()
+            }
+
+        override var autoExit: Boolean
+            get() = pref.getBoolean(KEY_AUTO_EXIT, true)
+            set(value) {
+                pref.edit().putBoolean(KEY_AUTO_EXIT, value).apply()
+            }
+
         companion object {
             const val KEY_USER_TOKEN = "session_token"
             const val KEY_LAST_USER_ID = "last_user_id"
+            const val KEY_BLOCK_CALLS = "block_calls"
+            const val KEY_AUTO_EXIT = "auto_exit"
         }
     }
 }

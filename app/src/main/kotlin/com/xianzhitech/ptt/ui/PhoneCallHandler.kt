@@ -1,12 +1,12 @@
 package com.xianzhitech.ptt.ui
 
 import android.content.Context
-import android.preference.PreferenceManager
 import android.telephony.TelephonyManager
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.service.RoomState
 import rx.Observable
+import java.lang.reflect.Method
 import java.util.*
 
 /**
@@ -20,6 +20,27 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
     }
 
     private val telephonyManager = appContext.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+    private val iTelephony : Any? by lazy {
+        try {
+            telephonyManager.javaClass.getDeclaredMethod("getITelephony").let {
+                it.isAccessible = true
+                it.invoke(telephonyManager)
+            }
+        } catch(e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    private val endCallMethod : Method? by lazy {
+        try {
+            iTelephony?.javaClass?.getDeclaredMethod("endCall")?.apply {
+                isAccessible = true
+            }
+        } catch(e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     init {
         val appComponent = appContext as AppComponent
@@ -38,19 +59,8 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
     internal fun onCallStateChanged(callState: Int, roomState : RoomState) {
         if (callState == TelephonyManager.CALL_STATE_RINGING &&
                 EnumSet.of(RoomState.Status.ACTIVE, RoomState.Status.JOINED, RoomState.Status.JOINING).contains(roomState.status) &&
-                PreferenceManager.getDefaultSharedPreferences(appContext).getBoolean("block_call", true)) {
-
-            try {
-                telephonyManager.javaClass.getDeclaredMethod("getITelephony").let {
-                    it.isAccessible = true
-                    it.invoke(telephonyManager)
-                }.let {
-                    it.javaClass.getDeclaredMethod("endCall").invoke(it)
-                }
-            }
-            catch (e : Throwable) {
-                e.printStackTrace()
-            }
+                (appContext as AppComponent).preference.blockCalls) {
+            endCallMethod?.invoke(iTelephony)
         }
     }
 }

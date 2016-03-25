@@ -7,7 +7,6 @@ import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
-import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import okhttp3.OkHttpClient
 import rx.Observable
 
@@ -20,7 +19,7 @@ import rx.Observable
 interface AppComponent {
     val httpClient: OkHttpClient
     val talkEngineProvider: TalkEngineProvider
-    val preferenceProvider: PreferenceStorageProvider
+    val preference: Preference
 
     // Configuration
     val signalServerEndpoint: String

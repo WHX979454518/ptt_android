@@ -20,10 +20,3 @@ data class CreateRoomFromUser(val userId: String, override val name: String? = n
 data class CreateRoomFromGroup(val groupId: String, override val name: String? = null) : CreateRoomRequest
 
 
-/**
- * 提供程序选项数据的永久存储
- */
-interface PreferenceStorageProvider {
-    var userSessionToken: String?
-    var lastLoginUserId: String?
-}
