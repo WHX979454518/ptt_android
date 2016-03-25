@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.service.sio
 
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.media.AudioManager
@@ -10,7 +9,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Vibrator
 import android.support.annotation.RawRes
-import android.support.v4.app.NotificationCompat
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BuildConfig
@@ -22,11 +20,16 @@ import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
-import com.xianzhitech.ptt.repo.*
-import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.repo.ContactRepository
+import com.xianzhitech.ptt.repo.GroupRepository
+import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.repo.UserRepository
+import com.xianzhitech.ptt.service.BackgroundServiceBinder
+import com.xianzhitech.ptt.service.LoginState
+import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
-import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -47,7 +50,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
     override var roomState = BehaviorSubject.create<RoomState>(RoomState())
     override var loginState = BehaviorSubject.create<LoginState>(LoginState())
-    var serviceStateSubscription: Subscription? = null
     var loginSubscription : Subscription? = null
     var roomSubscription: CompositeSubscription? = null
     var requestMicSubscription : Subscription? = null
@@ -124,90 +126,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        serviceStateSubscription?.unsubscribe()
-
-        serviceStateSubscription = Observable.combineLatest(
-                roomState,
-                roomState.distinct { it.currentRoomID }.flatMap { roomRepository.optRoomWithMembers(it.currentRoomID) },
-                loginState,
-                loginState.distinct { it.currentUserID }.flatMap { userRepository.optUser(it.currentUserID) },
-                getConnectivity(),
-                { roomState, room, loginState, user, connectivity -> Triple(ExtraRoomState(roomState, room), ExtraLoginState(loginState, user), connectivity) })
-                .debounce(500, TimeUnit.MILLISECONDS)
-                .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Triple<ExtraRoomState, ExtraLoginState, Boolean>>() {
-                    override fun onNext(t: Triple<ExtraRoomState, ExtraLoginState, Boolean>) {
-                        val context = this@SocketIOBackgroundService
-                        val builder = NotificationCompat.Builder(context)
-                        builder.setOngoing(true)
-                        builder.setAutoCancel(false)
-                        builder.setContentTitle(R.string.app_name.toFormattedString(context))
-                        val icon : Int
-
-                        when (t.second.loginState.status) {
-                            LoginState.Status.LOGGED_IN -> {
-                                when (t.first.roomState.status) {
-                                    RoomState.Status.IDLE -> {
-                                        builder.setContentText(R.string.notification_user_online.toFormattedString(context, t.second.logonUser?.name))
-                                        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), 0))
-                                        icon = R.drawable.ic_notification_logged_on
-                                    }
-
-                                    RoomState.Status.JOINING -> {
-                                        builder.setContentText(R.string.notification_joining_room.toFormattedString(context))
-                                        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
-                                        icon = R.drawable.ic_notification_joined_room
-                                    }
-
-                                    else -> {
-                                        builder.setContentText(R.string.notification_joined_room.toFormattedString(context, t.first.room?.getRoomName(context)))
-                                        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, RoomActivity::class.java), 0))
-                                        icon = R.drawable.ic_notification_joined_room
-                                    }
-                                }
-                            }
-
-                            LoginState.Status.LOGIN_IN_PROGRESS -> {
-                                if (t.third.not()) {
-                                    builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
-                                } else if (t.first.roomState.status == RoomState.Status.IDLE) {
-                                    builder.setContentText(R.string.notification_user_logging_in.toFormattedString(context))
-                                } else {
-                                    builder.setContentText(R.string.notification_rejoining_room.toFormattedString(context))
-                                }
-
-                                icon = R.drawable.ic_notification_logged_on
-                            }
-
-                            LoginState.Status.OFFLINE -> {
-                                builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
-                                icon = R.drawable.ic_notification_offline
-                            }
-
-                            LoginState.Status.IDLE -> {
-                                if (t.second.loginState.currentUserID == null) {
-                                    stopForeground(true)
-                                } else if (t.third.not() && t.second.logonUser != null) {
-                                    builder.setContentText(R.string.notification_user_offline.toFormattedString(context, t.second.logonUser?.name))
-                                }
-                                return
-                            }
-                        }
-
-                        builder.setSmallIcon(icon)
-                        startForeground(SERVICE_NOTIFICATION_ID, builder.build())
-                    }
-                })
-
-        return START_FLAG_REDELIVERY
-    }
-
-    override fun onDestroy() {
-        serviceStateSubscription = serviceStateSubscription?.let {
-            it.unsubscribe()
-            null
-        }
-        super.onDestroy()
+        return START_STICKY
     }
 
     override fun logout() = Observable.defer { doLogout().toObservable() }.subscribeOnMainThread()

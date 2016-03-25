@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
 import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
+import com.xianzhitech.ptt.ui.NotificationHandler
 import okhttp3.OkHttpClient
 import rx.subjects.BehaviorSubject
 
@@ -57,6 +58,12 @@ open class App : Application(), AppComponent {
 
         backgroundServiceSubject!!
     })
+
+    override fun onCreate() {
+        super.onCreate()
+
+        NotificationHandler(this)
+    }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : PreferenceStorageProvider {
         override var userSessionToken: String?

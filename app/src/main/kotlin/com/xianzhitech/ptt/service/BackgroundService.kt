@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.service
 
+import android.app.Notification
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
@@ -51,5 +52,8 @@ interface BackgroundServiceBinder {
     fun requestMic(): Observable<Unit>
     fun releaseMic() : Observable<Unit>
     fun requestQuitCurrentRoom(): Observable<Unit>
+
+    fun startForeground(notificationId : Int, notification: Notification)
+    fun stopForeground(removeNotification : Boolean)
 }
 
