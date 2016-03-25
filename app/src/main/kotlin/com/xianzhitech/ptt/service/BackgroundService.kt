@@ -8,13 +8,13 @@ data class RoomState(val status : RoomState.Status = RoomState.Status.IDLE,
                      val currentRoomID: String? = null,
                      val currentRoomActiveSpeakerID: String? = null,
                      val currentRoomOnlineMemberIDs: Set<String> = emptySet()) {
-    enum class Status {
-        IDLE,
-        JOINING,
-        JOINED,
-        REQUESTING_MIC,
-        ACTIVE,
-        OFFLINE,
+    enum class Status(val inRoom : Boolean) {
+        IDLE(false),
+        JOINING(true),
+        JOINED(true),
+        REQUESTING_MIC(true),
+        ACTIVE(true),
+        OFFLINE(false),
     }
 }
 

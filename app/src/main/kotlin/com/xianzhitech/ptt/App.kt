@@ -23,6 +23,7 @@ import com.xianzhitech.ptt.service.provider.PreferenceStorageProvider
 import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.NotificationHandler
 import com.xianzhitech.ptt.ui.PhoneCallHandler
+import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
 import okhttp3.OkHttpClient
 import rx.subjects.BehaviorSubject
 
@@ -72,6 +73,8 @@ open class App : Application(), AppComponent {
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
             PhoneCallHandler.register(this)
         }
+
+        RoomAutoQuitHandler(this)
     }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : PreferenceStorageProvider {

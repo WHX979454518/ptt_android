@@ -9,6 +9,9 @@ import com.xianzhitech.ptt.service.RoomState
 import rx.Observable
 import java.util.*
 
+/**
+ * 处理电话和对讲交互的模块
+ */
 class PhoneCallHandler private constructor(private val appContext : Context) {
     companion object {
         fun register(context: Context) {
