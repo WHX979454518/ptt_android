@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import com.xianzhitech.ptt.R
@@ -106,7 +107,9 @@ class CircleShadowView : View {
                         addCircle(width / 2f, height.toFloat(), circleRadius.toFloat(), Path.Direction.CW)
                     }
 
-                    op(circlePath, Path.Op.DIFFERENCE)
+                    if (Build.VERSION.SDK_INT >= 19) {
+                        op(circlePath, Path.Op.DIFFERENCE)
+                    }
                 }
             }
         }

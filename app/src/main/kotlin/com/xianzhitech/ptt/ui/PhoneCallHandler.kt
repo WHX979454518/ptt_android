@@ -42,7 +42,6 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
                     it.isAccessible = true
                     it.invoke(telephonyManager)
                 }.let {
-                    it.javaClass.getDeclaredMethod("silenceRinger").invoke(it)
                     it.javaClass.getDeclaredMethod("endCall").invoke(it)
                 }
             }
