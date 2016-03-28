@@ -19,6 +19,10 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="TransparentDialog" parent="AppTheme">
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+
     <style name="Toolbar" parent="Widget.AppCompat.Toolbar">
         <item name="titleTextAppearance">@style/ToolbarText</item>
         <item name="android:background">?attr/colorPrimary</item>

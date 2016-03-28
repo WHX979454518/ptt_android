@@ -5,6 +5,7 @@ import android.support.annotation.IdRes
 import android.support.annotation.LayoutRes
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Property
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -40,4 +41,15 @@ inline fun <reified T : View> Activity.findView(@IdRes id: Int) = findViewById(i
 inline fun <reified T : View> View.findView(@IdRes id: Int) = findViewById(id) as T
 fun View.setVisible(visible: Boolean) {
     visibility = if (visible) View.VISIBLE else View.GONE
+}
+
+// Properties
+val TRANSLATION_Y_FRACTION = object : Property<View, Float>(Float::class.java, "translationFractionY") {
+    override fun get(view: View?) = view?.let {
+        it.translationY / it.height
+    } ?: 0f
+
+    override fun set(view: View, value: Float) {
+        view.translationY =  value * view.height
+    }
 }

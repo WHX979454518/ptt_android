@@ -7,19 +7,18 @@ import android.support.v7.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.createAvatarDrawable
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
+import com.xianzhitech.ptt.ui.user.UserDetailsDialogFragment
 
 class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
     private var views : Views? = null
@@ -33,10 +32,31 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_profile, container, false)?.apply {
-            findView<View>(R.id.profile_settings).setOnClickListener(this@ProfileFragment)
-            findView<View>(R.id.profile_edit).setOnClickListener(this@ProfileFragment)
-            findView<View>(R.id.profile_feedback).setOnClickListener(this@ProfileFragment)
-            findView<View>(R.id.profile_about).setOnClickListener(this@ProfileFragment)
+            val tintColor = context.getColorCompat(R.color.grey_700)
+            findView<Button>(R.id.profile_settings).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_settings_black, tintColor),
+                        null, null, null)
+            }
+            findView<Button>(R.id.profile_edit).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_mode_edit_black, tintColor),
+                        null, null, null)
+            }
+            findView<Button>(R.id.profile_feedback).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_feedback_black, tintColor),
+                        null, null, null)
+            }
+            findView<Button>(R.id.profile_about).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_info_black, tintColor),
+                        null, null, null)
+            }
             findView<View>(R.id.profile_logout).setOnClickListener(this@ProfileFragment)
 
             views = Views(this).apply {
@@ -81,7 +101,18 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
             R.id.profile_settings -> {
                 startActivity(Intent(context, SettingsActivity::class.java))
             }
-            R.id.profile_edit,
+            R.id.profile_edit -> {
+                appComponent.backgroundService
+                        .flatMap { it.loginState }
+                        .first()
+                        .observeOnMainThread()
+                        .compose(bindUntil(FragmentEvent.STOP))
+                        .subscribe {
+                            if (it.currentUserID != null) {
+                                UserDetailsDialogFragment.build(it.currentUserID).show(childFragmentManager, "user_details_dialog")
+                            }
+                        }
+            }
             R.id.profile_feedback,
             R.id.profile_about ->
                 Toast.makeText(context, "TODO", Toast.LENGTH_LONG).show()

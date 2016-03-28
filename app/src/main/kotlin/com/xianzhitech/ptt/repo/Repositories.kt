@@ -65,14 +65,14 @@ interface ContactRepository {
  */
 data class RoomWithMembers(val room: Room,
                            val members : List<User>,
-                           val memberCount : Int)
+                           val memberCount : Int) : Room by room
 
 /**
  * 一个包括了群组信息和成员信息的数据结构
  */
 data class GroupWithMembers(val group : Group,
                             val members : List<User>,
-                            val memberCount : Int)
+                            val memberCount : Int) : Group by group
 
 
 /**
