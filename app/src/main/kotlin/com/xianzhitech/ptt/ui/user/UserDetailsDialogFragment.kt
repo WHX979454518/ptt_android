@@ -2,8 +2,10 @@ package com.xianzhitech.ptt.ui.user
 
 import android.animation.Animator
 import android.animation.ObjectAnimator
+import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
+import android.support.v7.app.AppCompatDialog
 import android.support.v7.app.AppCompatDialogFragment
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
@@ -48,6 +50,14 @@ class UserDetailsDialogFragment : AppCompatDialogFragment() {
                 toolbar.setNavigationOnClickListener { dismiss() }
                 this.container.isClickable = true
                 ObjectAnimator.ofFloat(this.container, TRANSLATION_Y_FRACTION, 1f, 0f).start()
+            }
+        }
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return object : AppCompatDialog(getActivity(), getTheme()) {
+            override fun onBackPressed() {
+                this@UserDetailsDialogFragment.dismiss()
             }
         }
     }
