@@ -25,3 +25,22 @@
 
 # hockeyapp
 -keep class net.hockeyapp.**
+
+# Webrtc
+-keep class org.webrtc.** { *; }
+-keepnames class org.webrtc.** { *; }
+
+-dontwarn okio.**
+-dontwarn rx.**
+-dontwarn com.xianzhitech.ptt.**
+
+-keepclassmembers class rx.internal.util.unsafe.*ArrayQueue*Field* {
+    long producerIndex;
+    long consumerIndex;
+}
+-keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueProducerNodeRef {
+    rx.internal.util.atomic.LinkedQueueNode producerNode;
+}
+-keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueConsumerNodeRef {
+    rx.internal.util.atomic.LinkedQueueNode consumerNode;
+}
