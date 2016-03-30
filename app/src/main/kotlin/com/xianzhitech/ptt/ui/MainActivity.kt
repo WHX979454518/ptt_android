@@ -19,6 +19,9 @@ import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
 class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
+    companion object {
+        val EXTRA_KICKED_OUT = "extra_kicked_out"
+    }
 
     private lateinit var toolbar: Toolbar
 
@@ -38,6 +41,28 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE, Manifest.permission.READ_PHONE_STATE), 0)
+        }
+
+        if (savedInstanceState == null) {
+            handleIntent(intent)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_KICKED_OUT, false)) {
+            AlertDialog.Builder(this)
+                    .setTitle(R.string.error_title)
+                    .setMessage(R.string.error_forced_logout)
+                    .setPositiveButton(R.string.dialog_ok, { dialog, id ->
+                        dialog.dismiss()
+                    })
+                    .show()
         }
     }
 

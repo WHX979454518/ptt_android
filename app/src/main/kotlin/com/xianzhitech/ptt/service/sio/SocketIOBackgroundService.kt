@@ -26,6 +26,7 @@ import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.provider.CreateRoomRequest
+import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -286,6 +287,14 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         }
                     }))
 
+            add(newSocket.receiveEvent(EVENT_SERVER_USER_KICK_OUT)
+                    .observeOnMainThread()
+                    .subscribe(object : GlobalSubscriber<Any>() {
+                        override fun onNext(t: Any) {
+                            onUserKickedOut()
+                        }
+                    }))
+
             // This must be in the end!
             add(getActiveNetwork()
                     .distinctUntilChanged()
@@ -317,6 +326,13 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
 
     }.subscribeOnMainThread()
+
+    internal fun onUserKickedOut() {
+        if (loginState.value.currentUserID != null) {
+            logout().subscribe(GlobalSubscriber())
+            startActivity(Intent(this, KickOutActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        }
+    }
 
     internal fun onUserLogout(user: String) {
         logd("User $user has logged out")
@@ -718,6 +734,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
         const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
         const val EVENT_SERVER_INVITE_TO_JOIN = "s_invite_to_join"
+        const val EVENT_SERVER_USER_KICK_OUT = "s_kick_out"
 
         const val EVENT_CLIENT_SYNC_CONTACTS = "c_sync_contact"
         const val EVENT_CLIENT_CREATE_ROOM = "c_create_room"

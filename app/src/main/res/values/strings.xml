@@ -50,6 +50,7 @@
     <string name="error_no_permission">当前用户无此操作权限</string>
     <string name="error_timeout">操作超时</string>
     <string name="error_unable_to_connect">无法连接到服务器</string>
+    <string name="error_forced_logout">您的账号在其它设备上登陆, 本机登陆已被注销</string>
 
     <string name="room_loading">加载中...</string>
 
