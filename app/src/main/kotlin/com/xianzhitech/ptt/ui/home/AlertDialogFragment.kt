@@ -3,9 +3,10 @@ package com.xianzhitech.ptt.ui.home
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
 import android.support.v4.app.FragmentManager
 import android.support.v7.app.AlertDialog
+import android.support.v7.app.AppCompatDialogFragment
+import java.io.Serializable
 
 /**
 
@@ -13,10 +14,27 @@ import android.support.v7.app.AlertDialog
 
  * Created by fanchao on 17/12/15.
  */
-class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
+class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickListener {
+
+    private lateinit var builder : Builder
+    val attachment : Serializable?
+    get() = builder.attachment
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        builder = arguments.getSerializable(ARG_BUILDER) as Builder
+        isCancelable = builder.cancellabe
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return AlertDialog.Builder(context).setTitle(arguments.getCharSequence(ARG_TITLE)).setMessage(arguments.getCharSequence(ARG_MESSAGE)).setPositiveButton(arguments.getCharSequence(ARG_BTN_POSITIVE), this).setNegativeButton(arguments.getCharSequence(ARG_BTN_NEGATIVE), this).setNeutralButton(arguments.getCharSequence(ARG_BTN_NEUTRAL), this).create()
+        return AlertDialog.Builder(context)
+                .setTitle(builder.title)
+                .setMessage(builder.message)
+                .setPositiveButton(builder.btnPositive, this)
+                .setNegativeButton(builder.btnNegative, this)
+                .setNeutralButton(builder.btnNeutral, this)
+                .create()
     }
 
     private inline fun <reified T> getParentAs(clazz: Class<T>): T? {
@@ -47,7 +65,7 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
             }
         }
 
-        if (arguments.getBoolean(ARG_AUTO_DISMISS, true)) {
+        if (builder.autoDismiss) {
             dismiss()
         }
     }
@@ -64,52 +82,22 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
         fun onNeutralButtonClicked(fragment: AlertDialogFragment)
     }
 
-    class Builder {
-        private var title: CharSequence? = null
-        private var message: CharSequence? = null
-        private var btnPositive: CharSequence? = null
-        private var btnNegative: CharSequence? = null
-        private var btnNeutral: CharSequence? = null
-        private var autoDismiss : Boolean = true
-
-        fun setTitle(title: CharSequence): Builder {
-            this.title = title
-            return this
-        }
-
-        fun setAutoDismiss(autoDismiss : Boolean) = apply { this.autoDismiss = autoDismiss }
-
-        fun setMessage(message: CharSequence): Builder {
-            this.message = message
-            return this
-        }
-
-        fun setBtnPositive(btnPositive: CharSequence): Builder {
-            this.btnPositive = btnPositive
-            return this
-        }
-
-        fun setBtnNegative(btnNegative: CharSequence): Builder {
-            this.btnNegative = btnNegative
-            return this
-        }
-
-        fun setBtnNeutral(btnNeutral: CharSequence): Builder {
-            this.btnNeutral = btnNeutral
-            return this
-        }
+    class Builder : Serializable {
+        var title: CharSequence? = null
+        var message: CharSequence? = null
+        var btnPositive: CharSequence? = null
+        var btnNegative: CharSequence? = null
+        var btnNeutral: CharSequence? = null
+        var autoDismiss : Boolean = true
+        var cancellabe : Boolean = true
+        var attachment : Serializable? = null
 
         fun create(): AlertDialogFragment {
-            val fragment = AlertDialogFragment()
-            val args = Bundle()
-            args.putCharSequence(ARG_TITLE, title)
-            args.putCharSequence(ARG_MESSAGE, message)
-            args.putCharSequence(ARG_BTN_POSITIVE, btnPositive)
-            args.putCharSequence(ARG_BTN_NEGATIVE, btnNegative)
-            args.putCharSequence(ARG_BTN_NEUTRAL, btnNeutral)
-            args.putBoolean(ARG_AUTO_DISMISS, autoDismiss)
-            fragment.arguments = args
-            return fragment
+            return AlertDialogFragment().apply {
+                arguments = Bundle(1).apply {
+                    putSerializable(ARG_BUILDER, this@Builder)
+                }
+            }
         }
 
         fun show(fragmentManager: FragmentManager, tag: String) {
@@ -119,13 +107,6 @@ class AlertDialogFragment : DialogFragment(), DialogInterface.OnClickListener {
     }
 
     companion object {
-
-
-        val ARG_TITLE = "arg_title"
-        val ARG_MESSAGE = "arg_message"
-        val ARG_BTN_POSITIVE = "arg_btn_positive"
-        val ARG_BTN_NEGATIVE = "arg_btn_negative"
-        val ARG_BTN_NEUTRAL = "arg_btn_natural"
-        val ARG_AUTO_DISMISS = "arg_auto_dismiss"
+        private const val ARG_BUILDER = "arg_builder"
     }
 }

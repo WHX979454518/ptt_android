@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import com.xianzhitech.ptt.db.AndroidDatabase
@@ -23,6 +24,8 @@ import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
 import com.xianzhitech.ptt.ui.NotificationHandler
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
+import com.xianzhitech.ptt.update.UpdateManager
+import com.xianzhitech.ptt.update.UpdateManagerImpl
 import okhttp3.OkHttpClient
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -53,6 +56,8 @@ open class App : Application(), AppComponent {
     override val btEngine by lazy { BtEngineImpl(this) }
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
+
+    override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
 
     override val backgroundService : Observable<BackgroundServiceBinder>
     get() = synchronized(this, {
@@ -103,11 +108,29 @@ open class App : Application(), AppComponent {
                 pref.edit().putBoolean(KEY_AUTO_EXIT, value).apply()
             }
 
+        override var updateDownloadId: Pair<Uri, Long>?
+            get() = pref.getString(KEY_LAST_UPDATE_DOWNLOAD_URL, null) ?.let { Pair(Uri.parse(it), pref.getLong(KEY_LAST_UPDATE_DOWNLOAD_ID, 0)) }
+            set(value) {
+                pref.edit().apply {
+                    if (value == null) {
+                        remove(KEY_LAST_UPDATE_DOWNLOAD_URL)
+                        remove(KEY_LAST_UPDATE_DOWNLOAD_ID)
+                    }
+                    else {
+                        putString(KEY_LAST_UPDATE_DOWNLOAD_URL, value.first.toString())
+                        putLong(KEY_LAST_UPDATE_DOWNLOAD_ID, value.second)
+                    }
+                    apply()
+                }
+            }
+
         companion object {
             const val KEY_USER_TOKEN = "session_token"
             const val KEY_LAST_USER_ID = "last_user_id"
             const val KEY_BLOCK_CALLS = "block_calls"
             const val KEY_AUTO_EXIT = "auto_exit"
+            const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
+            const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         }
     }
 }

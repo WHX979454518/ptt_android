@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.BackgroundServiceBinder
+import com.xianzhitech.ptt.update.UpdateManager
 import okhttp3.OkHttpClient
 import rx.Observable
 
@@ -20,6 +21,7 @@ interface AppComponent {
     val httpClient: OkHttpClient
     val talkEngineProvider: TalkEngineProvider
     val preference: Preference
+    val updateManager : UpdateManager
 
     // Configuration
     val signalServerEndpoint: String
