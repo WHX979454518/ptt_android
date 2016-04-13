@@ -68,7 +68,7 @@ public class UatApp extends App {
 
             @Override
             public void onActivityStarted(Activity activity) {
-                UpdateManager.register(activity, BuildConfig.HOCKEYAPP_ID);
+                //UpdateManager.register(activity, BuildConfig.HOCKEYAPP_ID);
                 CrashManager.register(activity, BuildConfig.HOCKEYAPP_ID);
             }
 
