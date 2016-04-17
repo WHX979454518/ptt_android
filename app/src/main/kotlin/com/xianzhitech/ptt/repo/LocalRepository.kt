@@ -29,29 +29,29 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         , RoomRepository
         , ContactRepository {
 
-    private val db : Database = databaseFactory.createDatabase(arrayOf(Users, Groups, Rooms, GroupMembers, RoomMembers, Contacts), 1)
+    internal val db : Database = databaseFactory.createDatabase(arrayOf(Users, Groups, Rooms, GroupMembers, RoomMembers, Contacts), 1)
 
     // 查询数据库操作的线程池. 线程数 = CPU核心数
-    private val queryScheduler = Schedulers.computation()
+    internal val queryScheduler = Schedulers.computation()
 
     // 写入数据库操作的线程池, 只有一个线程
-    private val modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
+    internal val modifyScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
-    private val tableSubjects = hashMapOf<String, PublishSubject<Unit>>()
+    internal val tableSubjects = hashMapOf<String, PublishSubject<Unit>>()
 
     // 用于存储当前事务下的表格表格变化通知. 所有事务中的通知都会缓存, 当事务完成后一起将通知发出
-    private val pendingNotificationTables : MutableSet<String> by threadLocal { hashSetOf<String>() }
+    internal val pendingNotificationTables : MutableSet<String> by threadLocal { hashSetOf<String>() }
 
     // 指示当前线程是否处在一个事务下
-    private var inTransaction : Boolean by threadLocal { false }
+    internal var inTransaction : Boolean by threadLocal { false }
 
-    private fun getTableSubject(tableName: String): PublishSubject<Unit> {
+    internal fun getTableSubject(tableName: String): PublishSubject<Unit> {
         return synchronized(tableSubjects, {
             tableSubjects.getOrPut(tableName, { PublishSubject.create<Unit>() })
         })
     }
 
-    private fun <T> updateInTransaction(func: () -> T?): Observable<T> {
+    internal fun <T> updateInTransaction(func: () -> T?): Observable<T> {
         return Observable.defer<T> {
             inTransaction = true
             try {
@@ -66,14 +66,14 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         }.subscribeOn(modifyScheduler)
     }
 
-    private fun createQuery(tableNames: Iterable<String>, sql: String, vararg args: Any?) =
+    internal fun createQuery(tableNames: Iterable<String>, sql: String, vararg args: Any?) =
             Observable.merge(tableNames.transform { getTableSubject(it) }).mergeWith(Observable.just(null))
                     .observeOn(queryScheduler)
                     .map { db.query(sql, *args) }
 
-    private fun createQuery(tableName: String, sql: String, vararg args: Any?) = createQuery(listOf(tableName), sql, *args)
+    internal fun createQuery(tableName: String, sql: String, vararg args: Any?) = createQuery(listOf(tableName), sql, *args)
 
-    private fun notifyTable(tableName: String) {
+    internal fun notifyTable(tableName: String) {
         if (inTransaction) {
             pendingNotificationTables.add(tableName)
         } else {
@@ -81,12 +81,12 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         }
     }
 
-    private fun delete(tableName: String, whereClause: String, vararg args: Any?) {
+    internal fun delete(tableName: String, whereClause: String, vararg args: Any?) {
         db.delete(tableName, whereClause, *args)
         notifyTable(tableName)
     }
 
-    private fun insert(tableName: String, values: Map<String, Any?>, replaceIfConflicts: Boolean = false) {
+    internal fun insert(tableName: String, values: Map<String, Any?>, replaceIfConflicts: Boolean = false) {
         db.insert(tableName, values, replaceIfConflicts)
         notifyTable(tableName)
     }
@@ -112,8 +112,8 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         return createQuery(listOf(Groups.TABLE_NAME, GroupMembers.TABLE_NAME, Users.TABLE_NAME), "SELECT * FROM ${Groups.TABLE_NAME} WHERE ${Groups.COL_ID} IN ${groupIds.toSqlSet()}")
                 .mapToList(Func1 {
                     GroupWithMembers(
-                            MutableGroup().from(it),
-                            db.query("SELECT * FROM ${Users.TABLE_NAME} AS U INNER JOIN ${GroupMembers.TABLE_NAME} AS GM ON GM.${GroupMembers.COL_PERSON_ID} = U.${Users.COL_ID} LIMIT $maxMember").mapAndClose { MutableUser().from(it) },
+                            GroupImpl().from(it),
+                            db.query("SELECT * FROM ${Users.TABLE_NAME} AS U INNER JOIN ${GroupMembers.TABLE_NAME} AS GM ON GM.${GroupMembers.COL_PERSON_ID} = U.${Users.COL_ID} LIMIT $maxMember").mapAndClose { UserImpl().from(it) },
                             db.query("SELECT COUNT(*) FROM ${Users.TABLE_NAME} AS U INNER JOIN ${GroupMembers.TABLE_NAME} AS GM ON GM.${GroupMembers.COL_PERSON_ID} = U.${Users.COL_ID}").countAndClose())
                 })
     }
@@ -170,7 +170,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
             getRoomMembers(roomId).map {
                 RoomWithMembers(room,
                         db.query("SELECT P.* FROM ${Users.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${Users.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", roomId)
-                                .mapAndClose { MutableUser().from(it) },
+                                .mapAndClose { UserImpl().from(it) },
                         db.query("SELECT COUNT(*) FROM ${Users.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS CM ON CM.${RoomMembers.COL_USER_ID} = P.${Users.COL_ID} WHERE CM.${RoomMembers.COL_ROOM_ID} = ?", roomId)
                                 .countAndClose()
                 )
@@ -218,7 +218,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
                         val conversation = Rooms.MAPPER.call(it)
                         RoomWithMembers(
                                 conversation,
-                                db.query("SELECT P.* FROM ${Users.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${Users.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { MutableUser().from(it) },
+                                db.query("SELECT P.* FROM ${Users.TABLE_NAME} AS P INNER JOIN ${RoomMembers.TABLE_NAME} AS GM ON GM.${RoomMembers.COL_USER_ID} = P.${Users.COL_ID} AND ${RoomMembers.COL_ROOM_ID} = ? LIMIT $maxMember", conversation.id).mapAndClose { UserImpl().from(it) },
                                 db.query("SELECT COUNT(${RoomMembers.COL_USER_ID}) FROM ${RoomMembers.TABLE_NAME} WHERE ${RoomMembers.COL_ROOM_ID} = ?", conversation.id).countAndClose()
                         )
                     })
@@ -257,7 +257,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         }
     }
 
-    private fun doAddGroupMembers(groupId: String, members: Iterable<String>) {
+    internal fun doAddGroupMembers(groupId: String, members: Iterable<String>) {
         val values = HashMap<String, Any?>(2)
         members.forEach {
             insert(
@@ -275,7 +275,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
     }
 }
 
-private object Contacts : TableDefinition {
+internal object Contacts : TableDefinition {
     const val TABLE_NAME = "contacts";
 
     const val COL_GROUP_ID = "contact_group_id"
@@ -302,7 +302,7 @@ private object Contacts : TableDefinition {
 }
 
 
-private object Rooms : TableDefinition {
+internal object Rooms : TableDefinition {
 
     const val TABLE_NAME = "rooms"
 
@@ -324,10 +324,10 @@ private object Rooms : TableDefinition {
             "$COL_LAST_ACTIVE_TIME INTEGER" +
             ")"
 
-    @JvmStatic val MAPPER = Func1<ResultSet, Room> { MutableRoom().from(it) }
+    @JvmStatic val MAPPER = Func1<ResultSet, Room> { RoomImpl().from(it) }
 }
 
-private fun Room.toValues(values: MutableMap<String, Any?>) {
+internal fun Room.toValues(values: MutableMap<String, Any?>) {
     values.put(Rooms.COL_ID, id)
     values.put(Rooms.COL_NAME, name)
     values.put(Rooms.COL_DESC, description)
@@ -337,7 +337,7 @@ private fun Room.toValues(values: MutableMap<String, Any?>) {
     values.put(Rooms.COL_LAST_ACTIVE_USER_ID, lastActiveUserId)
 }
 
-private fun MutableRoom.from(cursor: ResultSet): MutableRoom {
+internal fun MutableRoom.from(cursor: ResultSet): MutableRoom {
     id = cursor.getStringValue(Rooms.COL_ID)
     name = cursor.getStringValue(Rooms.COL_NAME)
     description = cursor.optStringValue(Rooms.COL_DESC)
@@ -348,7 +348,7 @@ private fun MutableRoom.from(cursor: ResultSet): MutableRoom {
     return this
 }
 
-private object Groups : TableDefinition {
+internal object Groups : TableDefinition {
     const val TABLE_NAME = "groups"
 
     const val COL_ID = "group_id"
@@ -360,23 +360,23 @@ private object Groups : TableDefinition {
             "$COL_NAME TEXT NOT NULL,$COL_DESCRIPTION TEXT" +
             ")"
 
-    @JvmField val MAPPER = Func1<ResultSet, Group> { MutableGroup().from(it) }
+    @JvmField val MAPPER = Func1<ResultSet, Group> { GroupImpl().from(it) }
 }
 
-private fun Group.toValues(values : MutableMap<String, Any?>) {
+internal fun Group.toValues(values : MutableMap<String, Any?>) {
     values.put(Groups.COL_ID, id)
     values.put(Groups.COL_DESCRIPTION, description)
     values.put(Groups.COL_NAME, name)
 }
 
-private fun MutableGroup.from(cursor : ResultSet) : MutableGroup {
+internal fun MutableGroup.from(cursor : ResultSet) : MutableGroup {
     id = cursor.getStringValue(Groups.COL_ID)
     description = cursor.optStringValue(Groups.COL_DESCRIPTION)
     name = cursor.getStringValue(Groups.COL_NAME)
     return this
 }
 
-private object Users : TableDefinition {
+internal object Users : TableDefinition {
     const val TABLE_NAME = "users"
 
     const val COL_ID = "person_id"
@@ -392,27 +392,27 @@ private object Users : TableDefinition {
             ")"
 
     @JvmField val MAPPER = Func1<ResultSet, User> {
-        MutableUser().from(it)
+        UserImpl().from(it)
     }
 }
 
-private fun User.toValues(values: MutableMap<String, Any?>) {
+internal fun User.toValues(values: MutableMap<String, Any?>) {
     values.put(Users.COL_ID, id)
     values.put(Users.COL_AVATAR, avatar)
     values.put(Users.COL_NAME, name)
-    values.put(Users.COL_PRIV, privileges.toDatabaseString())
+    values.put(Users.COL_PRIV, (this as? UserImpl)?.privilegesText ?: privileges.toDatabaseString())
 }
 
-private fun MutableUser.from(cursor: ResultSet): MutableUser {
+internal fun UserImpl.from(cursor: ResultSet): MutableUser {
     id = cursor.getStringValue(Users.COL_ID)
     avatar = cursor.optStringValue(Users.COL_AVATAR)
     name = cursor.getStringValue(Users.COL_NAME)
-    privileges = cursor.getStringValue(Users.COL_PRIV).toPrivileges()
+    privilegesText = cursor.getStringValue(Users.COL_PRIV)
     return this
 }
 
 
-private object GroupMembers : TableDefinition {
+internal object GroupMembers : TableDefinition {
     const val TABLE_NAME = "group_members"
 
     const val COL_GROUP_ID = "gm_group_id"
@@ -425,7 +425,7 @@ private object GroupMembers : TableDefinition {
             ")"
 }
 
-private object RoomMembers : TableDefinition {
+internal object RoomMembers : TableDefinition {
     const val TABLE_NAME = "room_members"
 
     const val COL_ROOM_ID = "rm_room_id"

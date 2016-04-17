@@ -17,15 +17,15 @@ interface Room {
     val lastActiveTime : Date?
 }
 
-data class MutableRoom(override var id: String = "",
-                       override var name: String = "",
-                       override var description: String? = null,
-                       override var ownerId: String = "",
-                       override var important: Boolean = false,
-                       override var lastActiveUserId : String? = null,
-                       override var lastActiveTime : Date? = null) : Room
-
-fun Room.toMutable() = MutableRoom(id, name, description, ownerId, important, lastActiveUserId, lastActiveTime)
+interface MutableRoom : Room {
+    override var id: String
+    override var name: String
+    override var description: String?
+    override var ownerId: String
+    override var important: Boolean
+    override var lastActiveUserId: String?
+    override var lastActiveTime: Date?
+}
 
 interface Group {
     val id: String
@@ -34,12 +34,12 @@ interface Group {
     val avatar: String?
 }
 
-data class MutableGroup(override var id: String = "",
-                        override var description: String? = "",
-                        override var name: String = "",
-                        override var avatar: String? = "") : Group
-
-fun Group.toMutable() = MutableGroup(id, description, name, avatar)
+interface MutableGroup : Group {
+    override var id: String
+    override var description: String?
+    override var name: String
+    override var avatar: String?
+}
 
 interface User {
     val id: String
@@ -48,10 +48,41 @@ interface User {
     val privileges : EnumSet<Privilege>
 }
 
-data class MutableUser(override var id: String = "",
-                       override var name: String = "",
-                       override var avatar: String? = null,
-                       override var privileges: EnumSet<Privilege> = EnumSet.noneOf(Privilege::class.java)) : User
+interface MutableUser : User {
+    override var id: String
+    override var name: String
+    override var avatar: String?
+    override var privileges: EnumSet<Privilege>
+}
 
-fun User.toMutable() = MutableUser(id, name, avatar, privileges)
+data class RoomImpl(override var id: String,
+                            override var name: String,
+                            override var description: String?,
+                            override var ownerId: String,
+                            override var important: Boolean,
+                            override var lastActiveUserId: String?,
+                            override var lastActiveTime: Date?) : MutableRoom {
+    constructor() : this("", "", null, "", false, null, null)
+}
 
+data class GroupImpl(override var id: String,
+                             override var description: String?,
+                             override var name: String,
+                             override var avatar: String?) : MutableGroup {
+    constructor() : this("", null, "", null)
+}
+
+data class UserImpl(override var id: String,
+                            override var name: String,
+                            override var avatar: String?,
+                            var privilegesText: String?) : MutableUser {
+
+    constructor() : this("", "", null, null)
+
+
+    override var privileges: EnumSet<Privilege>
+        get() = privilegesText.toPrivileges()
+        set(value) {
+            privilegesText = value.toDatabaseString()
+        }
+}

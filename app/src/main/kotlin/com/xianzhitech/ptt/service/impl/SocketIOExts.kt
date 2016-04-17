@@ -41,8 +41,8 @@ internal data class SyncContactsDTO(val groups: Iterable<Group>,
 internal fun JSONObject.toSyncContactsDto(): SyncContactsDTO {
     val groupJsonArray = getJSONObject("enterpriseGroups").getJSONArray("add")
     return SyncContactsDTO(
-            groupJsonArray.transform { MutableGroup().readFrom(it as JSONObject) },
-            getJSONObject("enterpriseMembers").getJSONArray("add").transform { MutableUser().readFrom(it as JSONObject) },
+            groupJsonArray.transform { GroupImpl().readFrom(it as JSONObject) },
+            getJSONObject("enterpriseMembers").getJSONArray("add").transform { UserImpl().readFrom(it as JSONObject) },
             groupJsonArray.toGroupsAndMembers())
 }
 

@@ -1,10 +1,6 @@
 package com.xianzhitech.ptt.model
 
 import java.util.*
-import kotlin.collections.forEach
-import kotlin.collections.joinToString
-import kotlin.collections.plusAssign
-import kotlin.text.split
 
 enum class Privilege {
     MAKE_CALL,
@@ -15,9 +11,15 @@ enum class Privilege {
 
 fun String?.toPrivileges(): EnumSet<Privilege> {
     val result = EnumSet.noneOf(Privilege::class.java)
-    this?.split('|')?.forEach {
-        result += Privilege.valueOf(it)
-    }
+    this?.foldIndexed(0, { index, lastIndex, c ->
+        if (c == '|') {
+            result += Privilege.valueOf(substring(lastIndex, index))
+            index + 1
+        }
+        else {
+            lastIndex
+        }
+    })
     return result
 }
 
