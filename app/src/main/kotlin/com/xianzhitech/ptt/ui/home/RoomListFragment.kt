@@ -14,8 +14,8 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
 import rx.Observable
 import java.text.Collator
@@ -112,7 +112,7 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
             holder.setRoom(roomList[position], currentUserId)
             holder.itemView.setOnClickListener { v ->
-                context.joinRoom(roomList[position].room.id, null, false, bindToLifecycle())
+                (activity as BaseActivity).joinRoom(roomList[position].room.id)
             }
         }
 

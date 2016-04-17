@@ -1,30 +1,39 @@
 package com.xianzhitech.ptt.ui
 
 import android.Manifest
+import android.app.DownloadManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.Toolbar
+import android.view.View
 import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import com.xianzhitech.ptt.ui.home.AlertDialogFragment
+import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
+import com.xianzhitech.ptt.update.installPackage
 
-class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callbacks {
+class MainActivity : BaseActivity(),
+        LoginFragment.Callbacks,
+        HomeFragment.Callbacks,
+        AlertDialogFragment.OnNegativeButtonClickListener,
+        AlertDialogFragment.OnPositiveButtonClickListener,
+        AlertDialogFragment.OnNeutralButtonClickListener {
+
     companion object {
         val EXTRA_KICKED_OUT = "extra_kicked_out"
+        private const val TAG_UPDATE_DIALOG = "tag_update_dialog"
+        private const val TAG_PERMISSION_DIALOG = "tag_permission"
     }
 
     private lateinit var toolbar: Toolbar
@@ -66,12 +75,12 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
                                 }
                                 autoDismiss = false
                                 attachment = it.updateUrl.toString()
-                            }.show(supportFragmentManager, UPDATE_DIALOG_TAG)
+                            }.show(supportFragmentManager, TAG_UPDATE_DIALOG)
 
                             supportFragmentManager.executePendingTransactions()
                         }
                         else {
-                            (supportFragmentManager.findFragmentByTag(UPDATE_DIALOG_TAG) as? DialogFragment)?.let {
+                            (supportFragmentManager.findFragmentByTag(TAG_UPDATE_DIALOG) as? DialogFragment)?.let {
                                 it.dismiss()
                                 supportFragmentManager.executePendingTransactions()
                             }
@@ -85,6 +94,49 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         super.onNewIntent(intent)
 
         handleIntent(intent)
+    }
+
+    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
+        when (fragment.tag) {
+            TAG_UPDATE_DIALOG -> fragment.dismissImmediately()
+        }
+    }
+
+    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
+        when (fragment.tag) {
+            TAG_UPDATE_DIALOG -> {
+                val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                val downloadUri = Uri.parse(fragment.attachment as String)
+                val preference = (application as AppComponent).preference
+                val lastUpdateDownloadId = preference.updateDownloadId
+                if (lastUpdateDownloadId == null || lastUpdateDownloadId.first != downloadUri) {
+                    if (lastUpdateDownloadId != null) {
+                        downloadManager.remove(lastUpdateDownloadId.second)
+                    }
+
+                    val downloadRequest = DownloadManager.Request(downloadUri).apply {
+                        setMimeType("application/vnd.android.package-archive")
+                        setNotificationVisibility(View.VISIBLE)
+                        setVisibleInDownloadsUi(false)
+                        setTitle(R.string.app_updating.toFormattedString(this@MainActivity, R.string.app_name.toFormattedString(this@MainActivity)))
+                    }
+                    preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
+                } else if (lastUpdateDownloadId != null) {
+                    installPackage(this, lastUpdateDownloadId.second)
+                }
+            }
+
+            TAG_PERMISSION_DIALOG -> ActivityCompat.requestPermissions(this, arrayOf(fragment.attachment as String), 0)
+
+            else -> super.onPositiveButtonClicked(fragment)
+        }
+    }
+
+    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
+        when (fragment.tag) {
+            TAG_PERMISSION_DIALOG -> finish()
+            else -> super.onNegativeButtonClicked(fragment)
+        }
     }
 
     private fun handleIntent(intent: Intent) {
@@ -112,20 +164,19 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
         }
     }
 
+
+
     private fun onPermissionDenied(permission: String) {
-        AlertDialog.Builder(this)
-                .setTitle(R.string.error_title)
-                .setMessage(when (permission) {
-                    Manifest.permission.RECORD_AUDIO -> R.string.error_no_record_permission
-                    else -> R.string.error_no_phone_permission
-                })
-                .setPositiveButton(R.string.dialog_confirm, { first, second ->
-                    ActivityCompat.requestPermissions(this, arrayOf(permission), 0)
-                })
-                .setNegativeButton(R.string.dialog_cancel, { first, second ->
-                    finish()
-                })
-                .show()
+        AlertDialogFragment.Builder().apply {
+            title = R.string.error_title.toFormattedString(this@MainActivity)
+            message = when (permission) {
+                Manifest.permission.RECORD_AUDIO -> R.string.error_no_record_permission
+                else -> R.string.error_no_phone_permission
+            }.toFormattedString(this@MainActivity)
+            btnPositive = R.string.dialog_confirm.toFormattedString(this@MainActivity)
+            btnNegative = R.string.dialog_cancel.toFormattedString(this@MainActivity)
+            attachment = permission
+        }.show(supportFragmentManager, TAG_PERMISSION_DIALOG)
     }
 
     override fun onBackPressed() {

@@ -2,8 +2,10 @@ package com.xianzhitech.ptt.service
 
 import android.content.Context
 import android.support.annotation.StringRes
+import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.toFormattedString
+import java.util.concurrent.TimeoutException
 
 /**
  *
@@ -51,3 +53,18 @@ class ConnectivityException() : StaticUserException(R.string.error_unable_to_con
 
 class EmptyServerResponseException() : StaticUserException(R.string.error_service_empty_response)
 class InvalidSavedTokenException : RuntimeException()
+
+fun Throwable?.describeInHumanMessage(context: Context) : CharSequence {
+    return when {
+        this is UserDescribableException -> describe(context)
+        this is TimeoutException -> R.string.error_timeout.toFormattedString(context)
+        else -> {
+            if (BuildConfig.DEBUG && this != null) {
+                this.message ?: R.string.error_unknown.toFormattedString(context)
+            }
+            else {
+                R.string.error_unknown.toFormattedString(context)
+            }
+        }
+    }
+}

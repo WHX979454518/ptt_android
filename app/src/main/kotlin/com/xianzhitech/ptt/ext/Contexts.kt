@@ -1,9 +1,14 @@
 package com.xianzhitech.ptt.ext
 
+import android.app.Activity
 import android.content.*
 import android.net.ConnectivityManager
 import android.os.IBinder
+import android.support.v4.app.DialogFragment
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentManager
 import android.support.v4.content.LocalBroadcastManager
+import android.view.View
 import com.xianzhitech.ptt.service.ConnectivityException
 import rx.Observable
 import rx.Subscriber
@@ -118,4 +123,16 @@ fun Context.ensureConnectivity(): Observable<Unit> {
                 if (!it) throw ConnectivityException()
                 else Unit
             }
+}
+
+val Activity.contentView : View
+get() = findViewById(android.R.id.content)
+
+inline fun <reified T : Fragment> FragmentManager.findFragment(tag: String) : T? {
+    return findFragmentByTag(tag) as? T
+}
+
+fun DialogFragment.dismissImmediately() {
+    dismiss()
+    fragmentManager.executePendingTransactions()
 }

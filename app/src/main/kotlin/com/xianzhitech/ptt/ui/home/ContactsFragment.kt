@@ -19,8 +19,8 @@ import com.xianzhitech.ptt.model.UserContactItem
 import com.xianzhitech.ptt.repo.GroupWithMembers
 import com.xianzhitech.ptt.service.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.CreateRoomFromUser
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
@@ -132,11 +132,8 @@ class ContactsFragment : BaseFragment<Void>() {
                 holder.nameView.text = contactItem.name
             }
 
-            holder.itemView.setOnClickListener { v ->
-                context.joinRoom(null,
-                        if (contactItem is User) CreateRoomFromUser(contactItem.id) else CreateRoomFromGroup((contactItem as GroupWithMembers).group.id),
-                        false,
-                        bindToLifecycle())
+            holder.itemView.setOnClickListener {
+                (activity as BaseActivity).joinRoom(if (contactItem is User) CreateRoomFromUser(contactItem.id) else CreateRoomFromGroup((contactItem as GroupWithMembers).group.id))
             }
         }
 

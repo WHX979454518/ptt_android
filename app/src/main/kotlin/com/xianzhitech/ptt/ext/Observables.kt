@@ -86,9 +86,10 @@ inline fun <T> Observable<T>.subscribeSimple(crossinline action : (T) -> Unit) :
     })
 }
 
-fun <T> Observable<T>.subscribeSimple() : Subscription {
-    return subscribe(GlobalSubscriber())
+fun <T> Observable<T>.subscribeSimple(context: Context? = null) : Subscription {
+    return subscribe(GlobalSubscriber(context))
 }
+
 
 fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
 fun <T> Observable<T>.subscribeOnMainThread() = subscribeOn(AndroidSchedulers.mainThread())

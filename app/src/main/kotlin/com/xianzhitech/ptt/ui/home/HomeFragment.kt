@@ -13,12 +13,16 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getColorCompat
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.loginStatus
+import com.xianzhitech.ptt.service.roomStatus
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import rx.Observable
+import java.util.*
 
 /**
 
@@ -104,33 +108,24 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Ca
         views?.viewPager?.setCurrentItem(Tab.Contacts.ordinal, true)
     }
 
-    //    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-//        super.onCreateOptionsMenu(menu, inflater)
-//
-//        inflater?.inflate(R.menu.home, menu)
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-//        if (item?.itemId == R.id.home_logout) {
-//            (context.applicationContext as AppComponent).connectTobackgroundService
-//                .flatMap { it.logout() }
-//                .first()
-//                .subscribe(GlobalSubscriber())
-//        }
-//
-//        return super.onOptionsItemSelected(item)
-//    }
-
     override fun onStart() {
         super.onStart()
 
         callbacks?.setTitle(getString(R.string.app_name))
 
-        (context.applicationContext as AppComponent).signalService.loginState
+        val appComponent = context.applicationContext as AppComponent
+        val signalService = appComponent.signalService
+        Observable.combineLatest(
+                signalService.loginStatus,
+                signalService.roomStatus,
+                signalService.roomState.distinctUntilChanged { it.currentRoomID }.flatMap { appComponent.roomRepository.optRoomWithMembers(it.currentRoomID) },
+                { loginStatus, roomStatus, currRoom -> Triple(loginStatus, roomStatus, currRoom) })
             .compose(bindToLifecycle())
-            .subscribe { loginState ->
+            .observeOnMainThread()
+            .subscribeSimple {
                 views?.topBanner?.apply {
-                    when (loginState.status) {
+                    val (loginStatus, roomStatus, currRoom) = it
+                    when (loginStatus) {
                         LoginStatus.LOGIN_IN_PROGRESS -> {
                             setVisible(true)
                             setText(R.string.connecting_to_server)
@@ -139,7 +134,18 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Ca
                             setVisible(true)
                             setText(R.string.error_unable_to_connect)
                         }
-                        else -> setVisible(false)
+                        else -> {
+                            if (EnumSet.of(RoomStatus.JOINED, RoomStatus.ACTIVE, RoomStatus.REQUESTING_MIC).contains(roomStatus) && currRoom != null) {
+                                setVisible(true)
+                                text = R.string.in_room.toFormattedString(context, currRoom.getRoomName(context))
+                                setOnClickListener {
+                                    (activity as BaseActivity).joinRoom(currRoom.id)
+                                }
+                            }
+                            else {
+                                setVisible(false)
+                            }
+                        }
                     }
                 }
             }

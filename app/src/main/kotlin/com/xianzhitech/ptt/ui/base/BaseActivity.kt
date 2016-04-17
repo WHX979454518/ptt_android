@@ -1,28 +1,30 @@
 package com.xianzhitech.ptt.ui.base
 
-import android.app.DownloadManager
-import android.net.Uri
+import android.content.Intent
 import android.os.Bundle
+import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
-import android.view.View
+import android.widget.Toast
 import com.trello.rxlifecycle.ActivityEvent
 import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.ui.home.AlertDialogFragment
-import com.xianzhitech.ptt.update.installPackage
+import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
+import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
+import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
 import rx.subjects.BehaviorSubject
-import java.io.Serializable
+import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
-        AlertDialogFragment.OnNeutralButtonClickListener {
-
-    private class JoinRoomState(val createRoomRequest: CreateRoomRequest?,
-                                var roomId : String?) : Serializable
+        AlertDialogFragment.OnNegativeButtonClickListener  {
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
 
@@ -51,42 +53,105 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
-        if (fragment.tag == UPDATE_DIALOG_TAG) {
-            val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-            val downloadUri = Uri.parse(fragment.attachment as String)
-            val preference = (application as AppComponent).preference
-            val lastUpdateDownloadId = preference.updateDownloadId
-            if (lastUpdateDownloadId == null || lastUpdateDownloadId.first != downloadUri) {
-                if (lastUpdateDownloadId != null) {
-                    downloadManager.remove(lastUpdateDownloadId.second)
-                }
-
-                val downloadRequest = DownloadManager.Request(downloadUri).apply {
-                    setMimeType("application/vnd.android.package-archive")
-                    setNotificationVisibility(View.VISIBLE)
-                    setVisibleInDownloadsUi(false)
-                    setTitle(R.string.app_updating.toFormattedString(this@BaseActivity, R.string.app_name.toFormattedString(this@BaseActivity)))
-                }
-                preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
-            }
-            else if (lastUpdateDownloadId != null) {
-                installPackage(this, lastUpdateDownloadId.second)
+        when (fragment.tag) {
+            TAG_SWITCH_ROOM_CONFIRMATION -> {
+                joinRoom(fragment.attachment as String, confirmed = true)
             }
         }
     }
 
-    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
-        if (fragment.tag == UPDATE_DIALOG_TAG) {
-            fragment.dismiss()
+    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
+        when (fragment.tag) {
+            TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
         }
     }
 
-    fun joinRoom(roomId: String) {
+    fun joinRoom(roomId: String, confirmed : Boolean = false) {
+        val appComponent = application as AppComponent
 
+        if (confirmed) {
+            showProgressDialog(R.string.please_wait, R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
+            ensureConnectivity()
+                    .flatMap { appComponent.signalService.joinRoom(roomId) }
+                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .doOnUnsubscribe { hideProgressDialog(TAG_JOIN_ROOM_PROGRESS) }
+                    .compose(bindUntil(ActivityEvent.STOP))
+                    .subscribe(object : GlobalSubscriber<Unit>() {
+                        override fun onError(e: Throwable) {
+                            super.onError(e)
+                            appComponent.signalService.quitRoom().subscribeSimple()
+                            hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
+                            Toast.makeText(this@BaseActivity, e.describeInHumanMessage(this@BaseActivity), Toast.LENGTH_LONG).show()
+                        }
+
+                        override fun onNext(t: Unit) {
+                            hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
+                            onRoomJoined()
+                        }
+                    })
+        }
+        else {
+            Observable.combineLatest(
+                    appComponent.roomRepository.optRoomWithMembers(appComponent.signalService.peekRoomState().currentRoomID),
+                    appComponent.roomRepository.getRoomWithMembers(roomId).map { it ?: throw StaticUserException(R.string.error_no_such_room) },
+                    { currentRoom, requestedRoom -> currentRoom to requestedRoom })
+                    .first()
+                    .observeOnMainThread()
+                    .compose(bindUntil(ActivityEvent.STOP))
+                    .doOnError { Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show() }
+                    .subscribeSimple {
+                        val (currentRoom, requestedRoom) = it
+                        if (requestedRoom.id != currentRoom?.id && currentRoom != null) {
+                            AlertDialogFragment.Builder().apply {
+                                title = R.string.dialog_confirm_title.toFormattedString(this@BaseActivity)
+                                message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity,
+                                        requestedRoom.getRoomName(this@BaseActivity),
+                                        currentRoom.getRoomName(this@BaseActivity))
+                                btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
+                                btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
+                                attachment = roomId
+                            }.show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
+                            supportFragmentManager.executePendingTransactions()
+                        } else {
+                            joinRoom(roomId, confirmed = true)
+                        }
+                    }
+        }
+    }
+
+    protected open fun onRoomJoined() {
+        startActivity(Intent(this, RoomActivity::class.java))
     }
 
     fun joinRoom(createRoomRequest: CreateRoomRequest) {
+        val component = application as AppComponent
+        val signalService = component.signalService
 
+        showProgressDialog(R.string.please_wait, R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
+
+        signalService.createRoom(createRoomRequest)
+                .observeOnMainThread()
+                .doOnUnsubscribe { hideProgressDialog(TAG_CREATE_ROOM_PROGRESS) }
+                .compose(bindUntil(ActivityEvent.STOP))
+                .doOnEach {
+                    hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+                    if (it.hasThrowable()) {
+                        Toast.makeText(this@BaseActivity, it.throwable.describeInHumanMessage(this@BaseActivity), Toast.LENGTH_LONG).show()
+                    }
+                }
+                .subscribeSimple { joinRoom(it) }
+    }
+
+    private fun showProgressDialog(title : Int, message : Int, tag : String) {
+        supportFragmentManager.findFragment<DialogFragment>(tag) ?: ProgressDialogFragment.Builder().apply {
+            this.title = title.toFormattedString(this@BaseActivity)
+            this.message = message.toFormattedString(this@BaseActivity)
+            showImmediately(supportFragmentManager, tag)
+        }
+    }
+
+    private fun hideProgressDialog(tag : String) {
+        supportFragmentManager.findFragment<DialogFragment>(tag)?.dismissImmediately()
     }
 
     override fun onResume() {
@@ -110,6 +175,8 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     companion object {
-        const val UPDATE_DIALOG_TAG = "tag_update_dialog"
+        private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
+        private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
+        private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
     }
 }

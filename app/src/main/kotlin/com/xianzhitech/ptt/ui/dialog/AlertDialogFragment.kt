@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.ui.home
+package com.xianzhitech.ptt.ui.dialog
 
 import android.app.Dialog
 import android.content.DialogInterface
