@@ -4,8 +4,8 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import java.lang.ref.WeakReference
@@ -19,8 +19,7 @@ class RoomAutoQuitHandler(private val application: Application) {
     private var lastRoomState : RoomState? = null
 
     init {
-        (application as AppComponent).backgroundService
-                .flatMap { it.roomState }
+        (application as AppComponent).signalService.roomState
                 .doOnNext { logd("Current online members are: ${it.currentRoomOnlineMemberIDs}") }
                 .distinctUntilChanged { it.currentRoomOnlineMemberIDs }
                 .subscribe { onRoomStateChanged(it) }
@@ -59,10 +58,7 @@ class RoomAutoQuitHandler(private val application: Application) {
                 roomState.currentRoomOnlineMemberIDs.size <= 1 &&
                 (application as AppComponent).preference.autoExit) {
 
-            application.backgroundService
-                    .flatMap { it.requestQuitCurrentRoom() }
-                    .subscribe(GlobalSubscriber())
-
+            application.signalService.quitRoom().subscribeSimple()
             (currActiveActivity?.get() as? RoomActivity)?.finish()
         }
 

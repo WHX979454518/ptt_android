@@ -2,6 +2,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+project.ext.signal_server_endpoint_dev = "http://netptt.cn:20000"
+
+if (file('../server.gradle').exists()) {
+    apply from: '../server.gradle'
+}
+
 buildscript {
     ext.kotlin_version = '1.0.1-2'
     ext.support_library_version = '23.2.1'
@@ -15,7 +21,7 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.alexvasilkov:android-sign-release:0.8.1'
+//        classpath 'com.alexvasilkov:android-sign-release:0.8.1'
         //classpath 'com.jakewharton.sdkmanager:gradle-plugin:0.12.0'
     }
 }
@@ -67,23 +73,7 @@ android {
     productFlavors {
         dev {
             applicationId 'com.xianzhitech.ptt.dev'
-
-            if (System.getenv("SIGNAL_SERVER_ENDPOINT") != null) {
-                buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + System.getenv("SIGNAL_SERVER_ENDPOINT") + "\"")
-            } else {
-                Properties properties = new Properties()
-                try {
-                    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-                } catch (Exception e) {
-                }
-                def signalServerEndpoint = properties.getProperty("server.signal")
-                if (signalServerEndpoint != null && !signalServerEndpoint.isEmpty()) {
-                    buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"" + signalServerEndpoint + "\"")
-                }
-                else {
-                    buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"http://cdjiahotx.eicp.net:9005\"")
-                }
-            }
+            buildConfigField("String", "SIGNAL_SERVER_ENDPOINT", "\"${project.signal_server_endpoint_dev}\"")
         }
 
         uat {

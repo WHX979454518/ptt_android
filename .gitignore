@@ -6,6 +6,7 @@
 .DS_Store
 /build
 /captures
+/server.gradle
 ### Android template
 # Built application files
 *.apk

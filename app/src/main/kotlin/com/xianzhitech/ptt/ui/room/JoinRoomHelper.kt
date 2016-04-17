@@ -8,9 +8,9 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.BackgroundServiceBinder
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.provider.CreateRoomRequest
 import rx.Observable
 import java.util.concurrent.TimeUnit
 
@@ -29,10 +29,10 @@ fun Context.joinRoom(roomId: String?,
     }
 
     val appComponent = applicationContext as AppComponent
+    val signalService = appComponent.signalService
 
     ensureConnectivity()
-            .flatMap { appComponent.backgroundService }
-            .flatMap { binder ->
+            .flatMap {
                 val progressDialog = ProgressDialog(this).apply {
                     setTitle(R.string.please_wait)
                     setMessage(R.string.getting_room_info.toFormattedString(this@joinRoom))
@@ -41,7 +41,7 @@ fun Context.joinRoom(roomId: String?,
                 }
 
                 val roomIdObservable = roomId?.let { roomId.toObservable() } ?:
-                        binder.createRoom(createRoomRequest!!)
+                        signalService.createRoom(createRoomRequest!!)
                                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                                 .observeOnMainThread()
                                 .doOnSubscribe {
@@ -51,22 +51,21 @@ fun Context.joinRoom(roomId: String?,
                                 }
 
                 roomIdObservable.flatMap { appComponent.roomRepository.getRoomWithMembers(it, Constants.MAX_MEMBER_DISPLAY_COUNT) }
-                        .map { it?.let { binder.pairWith(it) } ?: throw StaticUserException(R.string.error_unable_to_get_room_info) }
+                        .map { it ?: throw StaticUserException(R.string.error_unable_to_get_room_info) }
             }
-            .flatMap { resultPair ->
-                resultPair.first.peekRoomState().currentRoomID?.let {
+            .flatMap { roomToJoin ->
+                signalService.peekRoomState().currentRoomID?.let {
                     appComponent.roomRepository.getRoomWithMembers(it, Constants.MAX_MEMBER_DISPLAY_COUNT)
-                            .map { resultPair.tripleWith(it) }
-                } ?: resultPair.tripleWith(null).toObservable()
+                            .map { roomToJoin to it }
+                } ?: (roomToJoin to null).toObservable()
             }
             .first()
             .flatMap {
-                val (binder, roomToJoin, currentRoom) = it
-                Observable.create<Pair<BackgroundServiceBinder, String>> { subscriber ->
-                    val result = binder.pairWith(roomToJoin.room.id)
+                val (roomToJoin, currentRoom) = it
+                Observable.create<Room> { subscriber ->
                     if (currentRoom == null || (currentRoom.room.id == roomToJoin.room.id)) {
                         // If the current room is empty, or current joined room is same
-                        subscriber.onSingleValue(result)
+                        subscriber.onSingleValue(roomToJoin)
                         return@create
                     }
 
@@ -80,7 +79,7 @@ fun Context.joinRoom(roomId: String?,
                                     .setMessage(R.string.receive_invite_switch_confirm.toFormattedString(this, currentRoom.getRoomName(this), roomToJoin.getRoomName(this)))
                                     .setPositiveButton(R.string.dialog_yes_switch, { dialog, id ->
                                         dialog.dismiss()
-                                        subscriber.onSingleValue(result)
+                                        subscriber.onSingleValue(roomToJoin)
                                     })
                                     .setNegativeButton(R.string.dialog_cancel, { dialog, id ->
                                         dialog.dismiss()
@@ -89,7 +88,7 @@ fun Context.joinRoom(roomId: String?,
                                     .show()
                         } else if (roomToJoin.room.important) {
                             // If we receive an invite but current room is unimportant, no confirmation needed, join the room immediately
-                            subscriber.onSingleValue(result)
+                            subscriber.onSingleValue(roomToJoin)
                             return@create
                         } else {
                             // currentRoom.room.important
@@ -115,7 +114,7 @@ fun Context.joinRoom(roomId: String?,
                                     .setMessage(R.string.room_prompt_switching_message.toFormattedString(this, roomToJoin.getRoomName(this), currentRoom.getRoomName(this)))
                                     .setPositiveButton(R.string.dialog_yes_switch, { dialog, id ->
                                         dialog.dismiss()
-                                        subscriber.onSingleValue(result)
+                                        subscriber.onSingleValue(roomToJoin)
                                     })
                                     .setNegativeButton(R.string.dialog_cancel, { dialog, id ->
                                         dialog.dismiss()
@@ -126,17 +125,16 @@ fun Context.joinRoom(roomId: String?,
                     }
                 }.subscribeOnMainThread()
             }
-            .flatMap {
-                val (binder, roomToJoin) = it
+            .flatMap { roomToJoin : Room ->
 //                val dialog = ProgressDialog.show(this, R.string.please_wait.toFormattedString(this),
 //                        R.string.joining_room.toFormattedString(this), true, false)
-                binder.requestJoinRoom(roomToJoin)
+                signalService.joinRoom(roomToJoin.id)
                         .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .observeOnMainThread()
                         .compose(lifecycle)
                         .doOnEach {
                             if (it.hasThrowable()) {
-                                binder.requestQuitCurrentRoom().subscribe(GlobalSubscriber())
+                                signalService.quitRoom().subscribeSimple()
                             }
 //                            dialog.dismiss()
                         }

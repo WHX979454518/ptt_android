@@ -5,16 +5,20 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
+import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.Toolbar
+import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
@@ -27,8 +31,6 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        startService(Intent(this, SocketIOBackgroundService::class.java))
 
         setContentView(R.layout.activity_main)
         toolbar = findView(R.id.main_toolbar)
@@ -45,6 +47,37 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
 
         if (savedInstanceState == null) {
             handleIntent(intent)
+
+            (application as AppComponent).updateManager.retrieveUpdateInfo()
+                    .observeOnMainThread()
+                    .compose(bindUntil(ActivityEvent.STOP))
+                    .subscribeSimple {
+                        if (it != null) {
+                            AlertDialogFragment.Builder().apply {
+                                title = R.string.update_title.toFormattedString(this@MainActivity)
+                                message = it.updateMessage
+                                btnPositive = R.string.update.toFormattedString(this@MainActivity)
+                                if (it.forceUpdate) {
+                                    cancellabe = false
+                                }
+                                else {
+                                    cancellabe = true
+                                    btnNeutral = R.string.dialog_ok.toFormattedString(this@MainActivity)
+                                }
+                                autoDismiss = false
+                                attachment = it.updateUrl.toString()
+                            }.show(supportFragmentManager, UPDATE_DIALOG_TAG)
+
+                            supportFragmentManager.executePendingTransactions()
+                        }
+                        else {
+                            (supportFragmentManager.findFragmentByTag(UPDATE_DIALOG_TAG) as? DialogFragment)?.let {
+                                it.dismiss()
+                                supportFragmentManager.executePendingTransactions()
+                            }
+                        }
+                    }
+
         }
     }
 
@@ -108,8 +141,7 @@ class MainActivity : BaseActivity(), LoginFragment.Callbacks, HomeFragment.Callb
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).backgroundService
-                .flatMap { it.loginState }
+        (application as AppComponent).signalService.loginState
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {

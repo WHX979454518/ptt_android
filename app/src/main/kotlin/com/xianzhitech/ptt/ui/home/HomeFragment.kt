@@ -17,7 +17,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getColorCompat
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.service.LoginState
+import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BaseFragment
 
 /**
@@ -126,17 +126,16 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Ca
 
         callbacks?.setTitle(getString(R.string.app_name))
 
-        (context.applicationContext as AppComponent).backgroundService
-            .flatMap { it.loginState }
+        (context.applicationContext as AppComponent).signalService.loginState
             .compose(bindToLifecycle())
             .subscribe { loginState ->
                 views?.topBanner?.apply {
                     when (loginState.status) {
-                        LoginState.Status.LOGIN_IN_PROGRESS -> {
+                        LoginStatus.LOGIN_IN_PROGRESS -> {
                             setVisible(true)
                             setText(R.string.connecting_to_server)
                         }
-                        LoginState.Status.OFFLINE -> {
+                        LoginStatus.OFFLINE -> {
                             setVisible(true)
                             setText(R.string.error_unable_to_connect)
                         }

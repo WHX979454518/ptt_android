@@ -17,8 +17,8 @@ import com.xianzhitech.ptt.model.GroupContactItem
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.model.UserContactItem
 import com.xianzhitech.ptt.repo.GroupWithMembers
-import com.xianzhitech.ptt.service.provider.CreateRoomFromGroup
-import com.xianzhitech.ptt.service.provider.CreateRoomFromUser
+import com.xianzhitech.ptt.service.CreateRoomFromGroup
+import com.xianzhitech.ptt.service.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.joinRoom
 import com.xianzhitech.ptt.ui.widget.MultiDrawable

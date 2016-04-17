@@ -1,16 +1,17 @@
-package com.xianzhitech.ptt.service.sio
+package com.xianzhitech.ptt.service.impl
 
-import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.SoundPool
-import android.os.Binder
-import android.os.IBinder
 import android.os.Looper
 import android.os.Vibrator
 import android.support.annotation.RawRes
 import android.util.SparseIntArray
-import com.xianzhitech.ptt.*
+import com.xianzhitech.ptt.BuildConfig
+import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.Preference
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
@@ -21,13 +22,10 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.service.BackgroundServiceBinder
-import com.xianzhitech.ptt.service.LoginState
-import com.xianzhitech.ptt.service.RoomState
-import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.provider.CreateRoomRequest
+import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.service.Service
 import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
@@ -43,64 +41,50 @@ import java.io.Serializable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
-
-    override var roomState = BehaviorSubject.create<RoomState>(RoomState())
-    override var loginState = BehaviorSubject.create<LoginState>(LoginState())
+class SignalServiceImpl(private val appContext: Context,
+                        private val signalServerEndpoint : String,
+                        private val preference: Preference,
+                        private val userRepository : UserRepository,
+                        private val groupRepository : GroupRepository,
+                        private val contactRepository : ContactRepository,
+                        private val roomRepository : RoomRepository,
+                        private val talkEngineProvider: TalkEngineProvider,
+                        private val btEngine: BtEngine) : SignalService {
     var loginSubscription : Subscription? = null
     var roomSubscription: CompositeSubscription? = null
     var requestMicSubscription : Subscription? = null
     var currentTalkEngine: TalkEngine? = null
     var btSubscription : Subscription? = null
 
-    override fun peekRoomState() = roomState.value
-    override fun peekLoginState() = loginState.value
-
-    private lateinit var preferenceProvider : Preference
-    private lateinit var userRepository : UserRepository
-    private lateinit var groupRepository : GroupRepository
-    private lateinit var contactRepository : ContactRepository
-    private lateinit var roomRepository : RoomRepository
-    private lateinit var talkEngineProvider: TalkEngineProvider
-    private lateinit var btEngine: BtEngine
-    private lateinit var soundPool: Pair<SoundPool, SparseIntArray>
-    private lateinit var audioManager: AudioManager
-    private val soundPlayExecutor = Executors.newSingleThreadExecutor()
+    private val soundPool: Pair<SoundPool, SparseIntArray> by lazy {
+        Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
+            second.put(R.raw.incoming, first.load(appContext, R.raw.incoming, 0))
+            second.put(R.raw.outgoing, first.load(appContext, R.raw.outgoing, 0))
+            second.put(R.raw.over, first.load(appContext, R.raw.over, 0))
+            second.put(R.raw.pttup, first.load(appContext, R.raw.pttup, 0))
+            second.put(R.raw.pttup_offline, first.load(appContext, R.raw.pttup_offline, 0))
+        }
+    }
+    private val soundPlayExecutor by lazy { Executors.newSingleThreadExecutor() }
+    private var audioManager: AudioManager
     private var vibrator : Vibrator? = null
 
     private var socketSubject = BehaviorSubject.create<Socket>()
 
-    override fun onCreate() {
-        super.onCreate()
+    override var roomState = BehaviorSubject.create<RoomState>(RoomState())
+    override var loginState = BehaviorSubject.create<LoginState>(LoginState())
 
-        val appComponent = application as AppComponent
-        preferenceProvider = appComponent.preference
-        contactRepository = appComponent.contactRepository
-        roomRepository = appComponent.roomRepository
-        userRepository = appComponent.userRepository
-        groupRepository = appComponent.groupRepository
-        talkEngineProvider = appComponent.talkEngineProvider
-        btEngine = appComponent.btEngine
-
-        vibrator = (getSystemService(VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
-        audioManager = (getSystemService(AUDIO_SERVICE) as AudioManager)
-
-        soundPool = Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
-            val context = this@SocketIOBackgroundService
-            second.put(R.raw.incoming, first.load(context, R.raw.incoming, 0))
-            second.put(R.raw.outgoing, first.load(context, R.raw.outgoing, 0))
-            second.put(R.raw.over, first.load(context, R.raw.over, 0))
-            second.put(R.raw.pttup, first.load(context, R.raw.pttup, 0))
-            second.put(R.raw.pttup_offline, first.load(context, R.raw.pttup_offline, 0))
-        }
+    init {
+        vibrator = (appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
+        audioManager = (appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
 
         val loginStateValue = loginState.value
-        if (loginStateValue.currentUserID == null && loginStateValue.status == LoginState.Status.IDLE) {
-            val currentUserSessionToken = preferenceProvider.userSessionToken
-            val lastUserId = preferenceProvider.lastLoginUserId
+        if (loginStateValue.currentUserID == null && loginStateValue.status == LoginStatus.IDLE) {
+            val currentUserSessionToken = preference.userSessionToken
+            val lastUserId = preference.lastLoginUserId
             if (currentUserSessionToken != null && lastUserId != null) {
-                loginState.onNext(LoginState(currentUserID = lastUserId, status = LoginState.Status.LOGIN_IN_PROGRESS))
-                doLogin(currentUserSessionToken.fromBase64ToSerializable() as Map<String, List<String>>).subscribe(GlobalSubscriber(this))
+                loginState.onNext(LoginState(currentUserID = lastUserId, status = LoginStatus.LOGIN_IN_PROGRESS))
+                doLogin(currentUserSessionToken.fromBase64ToSerializable() as Map<String, List<String>>).subscribeSimple()
             }
         }
 
@@ -119,18 +103,19 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         Observable.empty()
                     }
                 }
-                .subscribe(GlobalSubscriber())
+                .subscribeSimple()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
-    }
+    override fun peekRoomState() = roomState.value
+    override fun peekLoginState() = loginState.value
 
-    override fun logout() = Observable.defer { doLogout().toObservable() }.subscribeOnMainThread()
+    override fun logout() = Observable.defer { doLogout().toObservable() }
+            .subscribeOnMainThread()
+            .doOnNext { appContext.stopService(Intent(appContext, Service::class.java)) }
 
     internal fun doLogout() {
         loginState.value.currentUserID?.let {
-            preferenceProvider.userSessionToken = null
+            preference.userSessionToken = null
             onUserLogout(it)
         }
 
@@ -138,7 +123,6 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         socketSubject.value?.close()
         socketSubject = BehaviorSubject.create()
-        stopSelf()
 
         loginSubscription = loginSubscription?.let { it.unsubscribe(); null }
     }
@@ -152,7 +136,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     }.subscribeOnMainThread()
 
     internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
-        val newSocket = IO.socket((application as AppComponent).signalServerEndpoint, IO.Options().apply {
+        val newSocket = IO.socket(signalServerEndpoint, IO.Options().apply {
             reconnection = true
             forceNew = true
         })
@@ -177,7 +161,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             add(newSocket.io().receiveEvent(Manager.EVENT_CONNECT_ERROR)
                     .observeOnMainThread()
                     .subscribe {
-                        loginState.onNext(loginState.value.copy(status = LoginState.Status.OFFLINE))
+                        loginState.onNext(loginState.value.copy(status = LoginStatus.OFFLINE))
                     })
 
             add(newSocket.receiveEvent(EVENT_SERVER_USER_LOGON)
@@ -189,10 +173,10 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                          */
                         val user = MutableUser().readFrom(response)
 
-                        if (preferenceProvider.lastLoginUserId != user.id) {
+                        if (preference.lastLoginUserId != user.id) {
                             // Clear room information if it's this user's first login
                             logd("Clearing room database because different user has logged in")
-                            preferenceProvider.lastLoginUserId = user.id
+                            preference.lastLoginUserId = user.id
                             roomRepository.clearRooms().map { user }
                         } else {
                             user.toObservable()
@@ -252,12 +236,12 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     .subscribe(object : GlobalSubscriber<User>() {
                         override fun onError(e: Throwable) {
                             subscriber.onError(e)
-                            loginState.onNext(loginState.value.copy(status = LoginState.Status.IDLE))
+                            loginState.onNext(loginState.value.copy(status = LoginStatus.IDLE))
                         }
 
                         override fun onNext(t: User) {
-                            val newLoginState = LoginState(LoginState.Status.LOGGED_IN, t.id)
-                            preferenceProvider.userSessionToken = (headers as Serializable).serializeToBase64()
+                            val newLoginState = LoginState(LoginStatus.LOGGED_IN, t.id)
+                            preference.userSessionToken = (headers as Serializable).serializeToBase64()
                             loginState.onNext(newLoginState)
                             subscriber.onNext(null)
                             subscriber.onCompleted()
@@ -296,28 +280,28 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                     }))
 
             // This must be in the end!
-            add(getActiveNetwork()
+            add(appContext.getActiveNetwork()
                     .distinctUntilChanged()
                     .observeOnMainThread()
                     .subscribe {
                         logd("New active network: $it")
                         newSocket.disconnect()
                         if (it != null && it.isConnected) {
-                            loginState.onNext(loginState.value.copy(status = LoginState.Status.LOGIN_IN_PROGRESS))
+                            loginState.onNext(loginState.value.copy(status = LoginStatus.LOGIN_IN_PROGRESS))
                             socketSubject.onNext(newSocket.connect())
                         }
                         else {
                             // Dispose talk engine while connection is lost
                             currentTalkEngine = currentTalkEngine?.let { it.dispose(); null }
                             roomState.value?.let {
-                                if (it.status != RoomState.Status.IDLE) {
-                                    roomState.onNext(it.copy(status = RoomState.Status.OFFLINE))
+                                if (it.status != RoomStatus.IDLE) {
+                                    roomState.onNext(it.copy(status = RoomStatus.OFFLINE))
                                 }
                             }
 
                             loginState.value?.let {
-                                if (it.status != LoginState.Status.IDLE) {
-                                    loginState.onNext(it.copy(status = LoginState.Status.OFFLINE))
+                                if (it.status != LoginStatus.IDLE) {
+                                    loginState.onNext(it.copy(status = LoginStatus.OFFLINE))
                                 }
                             }
                         }
@@ -325,28 +309,33 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         }
 
-    }.subscribeOnMainThread()
+    }
+            .subscribeOnMainThread()
+            .doOnSubscribe {
+                val name = appContext.startService(Intent(appContext, Service::class.java))
+                logd("Starting service $name")
+            }
 
     internal fun onUserKickedOut() {
         if (loginState.value.currentUserID != null) {
             logout().subscribe(GlobalSubscriber())
-            startActivity(Intent(this, KickOutActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            appContext.startActivity(Intent(appContext, KickOutActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }
     }
 
     internal fun onUserLogout(user: String) {
         logd("User $user has logged out")
-        stopSelf()
+//        stopSelf()
     }
 
     internal fun onUserLogon(user : User) {
         logd("User $user has logged on")
-        startService(Intent(this, javaClass))
+//        startService(Intent(this, javaClass))
     }
 
     internal fun onInviteToJoin(roomId: String) {
         logd("Received invite to join room $roomId")
-        startActivity(Intent(this, RoomActivity::class.java)
+        appContext.startActivity(Intent(appContext, RoomActivity::class.java)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_ID, roomId)
                 .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
@@ -397,7 +386,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             if (applyCurrentState) {
                 val roomState = peekRoomState()
                 val userState = peekLoginState()
-                if (roomState.status == RoomState.Status.ACTIVE && roomState.currentRoomActiveSpeakerID == userState.currentUserID) {
+                if (roomState.status == RoomStatus.ACTIVE && roomState.currentRoomActiveSpeakerID == userState.currentUserID) {
                     startSend()
                 }
                 else {
@@ -432,9 +421,8 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
     }
 
-    override fun onBind(intent: Intent?) : IBinder = object : Binder(), BackgroundServiceBinder by this {}
 
-    override fun requestJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
+    override fun joinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
         if (roomId == roomState.value.currentRoomID) {
             logd("Room $roomId is previously joined and active")
             subscriber.onSingleValue(Unit)
@@ -516,7 +504,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
     internal fun doJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
         doQuitCurrentRoom()
         logd("Joining room $roomId")
-        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
+        roomState.onNext(roomState.value.copy(status = RoomStatus.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
 
         roomSubscription = CompositeSubscription().apply {
             val socketObservable = socketSubject.publish()
@@ -539,7 +527,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                             val currentRoomState = peekRoomState()
                             if (speakerChangeRoomID == roomId && currentRoomState.currentRoomActiveSpeakerID != newSpeakerID) {
                                 roomState.onNext(currentRoomState.copy(currentRoomActiveSpeakerID = newSpeakerID,
-                                        status = newSpeakerID?.let { RoomState.Status.ACTIVE } ?: RoomState.Status.JOINED))
+                                        status = newSpeakerID?.let { RoomStatus.ACTIVE } ?: RoomStatus.JOINED))
                                 newSpeakerID?.let { onMicActivated(false) } ?: onMicReleased(false)
                             }
                         }
@@ -569,7 +557,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
             // Kicks off joining room event
             add(socketObservable
                     .flatMap { socket ->
-                        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
+                        roomState.onNext(roomState.value.copy(status = RoomStatus.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
 
                         // Join the room
                         socket.sendEvent(EVENT_CLIENT_JOIN_ROOM, JSONObject().put("roomId", roomId))
@@ -600,7 +588,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         override fun onNext(t: JSONObject) {
                             val activeSpeakerID = if (t.isNull("speaker")) null else t.optString("speaker")
                             roomState.onNext(roomState.value.copy(
-                                    status = activeSpeakerID?.let { RoomState.Status.ACTIVE } ?: RoomState.Status.JOINED,
+                                    status = activeSpeakerID?.let { RoomStatus.ACTIVE } ?: RoomStatus.JOINED,
                                     currentRoomActiveSpeakerID = activeSpeakerID,
                                     currentRoomOnlineMemberIDs = t.getJSONArray("activeMembers").toStringIterable().toSet()
                             ))
@@ -622,8 +610,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
         }
 
     }.subscribeOnMainThread()
+    .doOnNext {
+        appContext.startService(Intent(appContext, Service::class.java))
+    }
 
-    override fun requestQuitCurrentRoom() = Observable.defer { doQuitCurrentRoom().toObservable() }.subscribeOnMainThread()
+    override fun quitRoom() = Observable.defer { doQuitCurrentRoom().toObservable() }.subscribeOnMainThread()
 
     override fun requestMic() = Observable.create<Unit> { subscriber ->
         val socket = socketSubject.value
@@ -644,7 +635,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
         requestMicSubscription = Observable.timer(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .flatMap {
-                    roomState.onNext(roomState.value.copy(status = RoomState.Status.REQUESTING_MIC))
+                    roomState.onNext(roomState.value.copy(status = RoomStatus.REQUESTING_MIC))
                     socket.sendEvent(EVENT_CLIENT_CONTROL_MIC, micRequest)
                             .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 }
@@ -654,7 +645,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                         subscriber.onError(e)
                         // When error happens, always requests release mic to prevent further damage to the state
                         socket.sendEventIgnoreReturn(EVENT_CLIENT_RELEASE_MIC, micRequest).subscribe(GlobalSubscriber())
-                        roomState.onNext(roomState.value.copy(status = RoomState.Status.JOINED))
+                        roomState.onNext(roomState.value.copy(status = RoomStatus.JOINED))
                         playSound(R.raw.pttup_offline)
                     }
 
@@ -666,12 +657,11 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
 
                         val newSpeakerID = if (t.isNull("speaker").not()) t.optString("speaker") else null
                         if (t.getBoolean("success") && newSpeakerID == currUserId) {
-                            if (isUnsubscribed || roomState.value.status != RoomState.Status.REQUESTING_MIC)  {
+                            if (isUnsubscribed || roomState.value.status != RoomStatus.REQUESTING_MIC) {
                                 // 如果返回的时候我们已经不是请求状态了, 必须发回服务器一个RELEASE做最后保证
                                 releaseMic().subscribe(GlobalSubscriber())
-                            }
-                            else {
-                                roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = currUserId, status = RoomState.Status.ACTIVE))
+                            } else {
+                                roomState.onNext(roomState.value.copy(currentRoomActiveSpeakerID = currUserId, status = RoomStatus.ACTIVE))
                                 onMicActivated(true)
                             }
                         }
@@ -707,7 +697,7 @@ class SocketIOBackgroundService : Service(), BackgroundServiceBinder {
                 .subscribe(GlobalSubscriber()))
 
         if (currRoomState.currentRoomActiveSpeakerID == currUserId || currRoomState.currentRoomActiveSpeakerID == null) {
-            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null, status = RoomState.Status.JOINED))
+            roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null, status = RoomStatus.JOINED))
             onMicReleased(true)
         }
 

@@ -57,7 +57,7 @@
         <activity android:name=".ui.KickOutActivity" />
 
 
-        <service android:name=".service.sio.SocketIOBackgroundService"/>
+        <service android:name=".ui.service.Service"/>
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>

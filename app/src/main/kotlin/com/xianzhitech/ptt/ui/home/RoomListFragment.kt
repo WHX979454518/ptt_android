@@ -68,7 +68,7 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
         val appComponent = context.applicationContext as AppComponent
         Observable.combineLatest(
                 appComponent.roomRepository.getRoomsWithMembers(9),
-                appComponent.backgroundService.first().flatMap { it.loginState }.first { it.currentUserID != null },
+                appComponent.signalService.loginState.first { it.currentUserID != null },
                 { first, second -> first to second })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())

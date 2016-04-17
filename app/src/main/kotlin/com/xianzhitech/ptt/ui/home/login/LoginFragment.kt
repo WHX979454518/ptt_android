@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.LoginState
+import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
 import java.util.concurrent.TimeUnit
@@ -30,7 +31,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
 
         callbacks?.setTitle(R.string.login.toFormattedString(context))
 
-        (context.applicationContext as AppComponent).backgroundService.flatMap { it.loginState }
+        (context.applicationContext as AppComponent).signalService.loginState
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe { updateLoginState(it) }
@@ -38,7 +39,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
 
     internal fun updateLoginState(state: LoginState) {
         views?.apply {
-            val isIdle = state.status == LoginState.Status.IDLE
+            val isIdle = state.status == LoginStatus.IDLE
             nameEditText.isEnabled = isIdle
             passwordEditText.isEnabled = isIdle
             loginButton.isEnabled = isIdle
@@ -60,14 +61,12 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
                                 true,
                                 false)
 
+                        val signalService = (context.applicationContext as AppComponent).signalService
                         context.ensureConnectivity()
-                                .flatMap { (context.applicationContext as AppComponent).backgroundService }
-                                .flatMap { binder ->
-                                    binder.login(nameEditText.getString(), passwordEditText.getString())
+                                .flatMap {
+                                    signalService.login(nameEditText.getString(), passwordEditText.getString())
                                             .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                                            .doOnError {
-                                                binder.logout().subscribe(GlobalSubscriber())
-                                            }
+                                            .doOnError { signalService.logout().subscribeSimple() }
                                 }
                                 .observeOnMainThread()
                                 .compose(bindToLifecycle())

@@ -6,10 +6,9 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.service.BackgroundServiceBinder
+import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.update.UpdateManager
 import okhttp3.OkHttpClient
-import rx.Observable
 
 /**
 
@@ -35,5 +34,5 @@ interface AppComponent {
     val contactRepository: ContactRepository
 
     // Service
-    val backgroundService: Observable<BackgroundServiceBinder>
+    val signalService: SignalService
 }

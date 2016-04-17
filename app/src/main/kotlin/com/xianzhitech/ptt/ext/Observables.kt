@@ -78,6 +78,18 @@ fun <T> Observable<ResultSet>.mapToList(mapper: Func1<ResultSet, T>): Observable
 
 fun <T> Observable<T>.subscribeOnOptional(scheduler: Scheduler?): Observable<T> = scheduler?.let { subscribeOn(it) } ?: this
 
+inline fun <T> Observable<T>.subscribeSimple(crossinline action : (T) -> Unit) : Subscription {
+    return subscribe(object : GlobalSubscriber<T>() {
+        override fun onNext(t: T) {
+            action(t)
+        }
+    })
+}
+
+fun <T> Observable<T>.subscribeSimple() : Subscription {
+    return subscribe(GlobalSubscriber())
+}
+
 fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
 fun <T> Observable<T>.subscribeOnMainThread() = subscribeOn(AndroidSchedulers.mainThread())
 

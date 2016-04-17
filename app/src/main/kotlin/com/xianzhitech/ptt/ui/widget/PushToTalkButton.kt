@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.toColorValue
 import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 
 /**
 
@@ -24,7 +25,7 @@ class PushToTalkButton : ImageButton {
         set(value) {
             if (field != value) {
                 field = value
-                isEnabled = value?.status == RoomState.Status.JOINED && value?.currentRoomActiveSpeakerID == null
+                isEnabled = value?.status == RoomStatus.JOINED && value?.currentRoomActiveSpeakerID == null
                 if (!isEnabled) {
                     removeCallbacks(requestFocusRunnable)
                 }
@@ -71,8 +72,8 @@ class PushToTalkButton : ImageButton {
 
         paint.color = when {
             roomState?.currentRoomActiveSpeakerID != null -> android.R.color.holo_red_dark
-            roomState?.status == RoomState.Status.REQUESTING_MIC -> android.R.color.holo_orange_dark
-            roomState?.status == RoomState.Status.JOINED -> android.R.color.holo_green_dark
+            roomState?.status == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
+            roomState?.status == RoomStatus.JOINED -> android.R.color.holo_green_dark
             else  -> android.R.color.darker_gray
         }.toColorValue(context)
 

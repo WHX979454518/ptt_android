@@ -61,8 +61,7 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
 
             views = Views(this).apply {
 
-                appComponent.backgroundService
-                        .flatMap { it.loginState }
+                appComponent.signalService.loginState
                         .filter { it.currentUserID != null }
                         .flatMap { appComponent.userRepository.getUser(it.currentUserID!!) }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
@@ -89,10 +88,8 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
                         .setTitle(R.string.dialog_confirm_title)
                         .setMessage(R.string.log_out_confirm_message)
                         .setPositiveButton(R.string.logout, { dialogInterface: DialogInterface, i: Int ->
-                            appComponent.backgroundService
-                                    .first()
-                                    .flatMap { it.logout() }
-                                    .subscribe(GlobalSubscriber<Unit>())
+                            appComponent.signalService
+                                    .logout().subscribeSimple()
                             dialogInterface.dismiss()
                         })
                         .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss()})
@@ -102,8 +99,7 @@ class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
                 startActivity(Intent(context, SettingsActivity::class.java))
             }
             R.id.profile_edit -> {
-                appComponent.backgroundService
-                        .flatMap { it.loginState }
+                appComponent.signalService.loginState
                         .first()
                         .observeOnMainThread()
                         .compose(bindUntil(FragmentEvent.STOP))

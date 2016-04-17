@@ -2,7 +2,6 @@ package com.xianzhitech.ptt
 
 import android.Manifest
 import android.app.Application
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -14,26 +13,23 @@ import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.engine.BtEngineImpl
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
-import com.xianzhitech.ptt.ext.connectToService
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.service.BackgroundServiceBinder
-import com.xianzhitech.ptt.service.sio.SocketIOBackgroundService
-import com.xianzhitech.ptt.ui.NotificationHandler
+import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.service.impl.SignalServiceImpl
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
 import com.xianzhitech.ptt.update.UpdateManager
 import com.xianzhitech.ptt.update.UpdateManagerImpl
 import okhttp3.OkHttpClient
-import rx.Observable
 import rx.subjects.BehaviorSubject
 
 
 open class App : Application(), AppComponent {
 
-    private var backgroundServiceSubject : BehaviorSubject<BackgroundServiceBinder>? = null
+    private var signalServiceSubject: BehaviorSubject<SignalService>? = null
 
     override val httpClient by lazy { OkHttpClient() }
     override val talkEngineProvider = object : TalkEngineProvider {
@@ -59,21 +55,20 @@ open class App : Application(), AppComponent {
 
     override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
 
-    override val backgroundService : Observable<BackgroundServiceBinder>
-    get() = synchronized(this, {
-        if (backgroundServiceSubject == null) {
-            backgroundServiceSubject = BehaviorSubject.create<BackgroundServiceBinder>().apply {
-                connectToService<BackgroundServiceBinder>(Intent(this@App, SocketIOBackgroundService::class.java), BIND_AUTO_CREATE).subscribe(this)
-            }
-        }
-
-        backgroundServiceSubject!!
-    })
+    override val signalService by lazy { SignalServiceImpl(
+            appContext = this,
+            signalServerEndpoint = BuildConfig.SIGNAL_SERVER_ENDPOINT,
+            preference = preference,
+            userRepository = userRepository,
+            groupRepository = groupRepository,
+            contactRepository = contactRepository,
+            roomRepository = roomRepository,
+            talkEngineProvider = talkEngineProvider,
+            btEngine = btEngine)
+    }
 
     override fun onCreate() {
         super.onCreate()
-
-        NotificationHandler(this)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

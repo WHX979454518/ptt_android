@@ -5,6 +5,7 @@ import android.telephony.TelephonyManager
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import rx.Observable
 import java.lang.reflect.Method
 import java.util.*
@@ -48,8 +49,7 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
                 appContext.receiveBroadcasts(false, TelephonyManager.ACTION_PHONE_STATE_CHANGED)
                         .map { telephonyManager.callState }
                         .startWith(telephonyManager.callState),
-                appComponent.backgroundService
-                        .flatMap { it.roomState },
+                appComponent.signalService.roomState,
                 { callState, roomState -> callState to roomState }
         ).subscribe {
             onCallStateChanged(it.first, it.second)
@@ -58,7 +58,7 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
 
     internal fun onCallStateChanged(callState: Int, roomState : RoomState) {
         if (callState == TelephonyManager.CALL_STATE_RINGING &&
-                EnumSet.of(RoomState.Status.ACTIVE, RoomState.Status.JOINED, RoomState.Status.JOINING).contains(roomState.status) &&
+                EnumSet.of(RoomStatus.ACTIVE, RoomStatus.JOINED, RoomStatus.JOINING).contains(roomState.status) &&
                 (appContext as AppComponent).preference.blockCalls) {
             endCallMethod?.invoke(iTelephony)
         }

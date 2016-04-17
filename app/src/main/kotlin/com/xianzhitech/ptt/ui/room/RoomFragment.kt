@@ -23,6 +23,7 @@ import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.AlertDialogFragment
@@ -90,10 +91,7 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
                 toolbar.inflateMenu(R.menu.room)
                 toolbar.setOnMenuItemClickListener {
                     if (it.itemId == R.id.room_exit) {
-                        (context.applicationContext as AppComponent).backgroundService
-                                .first()
-                                .flatMap { it.requestQuitCurrentRoom() }
-                                .subscribe(GlobalSubscriber())
+                        (context.applicationContext as AppComponent).signalService.quitRoom().subscribeSimple()
                         activity?.finish()
                     }
 
@@ -107,47 +105,41 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
         super.onStart()
 
         val appComponent = context.applicationContext as AppComponent
-        val bgService = appComponent
-                .backgroundService
-                .observeOnMainThread()
+        val bgService = appComponent.signalService
 
-        bgService.flatMap { Observable.combineLatest(
-                it.roomState.flatMap { roomState ->
+        Observable.combineLatest(
+                bgService.roomState.flatMap { roomState ->
                     Observable.combineLatest(
                             appComponent.roomRepository.optRoomWithMembers(roomState.currentRoomID),
                             appComponent.userRepository.optUser(roomState.currentRoomActiveSpeakerID),
                             { roomWithMembers, currentActiveUser -> RoomData(roomState, roomWithMembers, currentActiveUser) }) },
-                it.loginState,
+                bgService.loginState,
                 context.getConnectivity(),
                 { roomData, loginState, connectivity -> Triple(roomData, loginState, connectivity) })
-        }.observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<Triple<RoomData, LoginState, Boolean>>() {
-                    override fun onNext(t: Triple<RoomData, LoginState, Boolean>) {
-                        updateRoomState(t.first, t.second, t.third)
-                    }
-                })
-
-        bgService.flatMap { it.roomState }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<RoomState>() {
-                    override fun onNext(t: RoomState) {
-                        if (t.status == RoomState.Status.JOINING && joiningProgressDialog == null) {
+                .subscribeSimple {
+                        updateRoomState(it.first, it.second, it.third)
+                }
+
+        bgService.roomState
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                        if (it.status == RoomStatus.JOINING && joiningProgressDialog == null) {
                             joiningProgressDialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context), R.string.joining_room.toFormattedString(context))
                         }
-                        else if (t.status != RoomState.Status.JOINING && joiningProgressDialog != null) {
+                        else if (it.status != RoomStatus.JOINING && joiningProgressDialog != null) {
                             joiningProgressDialog!!.dismiss()
                             joiningProgressDialog = null
                         }
-                    }
-                })
+                }
     }
 
     internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
         adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
-            pttBtn.roomState = if (hasConnectivity) roomData.roomState else roomData.roomState.copy(status = RoomState.Status.IDLE)
+            pttBtn.roomState = if (hasConnectivity) roomData.roomState else roomData.roomState.copy(status = RoomStatus.IDLE)
             toolbar.title = roomData.roomWithMembers?.getRoomName(context)
 
             val show: Boolean
@@ -171,17 +163,11 @@ class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
     }
 
     override fun requestMic() {
-        (context.applicationContext as AppComponent).backgroundService
-                .first()
-                .flatMap { it.requestMic() }
-                .subscribe(GlobalSubscriber())
+        (context.applicationContext as AppComponent).signalService.requestMic().subscribeSimple()
     }
 
     override fun releaseMic() {
-        (context.applicationContext as AppComponent).backgroundService
-                .first()
-                .flatMap { it.releaseMic() }
-                .subscribe(GlobalSubscriber())
+        (context.applicationContext as AppComponent).signalService.releaseMic().subscribeSimple()
     }
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
