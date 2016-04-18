@@ -11,6 +11,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
@@ -27,11 +28,27 @@ abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnNegativeButtonClickListener  {
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
+    private var currentInvite : Pair<Room?, Room>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         lifecycleEventSubject.onNext(ActivityEvent.CREATE)
+
+        if (savedInstanceState == null) {
+            handleIntent(intent)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_HAS_INVITE_TO_JOIN, false)) {
+            onInviteToJoin(intent.getParcelableExtra(EXTRA_CURR_ROOM), intent.getParcelableExtra(EXTRA_REQUESTED_ROOM))
+        }
     }
 
     override fun onDestroy() {
@@ -142,6 +159,16 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribeSimple { joinRoom(it) }
     }
 
+    fun onInviteToJoin(currRoom : Room?, requestedRoom : Room) {
+        if (currentInvite == null || currentInvite!!.second.important.not()) {
+            currentInvite = currRoom to requestedRoom
+
+            if (currRoom != null && currRoom.important) {
+
+            }
+        }
+    }
+
     private fun showProgressDialog(title : Int, message : Int, tag : String) {
         supportFragmentManager.findFragment<DialogFragment>(tag) ?: ProgressDialogFragment.Builder().apply {
             this.title = title.toFormattedString(this@BaseActivity)
@@ -178,5 +205,10 @@ abstract class BaseActivity : AppCompatActivity(),
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
         private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
+        private const val TAG_JOIN_INVITED_ROOM_CONFIRMATION = "tag_join_invited_confirmation"
+
+        const val EXTRA_HAS_INVITE_TO_JOIN = "extra_has_invite_to_join"
+        const val EXTRA_CURR_ROOM = "extra_curr_room"
+        const val EXTRA_REQUESTED_ROOM = "extra_requested_room"
     }
 }

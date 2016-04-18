@@ -38,6 +38,11 @@ interface SignalService {
     fun requestMic(): Observable<Unit>
     fun releaseMic() : Observable<Unit>
     fun quitRoom(): Observable<Unit>
+
+    companion object {
+        const val ACTION_INVITE_TO_JOIN = "aciton_invite_to_join"
+        const val EXTRA_ROOM_ID = "extra_room_id"
+    }
 }
 
 val SignalService.roomStatus : Observable<RoomStatus>
