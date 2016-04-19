@@ -13,7 +13,6 @@ interface Room : Serializable {
     val name : String
     val description : String?
     val ownerId : String
-    val important : Boolean
     val lastActiveUserId : String?
     val lastActiveTime : Date?
 }
@@ -23,7 +22,6 @@ interface MutableRoom : Room {
     override var name: String
     override var description: String?
     override var ownerId: String
-    override var important: Boolean
     override var lastActiveUserId: String?
     override var lastActiveTime: Date?
 }
@@ -47,6 +45,7 @@ interface User : Serializable {
     val name : String
     val avatar: String?
     val privileges : EnumSet<Privilege>
+    val level : Int
 }
 
 interface MutableUser : User {
@@ -60,7 +59,6 @@ data class RoomImpl(override var id: String,
                     override var name: String,
                     override var description: String?,
                     override var ownerId: String,
-                    override var important: Boolean,
                     override var lastActiveUserId: String?,
                     override var lastActiveTime: Date?) : MutableRoom
 
@@ -71,6 +69,7 @@ data class GroupImpl(override var id: String,
 
 data class UserImpl(override var id: String,
                     override var name: String,
+                    override var level : Int,
                     override var avatar: String?,
                     var privilegesText: String?) : MutableUser {
     override var privileges: EnumSet<Privilege>

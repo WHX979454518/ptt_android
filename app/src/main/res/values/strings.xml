@@ -20,11 +20,12 @@
     <string name="dialog_confirm">确定</string>
     <string name="dialog_cancel">取消</string>
     <string name="dialog_ok">知道了</string>
+    <string name="dialog_join">加入</string>
     <string name="dialog_yes_switch">切换</string>
     <string name="dialog_navigate_to_current_room">切换至&quot;%1$s&quot;</string>
 
     <string name="dialog_confirm_title">确定吗</string>
-    <string name="receive_invite_switch_confirm">您收到了加入&quot;%1$s&quot;房间的邀请, 但是当前您正处于房间&quot;%2$s&quot;对讲状态中, 确定是否切换至新的房间?</string>
+    <string name="receive_invite_switch_confirm">%1$s 邀请您加入对讲房间 %2$s, 要加入吗?</string>
 
     <string name="room_talking">请讲话</string>
     <string name="room_other_is_talking">%1$s 正在讲话</string>
@@ -44,6 +45,7 @@
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
     <string name="error_no_such_room">没有该房间</string>
+    <string name="error_no_such_user">没有该用户</string>
     <string name="error_user_not_logon">未登陆用户无法进行此操作</string>
     <string name="error_join_room">加入房间失败</string>
     <string name="error_service_empty_response">服务器故障</string>
@@ -89,4 +91,12 @@
     <string name="update_title">可用更新</string>
     <string name="update">更新</string>
     <string name="app_updating">%1$s的更新包</string>
+    <string name="invite_you_to_join">邀请你加入对讲</string>
+    <string name="ignore_all_and_cancel">忽略全部</string>
+    <string name="dialog_ignore">忽略</string>
+
+    <string name="yesterday">昨天</string>
+    <plurals name="days_ago">
+        <item quantity="other">%1$s天以前</item>
+    </plurals>
 </resources>

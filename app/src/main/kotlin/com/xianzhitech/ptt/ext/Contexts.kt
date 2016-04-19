@@ -132,6 +132,10 @@ inline fun <reified T : Fragment> FragmentManager.findFragment(tag: String) : T?
     return findFragmentByTag(tag) as? T
 }
 
+inline fun <reified T> Fragment.callbacks() : T? {
+    return (parentFragment as? T) ?: (activity as? T)
+}
+
 fun DialogFragment.dismissImmediately() {
     dismiss()
     fragmentManager.executePendingTransactions()

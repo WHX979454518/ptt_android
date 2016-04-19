@@ -31,7 +31,7 @@ import java.util.*
 
  * Created by fanchao on 17/12/15.
  */
-class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Callbacks {
+class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
 
     private enum class Tab private constructor(@StringRes
                                                val labelRes: Int, @DrawableRes
@@ -112,7 +112,7 @@ class HomeFragment : BaseFragment<HomeFragment.Callbacks>(), RoomListFragment.Ca
     override fun onStart() {
         super.onStart()
 
-        callbacks?.setTitle(getString(R.string.app_name))
+        callbacks<Callbacks>()?.setTitle(getString(R.string.app_name))
 
         val appComponent = context.applicationContext as AppComponent
         val signalService = appComponent.signalService

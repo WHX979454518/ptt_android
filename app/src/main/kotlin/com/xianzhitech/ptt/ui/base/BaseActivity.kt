@@ -12,14 +12,16 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.InviteToJoin
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
+import com.xianzhitech.ptt.ui.room.InviteToJoinDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -48,7 +50,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private fun handleIntent(intent: Intent) {
         if (intent.getBooleanExtra(EXTRA_HAS_INVITE_TO_JOIN, false)) {
-            onInviteToJoin(intent.getSerializableExtra(EXTRA_CURR_ROOM) as? Room, intent.getSerializableExtra(EXTRA_REQUESTED_ROOM) as Room)
+            onInviteToJoin(intent.getSerializableExtra(EXTRA_CURR_ROOM) as? Room, intent.getSerializableExtra(EXTRA_REQUESTED_ROOM) as InviteToJoinInfo)
         }
     }
 
@@ -160,20 +162,11 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribeSimple { joinRoom(it) }
     }
 
-    fun onInviteToJoin(currRoom : Room?, requestedRoom : Room) {
-        if (currRoom != null) {
-            AlertDialogFragment.Builder().apply {
-                val requestedRoomName = if (requestedRoom is RoomWithMembers) requestedRoom.getRoomName(this@BaseActivity) else requestedRoom.name
-                val currRoomName = if (currRoom is RoomWithMembers) currRoom.getRoomName(this@BaseActivity) else currRoom.name
-                title = R.string.dialog_navigate_to_current_room.toFormattedString(this@BaseActivity, requestedRoomName)
-                message = R.string.receive_invite_switch_confirm.toFormattedString(this@BaseActivity, requestedRoomName, currRoomName)
-                btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
-                btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
-                attachment = currRoom to requestedRoom
-
-                show(supportFragmentManager, TAG_JOIN_INVITED_ROOM_CONFIRMATION)
-            }
-        }
+    fun onInviteToJoin(currRoom : Room?, invite: InviteToJoinInfo) {
+        supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.addInvite(invite) ?:
+            InviteToJoinDialogFragment.Builder().apply {
+                invites = arrayListOf(invite)
+            }.showImmediately(supportFragmentManager, TAG_JOIN_INVITED_ROOM_CONFIRMATION)
     }
 
     private fun showProgressDialog(title : Int, message : Int, tag : String) {
@@ -207,6 +200,11 @@ abstract class BaseActivity : AppCompatActivity(),
     fun <D> bindUntil(event: ActivityEvent): Observable.Transformer<in D, out D> {
         return RxLifecycle.bindUntilActivityEvent<D>(lifecycleEventSubject, event)
     }
+
+    data class InviteToJoinInfo(val inviteToJoin: InviteToJoin,
+                                val room : Room,
+                                val roomOwner : User,
+                                val inviter : User) : InviteToJoin by inviteToJoin
 
     companion object {
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"

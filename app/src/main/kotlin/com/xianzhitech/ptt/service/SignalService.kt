@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.service
 
 import rx.Observable
+import java.io.Serializable
+import java.util.*
 
 
 /**
@@ -22,6 +24,12 @@ data class CreateRoomFromUser(val userId: String,
 data class CreateRoomFromGroup(val groupId: String,
                                override val name: String? = null) : CreateRoomRequest
 
+interface InviteToJoin : Serializable {
+    val roomId : String
+    val inviterId : String
+    val inviteTime : Date
+}
+
 interface SignalService {
     val roomState : Observable<RoomState>
     val loginState : Observable<LoginState>
@@ -40,8 +48,8 @@ interface SignalService {
     fun quitRoom(): Observable<Unit>
 
     companion object {
-        const val ACTION_INVITE_TO_JOIN = "aciton_invite_to_join"
-        const val EXTRA_ROOM_ID = "extra_room_id"
+        const val ACTION_INVITE_TO_JOIN = "acton_invite_to_join"
+        const val EXTRA_INVITE = "extra_invite"
     }
 }
 

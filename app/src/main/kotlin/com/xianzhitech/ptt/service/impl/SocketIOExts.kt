@@ -66,6 +66,7 @@ internal fun createUser(obj : JSONObject) : MutableUser {
         override var id: String = obj.getString("idNumber")
         override var name: String = obj.getString("name")
         override var avatar: String? = obj.optString("avatar")
+        override val level: Int = obj.optInt("level", 100) // TODO: default level
         override var privileges: EnumSet<Privilege> = obj.optJSONObject("privileges").toPrivilege()
     }
 }
@@ -82,7 +83,6 @@ internal fun createRoom(obj : JSONObject) : MutableRoom {
     return RoomImpl(id = obj.getString("idNumber"),
             name = obj.getString("name"),
             ownerId = obj.getString("owner"),
-            important = obj.getBoolean("important"),
             description = null,
             lastActiveTime = null,
             lastActiveUserId = null)
@@ -92,7 +92,6 @@ internal fun MutableRoom.readFrom(obj: JSONObject): MutableRoom {
     id = obj.getString("idNumber")
     name = obj.getString("name")
     ownerId = obj.getString("owner")
-    important = obj.getBoolean("important")
     return this
 }
 

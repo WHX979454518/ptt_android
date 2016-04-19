@@ -310,7 +310,6 @@ internal object Rooms : TableDefinition {
     const val COL_NAME = "room_name"
     const val COL_DESC = "room_desc"
     const val COL_OWNER_ID = "room_owner_id"
-    const val COL_IMPORTANT = "room_important"
     const val COL_LAST_ACTIVE_USER_ID = "room_last_active_user_id"
     const val COL_LAST_ACTIVE_TIME = "room_last_active_time"
 
@@ -319,7 +318,6 @@ internal object Rooms : TableDefinition {
             "$COL_NAME TEXT," +
             "$COL_DESC TEXT," +
             "$COL_OWNER_ID TEXT NOT NULL REFERENCES ${Users.TABLE_NAME}(${Users.COL_ID})," +
-            "$COL_IMPORTANT INTEGER NOT NULL," +
             "$COL_LAST_ACTIVE_USER_ID TEXT," +
             "$COL_LAST_ACTIVE_TIME INTEGER" +
             ")"
@@ -332,7 +330,6 @@ internal fun createRoom(cursor: ResultSet) : MutableRoom {
             name = cursor.getStringValue(Rooms.COL_NAME),
             description = cursor.optStringValue(Rooms.COL_DESC),
             ownerId = cursor.getStringValue(Rooms.COL_OWNER_ID),
-            important = cursor.getIntValue(Rooms.COL_IMPORTANT) != 0,
             lastActiveTime = cursor.getLongValue(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null },
             lastActiveUserId = cursor.optStringValue(Rooms.COL_LAST_ACTIVE_USER_ID))
 }
@@ -342,7 +339,6 @@ internal fun Room.toValues(values: MutableMap<String, Any?>) {
     values.put(Rooms.COL_NAME, name)
     values.put(Rooms.COL_DESC, description)
     values.put(Rooms.COL_OWNER_ID, ownerId)
-    values.put(Rooms.COL_IMPORTANT, important)
     values.put(Rooms.COL_LAST_ACTIVE_TIME, lastActiveTime?.time ?: 0)
     values.put(Rooms.COL_LAST_ACTIVE_USER_ID, lastActiveUserId)
 }
@@ -352,7 +348,6 @@ internal fun MutableRoom.from(cursor: ResultSet): MutableRoom {
     name = cursor.getStringValue(Rooms.COL_NAME)
     description = cursor.optStringValue(Rooms.COL_DESC)
     ownerId = cursor.getStringValue(Rooms.COL_OWNER_ID)
-    important = cursor.getIntValue(Rooms.COL_IMPORTANT) != 0
     lastActiveTime = cursor.getLongValue(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null }
     lastActiveUserId = cursor.optStringValue(Rooms.COL_LAST_ACTIVE_USER_ID)
     return this
@@ -393,12 +388,14 @@ internal object Users : TableDefinition {
     const val COL_ID = "person_id"
     const val COL_NAME = "person_name"
     const val COL_PRIV = "person_priv"
+    const val COL_LEVEL = "person_level"
     const val COL_AVATAR = "person_avatar"
 
     override val creationSql = "CREATE TABLE $TABLE_NAME (" +
             "$COL_ID TEXT PRIMARY KEY NOT NULL, " +
             "$COL_NAME TEXT NOT NULL, " +
             "$COL_AVATAR TEXT, " +
+            "$COL_LEVEL INTEGER NOT NULL DEFAULT 100, " +
             "$COL_PRIV INTEGER NOT NULL" +
             ")"
 
@@ -411,6 +408,7 @@ internal fun User.toValues(values: MutableMap<String, Any?>) {
     values.put(Users.COL_ID, id)
     values.put(Users.COL_AVATAR, avatar)
     values.put(Users.COL_NAME, name)
+    values.put(Users.COL_LEVEL, level)
     values.put(Users.COL_PRIV, (this as? UserImpl)?.privilegesText ?: privileges.toDatabaseString())
 }
 
@@ -418,6 +416,7 @@ internal fun createUser(cursor: ResultSet) : MutableUser {
     return UserImpl(id = cursor.getStringValue(Users.COL_ID),
             avatar = cursor.optStringValue(Users.COL_AVATAR),
             name = cursor.getStringValue(Users.COL_NAME),
+            level = cursor.getIntValue(Users.COL_LEVEL),
             privilegesText = cursor.getStringValue(Users.COL_PRIV))
 }
 

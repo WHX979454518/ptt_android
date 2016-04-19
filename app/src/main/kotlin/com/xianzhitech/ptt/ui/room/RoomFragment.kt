@@ -28,7 +28,7 @@ import com.xianzhitech.ptt.ui.widget.PushToTalkButton
 import rx.Observable
 import java.util.*
 
-class RoomFragment : BaseFragment<RoomFragment.Callbacks>()
+class RoomFragment : BaseFragment()
         , PushToTalkButton.Callbacks
         , BackPressable
         , AlertDialogFragment.OnPositiveButtonClickListener

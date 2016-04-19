@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  * 登陆界面
  * Created by fanchao on 17/12/15.
  */
-class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
+class LoginFragment : BaseFragment()
         , AlertDialogFragment.OnNeutralButtonClickListener {
 
     private var views: Views? = null
@@ -31,7 +31,7 @@ class LoginFragment : BaseFragment<LoginFragment.Callbacks>()
     override fun onStart() {
         super.onStart()
 
-        callbacks?.setTitle(R.string.login.toFormattedString(context))
+        callbacks<Callbacks>()?.setTitle(R.string.login.toFormattedString(context))
 
         (context.applicationContext as AppComponent).signalService.loginState
                 .observeOnMainThread()

@@ -22,10 +22,10 @@ import java.util.*
 class LocalRepositoryTest {
     private lateinit var localRepository: LocalRepository
 
-    private val person1 = UserImpl(id = "1", name = "hello", privilegesText = EnumSet.allOf(Privilege::class.java).toDatabaseString(), avatar = null)
-    private val person2 = UserImpl(id = "2", name = "hello2", privilegesText = EnumSet.allOf(Privilege::class.java).toDatabaseString(), avatar = null)
+    private val person1 = UserImpl(id = "1", name = "hello", privilegesText = EnumSet.allOf(Privilege::class.java).toDatabaseString(), avatar = null, level = 100)
+    private val person2 = UserImpl(id = "2", name = "hello2", privilegesText = EnumSet.allOf(Privilege::class.java).toDatabaseString(), avatar = null, level = 100)
     private val group1 = GroupImpl("1", "hello1", "group1", null)
-    private val room1 = RoomImpl("1", "Room1", "", person1.id, false, "room1", null)
+    private val room1 = RoomImpl("1", "Room1", "", person1.id, "room1", null)
     private val groupMembers = hashMapOf(Pair(group1.id, listOf(person1.id, person2.id)))
     private val roomMembers = hashMapOf(Pair(room1.id, listOf(person1.id, person2.id)))
 

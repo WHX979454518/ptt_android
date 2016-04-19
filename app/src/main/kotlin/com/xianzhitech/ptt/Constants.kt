@@ -10,4 +10,7 @@ object Constants {
     const val JOIN_ROOM_TIMEOUT_SECONDS: Long = 10
 
     const val MAX_MEMBER_DISPLAY_COUNT: Int = 3
+
+    const val ADMIN_USER_ID = "0"
+    const val ADMIN_USER_LEVEL = 0
 }

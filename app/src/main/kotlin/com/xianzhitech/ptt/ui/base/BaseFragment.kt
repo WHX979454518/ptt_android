@@ -9,9 +9,8 @@ import com.trello.rxlifecycle.RxLifecycle
 import rx.Observable
 import rx.subjects.BehaviorSubject
 
-abstract class BaseFragment<T> : Fragment() {
+abstract class BaseFragment : Fragment() {
     val lifecycleEventSubject = BehaviorSubject.create<FragmentEvent>()
-    protected var callbacks: T? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,18 +56,11 @@ abstract class BaseFragment<T> : Fragment() {
         super.onAttach(context)
 
         lifecycleEventSubject.onNext(FragmentEvent.ATTACH)
-
-        if (parentFragment != null) {
-            callbacks = parentFragment as T
-        } else {
-            callbacks = activity as T
-        }
     }
 
     override fun onDetach() {
         lifecycleEventSubject.onNext(FragmentEvent.DETACH)
 
-        callbacks = null
         super.onDetach()
     }
 

@@ -26,7 +26,7 @@ import java.util.*
 /**
  * 显示会话列表(Room)的界面
  */
-class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
+class RoomListFragment : BaseFragment() {
 
     private var listView: RecyclerView? = null
     private var errorView : View? = null
@@ -87,7 +87,7 @@ class RoomListFragment : BaseFragment<RoomListFragment.Callbacks>() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.fragment_room_list, container, false)?.apply {
             errorView = findViewById(R.id.roomList_emptyView).apply {
-                setOnClickListener { callbacks?.navigateToContactList() }
+                setOnClickListener { callbacks<Callbacks>()?.navigateToContactList() }
             }
             listView = findView<RecyclerView>(R.id.roomList_recyclerView).apply {
                 layoutManager = LinearLayoutManager(context)

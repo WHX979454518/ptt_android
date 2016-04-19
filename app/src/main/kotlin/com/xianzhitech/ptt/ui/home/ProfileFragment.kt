@@ -20,7 +20,7 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsDialogFragment
 
-class ProfileFragment : BaseFragment<Unit>(), View.OnClickListener {
+class ProfileFragment : BaseFragment(), View.OnClickListener {
     private var views : Views? = null
     private lateinit var appComponent : AppComponent
 

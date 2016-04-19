@@ -27,7 +27,7 @@ import rx.Observable
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class ContactsFragment : BaseFragment<Void>() {
+class ContactsFragment : BaseFragment() {
     private class Views(rootView: View,
                         val recyclerView: RecyclerView = rootView.findView(R.id.contacts_list),
                         val searchBox: EditText = rootView.findView(R.id.contacts_searchBox))
