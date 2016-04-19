@@ -1,6 +1,9 @@
 package com.xianzhitech.ptt.repo
 
+import android.content.Context
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.ContactItem
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Room
@@ -86,3 +89,24 @@ fun RoomRepository.optRoomWithMembers(roomId: String?, maxMember: Int = Constant
  */
 fun UserRepository.optUser(id: String?): Observable<User?> =
         id?.let { getUser(id) } ?: Observable.just<User?>(null)
+
+
+fun RoomWithMembers.getMemberNames(context: Context, maxDisplaySize: Int = Constants.MAX_MEMBER_DISPLAY_COUNT) : String {
+    val displaySize = Math.min(maxDisplaySize, members.size)
+    val separator = R.string.member_separator.toFormattedString(context)
+    val memberList : List<User>
+    val strResource : Int
+
+    if (displaySize < memberCount) {
+        strResource = R.string.group_member_with_more
+        memberList = members.subList(0, displaySize)
+    } else {
+        strResource = R.string.group_member
+        memberList = members
+    }
+
+    return strResource.toFormattedString(context, memberList.joinToString(separator = separator, transform = { it.name }))
+}
+
+fun RoomWithMembers.getRoomName(context: Context) = if (room.name.isNullOrBlank()) getMemberNames(context) else room.name
+fun Room.getRoomName(context: Context) = (this as? RoomWithMembers)?.getRoomName(context) ?: name

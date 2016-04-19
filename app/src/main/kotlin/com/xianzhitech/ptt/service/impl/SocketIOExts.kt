@@ -41,9 +41,16 @@ internal data class SyncContactsDTO(val groups: Iterable<Group>,
 internal fun JSONObject.toSyncContactsDto(): SyncContactsDTO {
     val groupJsonArray = getJSONObject("enterpriseGroups").getJSONArray("add")
     return SyncContactsDTO(
-            groupJsonArray.transform { GroupImpl().readFrom(it as JSONObject) },
-            getJSONObject("enterpriseMembers").getJSONArray("add").transform { UserImpl().readFrom(it as JSONObject) },
+            groupJsonArray.transform { createGroup(it as JSONObject) },
+            getJSONObject("enterpriseMembers").getJSONArray("add").transform { createUser(it as JSONObject) },
             groupJsonArray.toGroupsAndMembers())
+}
+
+internal fun createGroup(obj : JSONObject) : MutableGroup {
+    return GroupImpl(id = obj.getString("idNumber"),
+            description = obj.optString("description"),
+            name = obj.getString("name"),
+            avatar = obj.optString("avatar"))
 }
 
 internal fun MutableGroup.readFrom(obj: JSONObject): MutableGroup {
@@ -54,12 +61,31 @@ internal fun MutableGroup.readFrom(obj: JSONObject): MutableGroup {
     return this
 }
 
+internal fun createUser(obj : JSONObject) : MutableUser {
+    return object : MutableUser {
+        override var id: String = obj.getString("idNumber")
+        override var name: String = obj.getString("name")
+        override var avatar: String? = obj.optString("avatar")
+        override var privileges: EnumSet<Privilege> = obj.optJSONObject("privileges").toPrivilege()
+    }
+}
+
 internal fun MutableUser.readFrom(obj: JSONObject): MutableUser {
     id = obj.getString("idNumber")
     name = obj.getString("name")
     avatar = obj.optString("avatar")
     privileges = obj.optJSONObject("privileges").toPrivilege()
     return this
+}
+
+internal fun createRoom(obj : JSONObject) : MutableRoom {
+    return RoomImpl(id = obj.getString("idNumber"),
+            name = obj.getString("name"),
+            ownerId = obj.getString("owner"),
+            important = obj.getBoolean("important"),
+            description = null,
+            lastActiveTime = null,
+            lastActiveUserId = null)
 }
 
 internal fun MutableRoom.readFrom(obj: JSONObject): MutableRoom {

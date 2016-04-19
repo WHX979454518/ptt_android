@@ -12,6 +12,8 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
@@ -28,7 +30,6 @@ abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnNegativeButtonClickListener  {
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
-    private var currentInvite : Pair<Room?, Room>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +48,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private fun handleIntent(intent: Intent) {
         if (intent.getBooleanExtra(EXTRA_HAS_INVITE_TO_JOIN, false)) {
-            onInviteToJoin(intent.getParcelableExtra(EXTRA_CURR_ROOM), intent.getParcelableExtra(EXTRA_REQUESTED_ROOM))
+            onInviteToJoin(intent.getSerializableExtra(EXTRA_CURR_ROOM) as? Room, intent.getSerializableExtra(EXTRA_REQUESTED_ROOM) as Room)
         }
     }
 
@@ -71,14 +72,14 @@ abstract class BaseActivity : AppCompatActivity(),
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
-            TAG_SWITCH_ROOM_CONFIRMATION -> {
-                joinRoom(fragment.attachment as String, confirmed = true)
-            }
+            TAG_SWITCH_ROOM_CONFIRMATION -> joinRoom(fragment.attachment as String, confirmed = true)
+            TAG_JOIN_INVITED_ROOM_CONFIRMATION -> joinRoom((fragment.attachment as Pair<Room?, Room>).second.id)
         }
     }
 
     override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
+            TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
         }
     }
@@ -160,11 +161,17 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     fun onInviteToJoin(currRoom : Room?, requestedRoom : Room) {
-        if (currentInvite == null || currentInvite!!.second.important.not()) {
-            currentInvite = currRoom to requestedRoom
+        if (currRoom != null) {
+            AlertDialogFragment.Builder().apply {
+                val requestedRoomName = if (requestedRoom is RoomWithMembers) requestedRoom.getRoomName(this@BaseActivity) else requestedRoom.name
+                val currRoomName = if (currRoom is RoomWithMembers) currRoom.getRoomName(this@BaseActivity) else currRoom.name
+                title = R.string.dialog_navigate_to_current_room.toFormattedString(this@BaseActivity, requestedRoomName)
+                message = R.string.receive_invite_switch_confirm.toFormattedString(this@BaseActivity, requestedRoomName, currRoomName)
+                btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
+                btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
+                attachment = currRoom to requestedRoom
 
-            if (currRoom != null && currRoom.important) {
-
+                show(supportFragmentManager, TAG_JOIN_INVITED_ROOM_CONFIRMATION)
             }
         }
     }

@@ -17,7 +17,10 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.Privilege
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
@@ -171,7 +174,7 @@ class SignalServiceImpl(private val appContext: Context,
                         /**
                          * Response: { userObject }
                          */
-                        val user = UserImpl().readFrom(response)
+                        val user = createUser(response)
 
                         if (preference.lastLoginUserId != user.id) {
                             // Clear room information if it's this user's first login
@@ -215,9 +218,9 @@ class SignalServiceImpl(private val appContext: Context,
                         newSocket.sendEvent(EVENT_CLIENT_SYNC_CONTACTS, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
                                 .flatMap { response ->
                                     logd("Received sync result: $response")
-                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { UserImpl().readFrom(it as JSONObject) }.toMutableList()
+                                    val users : MutableList<Any> = response.getJSONObject("enterpriseMembers").getJSONArray("add").transform { createUser(it as JSONObject) }.toMutableList()
                                     val addGroupJsonArray = response.getJSONObject("enterpriseGroups").getJSONArray("add")
-                                    val groups : MutableList<Any> = addGroupJsonArray.transform { GroupImpl().readFrom(it as JSONObject) }.toMutableList()
+                                    val groups : MutableList<Any> = addGroupJsonArray.transform { createGroup(it as JSONObject) }.toMutableList()
                                     val groupMembers = addGroupJsonArray.toGroupsAndMembers()
 
                                     userRepository.replaceAllUsers(users as List<User>)
@@ -261,7 +264,7 @@ class SignalServiceImpl(private val appContext: Context,
                          *  }
                          */
                         val roomInfoJsonObj = response.getJSONObject("roomInfo")
-                        val room = RoomImpl().readFrom(roomInfoJsonObj)
+                        val room = createRoom(roomInfoJsonObj)
                         roomRepository.updateRoom(room, roomInfoJsonObj.getJSONArray("members").toStringIterable()).map { room }
                     }
                     .observeOnMainThread()
@@ -468,7 +471,7 @@ class SignalServiceImpl(private val appContext: Context,
                                      *      members : [user IDs]
                                      * }
                                      */
-                                    val room = RoomImpl().readFrom(response)
+                                    val room = createRoom(response)
                                     roomRepository.updateRoom(room, response.getJSONArray("members").toStringIterable()).map { it.id }
                                 }
                     }
@@ -578,7 +581,7 @@ class SignalServiceImpl(private val appContext: Context,
                                      *
                                      */
                                     val roomInfoJsonObj = response.getJSONObject("roomInfo")
-                                    roomRepository.updateRoom(RoomImpl().readFrom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable())
+                                    roomRepository.updateRoom(createRoom(roomInfoJsonObj), roomInfoJsonObj.getJSONArray("members").toStringIterable())
                                             .map { response }
                                 }
                     }

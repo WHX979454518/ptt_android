@@ -14,6 +14,8 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.repo.getMemberNames
+import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.MultiDrawable

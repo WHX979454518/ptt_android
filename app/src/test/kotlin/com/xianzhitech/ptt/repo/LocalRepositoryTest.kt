@@ -6,10 +6,7 @@ import com.xianzhitech.ptt.db.JDBCDatabase
 import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.pairWith
-import com.xianzhitech.ptt.model.MutableGroup
-import com.xianzhitech.ptt.model.MutableRoom
-import com.xianzhitech.ptt.model.MutableUser
-import com.xianzhitech.ptt.model.Privilege
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.util.test
 import org.junit.After
 import org.junit.Before
@@ -25,10 +22,10 @@ import java.util.*
 class LocalRepositoryTest {
     private lateinit var localRepository: LocalRepository
 
-    private val person1 = MutableUser(id = "1", name = "hello", privileges = EnumSet.allOf(Privilege::class.java))
-    private val person2 = MutableUser(id = "2", name = "hello2", privileges = EnumSet.allOf(Privilege::class.java))
-    private val group1 = MutableGroup("1", "hello1")
-    private val room1 = MutableRoom("1", "Room1", "", person1.id, false)
+    private val person1 = UserImpl(id = "1", name = "hello", privilegesText = EnumSet.allOf(Privilege::class.java).toDatabaseString(), avatar = null)
+    private val person2 = UserImpl(id = "2", name = "hello2", privilegesText = EnumSet.allOf(Privilege::class.java).toDatabaseString(), avatar = null)
+    private val group1 = GroupImpl("1", "hello1", "group1", null)
+    private val room1 = RoomImpl("1", "Room1", "", person1.id, false, "room1", null)
     private val groupMembers = hashMapOf(Pair(group1.id, listOf(person1.id, person2.id)))
     private val roomMembers = hashMapOf(Pair(room1.id, listOf(person1.id, person2.id)))
 

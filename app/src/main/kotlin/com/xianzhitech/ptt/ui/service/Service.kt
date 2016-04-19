@@ -5,9 +5,13 @@ import android.content.Intent
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.getConnectivity
+import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.LoginState
