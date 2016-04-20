@@ -8,17 +8,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import com.xianzhitech.ptt.ext.registerLocalBroadcastReceiver
-import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.InviteToJoin
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import java.io.Serializable
 
-class InviteToJoinBroadcastReceiver(private val app: Application,
-                                    private val roomRepository: RoomRepository,
-                                    private val userRepository: UserRepository,
-                                    private val signalService: SignalService) : BroadcastReceiver() {
+class InviteToJoinBroadcastReceiver(private val app: Application) : BroadcastReceiver() {
 
     private var currActivity : BaseActivity? = null
 
@@ -47,10 +43,10 @@ class InviteToJoinBroadcastReceiver(private val app: Application,
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == SignalService.ACTION_INVITE_TO_JOIN) {
-            val inviteToJoin = intent!!.getSerializableExtra(SignalService.EXTRA_INVITE) as InviteToJoin
-            currActivity?.onInviteToJoin(inviteToJoin) ?: app.startActivity(Intent(app, RoomActivity::class.java)
+            val invites = listOf(intent!!.getSerializableExtra(SignalService.EXTRA_INVITE) as InviteToJoin)
+            currActivity?.onInviteToJoin(invites) ?: app.startActivity(Intent(app, RoomActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    .putExtra(BaseActivity.EXTRA_INVITE_TO_JOIN, inviteToJoin))
+                    .putExtra(BaseActivity.EXTRA_INVITES_TO_JOIN, invites as Serializable))
         }
     }
 }

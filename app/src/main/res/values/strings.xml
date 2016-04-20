@@ -92,10 +92,12 @@
     <string name="update">更新</string>
     <string name="app_updating">%1$s的更新包</string>
     <string name="invite_you_to_join">邀请你加入对讲</string>
+    <string name="invite_you_to_join_by_whom">%1$s 邀请你加入对讲</string>
     <string name="ignore_all_and_cancel">忽略全部</string>
     <string name="dialog_ignore">忽略</string>
 
     <string name="invite_to_join">对讲邀请</string>
+    <string name="multiple_invite_to_join">收到多个对讲邀请</string>
 
     <string name="yesterday">昨天</string>
     <plurals name="days_ago">

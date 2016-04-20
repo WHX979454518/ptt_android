@@ -49,7 +49,7 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     private fun handleIntent(intent: Intent) {
-        (intent.getSerializableExtra(EXTRA_INVITE_TO_JOIN) as? InviteToJoin)?.let {
+        (intent.getSerializableExtra(EXTRA_INVITES_TO_JOIN) as? List<InviteToJoin>)?.let {
             onInviteToJoin(it)
         }
     }
@@ -165,11 +165,22 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribeSimple { joinRoomFromInvite(it) }
     }
 
-    fun onInviteToJoin(invite: InviteToJoin) {
-        supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.addInvite(invite) ?:
-            InviteToJoinDialogFragment.Builder().apply {
-                invites = arrayListOf(invite)
-            }.showImmediately(supportFragmentManager, TAG_JOIN_INVITED_ROOM_CONFIRMATION)
+    fun onInviteToJoin(invites: List<InviteToJoin>) {
+        val adminInvite = invites.firstOrNull { it.inviterId == Constants.ADMIN_USER_ID }
+        if (adminInvite != null) {
+            supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.dismissImmediately()
+
+            // 最高权限用户拉起的群, 直接响应
+            joinRoom(adminInvite.roomId, confirmed = true)
+        }
+        else {
+            supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.apply {
+                invites.forEach { addInvite(it) }
+            } ?: InviteToJoinDialogFragment.Builder().apply {
+                this.invites = invites
+                showImmediately(supportFragmentManager, TAG_JOIN_INVITED_ROOM_CONFIRMATION)
+            }
+        }
     }
 
     private fun showProgressDialog(title : Int, message : Int, tag : String) {
@@ -210,6 +221,6 @@ abstract class BaseActivity : AppCompatActivity(),
         private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
         private const val TAG_JOIN_INVITED_ROOM_CONFIRMATION = "tag_join_invited_confirmation"
 
-        const val EXTRA_INVITE_TO_JOIN = "extra_invite_to_join"
+        const val EXTRA_INVITES_TO_JOIN = "extra_invites_to_join"
     }
 }

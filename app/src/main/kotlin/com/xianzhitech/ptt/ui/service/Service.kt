@@ -118,7 +118,7 @@ class Service : android.app.Service() {
         }
 
         builder.setSmallIcon(icon)
-        startForeground(100, builder.build())
+        startForeground(R.id.notification_main, builder.build())
     }
 
     internal data class State(val roomState: RoomState,

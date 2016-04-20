@@ -77,7 +77,7 @@ open class App : Application(), AppComponent {
         }
 
         RoomAutoQuitHandler(this)
-        InviteToJoinBroadcastReceiver(this, roomRepository, userRepository, signalService)
+        InviteToJoinBroadcastReceiver(this)
     }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
