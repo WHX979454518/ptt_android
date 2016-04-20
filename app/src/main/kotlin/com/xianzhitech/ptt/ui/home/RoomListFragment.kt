@@ -114,7 +114,7 @@ class RoomListFragment : BaseFragment() {
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
             holder.setRoom(roomList[position], currentUserId)
             holder.itemView.setOnClickListener { v ->
-                (activity as BaseActivity).joinRoom(roomList[position].room.id)
+                (activity as BaseActivity).joinRoomFromInvite(roomList[position].room.id)
             }
         }
 

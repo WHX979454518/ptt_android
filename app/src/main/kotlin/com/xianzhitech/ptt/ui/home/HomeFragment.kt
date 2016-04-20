@@ -140,7 +140,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                 setVisible(true)
                                 text = R.string.in_room.toFormattedString(context, currRoom.getRoomName(context))
                                 setOnClickListener {
-                                    (activity as BaseActivity).joinRoom(currRoom.id)
+                                    (activity as BaseActivity).joinRoomFromInvite(currRoom.id)
                                 }
                             }
                             else {

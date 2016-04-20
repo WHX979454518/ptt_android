@@ -66,7 +66,7 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
     }
 
     internal fun joinRoom(invite: BaseActivity.InviteToJoinInfo) {
-        callbacks<Callbacks>()?.joinRoom(invite.roomId)
+        callbacks<Callbacks>()?.joinRoomFromInvite(invite.roomId)
         dismissImmediately()
     }
 
@@ -80,7 +80,7 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
     }
 
     interface Callbacks {
-        fun joinRoom(roomId : String)
+        fun joinRoomFromInvite(roomId : String)
     }
 
     private inner class Adapter : RecyclerView.Adapter<ViewHolder>() {

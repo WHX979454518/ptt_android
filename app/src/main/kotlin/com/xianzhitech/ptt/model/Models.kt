@@ -53,6 +53,7 @@ interface MutableUser : User {
     override var name: String
     override var avatar: String?
     override var privileges: EnumSet<Privilege>
+    override var level: Int
 }
 
 data class RoomImpl(override var id: String,

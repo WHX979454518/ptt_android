@@ -32,7 +32,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
         if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITE, false)) {
             intent.getStringExtra(EXTRA_JOIN_ROOM_ID).let {
                 if (it.isNullOrBlank().not()) {
-                    joinRoom(it)
+                    joinRoomFromInvite(it)
                 }
 
                 intent.removeExtra(EXTRA_JOIN_ROOM_ID)

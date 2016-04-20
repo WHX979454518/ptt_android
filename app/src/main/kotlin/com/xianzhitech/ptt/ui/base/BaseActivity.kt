@@ -28,6 +28,7 @@ import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
+        InviteToJoinDialogFragment.Callbacks,
         AlertDialogFragment.OnPositiveButtonClickListener,
         AlertDialogFragment.OnNegativeButtonClickListener  {
 
@@ -75,15 +76,18 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> joinRoom(fragment.attachment as String, confirmed = true)
-            TAG_JOIN_INVITED_ROOM_CONFIRMATION -> joinRoom((fragment.attachment as Pair<Room?, Room>).second.id)
+            TAG_JOIN_INVITED_ROOM_CONFIRMATION -> joinRoomFromInvite((fragment.attachment as Pair<Room?, Room>).second.id)
         }
     }
 
     override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
-            TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
         }
+    }
+
+    override fun joinRoomFromInvite(roomId: String) {
+        joinRoom(roomId, true)
     }
 
     fun joinRoom(roomId: String, confirmed : Boolean = false) {
@@ -159,7 +163,7 @@ abstract class BaseActivity : AppCompatActivity(),
                         Toast.makeText(this@BaseActivity, it.throwable.describeInHumanMessage(this@BaseActivity), Toast.LENGTH_LONG).show()
                     }
                 }
-                .subscribeSimple { joinRoom(it) }
+                .subscribeSimple { joinRoomFromInvite(it) }
     }
 
     fun onInviteToJoin(currRoom : Room?, invite: InviteToJoinInfo) {

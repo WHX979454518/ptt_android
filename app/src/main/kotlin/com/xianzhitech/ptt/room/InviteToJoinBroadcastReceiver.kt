@@ -61,7 +61,7 @@ class InviteToJoinBroadcastReceiver(private val app: Application,
                         .flatMap { room ->
                             userRepository.getUser(room.ownerId).map { (it ?: throw StaticUserException(R.string.error_no_such_user)) to room }
                         },
-                    { currRoom, inviter, requestedRoom -> currRoom to BaseActivity.InviteToJoinInfo(requestedRoom.second, requestedRoom.first, inviter) }
+                    { currRoom, inviter, requestedRoom -> currRoom to BaseActivity.InviteToJoinInfo(inviteToJoin, requestedRoom.second, requestedRoom.first, inviter) }
             ).first()
             .observeOnMainThread()
             .subscribeSimple {
