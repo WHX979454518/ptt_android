@@ -17,6 +17,7 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.room.InviteToJoinBroadcastReceiver
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.impl.SignalServiceImpl
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -76,6 +77,7 @@ open class App : Application(), AppComponent {
         }
 
         RoomAutoQuitHandler(this)
+        InviteToJoinBroadcastReceiver(this, roomRepository, userRepository, signalService)
     }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {

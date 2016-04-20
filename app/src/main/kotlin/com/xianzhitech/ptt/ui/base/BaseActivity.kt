@@ -12,7 +12,6 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.CreateRoomRequest
@@ -50,8 +49,8 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     private fun handleIntent(intent: Intent) {
-        if (intent.getBooleanExtra(EXTRA_HAS_INVITE_TO_JOIN, false)) {
-            onInviteToJoin(intent.getSerializableExtra(EXTRA_CURR_ROOM) as? Room, intent.getSerializableExtra(EXTRA_REQUESTED_ROOM) as InviteToJoinInfo)
+        (intent.getSerializableExtra(EXTRA_INVITE_TO_JOIN) as? InviteToJoin)?.let {
+            onInviteToJoin(it)
         }
     }
 
@@ -166,7 +165,7 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribeSimple { joinRoomFromInvite(it) }
     }
 
-    fun onInviteToJoin(currRoom : Room?, invite: InviteToJoinInfo) {
+    fun onInviteToJoin(invite: InviteToJoin) {
         supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.addInvite(invite) ?:
             InviteToJoinDialogFragment.Builder().apply {
                 invites = arrayListOf(invite)
@@ -205,19 +204,12 @@ abstract class BaseActivity : AppCompatActivity(),
         return RxLifecycle.bindUntilActivityEvent<D>(lifecycleEventSubject, event)
     }
 
-    data class InviteToJoinInfo(val inviteToJoin: InviteToJoin,
-                                val room : Room,
-                                val roomOwner : User,
-                                val inviter : User) : InviteToJoin by inviteToJoin
-
     companion object {
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
         private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
         private const val TAG_JOIN_INVITED_ROOM_CONFIRMATION = "tag_join_invited_confirmation"
 
-        const val EXTRA_HAS_INVITE_TO_JOIN = "extra_has_invite_to_join"
-        const val EXTRA_CURR_ROOM = "extra_curr_room"
-        const val EXTRA_REQUESTED_ROOM = "extra_requested_room"
+        const val EXTRA_INVITE_TO_JOIN = "extra_invite_to_join"
     }
 }

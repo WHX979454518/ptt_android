@@ -1,13 +1,39 @@
 package com.xianzhitech.ptt.util
 
+import android.content.Context
 import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.getRoomName
 import java.text.Collator
 import java.util.*
 
-/**
- * Created by fanchao on 15/12/15.
- */
+class RoomComparator(private val context: Context,
+                     private val collator: Collator = Collator.getInstance()) : Comparator<Room> {
+
+
+    override fun compare(p0: Room, p1: Room): Int {
+        if (p0 == p1) {
+            return 0
+        }
+
+        var rc : Int = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
+        if (rc != 0) {
+            return rc
+        }
+
+        rc = collator.compare(p0.getRoomName(context), p1.getRoomName(context))
+        if (rc != 0) {
+            return rc
+        }
+
+        return p0.id.compareTo(p1.id)
+    }
+
+    private fun Date?.timeOrZero() = this?.time ?: 0
+}
+
+
 class ContactComparator : Comparator<Any> {
     private val collator: Collator
 

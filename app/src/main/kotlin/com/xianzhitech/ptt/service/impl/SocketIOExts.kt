@@ -192,3 +192,7 @@ internal fun Socket.sendEventIgnoreReturn(eventName: String, arg: Any? = null) =
                 }
             })
 }
+
+internal data class InviteToJoinImpl(override val roomId: String,
+                                     override val inviterId: String,
+                                     override val inviteTime: Date = Date()) : InviteToJoin

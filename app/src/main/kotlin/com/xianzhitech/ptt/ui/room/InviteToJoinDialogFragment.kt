@@ -10,9 +10,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.repo.optUser
+import com.xianzhitech.ptt.service.InviteToJoin
+import rx.Subscription
 import java.io.Serializable
 
 class InviteToJoinDialogFragment : AppCompatDialogFragment() {
@@ -20,28 +23,45 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
     private var multiMode = false
     private val adapter = Adapter()
     private var bottomBar : View? = null
+    private var title : View? = null
 
-    private val invites = arrayListOf<BaseActivity.InviteToJoinInfo>()
+    private val invites = arrayListOf<InviteToJoin>()
 
-    fun addInvite(invite: BaseActivity.InviteToJoinInfo) {
-        if (invites.contains(invite).not()) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setStyle(STYLE_NO_TITLE, theme)
+    }
+
+    fun addInvite(invite: InviteToJoin) {
+        val existInviteIndex = invites.indexOfFirst { it.roomId == invite.roomId }
+        if (existInviteIndex < 0) {
             invites.add(invite)
             invites.sortBy { it.inviteTime }
             if (invites.size > 1) {
                 multiMode = true
             }
-            bottomBar?.visibility = if (multiMode) View.VISIBLE else View.GONE
+            applyMultiMode()
             adapter.notifyDataSetChanged()
+        }
+        else if (invite.inviteTime.compareTo(invites[existInviteIndex].inviteTime) > 0 && multiMode) {
+            invites[existInviteIndex] = invite
+            adapter.notifyItemChanged(existInviteIndex)
         }
     }
 
-    private fun addInvites(newInvites: Collection<BaseActivity.InviteToJoinInfo>) {
+    private fun applyMultiMode() {
+        bottomBar?.setVisible(multiMode)
+        title?.setVisible(multiMode)
+    }
+
+    private fun addInvites(newInvites: Collection<InviteToJoin>) {
         invites.addAll(newInvites)
         invites.sortBy { it.inviteTime }
         if (invites.size > 1) {
             multiMode = true
         }
-        bottomBar?.visibility = if (multiMode) View.VISIBLE else View.GONE
+        applyMultiMode()
         adapter.notifyDataSetChanged()
     }
 
@@ -51,21 +71,24 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
             recyclerView.layoutManager = LinearLayoutManager(context)
             recyclerView.adapter = adapter
 
-            bottomBar = findView<View>(R.id.inviteDialog_bottomBar).apply {
+            bottomBar = findViewById(R.id.inviteDialog_bottomBar).apply {
                 findViewById(R.id.inviteDialog_ignoreAll).setOnClickListener {
                     cancelJoinRoom()
                 }
             }
+
+            title = findViewById(R.id.inviteDialog_title)
+            applyMultiMode()
         }
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        addInvites((savedInstanceState?.getSerializable(STATE_INVITES) ?: arguments.getSerializable(ARG_INITIAL_INVITES)) as List<BaseActivity.InviteToJoinInfo>)
+        addInvites((savedInstanceState?.getSerializable(STATE_INVITES) ?: arguments.getSerializable(ARG_INITIAL_INVITES)) as List<InviteToJoin>)
     }
 
-    internal fun joinRoom(invite: BaseActivity.InviteToJoinInfo) {
+    internal fun joinRoom(invite: InviteToJoin) {
         callbacks<Callbacks>()?.joinRoomFromInvite(invite.roomId)
         dismissImmediately()
     }
@@ -94,8 +117,8 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder? {
             val layout = when (viewType) {
-                VIEW_TYPE_SINGLE -> R.layout.dialog_fragment_invite_single_item
-                else -> R.layout.dialog_fragment_invite_multi_item
+                VIEW_TYPE_SINGLE -> R.layout.view_invite_single_item
+                else -> R.layout.view_invite_multi_item
             }
 
             return ViewHolder(LayoutInflater.from(parent.context).inflate(layout, parent, false))
@@ -108,15 +131,26 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
                                    val inviterIcon : ImageView = rootView.findView(R.id.inviteItem_inviterIcon),
                                    val inviterName : TextView = rootView.findView(R.id.inviteItem_inviterName),
                                    val joinButton : View = rootView.findViewById(R.id.inviteItem_join),
-                                   val inviteTime : TextView? = rootView.findView(R.id.inviteItem_time),
+                                   val inviteTime : TextView? = rootView.findViewById(R.id.inviteItem_time) as? TextView,
                                    val cancelButton : View? = rootView.findViewById(R.id.inviteItem_cancel)) : RecyclerView.ViewHolder(rootView) {
-        var invite : BaseActivity.InviteToJoinInfo? = null
+
+        private var subscription : Subscription? = null
+
+        var invite : InviteToJoin? = null
         set(value) {
             if (field != value) {
                 field = value
-                inviterIcon.setImageDrawable(value?.inviter?.createAvatarDrawable(this@InviteToJoinDialogFragment))
-                inviterName.text = value?.inviter?.name
-                inviteTime?.text = value?.inviteTime?.formatInvite(itemView.context)
+
+                subscription?.unsubscribe()
+                subscription = (itemView.context.applicationContext as AppComponent).userRepository
+                    .optUser(value?.inviterId)
+                    .first()
+                    .observeOnMainThread()
+                    .subscribeSimple { inviter ->
+                        inviterIcon.setImageDrawable(inviter?.createAvatarDrawable(this@InviteToJoinDialogFragment))
+                        inviterName.text = inviter?.name
+                        inviteTime?.text = value?.inviteTime?.formatInvite(itemView.context)
+                    }
             }
         }
 
@@ -132,7 +166,7 @@ class InviteToJoinDialogFragment : AppCompatDialogFragment() {
     }
 
     class Builder {
-        var invites : List<BaseActivity.InviteToJoinInfo> = arrayListOf()
+        var invites : List<InviteToJoin> = arrayListOf()
 
         fun showImmediately(manager: FragmentManager, tag: String) : InviteToJoinDialogFragment {
             if (invites.isEmpty()) {

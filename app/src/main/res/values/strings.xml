@@ -95,6 +95,8 @@
     <string name="ignore_all_and_cancel">忽略全部</string>
     <string name="dialog_ignore">忽略</string>
 
+    <string name="invite_to_join">对讲邀请</string>
+
     <string name="yesterday">昨天</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>

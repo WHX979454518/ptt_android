@@ -1,10 +1,8 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
-import android.support.v7.util.SortedList
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.util.SortedListAdapterCallback
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,10 +13,10 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.repo.getMemberNames
-import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.MultiDrawable
+import com.xianzhitech.ptt.util.RoomComparator
 import rx.Observable
 import java.text.Collator
 import java.util.*
@@ -31,37 +29,14 @@ class RoomListFragment : BaseFragment() {
     private var listView: RecyclerView? = null
     private var errorView : View? = null
     private val adapter = Adapter()
-    private val adapterCallback = object : SortedListAdapterCallback<RoomWithMembers>(adapter) {
-        private val collator = Collator.getInstance()
+    private lateinit var roomComparator : RoomComparator
 
-        override fun areItemsTheSame(p0: RoomWithMembers, p1: RoomWithMembers) = p0.room.id == p1.room.id
-
-        override fun compare(p0: RoomWithMembers, p1: RoomWithMembers): Int {
-            if (areItemsTheSame(p0, p1)) {
-                return 0
-            }
-
-            var rc : Int = p0.room.lastActiveTime.timeOrZero().compareTo(p1.room.lastActiveTime.timeOrZero())
-            if (rc != 0) {
-                return rc
-            }
-
-            rc = collator.compare(p0.getRoomName(context), p1.getRoomName(context))
-            if (rc != 0) {
-                return rc
-            }
-
-            return p0.room.id.compareTo(p1.room.id)
-        }
-
-        override fun areContentsTheSame(p0: RoomWithMembers, p1: RoomWithMembers) = areItemsTheSame(p0, p1)
-
-        private fun Date?.timeOrZero() = this?.time ?: 0
-    }
-    private val roomList = SortedList<RoomWithMembers>(RoomWithMembers::class.java, SortedList.BatchedCallback(adapterCallback))
+    private val roomList = arrayListOf<RoomWithMembers>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        roomComparator = RoomComparator(context, Collator.getInstance(Locale.CHINESE))
     }
 
     override fun onStart() {
@@ -76,10 +51,10 @@ class RoomListFragment : BaseFragment() {
                 .compose(bindToLifecycle())
                 .subscribe {
                     adapter.currentUserId = it.second.currentUserID!!
-                    roomList.beginBatchedUpdates()
                     roomList.clear()
                     roomList.addAll(it.first)
-                    roomList.endBatchedUpdates()
+                    roomList.sortWith(roomComparator)
+                    adapter.notifyDataSetChanged()
                     errorView?.setVisible(it.first.isEmpty())
                 }
     }
@@ -103,7 +78,6 @@ class RoomListFragment : BaseFragment() {
     }
 
 
-
     private inner class Adapter : RecyclerView.Adapter<RoomItemHolder>() {
         lateinit var currentUserId: String
 
@@ -119,7 +93,7 @@ class RoomListFragment : BaseFragment() {
         }
 
         override fun getItemCount(): Int {
-            return roomList.size()
+            return roomList.size
         }
     }
 

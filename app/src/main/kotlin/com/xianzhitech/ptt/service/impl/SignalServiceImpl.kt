@@ -7,6 +7,7 @@ import android.media.SoundPool
 import android.os.Looper
 import android.os.Vibrator
 import android.support.annotation.RawRes
+import android.support.v4.content.LocalBroadcastManager
 import android.util.SparseIntArray
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
@@ -27,7 +28,6 @@ import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.ui.KickOutActivity
-import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.ui.service.Service
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -270,7 +270,7 @@ class SignalServiceImpl(private val appContext: Context,
                     .observeOnMainThread()
                     .subscribe(object : GlobalSubscriber<Room>() {
                         override fun onNext(t: Room) {
-                            onInviteToJoin(t.id)
+                            onInviteToJoin(t)
                         }
                     }))
 
@@ -336,12 +336,12 @@ class SignalServiceImpl(private val appContext: Context,
 //        startService(Intent(this, javaClass))
     }
 
-    internal fun onInviteToJoin(roomId: String) {
-        logd("Received invite to join room $roomId")
-        appContext.startActivity(Intent(appContext, RoomActivity::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
-                .putExtra(RoomActivity.EXTRA_JOIN_ROOM_ID, roomId)
-                .putExtra(RoomActivity.EXTRA_JOIN_ROOM_FROM_INVITE, true))
+    internal fun onInviteToJoin(room: Room) {
+        logd("Received invite to join room $room")
+
+        LocalBroadcastManager.getInstance(appContext)
+                .sendBroadcast(Intent(SignalService.ACTION_INVITE_TO_JOIN)
+                        .putExtra(SignalService.EXTRA_INVITE, InviteToJoinImpl(room.id, room.ownerId)))
     }
 
 

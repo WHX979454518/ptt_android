@@ -29,17 +29,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     private fun handleIntent(intent: Intent) {
-        if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITE, false)) {
-            intent.getStringExtra(EXTRA_JOIN_ROOM_ID).let {
-                if (it.isNullOrBlank().not()) {
-                    joinRoomFromInvite(it)
-                }
-
-                intent.removeExtra(EXTRA_JOIN_ROOM_ID)
-            }
-            intent.removeExtra(EXTRA_JOIN_ROOM_FROM_INVITE)
-        }
-
         supportFragmentManager.apply {
             if (findFragmentById(R.id.room_content) == null) {
                 beginTransaction()
@@ -67,8 +56,4 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
         // Do nothing
     }
 
-    companion object {
-        public const val EXTRA_JOIN_ROOM_FROM_INVITE = "extra_room_from_invite"
-        public const val EXTRA_JOIN_ROOM_ID = "extra_room_id"
-    }
 }
