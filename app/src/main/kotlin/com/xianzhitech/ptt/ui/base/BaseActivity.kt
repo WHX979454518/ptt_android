@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ui.base
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
@@ -11,23 +12,19 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.repo.getRoomName
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.service.InviteToJoin
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
-import com.xianzhitech.ptt.ui.room.InviteToJoinDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
-        InviteToJoinDialogFragment.Callbacks,
         AlertDialogFragment.OnPositiveButtonClickListener,
         AlertDialogFragment.OnNegativeButtonClickListener  {
 
@@ -49,8 +46,10 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     private fun handleIntent(intent: Intent) {
-        (intent.getSerializableExtra(EXTRA_INVITES_TO_JOIN) as? List<InviteToJoin>)?.let {
-            onInviteToJoin(it)
+        intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
+            joinRoom(roomId, confirmed = intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false))
+            intent.removeExtra(EXTRA_JOIN_ROOM_ID)
+            intent.removeExtra(EXTRA_JOIN_ROOM_CONFIRMED)
         }
     }
 
@@ -75,7 +74,6 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> joinRoom(fragment.attachment as String, confirmed = true)
-            TAG_JOIN_INVITED_ROOM_CONFIRMATION -> joinRoomFromInvite((fragment.attachment as Pair<Room?, Room>).second.id)
         }
     }
 
@@ -83,10 +81,6 @@ abstract class BaseActivity : AppCompatActivity(),
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
         }
-    }
-
-    override fun joinRoomFromInvite(roomId: String) {
-        joinRoom(roomId, true)
     }
 
     fun joinRoom(roomId: String, confirmed : Boolean = false) {
@@ -162,25 +156,7 @@ abstract class BaseActivity : AppCompatActivity(),
                         Toast.makeText(this@BaseActivity, it.throwable.describeInHumanMessage(this@BaseActivity), Toast.LENGTH_LONG).show()
                     }
                 }
-                .subscribeSimple { joinRoomFromInvite(it) }
-    }
-
-    fun onInviteToJoin(invites: List<InviteToJoin>) {
-        val adminInvite = invites.firstOrNull { it.inviterId == Constants.ADMIN_USER_ID }
-        if (adminInvite != null) {
-            supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.dismissImmediately()
-
-            // 最高权限用户拉起的群, 直接响应
-            joinRoom(adminInvite.roomId, confirmed = true)
-        }
-        else {
-            supportFragmentManager.findFragment<InviteToJoinDialogFragment>(TAG_JOIN_INVITED_ROOM_CONFIRMATION)?.apply {
-                invites.forEach { addInvite(it) }
-            } ?: InviteToJoinDialogFragment.Builder().apply {
-                this.invites = invites
-                showImmediately(supportFragmentManager, TAG_JOIN_INVITED_ROOM_CONFIRMATION)
-            }
-        }
+                .subscribeSimple { joinRoom(it) }
     }
 
     private fun showProgressDialog(title : Int, message : Int, tag : String) {
@@ -219,8 +195,16 @@ abstract class BaseActivity : AppCompatActivity(),
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
         private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
-        private const val TAG_JOIN_INVITED_ROOM_CONFIRMATION = "tag_join_invited_confirmation"
 
-        const val EXTRA_INVITES_TO_JOIN = "extra_invites_to_join"
+        const val EXTRA_JOIN_ROOM_ID = "extra_jri"
+        const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
+
+        fun startActivityJoiningRoom(context: Context, activity : Class<*>, roomId: String) {
+            context.startActivity(Intent(context, activity)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
+                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true))
+
+        }
     }
 }

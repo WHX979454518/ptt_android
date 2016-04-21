@@ -7,6 +7,7 @@ import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.update.UpdateManager
 import okhttp3.OkHttpClient
 
@@ -35,4 +36,6 @@ interface AppComponent {
 
     // Service
     val signalService: SignalService
+
+    val activityProvider : ActivityProvider
 }

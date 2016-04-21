@@ -24,7 +24,7 @@ data class CreateRoomFromUser(val userId: String,
 data class CreateRoomFromGroup(val groupId: String,
                                override val name: String? = null) : CreateRoomRequest
 
-interface InviteToJoin : Serializable {
+interface RoomInvitation : Serializable {
     val roomId : String
     val inviterId : String
     val inviteTime : Date

@@ -341,7 +341,7 @@ class SignalServiceImpl(private val appContext: Context,
 
         LocalBroadcastManager.getInstance(appContext)
                 .sendBroadcast(Intent(SignalService.ACTION_INVITE_TO_JOIN)
-                        .putExtra(SignalService.EXTRA_INVITE, InviteToJoinImpl(room.id, room.ownerId)))
+                        .putExtra(SignalService.EXTRA_INVITE, RoomInvitationImpl(room.id, room.ownerId)))
     }
 
 

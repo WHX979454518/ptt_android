@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt
 
 import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -17,20 +18,19 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.room.InviteToJoinBroadcastReceiver
-import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.impl.SignalServiceImpl
+import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
+import com.xianzhitech.ptt.ui.invite.RoomInvitationReceiver
 import com.xianzhitech.ptt.update.UpdateManager
 import com.xianzhitech.ptt.update.UpdateManagerImpl
+import com.xianzhitech.ptt.util.SimpleActivityLifecycleCallbacks
 import okhttp3.OkHttpClient
-import rx.subjects.BehaviorSubject
+import java.lang.ref.WeakReference
 
 
-open class App : Application(), AppComponent {
-
-    private var signalServiceSubject: BehaviorSubject<SignalService>? = null
+open class App : Application(), AppComponent, ActivityProvider {
 
     override val httpClient by lazy { OkHttpClient() }
     override val talkEngineProvider = object : TalkEngineProvider {
@@ -68,6 +68,10 @@ open class App : Application(), AppComponent {
             btEngine = btEngine)
     }
 
+    override val activityProvider = this
+
+    private var currentStartedActivityReference = WeakReference<Activity>(null)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -77,8 +81,24 @@ open class App : Application(), AppComponent {
         }
 
         RoomAutoQuitHandler(this)
-        InviteToJoinBroadcastReceiver(this)
+        RoomInvitationReceiver(this, activityProvider)
+
+        registerActivityLifecycleCallbacks(object : SimpleActivityLifecycleCallbacks() {
+            override fun onActivityStarted(activity: Activity) {
+                currentStartedActivityReference = WeakReference(activity)
+            }
+
+            override fun onActivityStopped(activity: Activity) {
+                if (currentStartedActivity == activity) {
+                    currentStartedActivityReference = WeakReference<Activity>(null)
+                }
+            }
+        })
     }
+
+    override val currentStartedActivity: Activity?
+        get() = currentStartedActivityReference.get()
+
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
         override var userSessionToken: String?

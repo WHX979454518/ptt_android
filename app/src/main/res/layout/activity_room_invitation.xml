@@ -5,7 +5,7 @@
               android:layout_height="wrap_content">
 
     <TextView
-        android:id="@+id/inviteDialog_title"
+        android:id="@+id/invitation_title"
         style="@style/Text.Title"
         android:padding="@dimen/unit_two"
         android:text="@string/invite_to_join"
@@ -13,18 +13,18 @@
         android:layout_height="wrap_content"/>
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/inviteDialog_recyclerView"
+        android:id="@+id/invitation_recyclerView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <FrameLayout
-        android:id="@+id/inviteDialog_bottomBar"
+        android:id="@+id/invitation_bottomBar"
         android:layout_marginTop="@dimen/unit_two"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <Button
-            android:id="@+id/inviteDialog_ignoreAll"
+            android:id="@+id/invitation_ignoreAll"
             style="@style/Widget.AppCompat.Button.Borderless.Colored"
             android:layout_gravity="right"
             android:text="@string/ignore_all_and_cancel"

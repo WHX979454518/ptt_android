@@ -59,6 +59,10 @@
 
         <service android:name=".ui.service.Service"/>
 
+        <activity android:name=".ui.invite.RoomInvitationActivity"
+                  android:launchMode="singleInstance"
+                  android:theme="@style/Theme.AppCompat.Light.Dialog" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
