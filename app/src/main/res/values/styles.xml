@@ -19,6 +19,11 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="AppTheme.RoomInvitation" parent="Theme.AppCompat.Light.Dialog">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+    </style>
+
     <style name="TransparentDialog" parent="AppTheme">
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>

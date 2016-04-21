@@ -61,7 +61,7 @@
 
         <activity android:name=".ui.invite.RoomInvitationActivity"
                   android:launchMode="singleInstance"
-                  android:theme="@style/Theme.AppCompat.Light.Dialog" />
+                  android:theme="@style/AppTheme.RoomInvitation" />
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
