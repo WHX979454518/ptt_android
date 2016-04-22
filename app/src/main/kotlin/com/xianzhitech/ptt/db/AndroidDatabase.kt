@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.database.CursorWrapper
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.support.v4.util.SimpleArrayMap
 
 
 class AndroidDatabase(context: Context, tables : Array<TableDefinition>, name: String, version: Int) : Database {
@@ -90,5 +91,36 @@ class AndroidDatabase(context: Context, tables : Array<TableDefinition>, name: S
 
     private fun <T> Array<T>.toStringArray() = Array(this.size, { this[it]?.toString() })
 
-    private class CursorResultSet(cursor: Cursor) : CursorWrapper(cursor), ResultSet
+    private class CursorResultSet(cursor: Cursor) : CursorWrapper(cursor), ResultSet {
+        private val map : SimpleArrayMap<String, Int>
+
+        init {
+            map = SimpleArrayMap(cursor.columnNames.size)
+            cursor.columnNames.forEachIndexed { i, name -> map.put(name, i) }
+        }
+
+        override fun getString(columnName: String): String {
+            return getString(map[columnName] ?: throw IllegalArgumentException("No such column $columnName")) ?: ""
+        }
+
+        override fun getShort(columnName: String): Short {
+            return getShort(map[columnName] ?: throw IllegalArgumentException("No such column $columnName"))
+        }
+
+        override fun getInt(columnName: String): Int {
+            return getInt(map[columnName] ?: throw IllegalArgumentException("No such column $columnName"))
+        }
+
+        override fun getLong(columnName: String): Long {
+            return getLong(map[columnName] ?: throw IllegalArgumentException("No such column $columnName"))
+        }
+
+        override fun getFloat(columnName: String): Float {
+            return getFloat(map[columnName] ?: throw IllegalArgumentException("No such column $columnName"))
+        }
+
+        override fun getDouble(columnName: String): Double {
+            return getDouble(map[columnName] ?: throw IllegalArgumentException("No such column $columnName"))
+        }
+    }
 }

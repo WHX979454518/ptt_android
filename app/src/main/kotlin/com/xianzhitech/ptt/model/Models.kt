@@ -72,10 +72,4 @@ data class UserImpl(override var id: String,
                     override var name: String,
                     override var level : Int,
                     override var avatar: String?,
-                    var privilegesText: String?) : MutableUser {
-    override var privileges: EnumSet<Privilege>
-        get() = privilegesText.toPrivileges()
-        set(value) {
-            privilegesText = value.toDatabaseString()
-        }
-}
+                    override var privileges: EnumSet<Privilege>) : MutableUser

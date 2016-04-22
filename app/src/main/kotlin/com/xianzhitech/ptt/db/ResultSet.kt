@@ -12,13 +12,10 @@ interface ResultSet : Closeable {
     fun moveToFirst(): Boolean
     fun moveToNext(): Boolean
 
-    fun getColumnIndexOrThrow(columnName: String): Int
-    fun getColumnIndex(columnName: String): Int
-
-    fun getString(columnIndex: Int): String
-    fun getShort(columnIndex: Int): Short
-    fun getInt(columnIndex: Int): Int
-    fun getLong(columnIndex: Int): Long
-    fun getFloat(columnIndex: Int): Float
-    fun getDouble(columnIndex: Int): Double
+    fun getString(columnName: String): String
+    fun getShort(columnName: String): Short
+    fun getInt(columnName: String): Int
+    fun getLong(columnName: String): Long
+    fun getFloat(columnName: String): Float
+    fun getDouble(columnName: String): Double
 }

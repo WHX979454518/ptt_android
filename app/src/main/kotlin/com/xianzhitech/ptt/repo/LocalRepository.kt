@@ -287,12 +287,12 @@ internal object Contacts : TableDefinition {
             ")"
 
     @JvmField val MAPPER = Func1<ResultSet, ContactItem> { cursor ->
-        var id = cursor?.optStringValue(COL_GROUP_ID)
+        var id = cursor?.getString(COL_GROUP_ID)
         if (id?.isNotEmpty() ?: false) {
             return@Func1 GroupContactItem(id!!)
         }
 
-        id = cursor?.optStringValue(COL_PERSON_ID)
+        id = cursor?.getString(COL_PERSON_ID)
         if (id?.isNotEmpty() ?: false) {
             return@Func1 UserContactItem(id!!)
         }
@@ -326,12 +326,12 @@ internal object Rooms : TableDefinition {
 }
 
 internal fun createRoom(cursor: ResultSet) : MutableRoom {
-    return RoomImpl(id = cursor.getStringValue(Rooms.COL_ID),
-            name = cursor.getStringValue(Rooms.COL_NAME),
-            description = cursor.optStringValue(Rooms.COL_DESC),
-            ownerId = cursor.getStringValue(Rooms.COL_OWNER_ID),
-            lastActiveTime = cursor.getLongValue(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null },
-            lastActiveUserId = cursor.optStringValue(Rooms.COL_LAST_ACTIVE_USER_ID))
+    return RoomImpl(id = cursor.getString(Rooms.COL_ID),
+            name = cursor.getString(Rooms.COL_NAME),
+            description = cursor.getString(Rooms.COL_DESC),
+            ownerId = cursor.getString(Rooms.COL_OWNER_ID),
+            lastActiveTime = cursor.getLong(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null },
+            lastActiveUserId = cursor.getString(Rooms.COL_LAST_ACTIVE_USER_ID))
 }
 
 internal fun Room.toValues(values: MutableMap<String, Any?>) {
@@ -344,12 +344,12 @@ internal fun Room.toValues(values: MutableMap<String, Any?>) {
 }
 
 internal fun MutableRoom.from(cursor: ResultSet): MutableRoom {
-    id = cursor.getStringValue(Rooms.COL_ID)
-    name = cursor.getStringValue(Rooms.COL_NAME)
-    description = cursor.optStringValue(Rooms.COL_DESC)
-    ownerId = cursor.getStringValue(Rooms.COL_OWNER_ID)
-    lastActiveTime = cursor.getLongValue(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null }
-    lastActiveUserId = cursor.optStringValue(Rooms.COL_LAST_ACTIVE_USER_ID)
+    id = cursor.getString(Rooms.COL_ID)
+    name = cursor.getString(Rooms.COL_NAME)
+    description = cursor.getString(Rooms.COL_DESC)
+    ownerId = cursor.getString(Rooms.COL_OWNER_ID)
+    lastActiveTime = cursor.getLong(Rooms.COL_LAST_ACTIVE_TIME).let { if (it > 0) Date(it) else null }
+    lastActiveUserId = cursor.getString(Rooms.COL_LAST_ACTIVE_USER_ID)
     return this
 }
 
@@ -375,9 +375,9 @@ internal fun Group.toValues(values : MutableMap<String, Any?>) {
 }
 
 internal fun createGroup(cursor: ResultSet) : MutableGroup {
-    return GroupImpl(id = cursor.getStringValue(Groups.COL_ID),
-            description = cursor.optStringValue(Groups.COL_DESCRIPTION),
-            name = cursor.getStringValue(Groups.COL_NAME),
+    return GroupImpl(id = cursor.getString(Groups.COL_ID),
+            description = cursor.getString(Groups.COL_DESCRIPTION),
+            name = cursor.getString(Groups.COL_NAME),
             avatar = null)
 }
 
@@ -396,7 +396,7 @@ internal object Users : TableDefinition {
             "$COL_NAME TEXT NOT NULL, " +
             "$COL_AVATAR TEXT, " +
             "$COL_LEVEL INTEGER NOT NULL DEFAULT 100, " +
-            "$COL_PRIV INTEGER NOT NULL" +
+            "$COL_PRIV TEXT NOT NULL" +
             ")"
 
     @JvmField val MAPPER = Func1<ResultSet, User> {
@@ -409,15 +409,15 @@ internal fun User.toValues(values: MutableMap<String, Any?>) {
     values.put(Users.COL_AVATAR, avatar)
     values.put(Users.COL_NAME, name)
     values.put(Users.COL_LEVEL, level)
-    values.put(Users.COL_PRIV, (this as? UserImpl)?.privilegesText ?: privileges.toDatabaseString())
+    values.put(Users.COL_PRIV, privileges.toDatabaseString())
 }
 
 internal fun createUser(cursor: ResultSet) : MutableUser {
-    return UserImpl(id = cursor.getStringValue(Users.COL_ID),
-            avatar = cursor.optStringValue(Users.COL_AVATAR),
-            name = cursor.getStringValue(Users.COL_NAME),
-            level = cursor.getIntValue(Users.COL_LEVEL),
-            privilegesText = cursor.getStringValue(Users.COL_PRIV))
+    return UserImpl(id = cursor.getString(Users.COL_ID),
+            avatar = cursor.getString(Users.COL_AVATAR),
+            name = cursor.getString(Users.COL_NAME),
+            level = cursor.getInt(Users.COL_LEVEL),
+            privileges = cursor.getString(Users.COL_PRIV).toPrivileges())
 }
 
 
