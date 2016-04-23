@@ -206,6 +206,7 @@ class BluetoothHandler(private val appContext: Context,
                     else {
                         // 请求开启SCO
                         logd("SCO: audioManager.startBluetoothSco()")
+                        audioManager.mode = AudioManager.MODE_NORMAL
                         audioManager.startBluetoothSco()
                         // 等待连接状态变为连接, 并有2秒的超时时间
                         scoAudioState.first { it == AudioManager.SCO_AUDIO_STATE_CONNECTED }
