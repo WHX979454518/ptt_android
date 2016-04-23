@@ -13,7 +13,6 @@ import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
@@ -51,16 +50,14 @@ class SignalServiceImpl(private val appContext: Context,
                         private val groupRepository : GroupRepository,
                         private val contactRepository : ContactRepository,
                         private val roomRepository : RoomRepository,
-                        private val talkEngineProvider: TalkEngineProvider,
-                        private val btEngine: BtEngine) : SignalService {
+                        private val talkEngineProvider: TalkEngineProvider) : SignalService {
     var loginSubscription : Subscription? = null
     var roomSubscription: CompositeSubscription? = null
     var requestMicSubscription : Subscription? = null
     var currentTalkEngine: TalkEngine? = null
-    var btSubscription : Subscription? = null
 
     private val soundPool: Pair<SoundPool, SparseIntArray> by lazy {
-        Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
+        Pair(SoundPool(1, AudioManager.STREAM_RING, 0), SparseIntArray()).apply {
             second.put(R.raw.incoming, first.load(appContext, R.raw.incoming, 0))
             second.put(R.raw.outgoing, first.load(appContext, R.raw.outgoing, 0))
             second.put(R.raw.over, first.load(appContext, R.raw.over, 0))
@@ -347,36 +344,7 @@ class SignalServiceImpl(private val appContext: Context,
 
     internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
         //roomSubscription?.add()
-        btSubscription =  btEngine.receiveCommand()
-                .retry { i, throwable ->
-                    logd("Got $throwable while listening for bluetooth event. Retrying time $i...")
-                    throwable !is UnsupportedOperationException
-                }
-                .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<String>()
-                {
-                    override fun onNext(t: String) {
-                        when (t) {
-                            BtEngine.MESSAGE_DEV_PTT_OK -> {
-                                audioManager.mode = android.media.AudioManager.MODE_NORMAL
-                            }
-                            BtEngine.MESSAGE_PUSH_DOWN -> requestMic().subscribe(GlobalSubscriber())
-                            BtEngine.MESSAGE_PUSH_RELEASE -> releaseMic().subscribe(GlobalSubscriber())
-                        }
-                    }
-                    override fun onError(e: Throwable)
-                    {
-                        //                        audioManager.mode = android.media.AudioManager.MODE_IN_CALL
-                        //                        audioManager.requestAudioFocus(null, android.media.AudioManager.STREAM_MUSIC, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                        //设备不支持蓝牙,UnsupportedOperationException
-                        if(e is UnsupportedOperationException)
-                            return
-                    }
-                })
-        //        roomSubscription?.add(btSubscription)
-        //        audioManager.mode = AudioManager.MODE_IN_CALL
-        audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-
+        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         createTalkEngine(roomId, talkEngineProperties, false)
     }
 
@@ -400,8 +368,6 @@ class SignalServiceImpl(private val appContext: Context,
     }
 
     internal fun onRoomQuited(roomId: String) {
-        btSubscription?.unsubscribe()
-        btSubscription = null
         audioManager.mode = AudioManager.MODE_NORMAL
     }
 

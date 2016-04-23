@@ -8,10 +8,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
+import com.xianzhitech.ptt.bluetooth.BluetoothHandler
 import com.xianzhitech.ptt.db.AndroidDatabase
 import com.xianzhitech.ptt.db.DatabaseFactory
 import com.xianzhitech.ptt.db.TableDefinition
-import com.xianzhitech.ptt.engine.BtEngineImpl
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.repo.ContactRepository
@@ -50,7 +50,6 @@ open class App : Application(), AppComponent, ActivityProvider {
         get() = userRepository
     override val preference: Preference by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
 
-    override val btEngine by lazy { BtEngineImpl(this) }
     override val signalServerEndpoint: String
         get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
 
@@ -64,8 +63,7 @@ open class App : Application(), AppComponent, ActivityProvider {
             groupRepository = groupRepository,
             contactRepository = contactRepository,
             roomRepository = roomRepository,
-            talkEngineProvider = talkEngineProvider,
-            btEngine = btEngine)
+            talkEngineProvider = talkEngineProvider)
     }
 
     override val activityProvider = this
@@ -94,6 +92,7 @@ open class App : Application(), AppComponent, ActivityProvider {
                 }
             }
         })
+        BluetoothHandler(this, signalService)
     }
 
     override val currentStartedActivity: Activity?

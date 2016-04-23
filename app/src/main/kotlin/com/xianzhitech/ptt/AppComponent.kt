@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt
 
-import com.xianzhitech.ptt.engine.BtEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -25,8 +24,6 @@ interface AppComponent {
 
     // Configuration
     val signalServerEndpoint: String
-
-    val btEngine : BtEngine
 
     // Repositories
     val userRepository: UserRepository
