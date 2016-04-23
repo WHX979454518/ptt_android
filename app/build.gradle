@@ -30,6 +30,10 @@ repositories {
     maven {
         url 'http://oss.sonatype.org/content/repositories/snapshots'
     }
+
+    flatDir {
+        dirs 'aars'
+    }
 }
 
 android {
@@ -121,6 +125,7 @@ dependencies {
     devCompile 'com.hanhuy.android:viewserver:1.0.3'
 
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile(name: 'webrtc-android-release', ext: 'aar')
 
 //    compile 'com.google.guava:guava:19.0'
     compile "com.android.support:appcompat-v7:$support_library_version"

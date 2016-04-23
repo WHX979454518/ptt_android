@@ -33,7 +33,7 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
     return Observable.create<Intent> { subscriber ->
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                logd("Received $intent for broadcast actions: ${actions.toSqlSet()}")
+                //logd("Received $intent for broadcast actions: ${actions.toSqlSet()}")
                 subscriber.onNext(intent)
             }
         }

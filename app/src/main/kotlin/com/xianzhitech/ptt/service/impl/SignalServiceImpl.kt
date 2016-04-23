@@ -345,6 +345,7 @@ class SignalServiceImpl(private val appContext: Context,
     internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
         //roomSubscription?.add()
         audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        audioManager.isSpeakerphoneOn = true
         createTalkEngine(roomId, talkEngineProperties, false)
     }
 
@@ -368,7 +369,7 @@ class SignalServiceImpl(private val appContext: Context,
     }
 
     internal fun onRoomQuited(roomId: String) {
-        audioManager.mode = AudioManager.MODE_NORMAL
+        audioManager.isSpeakerphoneOn = false
     }
 
     internal fun onMicActivated(isSelf: Boolean) {

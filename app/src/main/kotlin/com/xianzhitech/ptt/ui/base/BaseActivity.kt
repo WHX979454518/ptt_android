@@ -21,6 +21,7 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
+import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 
@@ -90,7 +91,8 @@ abstract class BaseActivity : AppCompatActivity(),
             showProgressDialog(R.string.please_wait, R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
             ensureConnectivity()
                     .flatMap { appComponent.signalService.joinRoom(roomId) }
-                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .observeOnMainThread()
                     .doOnUnsubscribe { hideProgressDialog(TAG_JOIN_ROOM_PROGRESS) }
                     .compose(bindUntil(ActivityEvent.STOP))
                     .subscribe(object : GlobalSubscriber<Unit>() {

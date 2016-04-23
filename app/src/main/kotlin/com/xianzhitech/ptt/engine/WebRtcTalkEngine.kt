@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.engine
 
 import android.content.Context
-import android.media.AudioManager
 import android.os.Handler
 import android.os.HandlerThread
 import org.webrtc.autoim.MediaEngine
@@ -19,7 +18,6 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
     private val handler: Handler
     private val context: Context
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     internal lateinit var mediaEngine: MediaEngine
     internal var roomIds: IntArray? = null
@@ -52,12 +50,9 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             mediaEngine.setAgc(true)
             mediaEngine.setNs(true)
             mediaEngine.setEc(true)
-            mediaEngine.setSpeaker(true)
             mediaEngine.setAudio(true)
             mediaEngine.start(roomIdInt)
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds)
-
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
 
             scheduleHeartbeat()
         }
@@ -84,8 +79,6 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             mediaEngine.stop()
             mediaEngine.dispose()
             handler.removeCallbacksAndMessages(null)
-
-            audioManager.abandonAudioFocus(null)
         }
     }
 
