@@ -29,7 +29,6 @@ import rx.Observable
 import java.util.*
 
 class RoomFragment : BaseFragment()
-        , PushToTalkButton.Callbacks
         , BackPressable
         , AlertDialogFragment.OnPositiveButtonClickListener
         , AlertDialogFragment.OnNegativeButtonClickListener
@@ -81,7 +80,6 @@ class RoomFragment : BaseFragment()
 
                 toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
                 toolbar.setNavigationOnClickListener { v -> activity.finish() }
-                pttBtn.callbacks = this@RoomFragment
 
                 speakerSourceView.adapter = speakSourceAdapter
 
@@ -136,7 +134,6 @@ class RoomFragment : BaseFragment()
     internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
         adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
-            pttBtn.roomState = if (hasConnectivity) roomData.roomState else roomData.roomState.copy(status = RoomStatus.IDLE)
             toolbar.title = roomData.roomWithMembers?.getRoomName(context)
 
             val show: Boolean
@@ -159,22 +156,11 @@ class RoomFragment : BaseFragment()
         return false
     }
 
-    override fun requestMic() {
-        (context.applicationContext as AppComponent).signalService.requestMic().subscribeSimple()
-    }
+    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) { }
 
-    override fun releaseMic() {
-        (context.applicationContext as AppComponent).signalService.releaseMic().subscribeSimple()
-    }
+    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) { }
 
-    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
-    }
-
-    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
-    }
-
-    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
-    }
+    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) { }
 
     private class Adapter : RecyclerView.Adapter<ViewHolder>(), Comparator<User> {
         val activeMembers = hashSetOf<String>()

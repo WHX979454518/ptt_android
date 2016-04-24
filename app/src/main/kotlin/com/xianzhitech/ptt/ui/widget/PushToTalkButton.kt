@@ -8,11 +8,16 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.ImageButton
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toColorValue
-import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.service.roomStatus
+import rx.Subscription
 
 /**
 
@@ -21,25 +26,11 @@ import com.xianzhitech.ptt.service.RoomStatus
  * Created by fanchao on 12/12/15.
  */
 class PushToTalkButton : ImageButton {
-    var roomState : RoomState? = null
-        set(value) {
-            if (field != value) {
-                field = value
-                isEnabled = value?.status == RoomStatus.JOINED && value?.currentRoomActiveSpeakerID == null
-                if (!isEnabled) {
-                    removeCallbacks(requestFocusRunnable)
-                }
-                invalidate()
-            }
-        }
-
-    var callbacks: Callbacks? = null
-
-    private val requestFocusRunnable = Runnable {
-        callbacks?.requestMic()
-    }
-
+    private lateinit var signalService : SignalService
+    private var subscription : Subscription? = null
     private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var roomStatus : RoomStatus = RoomStatus.IDLE
+    private val requestFocusRunnable = Runnable { signalService.requestMic().subscribeSimple() }
 
     constructor(context: Context) : super(context) {
         init(context)
@@ -61,19 +52,46 @@ class PushToTalkButton : ImageButton {
     private fun init(context: Context) {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
-        isEnabled = false
+        signalService = (context.applicationContext as AppComponent).signalService
+        applyRoomStatus()
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+
+        subscription = signalService.roomStatus
+                .observeOnMainThread()
+                .subscribeSimple {
+                    if (roomStatus != it) {
+                        roomStatus = it
+                        applyRoomStatus()
+                        invalidate()
+                    }
+                }
+    }
+
+    override fun onDetachedFromWindow() {
+        subscription?.unsubscribe()
+        subscription = null
+        super.onDetachedFromWindow()
+    }
+
+    private fun applyRoomStatus() {
+        isEnabled = when (roomStatus) {
+            RoomStatus.IDLE, RoomStatus.OFFLINE -> false
+            else -> true
+        }
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        logd("Paint ptt button roomStatus: $roomState")
+        logd("Paint ptt button roomStatus: $roomStatus")
 
-        paint.color = when {
-            roomState?.currentRoomActiveSpeakerID != null -> android.R.color.holo_red_dark
-            roomState?.status == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
-            roomState?.status == RoomStatus.JOINED -> android.R.color.holo_green_dark
+        paint.color = when(roomStatus) {
+            RoomStatus.ACTIVE ->  android.R.color.holo_red_dark
+            RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
+            RoomStatus.JOINED -> android.R.color.holo_green_dark
             else  -> android.R.color.darker_gray
         }.toColorValue(context)
 
@@ -90,15 +108,10 @@ class PushToTalkButton : ImageButton {
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
                 removeCallbacks(requestFocusRunnable)
-                callbacks?.releaseMic()
+                signalService.releaseMic().subscribeSimple()
             }
         }
 
         return true;
-    }
-
-    interface Callbacks {
-        fun requestMic()
-        fun releaseMic()
     }
 }
