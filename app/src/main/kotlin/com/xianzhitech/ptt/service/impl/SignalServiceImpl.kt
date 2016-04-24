@@ -57,7 +57,7 @@ class SignalServiceImpl(private val appContext: Context,
     var currentTalkEngine: TalkEngine? = null
 
     private val soundPool: Pair<SoundPool, SparseIntArray> by lazy {
-        Pair(SoundPool(1, AudioManager.STREAM_RING, 0), SparseIntArray()).apply {
+        Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
             second.put(R.raw.incoming, first.load(appContext, R.raw.incoming, 0))
             second.put(R.raw.outgoing, first.load(appContext, R.raw.outgoing, 0))
             second.put(R.raw.over, first.load(appContext, R.raw.over, 0))
