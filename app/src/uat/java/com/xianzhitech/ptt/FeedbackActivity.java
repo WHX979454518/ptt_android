@@ -6,7 +6,6 @@ import android.os.Bundle;
 import com.xianzhitech.ptt.ext.GlobalSubscriber;
 import com.xianzhitech.ptt.model.User;
 import com.xianzhitech.ptt.repo.RepositoriesKt;
-import com.xianzhitech.ptt.service.SignalService;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 
 import net.hockeyapp.android.FeedbackManager;
@@ -14,9 +13,7 @@ import net.hockeyapp.android.objects.FeedbackUserDataElement;
 
 import org.jetbrains.annotations.NotNull;
 
-import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Func1;
 
 /**
  * Created by fanchao on 23/01/16.
@@ -33,13 +30,7 @@ public class FeedbackActivity extends BaseActivity {
         final ProgressDialog show = ProgressDialog.show(this, getString(R.string.please_wait), null, true);
 
         final AppComponent appComponent = (AppComponent) getApplication();
-        appComponent.getBackgroundService()
-                .flatMap(new Func1<BackgroundServiceBinder, Observable<User>>() {
-                    @Override
-                    public Observable<User> call(final BackgroundServiceBinder backgroundServiceBinder) {
-                        return RepositoriesKt.optUser(appComponent.getUserRepository(), backgroundServiceBinder.peekLoginState().getCurrentUserID());
-                    }
-                })
+        RepositoriesKt.optUser(appComponent.getUserRepository(), appComponent.getSignalService().peekLoginState().getCurrentUserID())
                 .first()
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(this.<User>bindToLifecycle())
