@@ -13,13 +13,13 @@ class RoomComparator(private val context: Context,
 
 
     override fun compare(p0: Room, p1: Room): Int {
-        if (p0 == p1) {
+        if (p0.id == p1.id) {
             return 0
         }
 
         var rc : Int = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
         if (rc != 0) {
-            return rc
+            return -rc
         }
 
         rc = collator.compare(p0.getRoomName(context), p1.getRoomName(context))
