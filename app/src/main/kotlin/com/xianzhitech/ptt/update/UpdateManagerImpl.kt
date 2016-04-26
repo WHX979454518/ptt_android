@@ -31,7 +31,7 @@ class UpdateManagerImpl(private val appContext : Context,
 
                 Observable.create<UpdateInfo?> { subscriber ->
                     val uri = endpoint.buildUpon()
-                            .appendQueryParameter("version", BuildConfig.VERSION_CODE.toString())
+                            .appendQueryParameter("version", BuildConfig.BUILD_NUMBER)
                             .appendQueryParameter("package", appContext.packageName)
                             .build()
 
