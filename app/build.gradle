@@ -47,7 +47,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 23
         versionCode 1
-        versionName "1.0-snapshot"
+        versionName System.getenv("BUILD_TAG") ?: "1.0-snapshot"
 
         buildConfigField("String", "UPDATE_SERVER_ENDPOINT", '"http://netptt.cn:5000/update"')
         buildConfigField("String", "BUILD_NUMBER", "\"$buildNumber\"")
