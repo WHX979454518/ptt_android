@@ -40,6 +40,8 @@
     <string name="error_content">%1$s</string>
     <string name="error_input_name">用户名不能为空</string>
     <string name="error_input_password">密码不能为空</string>
+    <string name="error_password_not_same">两次输入密码不一致</string>
+    <string name="error_password_not_long_enough">密码位数太低</string>
     <string name="error_no_record_permission">录音权限被拒绝，对讲将无法工作, 请同意此权限</string>
     <string name="error_no_phone_permission">控制电话权限被拒绝，对讲将无法正常工作，请同意此权限</string>
 
@@ -54,6 +56,7 @@
     <string name="error_timeout">操作超时</string>
     <string name="error_unable_to_connect">无法连接到服务器</string>
     <string name="error_forced_logout">您的账号在其它设备上登陆, 本机登陆已被注销</string>
+    <string name="error_has_unsaved_change">本页面有未保存的修改, 退出后将放弃保存. 确认退出吗?</string>
 
     <string name="room_loading">加载中...</string>
 
@@ -101,6 +104,18 @@
 
     <string name="bluetooth_device_connected">蓝牙对讲设备已连接</string>
     <string name="bluetooth_device_disconnected">蓝牙对讲设备已断开</string>
+
+
+    <string name="edit_profile">修改个人资料</string>
+    <string name="avatar">头像</string>
+    <string name="name">姓名</string>
+    <string name="password">密码</string>
+    <string name="change_password">更改密码</string>
+    <string name="type_old_password">请输入旧密码</string>
+    <string name="type_new_password">请输入新密码 (6位以上)</string>
+    <string name="save">保存</string>
+    <string name="saving">保存中</string>
+    <string name="quit">退出</string>
 
     <string name="yesterday">昨天</string>
     <plurals name="days_ago">

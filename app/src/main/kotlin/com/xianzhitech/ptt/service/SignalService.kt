@@ -47,6 +47,10 @@ interface SignalService {
     fun releaseMic() : Observable<Unit>
     fun quitRoom(): Observable<Unit>
 
+    fun changePassword(verifyOldPassword : Boolean,
+                       oldPassword : String?,
+                       newPassword : String) : Observable<Unit>
+
     companion object {
         const val ACTION_INVITE_TO_JOIN = "acton_invite_to_join"
         const val EXTRA_INVITE = "extra_invite"

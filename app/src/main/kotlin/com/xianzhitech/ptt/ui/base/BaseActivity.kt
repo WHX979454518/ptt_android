@@ -169,6 +169,14 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
+    override fun finish() {
+        super.finish()
+
+        if (intent.hasExtra(EXTRA_FINISH_ENTER_ANIM) && intent.hasExtra(EXTRA_FINISH_EXIT_ANIM)) {
+            overridePendingTransition(intent.getIntExtra(EXTRA_FINISH_ENTER_ANIM, 0), intent.getIntExtra(EXTRA_FINISH_EXIT_ANIM, 0))
+        }
+    }
+
     private fun hideProgressDialog(tag : String) {
         supportFragmentManager.findFragment<DialogFragment>(tag)?.dismissImmediately()
     }
@@ -186,17 +194,28 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     fun <D> bindToLifecycle(): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindActivity<D>(lifecycleEventSubject)
+        return RxLifecycle.bindActivity(lifecycleEventSubject)
     }
 
     fun <D> bindUntil(event: ActivityEvent): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindUntilActivityEvent<D>(lifecycleEventSubject, event)
+        return RxLifecycle.bindUntilEvent(lifecycleEventSubject, event)
+    }
+
+    protected fun <T> Observable<T>.bindToLifecycle() : Observable<T> {
+        return compose(RxLifecycle.bindActivity<T>(lifecycleEventSubject))
+    }
+
+    protected fun <T> Observable<T>.bindUntil(event : ActivityEvent) : Observable<T> {
+        return compose(this@BaseActivity.bindUntil(event))
     }
 
     companion object {
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
         private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
+
+        const val EXTRA_FINISH_ENTER_ANIM = "extra_f_enter_ani"
+        const val EXTRA_FINISH_EXIT_ANIM = "extra_f_exit_ani"
 
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"

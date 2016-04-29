@@ -4,12 +4,11 @@ import android.app.Activity
 import android.content.*
 import android.net.ConnectivityManager
 import android.os.IBinder
-import android.support.v4.app.DialogFragment
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
+import android.support.v4.app.*
 import android.support.v4.content.LocalBroadcastManager
 import android.view.View
 import com.xianzhitech.ptt.service.ConnectivityException
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import rx.Observable
 import rx.Subscriber
 import rx.subscriptions.Subscriptions
@@ -139,4 +138,11 @@ inline fun <reified T> Fragment.callbacks() : T? {
 fun DialogFragment.dismissImmediately() {
     dismiss()
     fragmentManager.executePendingTransactions()
+}
+
+fun Activity.startActivity(intent : Intent, enterAnim : Int, exitAnim : Int, backEnterAnim : Int, backExitAnim : Int) {
+    intent.putExtra(BaseActivity.EXTRA_FINISH_ENTER_ANIM, backEnterAnim)
+    intent.putExtra(BaseActivity.EXTRA_FINISH_EXIT_ANIM, backExitAnim)
+    ActivityCompat.startActivity(this, intent, ActivityOptionsCompat.makeCustomAnimation(this, enterAnim, exitAnim).toBundle())
+    overridePendingTransition(enterAnim, exitAnim)
 }

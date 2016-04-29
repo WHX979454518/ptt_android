@@ -63,6 +63,12 @@
                   android:launchMode="singleInstance"
                   android:theme="@style/AppTheme.RoomInvitation" />
 
+        <activity android:name=".ui.user.EditProfileActivity"
+                  android:label="@string/edit_profile" />
+
+        <activity android:name=".ui.user.ChangePasswordActivity"
+                  android:label="@string/change_password" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />

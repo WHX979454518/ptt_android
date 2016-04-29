@@ -18,7 +18,7 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
-import com.xianzhitech.ptt.ui.user.UserDetailsDialogFragment
+import com.xianzhitech.ptt.ui.user.EditProfileActivity
 
 class ProfileFragment : BaseFragment(), View.OnClickListener {
     private var views : Views? = null
@@ -99,15 +99,8 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
                 startActivity(Intent(context, SettingsActivity::class.java))
             }
             R.id.profile_edit -> {
-                appComponent.signalService.loginState
-                        .first()
-                        .observeOnMainThread()
-                        .compose(bindUntil(FragmentEvent.STOP))
-                        .subscribe {
-                            if (it.currentUserID != null) {
-                                UserDetailsDialogFragment.build(it.currentUserID).show(childFragmentManager, "user_details_dialog")
-                            }
-                        }
+                activity.startActivity(Intent(context, EditProfileActivity::class.java),
+                        R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
             }
             R.id.profile_feedback,
             R.id.profile_about ->

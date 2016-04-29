@@ -674,6 +674,10 @@ class SignalServiceImpl(private val appContext: Context,
         Unit.toObservable()
     }.subscribeOnMainThread()
 
+    override fun changePassword(verifyOldPassword: Boolean, oldPassword: String?, newPassword: String): Observable<Unit> {
+        return Observable.timer(5, TimeUnit.SECONDS, AndroidSchedulers.mainThread()).map { Unit }
+    }
+
     internal fun checkMainThread() {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
             throw AssertionError("This method must be called in main thread")

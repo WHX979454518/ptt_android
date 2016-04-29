@@ -58,6 +58,20 @@
         <item name="android:gravity">center</item>
     </style>
 
+    <style name="Text.ProfileItem" parent="Text.Subhead">
+        <item name="android:paddingTop">@dimen/unit_two</item>
+        <item name="android:paddingBottom">@dimen/unit_two</item>
+        <item name="android:gravity">left|center_vertical</item>
+        <item name="android:layout_gravity">left|center_vertical</item>
+    </style>
+
+    <style name="Text.ProfileItem.Value">
+        <item name="android:paddingTop">@dimen/unit_two</item>
+        <item name="android:paddingBottom">@dimen/unit_two</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+        <item name="android:gravity">left|center_vertical</item>
+    </style>
+
     <style name="Divider">
         <item name="android:background">@color/divider</item>
         <item name="android:layout_width">match_parent</item>
