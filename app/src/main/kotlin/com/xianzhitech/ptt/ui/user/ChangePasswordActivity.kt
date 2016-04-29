@@ -48,6 +48,8 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
                 btnPositive = R.string.quit.toFormattedString(this@ChangePasswordActivity)
                 btnNegative = R.string.dialog_cancel.toFormattedString(this@ChangePasswordActivity)
             }.show(supportFragmentManager, TAG_CONFIRM_QUIT)
+
+            return
         }
 
         super.finish()
@@ -55,7 +57,7 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
-            TAG_CONFIRM_QUIT -> finish()
+            TAG_CONFIRM_QUIT -> super.finish()
             else -> super.onPositiveButtonClicked(fragment)
         }
     }

@@ -113,6 +113,7 @@
     <string name="change_password">更改密码</string>
     <string name="type_old_password">请输入旧密码</string>
     <string name="type_new_password">请输入新密码 (6位以上)</string>
+    <string name="type_new_password_confirmed">请两次输入新密码</string>
     <string name="save">保存</string>
     <string name="saving">保存中</string>
     <string name="quit">退出</string>
