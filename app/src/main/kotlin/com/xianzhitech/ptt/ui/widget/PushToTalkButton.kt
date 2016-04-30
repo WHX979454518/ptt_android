@@ -52,7 +52,9 @@ class PushToTalkButton : ImageButton {
     private fun init(context: Context) {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
-        signalService = (context.applicationContext as AppComponent).signalService
+        if (isInEditMode.not()) {
+            signalService = (context.applicationContext as AppComponent).signalService
+        }
         applyRoomStatus()
     }
 

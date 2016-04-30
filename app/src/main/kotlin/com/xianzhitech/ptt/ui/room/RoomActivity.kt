@@ -4,14 +4,14 @@ import android.content.Intent
 import android.os.Bundle
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ui.base.BackPressable
-import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 
 /**
  * 房间对话界面
 
  * Created by fanchao on 11/12/15.
  */
-class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
+class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +46,10 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
             }
         }
         super.onBackPressed()
+    }
+
+    override fun onRoomLoaded(name: CharSequence) {
+        this.title = name
     }
 
     override fun onRoomQuited() {

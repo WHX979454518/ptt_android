@@ -10,20 +10,22 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
-import android.support.v7.widget.Toolbar
 import android.view.View
 import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ui.base.BackPressable
-import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 import com.xianzhitech.ptt.update.installPackage
 
-class MainActivity : BaseActivity(),
+class MainActivity : BaseToolbarActivity(),
         LoginFragment.Callbacks,
         HomeFragment.Callbacks,
         AlertDialogFragment.OnNegativeButtonClickListener,
@@ -36,14 +38,12 @@ class MainActivity : BaseActivity(),
         private const val TAG_PERMISSION_DIALOG = "tag_permission"
     }
 
-    private lateinit var toolbar: Toolbar
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-        toolbar = findView(R.id.main_toolbar)
-        setSupportActionBar(toolbar)
+
+        toolbar.navigationIcon = null
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 0)

@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.ui.base
 
-import android.graphics.Color
 import android.os.Bundle
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
@@ -8,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getTintedDrawable
 
 
 abstract class BaseToolbarActivity : BaseActivity() {
@@ -22,8 +20,6 @@ abstract class BaseToolbarActivity : BaseActivity() {
 
         rootView = findView(R.id.baseToolbar_root)
         toolbar = findView(R.id.toolbar)
-
-        toolbar.navigationIcon = getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
         setSupportActionBar(toolbar)
 
         toolbar.setNavigationOnClickListener {

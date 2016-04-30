@@ -1,14 +1,10 @@
 package com.xianzhitech.ptt.ui.room
 
 import android.app.ProgressDialog
-import android.graphics.Color
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.Spinner
@@ -17,7 +13,10 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.*
+import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.repo.RoomWithMembers
+import com.xianzhitech.ptt.repo.optRoomWithMembers
+import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
@@ -35,7 +34,6 @@ class RoomFragment : BaseFragment()
         , AlertDialogFragment.OnNeutralButtonClickListener {
 
     private class Views(rootView: View,
-                        val toolbar: Toolbar = rootView.findView(R.id.room_toolbar),
                         val pttBtn: PushToTalkButton = rootView.findView(R.id.room_pushToTalkButton),
                         val speakerSourceView: Spinner = rootView.findView(R.id.room_speakerSource),
                         val memberView: RecyclerView = rootView.findView(R.id.room_memberList))
@@ -70,6 +68,7 @@ class RoomFragment : BaseFragment()
 
         speakSourceAdapter.speakerModes = SpeakerMode.values().toList()
         roomRepository = (activity.application as AppComponent).roomRepository
+        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -78,22 +77,24 @@ class RoomFragment : BaseFragment()
                 memberView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
                 memberView.adapter = adapter
 
-                toolbar.navigationIcon = context.getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
-                toolbar.setNavigationOnClickListener { v -> activity.finish() }
-
                 speakerSourceView.adapter = speakSourceAdapter
-
-                toolbar.inflateMenu(R.menu.room)
-                toolbar.setOnMenuItemClickListener {
-                    if (it.itemId == R.id.room_exit) {
-                        (context.applicationContext as AppComponent).signalService.quitRoom().subscribeSimple()
-                        activity?.finish()
-                    }
-
-                    true
-                }
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+
+        inflater.inflate(R.menu.room, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.room_exit) {
+            (context.applicationContext as AppComponent).signalService.quitRoom().subscribeSimple()
+            activity?.finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onStart() {
@@ -134,8 +135,6 @@ class RoomFragment : BaseFragment()
     internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
         adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
-            toolbar.title = roomData.roomWithMembers?.getRoomName(context)
-
             val show: Boolean
 
             if (roomData.roomState.currentRoomActiveSpeakerID == null) {
@@ -218,6 +217,7 @@ class RoomFragment : BaseFragment()
     : RecyclerView.ViewHolder(rootView)
 
     interface Callbacks {
+        fun onRoomLoaded(name: CharSequence)
         fun onRoomQuited()
     }
 }

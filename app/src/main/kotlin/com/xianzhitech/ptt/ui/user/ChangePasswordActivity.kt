@@ -4,6 +4,8 @@ import android.app.ProgressDialog
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.design.widget.TextInputLayout
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
@@ -21,6 +23,15 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
     private val verifyOldPassword : Boolean
         get() = intent.getBooleanExtra(EXTRA_VERIFY_OLD_PASSWORD, true)
 
+    private class EditTextAutoClearErrorWatcher(private val editText: TextInputLayout) : TextWatcher {
+        override fun afterTextChanged(s: Editable?) {
+            editText.error = null
+        }
+
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -30,14 +41,22 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
         newPassword = findView(R.id.changePassword_newPassword)
         newPasswordConfirmed = findView(R.id.changePassword_newPasswordConfirm)
 
+        oldPassword.editText?.addTextChangedListener(EditTextAutoClearErrorWatcher(oldPassword))
+        newPassword.editText?.addTextChangedListener(EditTextAutoClearErrorWatcher(newPassword))
+        newPasswordConfirmed.editText?.addTextChangedListener(EditTextAutoClearErrorWatcher(newPasswordConfirmed))
+
         oldPassword.setVisible(verifyOldPassword)
 
         toolbar.inflateMenu(R.menu.change_password)
-        toolbar.setOnMenuItemClickListener {
-            savePassword()
+        toolbar.setOnMenuItemClickListener { item ->
+            if (item.itemId == R.id.changePassword_save) {
+                savePassword()
+            }
+
             true
         }
     }
+
 
     override fun finish() {
         if (oldPassword.visibility == View.VISIBLE && oldPassword.text.isNullOrEmpty().not() ||
@@ -72,16 +91,19 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
     private fun savePassword() {
         if ((verifyOldPassword && oldPassword.editText!!.isEmpty())) {
             oldPassword.error = R.string.error_input_password.toFormattedString(this)
+            oldPassword.requestFocusFromTouch()
             return
         }
 
         if (newPassword.editText!!.isEmpty()) {
             newPassword.error = R.string.error_input_password.toFormattedString(this)
+            newPassword.requestFocusFromTouch()
             return
         }
 
         if (newPasswordConfirmed.editText!!.isEmpty()) {
             newPasswordConfirmed.error = R.string.error_input_password.toFormattedString(this)
+            newPasswordConfirmed.requestFocusFromTouch()
             return
         }
 
@@ -89,6 +111,7 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
             val error = R.string.error_password_not_same.toFormattedString(this)
             newPasswordConfirmed.error = error
             newPassword.error = error
+            newPassword.requestFocusFromTouch()
             return
         }
 
@@ -99,6 +122,10 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
             newPassword.error = error
             return
         }
+
+        oldPassword.error = null
+        newPassword.error = null
+        newPasswordConfirmed.error = null
 
         val dialog = ProgressDialog.show(this, null, R.string.saving.toFormattedString(this), true, false)
         (application as AppComponent).signalService
@@ -114,7 +141,7 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
                 .subscribeSimple {
                     dialog.dismiss()
                     if (!isFinishing) {
-                        finish()
+                        super.finish()
                     }
                 }
     }
