@@ -165,14 +165,14 @@ internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObje
     })
 }
 
-internal fun Socket.sendEvent(eventName: String, arg: Any? = null) = Observable.create<JSONObject> { subscriber ->
-    logd("Sending event $eventName with arg $arg")
-    emit(eventName, arrayOf(arg),
+internal fun Socket.sendEvent(eventName: String, vararg args : Any) = Observable.create<JSONObject> { subscriber ->
+    logd("Sending event $eventName with arg $args")
+    emit(eventName, *args,
             Ack {
                 try {
                     it.ensureNoError()
                     val value = (it.getOrNull(0) as? JSONObject) ?: throw EmptyServerResponseException()
-                    logd("Received $value for event $eventName with arg $arg")
+                    logd("Received $value for event $eventName with arg $args")
                     subscriber.onSingleValue(value)
                 } catch(e: Exception) {
                     subscriber.onError(e)

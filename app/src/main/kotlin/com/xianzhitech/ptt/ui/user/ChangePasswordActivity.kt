@@ -6,6 +6,8 @@ import android.support.design.widget.Snackbar
 import android.support.design.widget.TextInputLayout
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
@@ -19,9 +21,6 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
     private lateinit var oldPassword : TextInputLayout
     private lateinit var newPassword : TextInputLayout
     private lateinit var newPasswordConfirmed : TextInputLayout
-
-    private val verifyOldPassword : Boolean
-        get() = intent.getBooleanExtra(EXTRA_VERIFY_OLD_PASSWORD, true)
 
     private class EditTextAutoClearErrorWatcher(private val editText: TextInputLayout) : TextWatcher {
         override fun afterTextChanged(s: Editable?) {
@@ -44,17 +43,20 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
         oldPassword.editText?.addTextChangedListener(EditTextAutoClearErrorWatcher(oldPassword))
         newPassword.editText?.addTextChangedListener(EditTextAutoClearErrorWatcher(newPassword))
         newPasswordConfirmed.editText?.addTextChangedListener(EditTextAutoClearErrorWatcher(newPasswordConfirmed))
+    }
 
-        oldPassword.setVisible(verifyOldPassword)
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        super.onCreateOptionsMenu(menu)
+        menuInflater.inflate(R.menu.change_password, menu)
+        return true
+    }
 
-        toolbar.inflateMenu(R.menu.change_password)
-        toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.changePassword_save) {
-                savePassword()
-            }
-
-            true
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.changePassword_save) {
+            savePassword()
+            return true
         }
+        return super.onOptionsItemSelected(item)
     }
 
 
@@ -89,7 +91,7 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
     }
 
     private fun savePassword() {
-        if ((verifyOldPassword && oldPassword.editText!!.isEmpty())) {
+        if ((oldPassword.editText!!.isEmpty())) {
             oldPassword.error = R.string.error_input_password.toFormattedString(this)
             oldPassword.requestFocusFromTouch()
             return
@@ -129,7 +131,7 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
 
         val dialog = ProgressDialog.show(this, null, R.string.saving.toFormattedString(this), true, false)
         (application as AppComponent).signalService
-                .changePassword(verifyOldPassword, oldPassword.text, password)
+                .changePassword(oldPassword.text!!, password)
                 .observeOnMainThread()
                 .doOnError {
                     if (!isFinishing) {
@@ -150,8 +152,6 @@ class ChangePasswordActivity : BaseToolbarActivity(), AlertDialogFragment.OnPosi
         get() = editText?.text?.toString()
 
     companion object {
-        const val EXTRA_VERIFY_OLD_PASSWORD = "extra_vop"
-
         private const val TAG_CONFIRM_QUIT = "tag_confirm_quit"
     }
 }

@@ -36,7 +36,7 @@
 
         <android.support.design.widget.TextInputEditText
             style="@style/Text.Body2"
-            android:inputType="numberPassword"
+            android:inputType="textPassword"
             android:imeOptions="actionDone"
             android:singleLine="true"
             android:ems="10"

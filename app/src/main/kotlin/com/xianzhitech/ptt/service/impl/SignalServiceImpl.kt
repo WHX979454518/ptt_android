@@ -127,6 +127,10 @@ class SignalServiceImpl(private val appContext: Context,
         loginSubscription = loginSubscription?.let { it.unsubscribe(); null }
     }
 
+    private fun constructSessionToken(username: String, password: String) : String {
+        return (mapOf(Pair("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))) as Serializable).serializeToBase64()
+    }
+
     override fun login(username: String, password: String) = Observable.defer {
         loginState.value.currentUserID?.let {
             doLogout()
@@ -674,8 +678,12 @@ class SignalServiceImpl(private val appContext: Context,
         Unit.toObservable()
     }.subscribeOnMainThread()
 
-    override fun changePassword(verifyOldPassword: Boolean, oldPassword: String?, newPassword: String): Observable<Unit> {
-        return Observable.timer(5, TimeUnit.SECONDS, AndroidSchedulers.mainThread()).map { Unit }
+    override fun changePassword(oldPassword: String, newPassword: String): Observable<Unit> {
+        return socketSubject.first()
+                .flatMap { it.sendEvent("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5()) }
+                .flatMap { userRepository.getUser(peekLoginState().currentUserID!!) }
+                .doOnNext { preference.userSessionToken = constructSessionToken(it!!.id, newPassword) }
+                .map { Unit }
     }
 
     internal fun checkMainThread() {
