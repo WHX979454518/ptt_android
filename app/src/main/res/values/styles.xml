@@ -35,6 +35,7 @@
     <style name="Widget.Toolbar" parent="Widget.AppCompat.Toolbar">
         <item name="android:background">?attr/colorPrimary</item>
         <item name="titleTextAppearance">@style/TextAppearance.ToolbarTitle</item>
+        <item name="actionMenuTextColor">@color/icons</item>
     </style>
 
     <style name="TextAppearance.ToolbarTitle" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
