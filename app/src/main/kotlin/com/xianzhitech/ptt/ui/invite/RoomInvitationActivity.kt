@@ -68,8 +68,13 @@ class RoomInvitationActivity : BaseActivity() {
     private lateinit var title : View
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        try {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+        } catch(e: Exception) {
+            //FIXME: 为什么有时会挂?
+        }
+
         super.onCreate(savedInstanceState)
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.activity_room_invitation)
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
