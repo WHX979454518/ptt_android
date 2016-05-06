@@ -106,7 +106,7 @@ class LocalRepository(private val databaseFactory: DatabaseFactory)
         notifyTable(tableName)
     }
 
-    internal fun insert(tableName: String, values: Map<String, Any?>, replaceIfConflicts: Boolean = false) {
+    private fun insert(tableName: String, values: Map<String, Any?>, replaceIfConflicts: Boolean = true) {
         db.insert(tableName, values, replaceIfConflicts)
         notifyTable(tableName)
     }

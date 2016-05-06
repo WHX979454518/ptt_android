@@ -106,8 +106,8 @@ class RoomFragment : BaseFragment()
         Observable.combineLatest(
                 bgService.roomState.flatMap { roomState ->
                     Observable.combineLatest(
-                            appComponent.roomRepository.optRoomWithMembers(roomState.currentRoomID),
-                            appComponent.userRepository.optUser(roomState.currentRoomActiveSpeakerID),
+                            appComponent.roomRepository.optRoomWithMembers(roomState.currentRoomID).first(),
+                            appComponent.userRepository.optUser(roomState.currentRoomActiveSpeakerID).first(),
                             { roomWithMembers, currentActiveUser -> RoomData(roomState, roomWithMembers, currentActiveUser) }) },
                 bgService.loginState,
                 context.getConnectivity(),
@@ -133,6 +133,7 @@ class RoomFragment : BaseFragment()
     }
 
     internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
+        logd("updateRoomState, roomState: %s, loginState: %s", roomData.roomState, loginState)
         adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
             val show: Boolean

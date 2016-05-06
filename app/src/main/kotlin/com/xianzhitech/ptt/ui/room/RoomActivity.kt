@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Intent
 import android.os.Bundle
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 

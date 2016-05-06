@@ -82,7 +82,7 @@ open class App : Application(), AppComponent, ActivityProvider {
         }
 
         RoomAutoQuitHandler(this)
-        RoomInvitationReceiver(this, activityProvider)
+        RoomInvitationReceiver(this, signalService, activityProvider)
 
         registerActivityLifecycleCallbacks(object : SimpleActivityLifecycleCallbacks() {
             override fun onActivityStarted(activity: Activity) {

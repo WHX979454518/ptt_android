@@ -139,7 +139,7 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     protected open fun onRoomJoined() {
-        startActivity(Intent(this, RoomActivity::class.java))
+        startActivity(Intent(this, RoomActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
     }
 
     fun joinRoom(createRoomRequest: CreateRoomRequest) {
