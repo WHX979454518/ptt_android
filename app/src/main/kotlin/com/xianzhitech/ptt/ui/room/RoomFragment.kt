@@ -4,20 +4,30 @@ import android.app.ProgressDialog
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.createAvatarDrawable
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getConnectivity
+import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.RoomWithMembers
 import com.xianzhitech.ptt.repo.optRoomWithMembers
 import com.xianzhitech.ptt.repo.optUser
-import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -101,24 +111,22 @@ class RoomFragment : BaseFragment()
         super.onStart()
 
         val appComponent = context.applicationContext as AppComponent
-        val bgService = appComponent.signalService
 
         Observable.combineLatest(
-                bgService.roomState.flatMap { roomState ->
+                appComponent.signalService.roomState.flatMap { roomState ->
                     Observable.combineLatest(
                             appComponent.roomRepository.optRoomWithMembers(roomState.currentRoomID).first(),
                             appComponent.userRepository.optUser(roomState.currentRoomActiveSpeakerID).first(),
                             { roomWithMembers, currentActiveUser -> RoomData(roomState, roomWithMembers, currentActiveUser) }) },
-                bgService.loginState,
                 context.getConnectivity(),
-                { roomData, loginState, connectivity -> Triple(roomData, loginState, connectivity) })
+                { roomData, connectivity -> roomData to connectivity })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
-                        updateRoomState(it.first, it.second, it.third)
+                        updateRoomState(it.first, it.second)
                 }
 
-        bgService.roomState
+        appComponent.signalService.roomState
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
@@ -132,7 +140,8 @@ class RoomFragment : BaseFragment()
                 }
     }
 
-    internal fun updateRoomState(roomData: RoomData, loginState: LoginState, hasConnectivity: Boolean) {
+    internal fun updateRoomState(roomData: RoomData, hasConnectivity: Boolean) {
+        val loginState = (context.applicationContext as AppComponent).signalService.peekLoginState()
         logd("updateRoomState, roomState: %s, loginState: %s", roomData.roomState, loginState)
         adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
