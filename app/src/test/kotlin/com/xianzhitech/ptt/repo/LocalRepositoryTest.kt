@@ -4,10 +4,6 @@ import com.xianzhitech.ptt.db.Database
 import com.xianzhitech.ptt.db.DatabaseFactory
 import com.xianzhitech.ptt.db.JDBCDatabase
 import com.xianzhitech.ptt.db.TableDefinition
-import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.pairWith
-import com.xianzhitech.ptt.model.*
-import com.xianzhitech.ptt.util.test
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -63,7 +59,7 @@ class LocalRepositoryTest {
 
     @Test
     fun testSaveUser() {
-        localRepository.saveUser(person1).combineWith(localRepository.getUser(person1.id)).first().test {
+        localRepository.saveUsers(person1).combineWith(localRepository.getUser(person1.id)).first().test {
             it.assertValue(person1.pairWith(person1))
         }
     }

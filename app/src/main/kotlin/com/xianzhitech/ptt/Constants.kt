@@ -12,5 +12,7 @@ object Constants {
     const val MAX_MEMBER_DISPLAY_COUNT: Int = 3
 
     const val ADMIN_USER_ID = "0"
-    const val ADMIN_USER_LEVEL = 0
+    const val ADMIN_USER_PRIORITY = 0
+
+    const val DEFAULT_USER_PRIORITY = 100
 }

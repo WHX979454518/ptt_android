@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.service
 
+import rx.Completable
 import rx.Observable
 import java.io.Serializable
 import java.util.*
@@ -48,7 +49,7 @@ interface SignalService {
     fun quitRoom(): Observable<Unit>
 
     fun changePassword(oldPassword: String,
-                       newPassword: String) : Observable<Unit>
+                       newPassword: String): Completable
 
     companion object {
         const val ACTION_INVITE_TO_JOIN = "acton_invite_to_join"

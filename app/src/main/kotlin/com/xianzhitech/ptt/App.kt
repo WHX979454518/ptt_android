@@ -9,17 +9,20 @@ import android.net.Uri
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import com.xianzhitech.ptt.bluetooth.BluetoothHandler
-import com.xianzhitech.ptt.db.AndroidDatabase
-import com.xianzhitech.ptt.db.DatabaseFactory
-import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
-import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.repo.UserRepository
+import com.xianzhitech.ptt.repo.storage.ContactSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.GroupSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.RoomSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.UserSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.createSQLiteStorageHelper
+import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.UserToken
 import com.xianzhitech.ptt.service.impl.SignalServiceImpl
 import com.xianzhitech.ptt.ui.ActivityProvider
@@ -40,17 +43,12 @@ open class App : Application(), AppComponent, ActivityProvider {
         override fun createEngine() = WebRtcTalkEngine(this@App)
     }
 
-    override val userRepository by lazy {
-        LocalRepository(object : DatabaseFactory {
-            override fun createDatabase(tables: Array<TableDefinition>, version: Int) = AndroidDatabase(this@App, tables, Constants.DB_NAME, version)
-        })
-    }
-    override val groupRepository: GroupRepository
-        get() = userRepository
-    override val roomRepository: RoomRepository
-        get() = userRepository
-    override val contactRepository: ContactRepository
-        get() = userRepository
+
+    override lateinit var userRepository : UserRepository
+    override lateinit var groupRepository: GroupRepository
+    override lateinit var roomRepository: RoomRepository
+    override lateinit var contactRepository: ContactRepository
+
     override val preference: Preference by lazy { SharedPreferenceProvider(PreferenceManager.getDefaultSharedPreferences(this)) }
 
     override val signalServerEndpoint: String
@@ -58,16 +56,7 @@ open class App : Application(), AppComponent, ActivityProvider {
 
     override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
 
-    override val signalService by lazy { SignalServiceImpl(
-            appContext = this,
-            signalServerEndpoint = BuildConfig.SIGNAL_SERVER_ENDPOINT,
-            preference = preference,
-            userRepository = userRepository,
-            groupRepository = groupRepository,
-            contactRepository = contactRepository,
-            roomRepository = roomRepository,
-            talkEngineProvider = talkEngineProvider)
-    }
+    override lateinit var signalService : SignalService
 
     override val activityProvider = this
 
@@ -75,6 +64,24 @@ open class App : Application(), AppComponent, ActivityProvider {
 
     override fun onCreate() {
         super.onCreate()
+
+        val helper = createSQLiteStorageHelper(this, "data")
+        val userStorage = UserSQLiteStorage(helper)
+        val groupStorage = GroupSQLiteStorage(helper)
+        userRepository = UserRepository(this, userStorage)
+        groupRepository = GroupRepository(this, groupStorage)
+        roomRepository = RoomRepository(this, RoomSQLiteStorage(helper))
+        contactRepository = ContactRepository(this, ContactSQLiteStorage(helper, userStorage, groupStorage))
+
+        signalService = SignalServiceImpl(
+                appContext = this,
+                signalServerEndpoint = BuildConfig.SIGNAL_SERVER_ENDPOINT,
+                preference = preference,
+                userRepository = userRepository,
+                groupRepository = groupRepository,
+                contactRepository = contactRepository,
+                roomRepository = roomRepository,
+                talkEngineProvider = talkEngineProvider)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

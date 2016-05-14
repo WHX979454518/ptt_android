@@ -6,8 +6,10 @@ import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.service.UserDescribableException
+import rx.Completable
 import rx.Observable
 import rx.Scheduler
+import rx.Single
 import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -88,6 +90,28 @@ fun <T> Observable<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
 
 fun <T> Observable<T>.subscribeSimple(context: Context? = null) : Subscription {
     return subscribe(GlobalSubscriber(context))
+}
+
+fun Completable.subscribeSimple(action : () -> Unit) : Subscription {
+    return subscribe({ err ->
+        Log.e("GlobalSubscriber", err?.message, err)
+    }, action)
+}
+
+fun Completable.subscribeSimple() : Subscription {
+    return subscribeSimple {  }
+}
+
+fun <T> Single<T>.subscribeSimple() : Subscription {
+    return subscribeSimple{}
+}
+
+fun <T> Single<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
+    return subscribe(object : GlobalSubscriber<T>() {
+        override fun onNext(t: T) {
+            action(t)
+        }
+    })
 }
 
 

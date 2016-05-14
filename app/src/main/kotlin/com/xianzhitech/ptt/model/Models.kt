@@ -1,75 +1,27 @@
 package com.xianzhitech.ptt.model
 
 import java.io.Serializable
-import java.util.*
 
-interface ContactItem
-
-data class GroupContactItem(val groupId : String) : ContactItem
-data class UserContactItem(val userId : String) : ContactItem
-
-interface Room : Serializable {
+interface Model : Serializable {
     val id : String
     val name : String
+}
+
+interface Room : Model {
     val description : String?
     val ownerId : String
-    val lastActiveUserId : String?
-    val lastActiveTime : Date?
+    val associatedGroupIds : Iterable<String>
+    val extraMemberIds : Iterable<String>
 }
 
-interface MutableRoom : Room {
-    override var id: String
-    override var name: String
-    override var description: String?
-    override var ownerId: String
-    override var lastActiveUserId: String?
-    override var lastActiveTime: Date?
-}
-
-interface Group : Serializable {
-    val id: String
+interface Group : Model {
     val description: String?
-    val name : String
     val avatar: String?
+    val memberIds : Iterable<String>
 }
 
-interface MutableGroup : Group {
-    override var id: String
-    override var description: String?
-    override var name: String
-    override var avatar: String?
-}
-
-interface User : Serializable {
-    val id: String
-    val name : String
+interface User : Model {
     val avatar: String?
-    val permissions: EnumSet<Permission>
-    val level : Int
+    val permissions: Set<Permission>
+    val priority: Int
 }
-
-interface MutableUser : User {
-    override var id: String
-    override var name: String
-    override var avatar: String?
-    override var permissions: EnumSet<Permission>
-    override var level: Int
-}
-
-data class RoomImpl(override var id: String,
-                    override var name: String,
-                    override var description: String?,
-                    override var ownerId: String,
-                    override var lastActiveUserId: String?,
-                    override var lastActiveTime: Date?) : MutableRoom
-
-data class GroupImpl(override var id: String,
-                     override var description: String?,
-                     override var name: String,
-                     override var avatar: String?) : MutableGroup
-
-data class UserImpl(override var id: String,
-                    override var name: String,
-                    override var level : Int,
-                    override var avatar: String?,
-                    override var permissions: EnumSet<Permission>) : MutableUser
