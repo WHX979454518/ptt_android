@@ -19,8 +19,8 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
     private val handler: Handler
     private val context: Context
 
-    internal lateinit var mediaEngine: MediaEngine
-    internal var roomIds: IntArray? = null
+    private lateinit var mediaEngine: MediaEngine
+    private var extProtoData: IntArray? = null
 
     init {
         this.handler = Handler(ENGINE_THREAD.looper)
@@ -34,12 +34,12 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
     }
 
     override fun connect(roomId: String, property: Map<String, Any?>) {
-        if (this.roomIds != null) {
+        if (this.extProtoData != null) {
             throw IllegalStateException("Engine already connected to a room before")
         }
 
-        val roomIdInt = roomId.toInt()
-        this.roomIds = intArrayOf(roomIdInt)
+        val roomIdLong = roomId.toLong()
+        this.extProtoData = intArrayOf((roomIdLong ushr 32).toInt(), (roomIdLong and 0xFFFFFFFF).toInt())
 
         handler.post {
             mediaEngine = MediaEngine(context, property[PROPERTY_PROTOCOL]?.equals("tcp") ?: false)
@@ -51,8 +51,8 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
             mediaEngine.setNs(true)
             mediaEngine.setEc(true)
             mediaEngine.setAudio(true)
-            mediaEngine.start(roomIdInt)
-            mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, roomIds)
+            mediaEngine.start()
+            mediaEngine.sendExtPacket(RTP_EXT_PROTO_JOIN_ROOM, extProtoData)
 
             scheduleHeartbeat()
         }
@@ -60,7 +60,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
     private fun scheduleHeartbeat() {
         handler.postDelayed({
-            mediaEngine.sendExtPacket(RTP_EXT_PROTO_HEARTBEAT, roomIds)
+            mediaEngine.sendExtPacket(RTP_EXT_PROTO_HEARTBEAT, extProtoData)
             scheduleHeartbeat()
         }, HEARTBEAT_INTERVAL_MILLS)
     }
@@ -75,7 +75,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
     override fun dispose() {
         handler.post {
-            mediaEngine.sendExtPacket(RTP_EXT_PROTO_QUIT_ROOM, roomIds)
+            mediaEngine.sendExtPacket(RTP_EXT_PROTO_QUIT_ROOM, extProtoData)
             mediaEngine.stop()
             mediaEngine.dispose()
             handler.removeCallbacksAndMessages(null)
@@ -91,10 +91,10 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
 
         private val HEARTBEAT_INTERVAL_MILLS: Long = 5000
 
-        public const val PROPERTY_REMOTE_SERVER_ADDRESS = "server_address"
-        public const val PROPERTY_REMOTE_SERVER_PORT = "server_port"
-        public const val PROPERTY_PROTOCOL = "protocol"
-        public const val PROPERTY_LOCAL_USER_ID = "local_user_id"
+        const val PROPERTY_REMOTE_SERVER_ADDRESS = "server_address"
+        const val PROPERTY_REMOTE_SERVER_PORT = "server_port"
+        const val PROPERTY_PROTOCOL = "protocol"
+        const val PROPERTY_LOCAL_USER_ID = "local_user_id"
 
         private val LOCAL_RTP_PORT = 0
         private val LOCAL_RTCP_PORT = 0

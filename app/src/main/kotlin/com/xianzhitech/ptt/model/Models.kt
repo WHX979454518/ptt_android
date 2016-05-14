@@ -44,7 +44,7 @@ interface User : Serializable {
     val id: String
     val name : String
     val avatar: String?
-    val privileges : EnumSet<Privilege>
+    val permissions: EnumSet<Permission>
     val level : Int
 }
 
@@ -52,7 +52,7 @@ interface MutableUser : User {
     override var id: String
     override var name: String
     override var avatar: String?
-    override var privileges: EnumSet<Privilege>
+    override var permissions: EnumSet<Permission>
     override var level: Int
 }
 
@@ -72,4 +72,4 @@ data class UserImpl(override var id: String,
                     override var name: String,
                     override var level : Int,
                     override var avatar: String?,
-                    override var privileges: EnumSet<Privilege>) : MutableUser
+                    override var permissions: EnumSet<Permission>) : MutableUser

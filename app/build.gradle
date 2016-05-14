@@ -11,8 +11,8 @@ if (file('../server.gradle').exists()) {
 }
 
 buildscript {
-    ext.kotlin_version = '1.0.1-2'
-    ext.support_library_version = '23.2.1'
+    ext.kotlin_version = '1.0.2'
+    ext.support_library_version = '23.4.0'
 
     repositories {
         // required for this library, don't use mavenCentral()
@@ -40,7 +40,11 @@ repositories {
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '23.0.2'
+    buildToolsVersion '23.0.3'
+
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
 
     defaultConfig {
         applicationId "com.xianzhitech.ptt"

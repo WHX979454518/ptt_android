@@ -5,8 +5,20 @@ import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.onSingleValue
 import com.xianzhitech.ptt.ext.toStringIterable
 import com.xianzhitech.ptt.ext.transform
-import com.xianzhitech.ptt.model.*
-import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.GroupImpl
+import com.xianzhitech.ptt.model.MutableGroup
+import com.xianzhitech.ptt.model.MutableRoom
+import com.xianzhitech.ptt.model.MutableUser
+import com.xianzhitech.ptt.model.Permission
+import com.xianzhitech.ptt.model.RoomImpl
+import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.service.CreateRoomFromGroup
+import com.xianzhitech.ptt.service.CreateRoomFromUser
+import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.EmptyServerResponseException
+import com.xianzhitech.ptt.service.RoomInvitation
+import com.xianzhitech.ptt.service.ServerException
 import io.socket.client.Ack
 import io.socket.client.Manager
 import io.socket.client.Socket
@@ -67,7 +79,7 @@ internal fun createUser(obj : JSONObject) : MutableUser {
         override var name: String = obj.getString("name")
         override var avatar: String? = obj.optString("avatar")
         override var level: Int = obj.optInt("level", 100) // TODO: default level
-        override var privileges: EnumSet<Privilege> = obj.optJSONObject("privileges").toPrivilege()
+        override var permissions: EnumSet<Permission> = obj.optJSONObject("privileges").toPrivilege()
     }
 }
 
@@ -75,7 +87,7 @@ internal fun MutableUser.readFrom(obj: JSONObject): MutableUser {
     id = obj.getString("idNumber")
     name = obj.getString("name")
     avatar = obj.optString("avatar")
-    privileges = obj.optJSONObject("privileges").toPrivilege()
+    permissions = obj.optJSONObject("privileges").toPrivilege()
     return this
 }
 
@@ -114,24 +126,24 @@ internal fun JSONArray?.toGroupsAndMembers(): Map<String, Iterable<String>> {
 internal fun JSONObject.hasPrivilege(name: String) = has(name) && getBoolean(name)
 
 
-internal fun JSONObject?.toPrivilege(): EnumSet<Privilege> {
-    val result = EnumSet.noneOf(Privilege::class.java)
+internal fun JSONObject?.toPrivilege(): EnumSet<Permission> {
+    val result = EnumSet.noneOf(Permission::class.java)
 
     this?.let {
         if (hasPrivilege("call")) {
-            result += Privilege.MAKE_CALL
+            result += Permission.MAKE_INDIVIDUAL_CALL
         }
 
         if (hasPrivilege("group")) {
-            result += Privilege.CREATE_ROOM
+            result += Permission.CREATE_ROOM
         }
 
         if (hasPrivilege("recvCall")) {
-            result += Privilege.RECEIVE_CALL
+            result += Permission.RECEIVE_INDIVIDUAL_CALL
         }
 
         if (hasPrivilege("recvGroup")) {
-            result += Privilege.RECEIVE_ROOM
+            result += Permission.RECEIVE_ROOM
         }
     }
 

@@ -5,8 +5,28 @@ import com.xianzhitech.ptt.db.Database
 import com.xianzhitech.ptt.db.DatabaseFactory
 import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.db.TableDefinition
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.ext.countAndClose
+import com.xianzhitech.ptt.ext.mapAndClose
+import com.xianzhitech.ptt.ext.mapToList
+import com.xianzhitech.ptt.ext.mapToOneOrDefault
+import com.xianzhitech.ptt.ext.threadLocal
+import com.xianzhitech.ptt.ext.toObservable
+import com.xianzhitech.ptt.ext.toSqlSet
+import com.xianzhitech.ptt.ext.transform
+import com.xianzhitech.ptt.model.ContactItem
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.GroupContactItem
+import com.xianzhitech.ptt.model.GroupImpl
+import com.xianzhitech.ptt.model.MutableGroup
+import com.xianzhitech.ptt.model.MutableRoom
+import com.xianzhitech.ptt.model.MutableUser
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.RoomImpl
+import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.UserContactItem
+import com.xianzhitech.ptt.model.UserImpl
+import com.xianzhitech.ptt.model.toDatabaseString
+import com.xianzhitech.ptt.model.toPrivileges
 import rx.Observable
 import rx.functions.Func1
 import rx.schedulers.Schedulers
@@ -409,7 +429,7 @@ internal fun User.toValues(values: MutableMap<String, Any?>) {
     values.put(Users.COL_AVATAR, avatar)
     values.put(Users.COL_NAME, name)
     values.put(Users.COL_LEVEL, level)
-    values.put(Users.COL_PRIV, privileges.toDatabaseString())
+    values.put(Users.COL_PRIV, permissions.toDatabaseString())
 }
 
 internal fun createUser(cursor: ResultSet) : MutableUser {
@@ -417,7 +437,7 @@ internal fun createUser(cursor: ResultSet) : MutableUser {
             avatar = cursor.getString(Users.COL_AVATAR),
             name = cursor.getString(Users.COL_NAME),
             level = cursor.getInt(Users.COL_LEVEL),
-            privileges = cursor.getString(Users.COL_PRIV).toPrivileges())
+            permissions = cursor.getString(Users.COL_PRIV).toPrivileges())
 }
 
 

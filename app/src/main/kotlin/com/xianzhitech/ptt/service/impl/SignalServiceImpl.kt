@@ -16,16 +16,35 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.fromBase64ToSerializable
+import com.xianzhitech.ptt.ext.getActiveNetwork
+import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.onSingleValue
+import com.xianzhitech.ptt.ext.serializeToBase64
+import com.xianzhitech.ptt.ext.subscribeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toBase64
+import com.xianzhitech.ptt.ext.toMD5
+import com.xianzhitech.ptt.ext.toObservable
+import com.xianzhitech.ptt.ext.toStringIterable
+import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Privilege
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.LoginState
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.service.Service
 import io.socket.client.IO
@@ -430,7 +449,7 @@ class SignalServiceImpl(private val appContext: Context,
         userRepository.getUser(currentUserID)
                 .first()
                 .flatMap { user ->
-                    if (user == null || user.privileges.contains(Privilege.CREATE_ROOM).not()) {
+                    if (user == null || user.permissions.contains(Permission.CREATE_ROOM).not()) {
                         Observable.error<String>(StaticUserException(R.string.error_no_permission))
                     } else {
                         socket.sendEvent(EVENT_CLIENT_CREATE_ROOM, request.toJSON())
@@ -569,10 +588,10 @@ class SignalServiceImpl(private val appContext: Context,
 
                             val voiceServerObj = t.getJSONObject("server")
 
-                            onRoomJoined(roomId, hashMapOf(Pair(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID, loginState.value.currentUserID),
-                                    Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS, voiceServerObj.getString("host")),
-                                    Pair(WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT, voiceServerObj.getInt("port")),
-                                    Pair(WebRtcTalkEngine.PROPERTY_PROTOCOL, voiceServerObj.getString("protocol"))))
+                            onRoomJoined(roomId, hashMapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to loginState.value.currentUserID,
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to voiceServerObj.getString("host"),
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to voiceServerObj.getInt("port"),
+                                    WebRtcTalkEngine.PROPERTY_PROTOCOL to voiceServerObj.getString("protocol")))
 
                             subscriber.onSingleValue(Unit)
                         }
