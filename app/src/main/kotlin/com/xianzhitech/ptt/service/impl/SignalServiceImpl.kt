@@ -17,12 +17,10 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.getActiveNetwork
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.onSingleValue
-import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.ext.subscribeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toBase64
@@ -45,6 +43,7 @@ import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.service.UserToken
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.service.Service
 import io.socket.client.IO
@@ -58,7 +57,6 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.observers.SafeSubscriber
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
-import java.io.Serializable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -99,11 +97,11 @@ class SignalServiceImpl(private val appContext: Context,
 
         val loginStateValue = loginState.value
         if (loginStateValue.currentUserID == null && loginStateValue.status == LoginStatus.IDLE) {
-            val currentUserSessionToken = preference.userSessionToken
+            val currentUserSessionToken = preference.userSessionToken as? ExplicitUserToken
             val lastUserId = preference.lastLoginUserId
             if (currentUserSessionToken != null && lastUserId != null) {
                 loginState.onNext(LoginState(currentUserID = lastUserId, status = LoginStatus.LOGIN_IN_PROGRESS))
-                doLogin(currentUserSessionToken.fromBase64ToSerializable() as Map<String, List<String>>).subscribeSimple()
+                doLogin(currentUserSessionToken).subscribeSimple()
             }
         }
 
@@ -132,7 +130,7 @@ class SignalServiceImpl(private val appContext: Context,
             .subscribeOnMainThread()
             .doOnNext { appContext.stopService(Intent(appContext, Service::class.java)) }
 
-    internal fun doLogout() {
+    private fun doLogout() {
         loginState.value.currentUserID?.let {
             preference.userSessionToken = null
             onUserLogout(it)
@@ -146,32 +144,29 @@ class SignalServiceImpl(private val appContext: Context,
         loginSubscription = loginSubscription?.let { it.unsubscribe(); null }
     }
 
-    private fun constructSessionToken(username: String, password: String) : String {
-        return (mapOf(Pair("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))) as Serializable).serializeToBase64()
-    }
-
     override fun login(username: String, password: String) = Observable.defer {
         loginState.value.currentUserID?.let {
             doLogout()
         }
 
-        doLogin(mapOf(Pair("Authorization", listOf("Basic ${(username + ':' + password.toMD5()).toBase64()}"))))
+        doLogin(ExplicitUserToken(username, password))
     }.subscribeOnMainThread()
 
-    internal fun doLogin(headers: Map<String, List<String>>) = Observable.create<Unit> { subscriber ->
+    private fun doLogin(userToken : ExplicitUserToken) = Observable.create<Unit> { subscriber ->
         val newSocket = IO.socket(signalServerEndpoint, IO.Options().apply {
             reconnection = true
             forceNew = true
         })
 
         // Process headers
-        if (headers.isNotEmpty()) {
-            newSocket.io().on(Manager.EVENT_TRANSPORT, {
-                (it[0] as Transport).on(Transport.EVENT_REQUEST_HEADERS, {
-                    (it[0] as MutableMap<String, List<String>>).putAll(headers)
-                })
+        newSocket.io().on(Manager.EVENT_TRANSPORT, {
+            (it[0] as Transport).on(Transport.EVENT_REQUEST_HEADERS, {
+                val token = (preference.userSessionToken as? ExplicitUserToken) ?: userToken
+
+                (it[0] as MutableMap<String, List<String>>)["Authorization"] =
+                        listOf("Basic ${(token.userId + ':' + token.password.toMD5()).toBase64()}");
             })
-        }
+        })
 
         // Monitor user login
         loginSubscription = CompositeSubscription().apply {
@@ -180,6 +175,13 @@ class SignalServiceImpl(private val appContext: Context,
                         logd("Reconnecting to server...")
                         socketSubject.onNext(newSocket)
                     })
+
+            add(newSocket.receiveEvent(EVENT_SERVER_USER_LOGIN_FAILED)
+                .observeOnMainThread()
+                .subscribeSimple {
+                    subscriber.onError(StaticUserException(R.string.error_login_failed))
+                    doLogout()
+                })
 
             add(newSocket.io().receiveEvent(Manager.EVENT_CONNECT_ERROR)
                     .observeOnMainThread()
@@ -264,7 +266,7 @@ class SignalServiceImpl(private val appContext: Context,
 
                         override fun onNext(t: User) {
                             val newLoginState = LoginState(LoginStatus.LOGGED_IN, t.id)
-                            preference.userSessionToken = (headers as Serializable).serializeToBase64()
+                            preference.userSessionToken = userToken
                             loginState.onNext(newLoginState)
                             subscriber.onNext(null)
                             subscriber.onCompleted()
@@ -339,24 +341,24 @@ class SignalServiceImpl(private val appContext: Context,
                 logd("Starting service $name")
             }
 
-    internal fun onUserKickedOut() {
+    private fun onUserKickedOut() {
         if (loginState.value.currentUserID != null) {
             logout().subscribe(GlobalSubscriber())
             appContext.startActivity(Intent(appContext, KickOutActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }
     }
 
-    internal fun onUserLogout(user: String) {
+    private fun onUserLogout(user: String) {
         logd("User $user has logged out")
 //        stopSelf()
     }
 
-    internal fun onUserLogon(user : User) {
+    private fun onUserLogon(user : User) {
         logd("User $user has logged on")
 //        startService(Intent(this, javaClass))
     }
 
-    internal fun onInviteToJoin(room: Room) {
+    private fun onInviteToJoin(room: Room) {
         logd("Received invite to join room $room")
 
         LocalBroadcastManager.getInstance(appContext)
@@ -365,14 +367,14 @@ class SignalServiceImpl(private val appContext: Context,
     }
 
 
-    internal fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
+    private fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
         //roomSubscription?.add()
         audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         audioManager.isSpeakerphoneOn = true
         createTalkEngine(roomId, talkEngineProperties, false)
     }
 
-    internal fun createTalkEngine(roomId : String, talkEngineProperties: Map<String, Any?>, applyCurrentState : Boolean) {
+    private fun createTalkEngine(roomId : String, talkEngineProperties: Map<String, Any?>, applyCurrentState : Boolean) {
         currentTalkEngine?.let { it.dispose() }
         currentTalkEngine = talkEngineProvider.createEngine().apply {
             logd("Connecting to talk engine")
@@ -391,11 +393,11 @@ class SignalServiceImpl(private val appContext: Context,
         }
     }
 
-    internal fun onRoomQuited(roomId: String) {
+    private fun onRoomQuited(roomId: String) {
         audioManager.isSpeakerphoneOn = false
     }
 
-    internal fun onMicActivated(isSelf: Boolean) {
+    private fun onMicActivated(isSelf: Boolean) {
         if (isSelf) {
             vibrator?.vibrate(120)
             playSound(R.raw.outgoing)
@@ -405,7 +407,7 @@ class SignalServiceImpl(private val appContext: Context,
         }
     }
 
-    internal fun onMicReleased(isSelf: Boolean) {
+    private fun onMicReleased(isSelf: Boolean) {
         if (isSelf) {
             playSound(R.raw.pttup)
             currentTalkEngine?.stopSend()
@@ -469,7 +471,7 @@ class SignalServiceImpl(private val appContext: Context,
     }.subscribeOnMainThread()
 
 
-    internal fun doQuitCurrentRoom() {
+    private fun doQuitCurrentRoom() {
         checkMainThread()
         val state = roomState.value
         val socket = socketSubject.value
@@ -494,7 +496,7 @@ class SignalServiceImpl(private val appContext: Context,
      * Actually join room. This is assumed all pre-check has been done.
      * This method has to run on main thread.
      */
-    internal fun doJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
+    private fun doJoinRoom(roomId: String) = Observable.create<Unit> { subscriber ->
         doQuitCurrentRoom()
         logd("Joining room $roomId")
         roomState.onNext(roomState.value.copy(status = RoomStatus.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
@@ -700,12 +702,13 @@ class SignalServiceImpl(private val appContext: Context,
     override fun changePassword(oldPassword: String, newPassword: String): Observable<Unit> {
         return socketSubject.first()
                 .flatMap { it.sendEvent("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5()) }
-                .flatMap { userRepository.getUser(peekLoginState().currentUserID!!) }
-                .doOnNext { preference.userSessionToken = constructSessionToken(it!!.id, newPassword) }
-                .map { Unit }
+                .map {
+                    preference.userSessionToken = (preference.userSessionToken as? ExplicitUserToken)
+                            ?.let { it.copy(password = newPassword) }
+                }
     }
 
-    internal fun checkMainThread() {
+    private fun checkMainThread() {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
             throw AssertionError("This method must be called in main thread")
         }
@@ -719,6 +722,7 @@ class SignalServiceImpl(private val appContext: Context,
 
     companion object {
         const val EVENT_SERVER_USER_LOGON = "s_logon"
+        const val EVENT_SERVER_USER_LOGIN_FAILED = "s_login_failed"
         const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
         const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
         const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
@@ -734,3 +738,6 @@ class SignalServiceImpl(private val appContext: Context,
     }
 
 }
+
+private data class ExplicitUserToken(val userId : String,
+                                     val password : String) : UserToken

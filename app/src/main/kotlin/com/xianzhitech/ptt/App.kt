@@ -14,10 +14,13 @@ import com.xianzhitech.ptt.db.DatabaseFactory
 import com.xianzhitech.ptt.db.TableDefinition
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
+import com.xianzhitech.ptt.ext.fromBase64ToSerializable
+import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.LocalRepository
 import com.xianzhitech.ptt.repo.RoomRepository
+import com.xianzhitech.ptt.service.UserToken
 import com.xianzhitech.ptt.service.impl.SignalServiceImpl
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -100,10 +103,10 @@ open class App : Application(), AppComponent, ActivityProvider {
 
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
-        override var userSessionToken: String?
-            get() = pref.getString(KEY_USER_TOKEN, null)
+        override var userSessionToken: UserToken?
+            get() = pref.getString(KEY_USER_TOKEN, null)?.fromBase64ToSerializable() as? UserToken
             set(value) {
-                pref.edit().putString(KEY_USER_TOKEN, value).apply()
+                pref.edit().putString(KEY_USER_TOKEN, value?.serializeToBase64()).apply()
             }
 
         override var lastLoginUserId: String?
@@ -141,7 +144,7 @@ open class App : Application(), AppComponent, ActivityProvider {
             }
 
         companion object {
-            const val KEY_USER_TOKEN = "session_token"
+            const val KEY_USER_TOKEN = "user_token"
             const val KEY_LAST_USER_ID = "last_user_id"
             const val KEY_BLOCK_CALLS = "block_calls"
             const val KEY_AUTO_EXIT = "auto_exit"

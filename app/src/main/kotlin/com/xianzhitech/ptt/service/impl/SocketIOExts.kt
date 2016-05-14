@@ -164,8 +164,7 @@ internal fun Socket.receiveEvent(eventName: String) = Observable.create<JSONObje
     val listener = { args: Array<Any> ->
         try {
             logd("Received server event $eventName with value $args")
-            val value = args.getOrNull(0) as? JSONObject ?: throw EmptyServerResponseException()
-            subscriber.onNext(value)
+            subscriber.onNext(args.getOrNull(0) as? JSONObject)
         } catch(e: Exception) {
             subscriber.onError(e)
         }

@@ -50,6 +50,7 @@
     <string name="error_no_such_user">没有该用户</string>
     <string name="error_user_not_logon">未登陆用户无法进行此操作</string>
     <string name="error_join_room">加入房间失败</string>
+    <string name="error_login_failed">登陆失败。请检查用户名和密码是否正确</string>
     <string name="error_service_empty_response">服务器故障</string>
     <string name="error_room_is_important_to_quit">当前加入的房间&quot;%1$s&quot;被管理员标记为重要房间, 不可退出</string>
     <string name="error_no_permission">当前用户无此操作权限</string>
