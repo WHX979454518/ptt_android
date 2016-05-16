@@ -28,12 +28,13 @@
     <string name="dialog_navigate_to_current_room">切换至&quot;%1$s&quot;</string>
 
     <string name="dialog_confirm_title">确定吗</string>
+    <string name="dialog_confirm_switch_title">切换房间</string>
     <string name="receive_invite_switch_confirm">%1$s 邀请您加入对讲房间 %2$s, 要加入吗?</string>
 
     <string name="room_talking">请讲话</string>
     <string name="room_other_is_talking">%1$s 正在讲话</string>
     <string name="room_prompt_switching">切换房间</string>
-    <string name="room_prompt_switching_message">当前正在进行对讲, 进入新房间将会退出当前的对讲,确定吗</string>
+    <string name="room_prompt_switching_message">当前正在对讲, 呼叫新的联系人将会退出当前的对讲, 继续切换?</string>
     <string name="room_prompt_important">当前房间不可退出</string>
     <string name="room_prompt_important_message">房间&quot;%1$s&quot;被管理员标记为重要房间, 当前不可退出</string>
     <string name="room_last_active_user_time">%1$s %2$s</string>
@@ -75,7 +76,6 @@
     <string name="login_in_progress">正在登陆</string>
 
     <string name="notification_user_online">%1$s 在线</string>
-    <string name="notification_joined_room">房间 %1$s 正在对讲</string>
     <string name="notification_joining_room">正在进入对讲房间...</string>
     <string name="notification_user_logging_in">正在登陆...</string>
     <string name="notification_rejoining_room">断线重连中...</string>

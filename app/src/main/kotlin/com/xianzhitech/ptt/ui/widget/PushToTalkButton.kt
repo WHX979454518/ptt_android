@@ -61,15 +61,17 @@ class PushToTalkButton : ImageButton {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        subscription = signalService.roomStatus
-                .observeOnMainThread()
-                .subscribeSimple {
-                    if (roomStatus != it) {
-                        roomStatus = it
-                        applyRoomStatus()
-                        invalidate()
+        if (isInEditMode.not()) {
+            subscription = signalService.roomStatus
+                    .observeOnMainThread()
+                    .subscribeSimple {
+                        if (roomStatus != it) {
+                            roomStatus = it
+                            applyRoomStatus()
+                            invalidate()
+                        }
                     }
-                }
+        }
     }
 
     override fun onDetachedFromWindow() {

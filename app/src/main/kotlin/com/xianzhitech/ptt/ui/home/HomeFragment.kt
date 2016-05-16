@@ -14,16 +14,16 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.first
 import com.xianzhitech.ptt.ext.getColorCompat
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.sizeAtLeast
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.repo.RoomName
+import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.loginStatus
@@ -131,33 +131,14 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                 signalService.roomState.distinctUntilChanged { it.currentRoomID }
                         .flatMap {
                             roomRepository.getRoom(it.currentRoomID).observe()
-                                    .flatMap { room ->
-                                        if (room != null) {
-                                            val currentUserID = signalService.peekLoginState().currentUserID
-                                            if (room.associatedGroupIds.sizeAtLeast(1).not()) {
-                                                // 这个会话没有所属组
-                                                val members = room.extraMemberIds.first(3) - currentUserID
-                                                if (members.size == 1) {
-                                                    // 这个会话只有一个用户。那么这是一个单呼
-                                                    return@flatMap appComponent.userRepository.getUser(members.first()).observe()
-                                                            .map { room to RoomNameDescription(it?.name ?: "", true) }
-                                                }
-                                            }
-
-                                            roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserID!!)).observe()
-                                                .map { room to RoomNameDescription(it ?: "", false) }
-                                        }
-                                        else {
-                                            Observable.just(null)
-                                        }
-                                    }
+                                    .combineWith(roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID!!)).observe())
                         },
                 { loginStatus, roomStatus, roomInfo -> LoginRoomInfo(loginStatus, roomStatus, roomInfo?.first, roomInfo?.second) })
                 .compose(bindToLifecycle())
                 .observeOnMainThread()
                 .subscribeSimple {
                     views?.topBanner?.apply {
-                        val (loginStatus, roomStatus, currRoom, roomNameDescription : RoomNameDescription?) = it
+                        val (loginStatus, roomStatus, currRoom, roomName : RoomName?) = it
                         setCompoundDrawables(null, null, null, null)
                         when (loginStatus) {
                             LoginStatus.LOGIN_IN_PROGRESS -> {
@@ -172,15 +153,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                 if (EnumSet.of(RoomStatus.JOINED, RoomStatus.ACTIVE, RoomStatus.REQUESTING_MIC).contains(roomStatus) && currRoom != null) {
                                     setVisible(true)
 
-                                    if (roomNameDescription == null || roomNameDescription.name.isNullOrBlank()) {
-                                        text = R.string.in_room_fallback.toFormattedString(context)
-                                    }
-                                    else if (roomNameDescription.isMemberName) {
-                                        text = R.string.in_room_with_individual.toFormattedString(context, roomNameDescription.name)
-                                    }
-                                    else {
-                                        text = R.string.in_room_with_groups.toFormattedString(context, roomNameDescription.name)
-                                    }
+                                    text = roomName.getInRoomDescription(context)
 
                                     setOnClickListener {
                                         (activity as BaseActivity).joinRoom(currRoom.id)
@@ -207,11 +180,8 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         fun setTitle(title: CharSequence)
     }
 
-    private data class RoomNameDescription(val name : String,
-                                           val isMemberName : Boolean)
-
     private data class LoginRoomInfo(val loginStatus: LoginStatus,
                                      val roomStatus: RoomStatus,
                                      val currRoom : Room?,
-                                     val currRoomName : RoomNameDescription?)
+                                     val currRoomName : RoomName?)
 }

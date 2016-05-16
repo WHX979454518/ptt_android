@@ -11,6 +11,8 @@ import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.RoomName
+import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomState
@@ -38,7 +40,7 @@ class Service : android.app.Service() {
                 signalService.roomState,
                 signalService.roomState.distinctUntilChanged { it.currentRoomID }.flatMap {
                     appComponent.roomRepository.getRoom(it.currentRoomID).observe()
-                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomID).observe())
+                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID)).observe())
                 },
                 signalService.loginState,
                 signalService.loginState.distinctUntilChanged { it.currentUserID }.flatMap { appComponent.userRepository.getUser(it.currentUserID).observe() },
@@ -82,7 +84,7 @@ class Service : android.app.Service() {
                     }
 
                     else -> {
-                        builder.setContentText(R.string.notification_joined_room.toFormattedString(this, state.currRoomName))
+                        builder.setContentText(state.currRoomName.getInRoomDescription(this))
                         builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, RoomActivity::class.java), 0))
                         icon = R.drawable.ic_notification_joined_room
                     }
@@ -123,7 +125,7 @@ class Service : android.app.Service() {
 
     private data class State(val roomState: RoomState,
                               val currRoom: Room?,
-                              val currRoomName: String?,
+                              val currRoomName: RoomName,
                               val loginState: LoginState,
                               val currUser : User?,
                               val connectivity : Boolean)

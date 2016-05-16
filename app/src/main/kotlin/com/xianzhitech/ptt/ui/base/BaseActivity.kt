@@ -111,7 +111,7 @@ abstract class BaseActivity : AppCompatActivity(),
                     val (currentRoom, requestedRoom) = it
                     if (requestedRoom.id != currentRoom?.id && currentRoom != null) {
                         AlertDialogFragment.Builder().apply {
-                            title = R.string.dialog_confirm_title.toFormattedString(this@BaseActivity)
+                            title = R.string.dialog_confirm_switch_title.toFormattedString(this@BaseActivity)
                             message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
                             btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
                             btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)

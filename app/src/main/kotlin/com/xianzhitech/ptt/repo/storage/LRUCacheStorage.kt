@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.repo.storage
 
 import android.support.v4.util.LruCache
+import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
@@ -34,31 +35,28 @@ class GroupLRUCacheStorage(private val groupStorage: GroupStorage) : GroupStorag
 }
 
 class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by roomStorage, BaseLRUCacheStorage<Room>() {
-    private var initialized = false
+    private var allRoomIds : HashSet<String>? = null
+    private var allRoomIdsLock = Any()
 
-    private fun initializeIfNeeded() {
-        synchronized(this, {
-            if (initialized.not()) {
-                val rooms = roomStorage.getAllRooms()
+    override fun getAllRooms(): List<Room> {
+        return synchronized(allRoomIdsLock, {
+            val ret : List<Room>
+            if (allRoomIds == null) {
+                ret = roomStorage.getAllRooms()
                 cacheLock.write {
-                    rooms.forEach {
-                        cache.put(it.id, it)
-                    }
+                    ret.forEach { cache.put(it.id, it) }
                 }
-                initialized = true
+                allRoomIds = ret.transform { it.id }.toHashSet()
             }
+            else {
+                ret = getOrFetch(allRoomIds!!, { roomStorage.getRooms(it) })
+            }
+
+            ret
         })
     }
 
-    override fun getAllRooms(): List<Room> {
-        initializeIfNeeded()
-        return cacheLock.read {
-            cache.snapshot().values.toList()
-        }
-    }
-
     override fun getRooms(roomIds: Iterable<String>): List<Room> {
-        initializeIfNeeded()
         return getOrFetch(roomIds, { roomStorage.getRooms(it) })
     }
 
@@ -70,11 +68,20 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
     override fun saveRooms(rooms: Iterable<Room>) {
         invalidateModels(rooms)
         roomStorage.saveRooms(rooms)
+
+        // 将所有房间的ID存入缓存中
+        return synchronized(allRoomIdsLock, {
+            if (allRoomIds == null) {
+                allRoomIds = roomStorage.getAllRooms().map { it.id }.toHashSet()
+            }
+
+            allRoomIds!!.addAll(rooms.transform { it.id })
+        })
     }
 
     override fun clearRooms() {
         cacheLock.write { cache.evictAll() }
-        synchronized(this, { initialized = false })
+        synchronized(allRoomIdsLock, { allRoomIds?.clear() })
     }
 }
 

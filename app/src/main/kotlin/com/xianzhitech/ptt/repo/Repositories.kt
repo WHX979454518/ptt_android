@@ -6,8 +6,10 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.first
 import com.xianzhitech.ptt.ext.sizeAtLeast
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
@@ -100,7 +102,7 @@ class RoomRepository(private val context: Context,
         })
     }
 
-    fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String> = emptyArray()) : QueryResult<List<User>> {
+    fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray()) : QueryResult<List<User>> {
         if (roomId == null) {
             return nullResult()
         }
@@ -142,10 +144,10 @@ class RoomRepository(private val context: Context,
         })
     }
 
-    fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String> = emptyArray(),
-                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = "等") : QueryResult<String?> {
+    fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String?> = emptyArray(),
+                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = "等") : QueryResult<RoomName> {
         if (roomId == null) {
-            return nullResult()
+            return fixedResult(RoomName.EMPTY)
         }
 
         return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
@@ -153,25 +155,32 @@ class RoomRepository(private val context: Context,
 
             // 有预定房间名称, 直接返回
             if (room.name.isNullOrEmpty().not()) {
-                return@RepoQueryResult room.name
+                return@RepoQueryResult RoomName(room.name, false)
             }
 
             // 有一个相关组且没有额外的用户, 则返回相关组的名称
             if (room.associatedGroupIds.sizeAtLeast(1) && room.extraMemberIds.sizeAtLeast(1).not()) {
                 val groupName = groupStorage.getGroups(room.associatedGroupIds.first(1)).firstOrNull()?.name
                 if (groupName != null) {
-                    return@RepoQueryResult groupName
+                    return@RepoQueryResult RoomName(groupName, false)
                 }
             }
 
             // 否则返回成员名称组合
             val members = getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).get()
+            val usedMemberList : List<User>
+            val ellipizes : Boolean
             if (members.size > maxDisplayMemberNames) {
-                members.subList(0, maxDisplayMemberNames - 1).joinToString(separator = separator, transform = {it.name}) + ellipsizeEnd
+                usedMemberList = members.subList(0, maxDisplayMemberNames - 1)
+                ellipizes = true
             }
             else {
-                members.joinToString(separator = separator, transform = {it.name})
+                usedMemberList = members
+                ellipizes = false
             }
+
+            val name = usedMemberList.joinToString(separator = separator, transform = { it.name })
+            RoomName(if (ellipizes) name + ellipsizeEnd else name, usedMemberList.size == 1)
         })
     }
 
@@ -231,6 +240,25 @@ interface ExtraRoomInfo {
     val lastActiveMemberId : String?
 }
 
+data class RoomName(val name : String,
+                    val isSingleMember : Boolean) {
+    companion object {
+        val EMPTY = RoomName("", false)
+    }
+}
+
+fun RoomName?.getInRoomDescription(context: Context) : CharSequence {
+    return if (this == null || name.isNullOrBlank()) {
+        R.string.in_room_fallback.toFormattedString(context)
+    }
+    else if (isSingleMember) {
+        R.string.in_room_with_individual.toFormattedString(context, name)
+    }
+    else {
+        R.string.in_room_with_groups.toFormattedString(context, name)
+    }
+}
+
 private val MAIN_HANDLER: Handler by lazy { Handler(Looper.getMainLooper()) }
 
 private class RepoUpdateResult(private val context: Context,
@@ -265,6 +293,23 @@ private object NullQueryResult : QueryResult<Any?> {
 
 private fun <T> nullResult() : QueryResult<T> {
     return NullQueryResult as QueryResult<T>
+}
+
+private fun <T> fixedResult(obj : T) : QueryResult<T> {
+    return object : QueryResult<T> {
+        override fun get(): T {
+            return obj
+        }
+
+        override fun getAsync(scheduler: Scheduler): Single<T> {
+            return Single.just(obj)
+        }
+
+        override fun observe(scheduler: Scheduler): Observable<T> {
+            return Observable.just(obj)
+        }
+
+    }
 }
 
 private class RepoQueryResult<T>(private val context: Context,

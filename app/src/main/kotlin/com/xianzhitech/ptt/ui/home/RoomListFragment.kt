@@ -26,6 +26,7 @@ import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.ExtraRoomInfo
+import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
@@ -140,21 +141,21 @@ class RoomListFragment : BaseFragment() {
                     }
                     .observeOnMainThread()
                     .subscribeSimple {
-                        val (roomNameOptional : String?, lastActiveUser : User?) = it
-                        val roomName = roomNameOptional ?: ""
+                        val (roomName : RoomName, lastActiveUser : User?) = it
                         val lastActiveTime = room.lastActiveTime
                         val currentRoomId = appComponent.signalService.peekRoomState().currentRoomID
                         if (currentRoomId == room.id) {
                             val postfix = R.string.in_room_postfix.toFormattedString(itemView.context)
-                            val fullRoomName = roomName + postfix
+                            val fullRoomName = roomName.name + postfix
                             primaryView.text = SpannableStringBuilder(fullRoomName).apply {
                                 setSpan(ForegroundColorSpan(itemView.context.getColorCompat(R.color.red)),
                                         0, fullRoomName.length, SpannableStringBuilder.SPAN_INCLUSIVE_EXCLUSIVE)
                             }
 
                         } else {
-                            primaryView.text = roomName
+                            primaryView.text = roomName.name
                         }
+
                         secondaryView.setVisible(lastActiveUser != null && lastActiveTime != null)
                         if (lastActiveUser != null && lastActiveTime != null) {
                             secondaryView.text = R.string.room_last_active_user_time.toFormattedString(itemView.context,

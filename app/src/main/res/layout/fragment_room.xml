@@ -39,28 +39,5 @@
         android:layout_width="200dp"
         android:layout_height="200dp"/>
 
-    <RelativeLayout
-        android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <Spinner
-            android:layout_alignParentLeft="true"
-            android:layout_above="@+id/room_memberList"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/room_speakerSource"/>
-
-        <android.support.v7.widget.RecyclerView
-            android:background="?attr/colorPrimary"
-            android:id="@+id/room_memberList"
-            android:layout_alignParentBottom="true"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"/>
-
-    </RelativeLayout>
-
-
 </android.support.design.widget.CoordinatorLayout>
 

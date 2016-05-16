@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.widget.drawable
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.createAvatarDrawable
@@ -14,9 +15,9 @@ import com.xianzhitech.ptt.ui.widget.DrawableWrapper
 import rx.Subscriber
 import java.lang.ref.WeakReference
 
-class ModelDrawable(private val context: Context,
-                    private val model : Model,
-                    private val maxMemberDisplayCount : Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT) : DrawableWrapper() {
+private class ModelDrawable constructor(private val context: Context,
+                                        model : Model,
+                                        maxMemberDisplayCount : Int) : DrawableWrapper() {
 
     init {
         val appComponent = (context.applicationContext as AppComponent)
@@ -58,6 +59,6 @@ class ModelDrawable(private val context: Context,
     }
 }
 
-fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT) : ModelDrawable {
+fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT) : Drawable {
     return ModelDrawable(context, this, maxMemberDisplayCount)
 }
