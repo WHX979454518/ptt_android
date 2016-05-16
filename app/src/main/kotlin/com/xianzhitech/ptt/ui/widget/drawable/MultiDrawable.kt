@@ -139,7 +139,9 @@ class MultiDrawable(val context: Context,
     override fun getOpacity() = PixelFormat.OPAQUE
 
     override fun setColorFilter(newColorFilter: ColorFilter?) {
-        colorFilter = newColorFilter
-        invalidateSelf()
+        if (selfColorFilter != newColorFilter) {
+            selfColorFilter = newColorFilter
+            invalidateSelf()
+        }
     }
 }
