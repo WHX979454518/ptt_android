@@ -4,7 +4,7 @@ import android.content.Context
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.getRoomName
+import com.xianzhitech.ptt.repo.ExtraRoomInfo
 import java.text.Collator
 import java.util.*
 
@@ -17,14 +17,11 @@ class RoomComparator(private val context: Context,
             return 0
         }
 
-        var rc : Int = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
-        if (rc != 0) {
-            return -rc
-        }
-
-        rc = collator.compare(p0.getRoomName(context), p1.getRoomName(context))
-        if (rc != 0) {
-            return rc
+        if (p0 is ExtraRoomInfo && p1 is ExtraRoomInfo) {
+            var rc: Int = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
+            if (rc != 0) {
+                return -rc
+            }
         }
 
         return p0.id.compareTo(p1.id)

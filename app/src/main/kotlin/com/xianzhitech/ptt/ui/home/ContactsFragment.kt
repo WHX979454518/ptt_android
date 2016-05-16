@@ -12,18 +12,25 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.GroupContactItem
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.fromTextChanged
+import com.xianzhitech.ptt.ext.getColorCompat
+import com.xianzhitech.ptt.ext.getString
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.model.UserContactItem
-import com.xianzhitech.ptt.repo.GroupWithMembers
 import com.xianzhitech.ptt.service.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.widget.MultiDrawable
+import com.xianzhitech.ptt.ui.widget.createDrawable
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
+import rx.schedulers.Schedulers
+import rx.subjects.BehaviorSubject
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -37,6 +44,7 @@ class ContactsFragment : BaseFragment() {
 
     private lateinit var accountColors: IntArray
     private val adapter = Adapter()
+    private val contactItemSubject = BehaviorSubject.create<List<Model>>(emptyList())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,27 +67,29 @@ class ContactsFragment : BaseFragment() {
     override fun onStart() {
         super.onStart()
 
+        val appComponent = context.applicationContext as AppComponent
+        val contactRepository = appComponent.contactRepository
+        contactRepository.getContactItems()
+                .observe()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                    contactItemSubject.onNext(it)
+                }
+
         views?.apply {
-            val appComponent = context.applicationContext as AppComponent
-            val contactRepository = appComponent.contactRepository
-            val groupRepo = appComponent.groupRepository
-            val userRepo = appComponent.userRepository
-            searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchBox.getString())
-                    .flatMap {
-                        if (it.isNullOrBlank()) {
-                            contactRepository.getContactItems()
+            Observable.combineLatest(
+                    contactItemSubject,
+                    searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchBox.getString()),
+                    { items, needle -> items to needle }
+            ).observeOn(Schedulers.computation())
+                    .map {
+                        val (items, needle) = it
+                        if (needle.isNullOrBlank()) {
+                            items
                         }
                         else {
-                            contactRepository.searchContactItems(it)
+                            items.filter { it.name.contains(needle, ignoreCase = true) }
                         }
-                    }
-                    .flatMap {
-                        val (groupIds, userIds) = it.partition { it is GroupContactItem }
-                        Observable.combineLatest(
-                                groupRepo.getGroupsWithMembers(groupIds.map { (it as GroupContactItem).groupId }, 9).first(),
-                                userRepo.getUsers(userIds.map { (it as UserContactItem).userId }).first(),
-                                { first, second -> first + second }
-                        )
                     }
                     .observeOnMainThread()
                     .compose(bindToLifecycle())
@@ -88,14 +98,14 @@ class ContactsFragment : BaseFragment() {
     }
 
 
-    fun showContactList(contactList: List<Any>) {
+    fun showContactList(contactList: List<Model>) {
         adapter.setContactItems(contactList)
     }
 
     private inner class Adapter : RecyclerView.Adapter<ContactHolder>() {
-        var contactItems = arrayListOf<Any>()
+        var contactItems = arrayListOf<Model>()
 
-        fun setContactItems(newItems: Collection<Any>) {
+        fun setContactItems(newItems: Collection<Model>) {
             contactItems.clear()
             contactItems.addAll(newItems)
             contactItems.sortWith(ContactComparator(Locale.CHINESE))
@@ -105,42 +115,21 @@ class ContactsFragment : BaseFragment() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ContactHolder(parent)
         override fun onBindViewHolder(holder: ContactHolder, position: Int) {
-            val contactItem = contactItems[position]
+            val item = contactItems[position]
 
             Glide.clear(holder.iconView)
-            if (contactItem is GroupWithMembers) {
-                if (contactItem.group.avatar.isNullOrBlank()) {
-                    val groupDrawable : MultiDrawable = if (holder.iconView.drawable is MultiDrawable) {
-                        holder.iconView.drawable as MultiDrawable
-                    } else {
-                        MultiDrawable(holder.iconView.context).apply { holder.iconView.setImageDrawable(this) }
-                    }
-
-                    groupDrawable.children = contactItem.members.map { it.createAvatarDrawable(this@ContactsFragment) }
-                }
-                else {
-                    Glide.with(this@ContactsFragment)
-                            .load(contactItem.group.avatar)
-                            .crossFade()
-                            .into(holder.iconView)
-                }
-
-                holder.nameView.text = contactItem.group.name
-            }
-            else if (contactItem is User) {
-                holder.iconView.setImageDrawable(contactItem.createAvatarDrawable(this@ContactsFragment))
-                holder.nameView.text = contactItem.name
-            }
+            holder.nameView.text = item.name
+            holder.iconView.setImageDrawable(item.createDrawable(holder.itemView.context))
 
             holder.itemView.setOnClickListener {
-                (activity as BaseActivity).joinRoom(if (contactItem is User) CreateRoomFromUser(contactItem.id) else CreateRoomFromGroup((contactItem as GroupWithMembers).group.id))
+                (activity as BaseActivity).joinRoom(if (item is User) CreateRoomFromUser(item.id) else CreateRoomFromGroup((item as Group).id))
             }
         }
 
         override fun getItemCount() = contactItems.size
     }
 
-    internal class ContactHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false)) {
+    private class ContactHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false)) {
         lateinit var iconView: ImageView
         lateinit var nameView: TextView
 

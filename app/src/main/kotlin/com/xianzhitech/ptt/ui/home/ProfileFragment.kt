@@ -14,7 +14,14 @@ import android.widget.Toast
 import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.createAvatarDrawable
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getColorCompat
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.startActivity
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
@@ -63,7 +70,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
 
                 appComponent.signalService.loginState
                         .filter { it.currentUserID != null }
-                        .flatMap { appComponent.userRepository.getUser(it.currentUserID!!) }
+                        .flatMap { appComponent.userRepository.getUser(it.currentUserID!!).observe() }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<User?>(context) {

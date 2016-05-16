@@ -23,11 +23,9 @@ import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.repo.RoomWithMembers
-import com.xianzhitech.ptt.repo.optRoomWithMembers
-import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -115,9 +113,10 @@ class RoomFragment : BaseFragment()
         Observable.combineLatest(
                 appComponent.signalService.roomState.flatMap { roomState ->
                     Observable.combineLatest(
-                            appComponent.roomRepository.optRoomWithMembers(roomState.currentRoomID).first(),
-                            appComponent.userRepository.optUser(roomState.currentRoomActiveSpeakerID).first(),
-                            { roomWithMembers, currentActiveUser -> RoomData(roomState, roomWithMembers, currentActiveUser) }) },
+                            appComponent.roomRepository.getRoom(roomState.currentRoomID).observe(),
+                            appComponent.roomRepository.getRoomMembers(roomState.currentRoomID).observe(),
+                            appComponent.userRepository.getUser(roomState.currentRoomActiveSpeakerID).getAsync().toObservable(),
+                            { room, members, currentActiveUser -> RoomData(roomState, room, members, currentActiveUser) }) },
                 context.getConnectivity(),
                 { roomData, connectivity -> roomData to connectivity })
                 .observeOnMainThread()
@@ -143,7 +142,7 @@ class RoomFragment : BaseFragment()
     internal fun updateRoomState(roomData: RoomData, hasConnectivity: Boolean) {
         val loginState = (context.applicationContext as AppComponent).signalService.peekLoginState()
         logd("updateRoomState, roomState: %s, loginState: %s", roomData.roomState, loginState)
-        adapter.setMembers(roomData.roomWithMembers?.members ?: emptyList(), if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
+        adapter.setMembers(roomData.roomMembers, if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
         views?.apply {
             val show: Boolean
 
@@ -218,7 +217,8 @@ class RoomFragment : BaseFragment()
     }
 
     internal data class RoomData(val roomState: RoomState,
-                                 val roomWithMembers: RoomWithMembers?,
+                                 val room: Room?,
+                                 val roomMembers : List<User>,
                                  val currentActiveUser: User?)
 
     private class ViewHolder(container: ViewGroup,

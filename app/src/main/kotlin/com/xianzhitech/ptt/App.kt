@@ -18,8 +18,11 @@ import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.repo.storage.ContactSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.GroupLRUCacheStorage
 import com.xianzhitech.ptt.repo.storage.GroupSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.RoomLRUCacheStorage
 import com.xianzhitech.ptt.repo.storage.RoomSQLiteStorage
+import com.xianzhitech.ptt.repo.storage.UserLRUCacheStorage
 import com.xianzhitech.ptt.repo.storage.UserSQLiteStorage
 import com.xianzhitech.ptt.repo.storage.createSQLiteStorageHelper
 import com.xianzhitech.ptt.service.SignalService
@@ -66,11 +69,11 @@ open class App : Application(), AppComponent, ActivityProvider {
         super.onCreate()
 
         val helper = createSQLiteStorageHelper(this, "data")
-        val userStorage = UserSQLiteStorage(helper)
-        val groupStorage = GroupSQLiteStorage(helper)
+        val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
+        val groupStorage = GroupLRUCacheStorage(GroupSQLiteStorage(helper))
         userRepository = UserRepository(this, userStorage)
         groupRepository = GroupRepository(this, groupStorage)
-        roomRepository = RoomRepository(this, RoomSQLiteStorage(helper))
+        roomRepository = RoomRepository(this, RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage, userStorage)
         contactRepository = ContactRepository(this, ContactSQLiteStorage(helper, userStorage, groupStorage))
 
         signalService = SignalServiceImpl(

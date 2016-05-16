@@ -184,11 +184,11 @@ class SignalServiceImpl(private val appContext: Context,
                     })
 
             add(newSocket.receiveEventIgnoringArguments(EVENT_SERVER_USER_LOGIN_FAILED)
-                .observeOnMainThread()
-                .subscribeSimple {
-                    subscriber.onError(StaticUserException(R.string.error_login_failed))
-                    doLogout()
-                })
+                    .observeOnMainThread()
+                    .subscribeSimple {
+                        subscriber.onError(StaticUserException(R.string.error_login_failed))
+                        doLogout()
+                    })
 
             add(newSocket.io().receiveEventIgnoringArguments(Manager.EVENT_CONNECT_ERROR)
                     .observeOnMainThread()
@@ -212,6 +212,8 @@ class SignalServiceImpl(private val appContext: Context,
                             roomRepository.clearRooms().exec()
                         }
 
+                        userRepository.saveUsers(listOf(user)).exec()
+
                         user
                     }
                     .doOnNext {
@@ -233,13 +235,7 @@ class SignalServiceImpl(private val appContext: Context,
                          *       enterpriseGroups: {
                          *           version: 1,
                          *           reset: true,
-                         *           add: [
-                         *              {
-                         *                inline groupObject,
-                         *                members: [user IDs]
-                         *              },
-                         *              ...
-                         *           ]
+                         *           add:  [group objects]
                          *       }
                          *   }
                          */
@@ -593,9 +589,9 @@ class SignalServiceImpl(private val appContext: Context,
                             val voiceServerObj = t.serverConfiguration
 
                             onRoomJoined(roomId, hashMapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to loginState.value.currentUserID,
-                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to voiceServerObj.get("host"),
-                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to voiceServerObj.get("port"),
-                                    WebRtcTalkEngine.PROPERTY_PROTOCOL to voiceServerObj.get("protocol")))
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to voiceServerObj["host"],
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to voiceServerObj["port"],
+                                    WebRtcTalkEngine.PROPERTY_PROTOCOL to voiceServerObj["protocol"]))
 
                             subscriber.onSingleValue(Unit)
                         }
@@ -607,9 +603,9 @@ class SignalServiceImpl(private val appContext: Context,
         }
 
     }.subscribeOnMainThread()
-    .doOnNext {
-        appContext.startService(Intent(appContext, Service::class.java))
-    }
+            .doOnNext {
+                appContext.startService(Intent(appContext, Service::class.java))
+            }
 
     override fun quitRoom() = Observable.defer { doQuitCurrentRoom().toObservable() }.subscribeOnMainThread()
 
@@ -704,9 +700,9 @@ class SignalServiceImpl(private val appContext: Context,
         return Completable.defer {
             socketSubject.value.sendEventIgnoringResult("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5())
         }.subscribeOn(AndroidSchedulers.mainThread())
-        .doOnCompleted {
-            preference.userSessionToken = (preference.userSessionToken as? ExplicitUserToken)?.let { it.copy(password = newPassword) }
-        }
+                .doOnCompleted {
+                    preference.userSessionToken = (preference.userSessionToken as? ExplicitUserToken)?.let { it.copy(password = newPassword) }
+                }
     }
 
     private fun checkMainThread() {
@@ -753,7 +749,7 @@ private class UserObject(private val obj : JSONObject) : User {
     override val permissions: Set<Permission>
         get() = obj.optString("privileges").toPermissionSet()
     override val priority: Int
-        get() = obj.getInt("priority")
+        get() = obj.optInt("priority", Constants.DEFAULT_USER_PRIORITY)
 }
 
 private class GroupObject(private val obj : JSONObject) : Group {
@@ -781,7 +777,7 @@ private class RoomObject(private val obj : JSONObject) : Room {
     override val associatedGroupIds: Iterable<String>
         get() = obj.optJSONArray("associatedGroupIds").toStringIterable()
     override val extraMemberIds: Iterable<String>
-        get() = obj.optJSONArray("extraMemberIds").toStringIterable()
+        get() = obj.optJSONArray("members").toStringIterable() //TODO: Update field
 }
 
 private class JoinRoomResponse(private val obj : JSONObject) {
@@ -856,7 +852,7 @@ private fun Emitter.receiveEventIgnoringArguments(eventName: String) : Observabl
     return receiveEventRaw(eventName, null)
 }
 
-private fun <T> Socket.sendEventRaw(eventName: String, clazz : Class<T>?, vararg args : Any?) : Single<T> {
+private fun <T> Socket.sendEventRaw(eventName: String, clazz : Class<T>?, args: Array<out Any?>) : Single<T> {
     return Single.create { subscriber ->
         val ack = Ack {
             try {
@@ -866,7 +862,7 @@ private fun <T> Socket.sendEventRaw(eventName: String, clazz : Class<T>?, vararg
             }
         }
 
-        send(*args, ack)
+        emit(eventName, args, ack)
     }
 }
 
@@ -879,5 +875,5 @@ private fun Socket.sendEventIgnoringResult(eventName: String, vararg args : Any?
 }
 
 private data class RoomInvitationImpl(override val roomId: String,
-                                       override val inviterId: String,
-                                       override val inviteTime: Date = Date()) : RoomInvitation
+                                      override val inviterId: String,
+                                      override val inviteTime: Date = Date()) : RoomInvitation

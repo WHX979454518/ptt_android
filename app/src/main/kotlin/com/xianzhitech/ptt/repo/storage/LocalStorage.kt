@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.lazySplit
+import com.xianzhitech.ptt.ext.logtagd
 import com.xianzhitech.ptt.ext.toSqlSet
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
@@ -19,7 +20,7 @@ import java.util.*
 
 class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStorage {
     override fun getUsers(ids: Iterable<String>): List<User> {
-        return queryList(Users.MAPPER, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ?", ids.toSqlSet())
+        return queryList(Users.MAPPER, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${ids.toSqlSet()}")
     }
 
     override fun saveUsers(users: Iterable<User>)  {
@@ -34,7 +35,7 @@ class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStora
 
 class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupStorage {
     override fun getGroups(groupIds: Iterable<String>): List<Group> {
-        return queryList(Groups.MAPPER, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ?", groupIds.toSqlSet())
+        return queryList(Groups.MAPPER, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${groupIds.toSqlSet()}")
     }
 
     override fun saveGroups(groups: Iterable<Group>)  {
@@ -48,8 +49,12 @@ class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupSto
 }
 
 class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStorage {
+    override fun getAllRooms(): List<Room> {
+        return queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME}")
+    }
+
     override fun getRooms(roomIds: Iterable<String>): List<Room> {
-        return queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ?", roomIds.toSqlSet())
+        return queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
     }
 
     override fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String)  {
@@ -105,18 +110,20 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
             userStorage.saveUsers(users)
             groupStorage.saveGroups(groups)
 
-            db.delete(Contacts.TABLE_NAME, "1", arrayOf())
+            val localDb = db
+
+            localDb.delete(Contacts.TABLE_NAME, "1", arrayOf())
             val contentValues = ContentValues(2)
 
             users.forEach {
                 contentValues.put(Contacts.USER_ID, it.id)
-                db.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
+                localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
             }
 
             contentValues.remove(Contacts.USER_ID)
             groups.forEach {
                 contentValues.put(Contacts.GROUP_ID, it.id)
-                db.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
+                localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
             }
         }
     }
@@ -127,7 +134,7 @@ open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
 
     protected val db : SQLiteDatabase by lazy { dbOpenHelper.writableDatabase }
 
-    protected fun executeInTransaction(func: () -> Unit)   {
+    protected inline fun executeInTransaction(func: () -> Unit)   {
         db.beginTransaction()
         try {
             func()
@@ -138,6 +145,7 @@ open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
     }
 
     protected fun <T> queryList(mapper : (Cursor) -> T, sql: String, vararg args : String?) : List<T> {
+        val startTime = System.currentTimeMillis()
         return db.rawQuery(sql, args)?.use { cursor : Cursor ->
             ArrayList<T>(cursor.count).apply {
                 if (cursor.moveToFirst()) {
@@ -145,6 +153,8 @@ open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
                         add(mapper(cursor))
                     } while (cursor.moveToNext())
                 }
+
+                logtagd("LocalStorage", "Query and map costs %dms: ${sql.substring(0, Math.min(sql.length, 200))}", System.currentTimeMillis() - startTime)
             }
         } ?: emptyList<T>()
     }
@@ -197,15 +207,9 @@ private object Users {
     const val PRIORITY = "person_level"
     const val AVATAR = "person_avatar"
 
-    const val ALL = "${ID},${NAME},${PERMISSIONS},${PRIORITY},${AVATAR}"
+    const val ALL = "$ID,$NAME,$PERMISSIONS,$PRIORITY,$AVATAR"
 
-    const val CREATE_SQL = "CREATE TABLE ${TABLE_NAME} (" +
-            "${ID} TEXT PRIMARY KEY NOT NULL, " +
-            "${NAME} TEXT NOT NULL, " +
-            "${AVATAR} TEXT, " +
-            "${PRIORITY} INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, " +
-            "${PERMISSIONS} TEXT NOT NULL" +
-            ")"
+    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY NOT NULL, $NAME TEXT NOT NULL, $AVATAR TEXT, $PRIORITY INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, $PERMISSIONS TEXT NOT NULL)"
 
     val MAPPER : (Cursor) -> User = { cursor ->
         UserModel(
@@ -242,7 +246,7 @@ private object Groups  {
     const val AVATAR = "group_avatar"
     const val MEMBER_IDS = "group_member_ids"
 
-    const val ALL = "${ID},${NAME},${DESCRIPTION},${AVATAR},${MEMBER_IDS}"
+    const val ALL = "$ID,$NAME,$DESCRIPTION,$AVATAR,$MEMBER_IDS"
 
     val CREATE_SQL = "CREATE TABLE ${TABLE_NAME} (${ID} INTEGER PRIMARY KEY NOT NULL,${NAME} TEXT NOT NULL,${DESCRIPTION} TEXT,${AVATAR} TEXT,${MEMBER_IDS} TEXT)"
 
@@ -288,9 +292,9 @@ private object Rooms  {
     const val EXTRA_MEMBER_IDS = "room_extra_member_ids"
     const val ASSOCIATED_GROUP_IDS = "room_associated_group_ids"
 
-    const val ALL = "${ID},${NAME},${DESC},${OWNER_ID},${LAST_ACTIVE_MEMBER_ID},${LAST_ACTIVE_TIME},${EXTRA_MEMBER_IDS},${ASSOCIATED_GROUP_IDS}"
+    const val ALL = "$ID,$NAME,$DESC,$OWNER_ID,$LAST_ACTIVE_MEMBER_ID,$LAST_ACTIVE_TIME,$EXTRA_MEMBER_IDS,$ASSOCIATED_GROUP_IDS"
 
-    val CREATE_SQL = "CREATE TABLE ${TABLE_NAME} (${ID} TEXT PRIMARY KEY,${NAME} TEXT,${DESC} TEXT,${OWNER_ID} TEXT NOT NULL,${LAST_ACTIVE_MEMBER_ID} TEXT,${LAST_ACTIVE_TIME} INTEGER,${EXTRA_MEMBER_IDS} TEXT,${ASSOCIATED_GROUP_IDS} TEXT)"
+    val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY,$NAME TEXT,$DESC TEXT,$OWNER_ID TEXT NOT NULL,$LAST_ACTIVE_MEMBER_ID TEXT,$LAST_ACTIVE_TIME INTEGER,$EXTRA_MEMBER_IDS TEXT,$ASSOCIATED_GROUP_IDS TEXT)"
 
     val MAPPER : (Cursor) -> Room = { cursor ->
         RoomModel(
@@ -299,7 +303,7 @@ private object Rooms  {
                 description = cursor.getString(2),
                 ownerId = cursor.getString(3),
                 lastActiveMemberId = cursor.getString(4),
-                lastActiveTime = cursor.getString(5)?.let { Date(it) },
+                lastActiveTime = cursor.getLong(5).let { if (it <= 0L) null else Date(it) },
                 extraMemberIds = cursor.getString(6).lazySplit(','),
                 associatedGroupIds = cursor.getString(7).lazySplit(',')
         )
@@ -312,9 +316,7 @@ private object Contacts  {
     const val GROUP_ID = "contact_group_id"
     const val USER_ID = "contact_person_id"
 
-    const val ALL = "${GROUP_ID},${USER_ID}"
-
-    const val CREATE_SQL = "CREATE TABLE ${TABLE_NAME} (${GROUP_ID} TEXT,${USER_ID} TEXT,UNIQUE (${GROUP_ID}, ${USER_ID}))"
+    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($GROUP_ID TEXT,$USER_ID TEXT,UNIQUE ($GROUP_ID, $USER_ID))"
 }
 
 

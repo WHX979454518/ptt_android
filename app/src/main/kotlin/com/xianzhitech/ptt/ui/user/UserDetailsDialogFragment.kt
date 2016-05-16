@@ -14,8 +14,11 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.repo.optUser
+import com.xianzhitech.ptt.ext.TRANSLATION_Y_FRACTION
+import com.xianzhitech.ptt.ext.createAvatarDrawable
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.observeOnMainThread
 import rx.Subscription
 
 class UserDetailsDialogFragment : AppCompatDialogFragment() {
@@ -66,7 +69,7 @@ class UserDetailsDialogFragment : AppCompatDialogFragment() {
         super.onStart()
 
         subscription = (context.applicationContext as AppComponent).userRepository
-            .optUser(arguments.getString(ARG_USER_ID))
+            .getUser(arguments.getString(ARG_USER_ID)).observe()
             .observeOnMainThread()
             .subscribe {
                 views?.iconView?.setImageDrawable(it?.createAvatarDrawable(this))

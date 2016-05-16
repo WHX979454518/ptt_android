@@ -19,9 +19,14 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.createAvatarDrawable
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.formatInvite
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -137,9 +142,8 @@ class RoomInvitationActivity : BaseActivity() {
         }
         else {
             userObservable = (application as AppComponent).userRepository
-                    .getUser(invites[0].inviterId)
+                    .getUser(invites[0].inviterId).observe()
                     .map { it ?: throw StaticUserException(R.string.error_no_such_user) }
-                    .first()
                     .observeOnMainThread()
                     .compose(bindToLifecycle())
         }
@@ -221,8 +225,7 @@ class RoomInvitationActivity : BaseActivity() {
 
                     subscription?.unsubscribe()
                     subscription = (itemView.context.applicationContext as AppComponent).userRepository
-                            .optUser(value?.inviterId)
-                            .first()
+                            .getUser(value?.inviterId).observe()
                             .observeOnMainThread()
                             .subscribeSimple { inviter ->
                                 inviterIcon.setImageDrawable(inviter?.createAvatarDrawable(itemView.context))

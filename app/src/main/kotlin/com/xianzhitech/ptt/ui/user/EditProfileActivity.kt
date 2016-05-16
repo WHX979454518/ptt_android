@@ -8,7 +8,13 @@ import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.createAvatarDrawable
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.startActivity
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
@@ -49,7 +55,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
             return
         }
 
-        comp.userRepository.getUser(currUserId)
+        comp.userRepository.getUser(currUserId).observe()
                 .first()
                 .map { it ?: throw StaticUserException(R.string.error_no_such_user) }
                 .observeOnMainThread()

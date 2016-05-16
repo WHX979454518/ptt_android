@@ -61,14 +61,13 @@ fun <T> String?.lazySplit(separator: Char, transform: (String) -> T) : Iterable<
                     val maxIndex = this@lazySplit.length - 1
                     while (index <= maxIndex) {
                         if (this@lazySplit[index] == separator) {
-                            index++
                             break
                         }
 
                         index++
                     }
 
-                    currIndex = index
+                    currIndex = index + 1
                     return transform(substring(oldIndex, index))
                 }
             }

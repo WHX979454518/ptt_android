@@ -12,10 +12,14 @@ import android.view.ViewGroup
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.isEmpty
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
+import rx.android.schedulers.AndroidSchedulers
 
 class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonClickListener, AlertDialogFragment.OnNegativeButtonClickListener {
     private var views : Views? = null
@@ -100,7 +104,7 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
             val dialog = ProgressDialog.show(context, null, R.string.saving.toFormattedString(context), true, false)
             (activity.application as AppComponent).signalService
                     .changePassword(oldPassword.text!!, password)
-                    .observeOnMainThread()
+                    .observeOn(AndroidSchedulers.mainThread())
                     .doOnError {
                         if (activity != null) {
                             Toast.makeText(context, it.describeInHumanMessage(context), Snackbar.LENGTH_LONG).show()

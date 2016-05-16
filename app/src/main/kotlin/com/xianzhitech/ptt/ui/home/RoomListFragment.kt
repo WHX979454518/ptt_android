@@ -10,12 +10,15 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.repo.RoomWithMembers
-import com.xianzhitech.ptt.repo.getMemberNames
+import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.inflate
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.widget.MultiDrawable
+import com.xianzhitech.ptt.ui.widget.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
 import rx.Observable
 import java.text.Collator
@@ -31,7 +34,7 @@ class RoomListFragment : BaseFragment() {
     private val adapter = Adapter()
     private lateinit var roomComparator : RoomComparator
 
-    private val roomList = arrayListOf<RoomWithMembers>()
+    private val roomList = arrayListOf<Room>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +47,7 @@ class RoomListFragment : BaseFragment() {
 
         val appComponent = context.applicationContext as AppComponent
         Observable.combineLatest(
-                appComponent.roomRepository.getRoomsWithMembers(9),
+                appComponent.roomRepository.getAllRooms().observe(),
                 appComponent.signalService.loginState.first { it.currentUserID != null },
                 { first, second -> first to second })
                 .observeOnMainThread()
@@ -88,7 +91,7 @@ class RoomListFragment : BaseFragment() {
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
             holder.setRoom(roomList[position], currentUserId)
             holder.itemView.setOnClickListener { v ->
-                (activity as BaseActivity).joinRoom(roomList[position].room.id)
+                (activity as BaseActivity).joinRoom(roomList[position].id)
             }
         }
 
@@ -104,27 +107,31 @@ class RoomListFragment : BaseFragment() {
                                  private val iconView: ImageView = rootView.findView(R.id.groupListItem_icon))
     : RecyclerView.ViewHolder(rootView) {
 
-        fun setRoom(room: RoomWithMembers, currentUserId: String) {
-            val memberText = room.getMemberNames(itemView.context)
-            val nonSelfUser = room.members.first { it.id != currentUserId }
+        fun setRoom(room: Room, currentUserId: String) {
+            // TODO: Room name
+            iconView.setImageDrawable(room.createDrawable(itemView.context))
+            nameView.text = room.name
 
-            if (room.room.name.isNullOrBlank()) {
-                nameView.text = if (room.memberCount == 2) nonSelfUser.name else memberText
-                memberView.visibility = View.GONE
-            } else {
-                nameView.text = room.room.name
-                memberView.text = memberText
-                memberView.visibility = View.VISIBLE
-            }
-
-            if (room.memberCount > 2) {
-                val roomDrawable = if (iconView.drawable is MultiDrawable) iconView.drawable as MultiDrawable
-                else MultiDrawable(itemView.context).apply { iconView.setImageDrawable(this) }
-                roomDrawable.children = room.members.map { it.createAvatarDrawable(this@RoomListFragment) }
-            }
-            else {
-                iconView.setImageDrawable(nonSelfUser.createAvatarDrawable(this@RoomListFragment))
-            }
+//            val memberText = room.getMemberNames(itemView.context)
+//            val nonSelfUser = room.members.first { it.id != currentUserId }
+//
+//            if (room.room.name.isNullOrBlank()) {
+//                nameView.text = if (room.memberCount == 2) nonSelfUser.name else memberText
+//                memberView.visibility = View.GONE
+//            } else {
+//                nameView.text = room.room.name
+//                memberView.text = memberText
+//                memberView.visibility = View.VISIBLE
+//            }
+//
+//            if (room.memberCount > 2) {
+//                val roomDrawable = if (iconView.drawable is MultiDrawable) iconView.drawable as MultiDrawable
+//                else MultiDrawable(itemView.context).apply { iconView.setImageDrawable(this) }
+//                roomDrawable.children = room.members.map { it.createAvatarDrawable(this@RoomListFragment) }
+//            }
+//            else {
+//                iconView.setImageDrawable(nonSelfUser.createAvatarDrawable(this@RoomListFragment))
+//            }
 
         }
     }

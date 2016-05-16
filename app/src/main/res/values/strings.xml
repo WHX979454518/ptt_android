@@ -30,7 +30,7 @@
     <string name="room_talking">请讲话</string>
     <string name="room_other_is_talking">%1$s 正在讲话</string>
     <string name="room_prompt_switching">切换房间</string>
-    <string name="room_prompt_switching_message">您即将进入新房间&quot;%1$s&quot;, 并退出当前房间&quot;%2$s&quot;, 确定吗?</string>
+    <string name="room_prompt_switching_message">当前正在进行对讲, 进入新房间将会退出当前的对讲,确定吗</string>
     <string name="room_prompt_important">当前房间不可退出</string>
     <string name="room_prompt_important_message">房间&quot;%1$s&quot;被管理员标记为重要房间, 当前不可退出</string>
 

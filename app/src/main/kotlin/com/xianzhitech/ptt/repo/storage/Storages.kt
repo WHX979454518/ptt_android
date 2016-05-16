@@ -27,6 +27,7 @@ interface GroupStorage {
  * 会话数据的接口
  */
 interface RoomStorage {
+    fun getAllRooms(): List<Room>
     fun getRooms(roomIds: Iterable<String>): List<Room>
     fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String)
     fun saveRooms(rooms: Iterable<Room>)

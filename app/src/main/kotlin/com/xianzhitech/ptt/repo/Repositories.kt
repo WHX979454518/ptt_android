@@ -5,6 +5,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
@@ -41,6 +42,17 @@ class UserRepository(private val context: Context,
             userStorage.saveUsers(users)
         })
     }
+
+    fun getUser(userId: String?): QueryResult<User?> {
+        return RepoQueryResult(context, arrayOf(USER_URI), {
+            if (userId == null) {
+                null
+            }
+            else {
+                userStorage.getUsers(listOf(userId)).firstOrNull()
+            }
+        })
+    }
 }
 
 class GroupRepository(private val context: Context,
@@ -60,11 +72,95 @@ class GroupRepository(private val context: Context,
 }
 
 class RoomRepository(private val context: Context,
-                     private val roomStorage: RoomStorage) {
+                     private val roomStorage: RoomStorage,
+                     private val groupStorage: GroupStorage,
+                     private val userStorage: UserStorage) {
+
+    fun getAllRooms() : QueryResult<List<Room>> {
+        return RepoQueryResult(context, arrayOf(ROOM_URI), {
+            roomStorage.getAllRooms()
+        })
+    }
 
     fun getRooms(roomIds: Iterable<String>): QueryResult<List<Room>> {
         return RepoQueryResult(context, arrayOf(ROOM_URI), {
             roomStorage.getRooms(roomIds)
+        })
+    }
+
+    fun getRoom(roomId : String?) : QueryResult<Room?> {
+        if (roomId == null) {
+            return nullResult()
+        }
+
+        return RepoQueryResult(context, arrayOf(ROOM_URI), {
+            roomStorage.getRooms(listOf(roomId)).firstOrNull()
+        })
+    }
+
+    fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_DISPLAY_COUNT, excludeUserIds: Array<String> = emptyArray()) : QueryResult<List<User>> {
+        if (roomId == null) {
+            return nullResult()
+        }
+
+        return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
+            val room = roomStorage.getRooms(listOf(roomId)).first()
+            val groups = groupStorage.getGroups(room.associatedGroupIds)
+            val memberIds = linkedSetOf<String>()
+
+            // Add members from associated groups first
+            loopGroup@ for (group in groups) {
+                for (memberId in group.memberIds) {
+                    if (excludeUserIds.contains(memberId)) {
+                        continue
+                    }
+
+                    memberIds.add(memberId)
+                    if (memberIds.size >= maxMemberCount) {
+                        break@loopGroup
+                    }
+                }
+            }
+
+            // Add members from 'extraMembers'
+            if (memberIds.size < maxMemberCount) {
+                for (memberId in room.extraMemberIds) {
+                    if (excludeUserIds.contains(memberId)) {
+                        continue
+                    }
+
+                    memberIds.add(memberId)
+                    if (memberIds.size >= maxMemberCount) {
+                        break
+                    }
+                }
+            }
+
+            userStorage.getUsers(memberIds)
+        })
+    }
+
+    fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = 3, excludeUserIds : Array<String> = emptyArray(),
+                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = "等") : QueryResult<String?> {
+        if (roomId == null) {
+            return nullResult()
+        }
+
+        return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
+            val room = roomStorage.getRooms(listOf(roomId)).first()
+            if (room.name.isNullOrEmpty().not()) {
+                room.name
+            }
+            else {
+                (getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds) as RepoQueryResult).map { members ->
+                    if (members.size > maxDisplayMemberNames) {
+                        members.subList(0, maxDisplayMemberNames - 1).joinToString(separator = separator, transform = {it.name}) + ellipsizeEnd
+                    }
+                    else {
+                        members.joinToString(separator = separator, transform = {it.name})
+                    }
+                }.get()
+            }
         })
     }
 
@@ -142,6 +238,24 @@ private class RepoUpdateResult(private val context: Context,
     }
 }
 
+private object NullQueryResult : QueryResult<Any?> {
+    override fun get(): Any? {
+        return null
+    }
+
+    override fun getAsync(scheduler: Scheduler): Single<Any?> {
+        return Single.just(null)
+    }
+
+    override fun observe(scheduler: Scheduler): Observable<Any?> {
+        return Observable.just(null)
+    }
+}
+
+private fun <T> nullResult() : QueryResult<T> {
+    return NullQueryResult as QueryResult<T>
+}
+
 private class RepoQueryResult<T>(private val context: Context,
                                  private val uris : Array<Uri>,
                                  private val func: () -> T) : QueryResult<T> {
@@ -183,6 +297,10 @@ private class RepoQueryResult<T>(private val context: Context,
                 subscriber.onCompleted()
             }
         }.subscribeOn(scheduler)
+    }
+
+    fun <R> map(transform : (T) -> R) : RepoQueryResult<R> {
+        return RepoQueryResult(context, uris, { transform(func()) })
     }
 }
 

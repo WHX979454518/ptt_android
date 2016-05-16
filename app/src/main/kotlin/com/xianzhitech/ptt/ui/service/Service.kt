@@ -5,15 +5,13 @@ import android.content.Intent
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.getConnectivity
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.RoomWithMembers
-import com.xianzhitech.ptt.repo.getRoomName
-import com.xianzhitech.ptt.repo.optRoomWithMembers
-import com.xianzhitech.ptt.repo.optUser
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomState
@@ -39,11 +37,14 @@ class Service : android.app.Service() {
 
         subscription = Observable.combineLatest(
                 signalService.roomState,
-                signalService.roomState.distinctUntilChanged { it.currentRoomID }.flatMap { appComponent.roomRepository.optRoomWithMembers(it.currentRoomID) },
+                signalService.roomState.distinctUntilChanged { it.currentRoomID }.flatMap {
+                    appComponent.roomRepository.getRoom(it.currentRoomID).observe()
+                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomID).observe())
+                },
                 signalService.loginState,
-                signalService.loginState.distinctUntilChanged { it.currentUserID }.flatMap { appComponent.userRepository.optUser(it.currentUserID) },
+                signalService.loginState.distinctUntilChanged { it.currentUserID }.flatMap { appComponent.userRepository.getUser(it.currentUserID).observe() },
                 getConnectivity(),
-                { roomState, currRoom, loginState, currUser, connectivity -> State(roomState, currRoom, loginState, currUser, connectivity) })
+                { roomState, currRoom, loginState, currUser, connectivity -> State(roomState, currRoom.first, currRoom.second, loginState, currUser, connectivity) })
                 .debounce(500, TimeUnit.MILLISECONDS)
                 .subscribeSimple { onStateChanged(it) }
     }
@@ -82,7 +83,7 @@ class Service : android.app.Service() {
                     }
 
                     else -> {
-                        builder.setContentText(R.string.notification_joined_room.toFormattedString(this, state.currRoom?.getRoomName(this) ?: ""))
+                        builder.setContentText(R.string.notification_joined_room.toFormattedString(this, state.currRoomName))
                         builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, RoomActivity::class.java), 0))
                         icon = R.drawable.ic_notification_joined_room
                     }
@@ -122,7 +123,8 @@ class Service : android.app.Service() {
     }
 
     internal data class State(val roomState: RoomState,
-                              val currRoom: RoomWithMembers?,
+                              val currRoom: Room?,
+                              val currRoomName: String?,
                               val loginState: LoginState,
                               val currUser : User?,
                               val connectivity : Boolean)

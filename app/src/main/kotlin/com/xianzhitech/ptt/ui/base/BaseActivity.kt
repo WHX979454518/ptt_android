@@ -11,9 +11,13 @@ import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.repo.getRoomName
-import com.xianzhitech.ptt.repo.optRoomWithMembers
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.ensureConnectivity
+import com.xianzhitech.ptt.ext.findFragment
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.describeInHumanMessage
@@ -21,6 +25,7 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
+import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
@@ -110,11 +115,11 @@ abstract class BaseActivity : AppCompatActivity(),
                     })
         }
         else {
-            Observable.combineLatest(
-                    appComponent.roomRepository.optRoomWithMembers(appComponent.signalService.peekRoomState().currentRoomID),
-                    appComponent.roomRepository.getRoomWithMembers(roomId).map { it ?: throw StaticUserException(R.string.error_no_such_room) },
+            Single.zip(
+                    appComponent.roomRepository.getRoom(appComponent.signalService.peekRoomState().currentRoomID).getAsync(),
+                    appComponent.roomRepository.getRoom(roomId).getAsync().map { it ?: throw StaticUserException(R.string.error_no_such_room) },
                     { currentRoom, requestedRoom -> currentRoom to requestedRoom })
-                    .first()
+                    .toObservable()
                     .observeOnMainThread()
                     .compose(bindUntil(ActivityEvent.STOP))
                     .doOnError { Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show() }
@@ -123,9 +128,7 @@ abstract class BaseActivity : AppCompatActivity(),
                         if (requestedRoom.id != currentRoom?.id && currentRoom != null) {
                             AlertDialogFragment.Builder().apply {
                                 title = R.string.dialog_confirm_title.toFormattedString(this@BaseActivity)
-                                message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity,
-                                        requestedRoom.getRoomName(this@BaseActivity),
-                                        currentRoom.getRoomName(this@BaseActivity))
+                                message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
                                 btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
                                 btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
                                 attachment = roomId

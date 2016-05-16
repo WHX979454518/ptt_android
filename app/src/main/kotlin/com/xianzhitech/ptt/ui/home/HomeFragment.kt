@@ -13,9 +13,16 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.repo.getRoomName
-import com.xianzhitech.ptt.repo.optRoomWithMembers
+import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.combineWith
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getColorCompat
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.loginStatus
@@ -119,13 +126,22 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         Observable.combineLatest(
                 signalService.loginStatus,
                 signalService.roomStatus,
-                signalService.roomState.distinctUntilChanged { it.currentRoomID }.flatMap { appComponent.roomRepository.optRoomWithMembers(it.currentRoomID) },
-                { loginStatus, roomStatus, currRoom -> Triple(loginStatus, roomStatus, currRoom) })
+                signalService.roomState.distinctUntilChanged { it.currentRoomID }
+                        .flatMap {
+                            if (it.currentRoomID != null) {
+                                appComponent.roomRepository.getRoom(it.currentRoomID).observe()
+                                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomID).observe())
+                            }
+                            else {
+                                Observable.just(null)
+                            }
+                        },
+                { loginStatus, roomStatus, roomInfo -> LoginRoomInfo(loginStatus, roomStatus, roomInfo?.first, roomInfo?.second) })
             .compose(bindToLifecycle())
             .observeOnMainThread()
             .subscribeSimple {
                 views?.topBanner?.apply {
-                    val (loginStatus, roomStatus, currRoom) = it
+                    val (loginStatus, roomStatus, currRoom, currRoomName) = it
                     when (loginStatus) {
                         LoginStatus.LOGIN_IN_PROGRESS -> {
                             setVisible(true)
@@ -138,7 +154,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                         else -> {
                             if (EnumSet.of(RoomStatus.JOINED, RoomStatus.ACTIVE, RoomStatus.REQUESTING_MIC).contains(roomStatus) && currRoom != null) {
                                 setVisible(true)
-                                text = R.string.in_room.toFormattedString(context, currRoom.getRoomName(context))
+                                text = R.string.in_room.toFormattedString(context, currRoomName)
                                 setOnClickListener {
                                     (activity as BaseActivity).joinRoom(currRoom.id)
                                 }
@@ -163,4 +179,9 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
     interface Callbacks {
         fun setTitle(title: CharSequence)
     }
+
+    private data class LoginRoomInfo(val loginStatus: LoginStatus,
+                                     val roomStatus: RoomStatus,
+                                     val currRoom : Room?,
+                                     val currRoomName : String?)
 }
