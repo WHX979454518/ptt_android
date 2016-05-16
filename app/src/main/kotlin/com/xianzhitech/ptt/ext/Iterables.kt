@@ -37,6 +37,20 @@ inline fun <T, R> Iterable<T>.mapFirst(count : Int, transform : (T) -> R) : List
     return result
 }
 
+fun <T> Iterable<T>.sizeAtLeast(size : Int) : Boolean {
+    if (this is List) {
+        return this.size >= size
+    }
+
+    var currSize = 0
+    val iter = iterator()
+    while (currSize < size && iter.hasNext()) {
+        currSize++
+    }
+
+    return currSize >= size
+}
+
 fun String?.lazySplit(separator: Char) : Iterable<String> {
     return lazySplit(separator, { it })
 }

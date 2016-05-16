@@ -16,7 +16,7 @@ fun User.createAvatarDrawable(fragment: Fragment) = createAvatarDrawable(fragmen
 fun User.createAvatarDrawable(activity: FragmentActivity) = createAvatarDrawable(activity, Glide.with(activity))
 fun User.createAvatarDrawable(context: Context) = createAvatarDrawable(context, Glide.with(context))
 
-internal fun User.createAvatarDrawable(context: Context, requestManager: RequestManager) : Drawable {
+private fun User.createAvatarDrawable(context: Context, requestManager: RequestManager) : Drawable {
     if (avatar.isNullOrEmpty()) {
         return TextDrawable(context, name[0].toString(), context.resources.getIntArray(R.array.account_colors).let {
             it[Math.abs(name.hashCode()) % it.size]

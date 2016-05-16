@@ -2,10 +2,20 @@ package com.xianzhitech.ptt.ui.room
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
+import com.trello.rxlifecycle.ActivityEvent
+import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.service.RoomInvitation
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.ensureConnectivity
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 
 /**
  * 房间对话界面
@@ -57,8 +67,32 @@ class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
         finish()
     }
 
-    override fun onRoomJoined() {
-        // Do nothing
+    override fun joinRoomConfirmed(roomId: String) {
+        val appComponent = application as AppComponent
+
+        showProgressDialog(R.string.please_wait, R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
+        ensureConnectivity()
+                .flatMap { appComponent.signalService.joinRoom(roomId) }
+                .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                .observeOnMainThread()
+                .doOnUnsubscribe { hideProgressDialog(TAG_JOIN_ROOM_PROGRESS) }
+                .compose(bindUntil(ActivityEvent.STOP))
+                .subscribe(object : GlobalSubscriber<Unit>() {
+                    override fun onError(e: Throwable) {
+                        super.onError(e)
+                        appComponent.signalService.quitRoom().subscribeSimple()
+                        hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
+                        Toast.makeText(this@RoomActivity, e.describeInHumanMessage(this@RoomActivity), Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onNext(t: Unit) {
+                        hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
+                    }
+                })
+    }
+
+    companion object {
+        private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
     }
 
 }

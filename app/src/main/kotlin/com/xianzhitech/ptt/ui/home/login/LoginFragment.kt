@@ -11,7 +11,15 @@ import android.widget.EditText
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.GlobalSubscriber
+import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.ensureConnectivity
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getString
+import com.xianzhitech.ptt.ext.isEmpty
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.describeInHumanMessage
@@ -39,7 +47,7 @@ class LoginFragment : BaseFragment()
                 .subscribe { updateLoginState(it) }
     }
 
-    internal fun updateLoginState(state: LoginState) {
+    private fun updateLoginState(state: LoginState) {
         views?.apply {
             val isIdle = state.status == LoginStatus.IDLE
             nameEditText.isEnabled = isIdle

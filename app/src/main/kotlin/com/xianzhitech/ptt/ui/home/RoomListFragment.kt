@@ -3,6 +3,9 @@ package com.xianzhitech.ptt.ui.home
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.text.SpannableStringBuilder
+import android.text.format.DateUtils
+import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,18 +14,26 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getColorCompat
+import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.inflate
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.ExtraRoomInfo
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
 import rx.Observable
-import java.text.Collator
-import java.util.*
+import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 
 /**
  * 显示会话列表(Room)的界面
@@ -32,14 +43,11 @@ class RoomListFragment : BaseFragment() {
     private var listView: RecyclerView? = null
     private var errorView : View? = null
     private val adapter = Adapter()
-    private lateinit var roomComparator : RoomComparator
 
     private val roomList = arrayListOf<Room>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        roomComparator = RoomComparator(context, Collator.getInstance(Locale.CHINESE))
     }
 
     override fun onStart() {
@@ -56,7 +64,7 @@ class RoomListFragment : BaseFragment() {
                     adapter.currentUserId = it.second.currentUserID!!
                     roomList.clear()
                     roomList.addAll(it.first)
-                    roomList.sortWith(roomComparator)
+                    roomList.sortWith(RoomComparator)
                     adapter.notifyDataSetChanged()
                     errorView?.setVisible(it.first.isEmpty())
                 }
@@ -95,44 +103,76 @@ class RoomListFragment : BaseFragment() {
             }
         }
 
+        override fun onViewDetachedFromWindow(holder: RoomItemHolder) {
+            super.onViewDetachedFromWindow(holder)
+            holder.clear()
+        }
+
         override fun getItemCount(): Int {
             return roomList.size
         }
     }
 
-    private inner class RoomItemHolder(container: ViewGroup,
-                                 rootView : View = container.inflate(R.layout.view_group_list_item),
-                                 private val memberView: TextView = rootView.findView(R.id.groupListItem_members),
-                                 private val nameView: TextView = rootView.findView(R.id.groupListItem_name),
-                                 private val iconView: ImageView = rootView.findView(R.id.groupListItem_icon))
-    : RecyclerView.ViewHolder(rootView) {
+    private class RoomItemHolder(container: ViewGroup,
+                                 rootView : View = container.inflate(R.layout.view_room_item),
+                                 private val secondaryView: TextView = rootView.findView(R.id.roomItem_secondaryTitle),
+                                 private val primaryView: TextView = rootView.findView(R.id.roomItem_primaryTitle),
+                                 private val iconView: ImageView = rootView.findView(R.id.roomItem_icon)) : RecyclerView.ViewHolder(rootView) {
+
+        private var subscription : Subscription? = null
+        private var room : Room? = null
 
         fun setRoom(room: Room, currentUserId: String) {
-            // TODO: Room name
+            if (this.room?.id == room.id) {
+                return
+            }
+
+            room as ExtraRoomInfo
+            this.room = room
+            this.subscription?.unsubscribe()
+            val appComponent = itemView.context.applicationContext as AppComponent
+            this.subscription = appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe()
+                    .combineWith(appComponent.userRepository.getUser(room.lastActiveMemberId).observe())
+                    .flatMap { result ->
+                        (Observable.interval(0, 1, TimeUnit.MINUTES, AndroidSchedulers.mainThread()) as Observable<*>)
+                                .mergeWith(appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomID } as Observable<out Nothing>)
+                                .map { result }
+                    }
+                    .observeOnMainThread()
+                    .subscribeSimple {
+                        val (roomNameOptional : String?, lastActiveUser : User?) = it
+                        val roomName = roomNameOptional ?: ""
+                        val lastActiveTime = room.lastActiveTime
+                        val currentRoomId = appComponent.signalService.peekRoomState().currentRoomID
+                        if (currentRoomId == room.id) {
+                            val postfix = R.string.in_room_postfix.toFormattedString(itemView.context)
+                            val fullRoomName = roomName + postfix
+                            primaryView.text = SpannableStringBuilder(fullRoomName).apply {
+                                setSpan(ForegroundColorSpan(itemView.context.getColorCompat(R.color.red)),
+                                        0, fullRoomName.length, SpannableStringBuilder.SPAN_INCLUSIVE_EXCLUSIVE)
+                            }
+
+                        } else {
+                            primaryView.text = roomName
+                        }
+                        secondaryView.setVisible(lastActiveUser != null && lastActiveTime != null)
+                        if (lastActiveUser != null && lastActiveTime != null) {
+                            secondaryView.text = R.string.room_last_active_user_time.toFormattedString(itemView.context,
+                                    lastActiveUser.name, DateUtils.getRelativeTimeSpanString(lastActiveTime.time))
+                            val drawableId = if (lastActiveUser.id == currentUserId) R.drawable.ic_call_made_black else R.drawable.ic_call_received_black
+                            val drawable = itemView.context.getTintedDrawable(drawableId, secondaryView.textColors.defaultColor)
+                            drawable.setBounds(0, 0, secondaryView.textSize.toInt(), secondaryView.textSize.toInt())
+                            secondaryView.setCompoundDrawables(drawable, null, null, null)
+                        }
+                    }
+
             iconView.setImageDrawable(room.createDrawable(itemView.context))
-            nameView.text = room.name
+        }
 
-//            val memberText = room.getMemberNames(itemView.context)
-//            val nonSelfUser = room.members.first { it.id != currentUserId }
-//
-//            if (room.room.name.isNullOrBlank()) {
-//                nameView.text = if (room.memberCount == 2) nonSelfUser.name else memberText
-//                memberView.visibility = View.GONE
-//            } else {
-//                nameView.text = room.room.name
-//                memberView.text = memberText
-//                memberView.visibility = View.VISIBLE
-//            }
-//
-//            if (room.memberCount > 2) {
-//                val roomDrawable = if (iconView.drawable is MultiDrawable) iconView.drawable as MultiDrawable
-//                else MultiDrawable(itemView.context).apply { iconView.setImageDrawable(this) }
-//                roomDrawable.children = room.members.map { it.createAvatarDrawable(this@RoomListFragment) }
-//            }
-//            else {
-//                iconView.setImageDrawable(nonSelfUser.createAvatarDrawable(this@RoomListFragment))
-//            }
-
+        fun clear() {
+            room = null
+            subscription?.unsubscribe()
+            subscription = null
         }
     }
 

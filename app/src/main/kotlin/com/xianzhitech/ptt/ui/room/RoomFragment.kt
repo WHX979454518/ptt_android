@@ -16,6 +16,8 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.createAvatarDrawable
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getConnectivity
@@ -110,36 +112,42 @@ class RoomFragment : BaseFragment()
 
         val appComponent = context.applicationContext as AppComponent
 
-        Observable.combineLatest(
-                appComponent.signalService.roomState.flatMap { roomState ->
-                    Observable.combineLatest(
-                            appComponent.roomRepository.getRoom(roomState.currentRoomID).observe(),
-                            appComponent.roomRepository.getRoomMembers(roomState.currentRoomID).observe(),
-                            appComponent.userRepository.getUser(roomState.currentRoomActiveSpeakerID).getAsync().toObservable(),
-                            { room, members, currentActiveUser -> RoomData(roomState, room, members, currentActiveUser) }) },
-                context.getConnectivity(),
-                { roomData, connectivity -> roomData to connectivity })
+        appComponent.signalService.roomState.flatMap { roomState ->
+            Observable.combineLatest(
+                    appComponent.roomRepository.getRoom(roomState.currentRoomID).observe(),
+                    appComponent.roomRepository.getRoomMembers(roomState.currentRoomID).observe(),
+                    appComponent.userRepository.getUser(roomState.currentRoomActiveSpeakerID).getAsync().toObservable(),
+                    { room, members, currentActiveUser -> RoomData(roomState, room, members, currentActiveUser) }) }
+                .combineWith(context.getConnectivity())
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
-                        updateRoomState(it.first, it.second)
+                    updateRoomState(it.first, it.second)
+                }
+
+        appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomID }
+                .flatMap { appComponent.roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(appComponent.signalService.peekLoginState().currentUserID!!)).observe() }
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                    callbacks<Callbacks>()?.onRoomLoaded(it ?: "")
                 }
 
         appComponent.signalService.roomState
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
-                        if (it.status == RoomStatus.JOINING && joiningProgressDialog == null) {
-                            joiningProgressDialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context), R.string.joining_room.toFormattedString(context))
-                        }
-                        else if (it.status != RoomStatus.JOINING && joiningProgressDialog != null) {
-                            joiningProgressDialog!!.dismiss()
-                            joiningProgressDialog = null
-                        }
+                    if (it.status == RoomStatus.JOINING && joiningProgressDialog == null) {
+                        joiningProgressDialog = ProgressDialog.show(context, R.string.please_wait.toFormattedString(context), R.string.joining_room.toFormattedString(context))
+                    }
+                    else if (it.status != RoomStatus.JOINING && joiningProgressDialog != null) {
+                        joiningProgressDialog!!.dismiss()
+                        joiningProgressDialog = null
+                    }
                 }
     }
 
-    internal fun updateRoomState(roomData: RoomData, hasConnectivity: Boolean) {
+    private fun updateRoomState(roomData: RoomData, hasConnectivity: Boolean) {
         val loginState = (context.applicationContext as AppComponent).signalService.peekLoginState()
         logd("updateRoomState, roomState: %s, loginState: %s", roomData.roomState, loginState)
         adapter.setMembers(roomData.roomMembers, if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
@@ -216,15 +224,14 @@ class RoomFragment : BaseFragment()
         override fun getItemCount() = members.size
     }
 
-    internal data class RoomData(val roomState: RoomState,
-                                 val room: Room?,
-                                 val roomMembers : List<User>,
-                                 val currentActiveUser: User?)
+    private data class RoomData(val roomState: RoomState,
+                                val room: Room?,
+                                val roomMembers : List<User>,
+                                val currentActiveUser: User?)
 
     private class ViewHolder(container: ViewGroup,
                              rootView: View = LayoutInflater.from(container.context).inflate(R.layout.view_room_member_item, container, false),
-                             val imageView: ImageView = rootView.findView(R.id.roomMemberItem_icon))
-    : RecyclerView.ViewHolder(rootView)
+                             val imageView: ImageView = rootView.findView(R.id.roomMemberItem_icon)) : RecyclerView.ViewHolder(rootView)
 
     interface Callbacks {
         fun onRoomLoaded(name: CharSequence)

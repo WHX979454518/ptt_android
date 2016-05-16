@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.ext.first
+import com.xianzhitech.ptt.ext.sizeAtLeast
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
@@ -98,7 +100,7 @@ class RoomRepository(private val context: Context,
         })
     }
 
-    fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_DISPLAY_COUNT, excludeUserIds: Array<String> = emptyArray()) : QueryResult<List<User>> {
+    fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String> = emptyArray()) : QueryResult<List<User>> {
         if (roomId == null) {
             return nullResult()
         }
@@ -140,7 +142,7 @@ class RoomRepository(private val context: Context,
         })
     }
 
-    fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = 3, excludeUserIds : Array<String> = emptyArray(),
+    fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String> = emptyArray(),
                     separator : CharSequence = "、", ellipsizeEnd : CharSequence = "等") : QueryResult<String?> {
         if (roomId == null) {
             return nullResult()
@@ -148,18 +150,27 @@ class RoomRepository(private val context: Context,
 
         return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
             val room = roomStorage.getRooms(listOf(roomId)).first()
+
+            // 有预定房间名称, 直接返回
             if (room.name.isNullOrEmpty().not()) {
-                room.name
+                return@RepoQueryResult room.name
+            }
+
+            // 有一个相关组且没有额外的用户, 则返回相关组的名称
+            if (room.associatedGroupIds.sizeAtLeast(1) && room.extraMemberIds.sizeAtLeast(1).not()) {
+                val groupName = groupStorage.getGroups(room.associatedGroupIds.first(1)).firstOrNull()?.name
+                if (groupName != null) {
+                    return@RepoQueryResult groupName
+                }
+            }
+
+            // 否则返回成员名称组合
+            val members = getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).get()
+            if (members.size > maxDisplayMemberNames) {
+                members.subList(0, maxDisplayMemberNames - 1).joinToString(separator = separator, transform = {it.name}) + ellipsizeEnd
             }
             else {
-                (getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds) as RepoQueryResult).map { members ->
-                    if (members.size > maxDisplayMemberNames) {
-                        members.subList(0, maxDisplayMemberNames - 1).joinToString(separator = separator, transform = {it.name}) + ellipsizeEnd
-                    }
-                    else {
-                        members.joinToString(separator = separator, transform = {it.name})
-                    }
-                }.get()
+                members.joinToString(separator = separator, transform = {it.name})
             }
         })
     }
@@ -268,39 +279,21 @@ private class RepoQueryResult<T>(private val context: Context,
     }
 
     override fun observe(scheduler: Scheduler): Observable<T> {
-        return Observable.create<T> { subscriber ->
-            try {
-                subscriber.onNext(func())
-            } catch(e: Exception) {
-                subscriber.onError(e)
-                return@create
-            }
+        return Observable.create<Unit> { subscriber ->
+            subscriber.onNext(Unit)
 
             if (subscriber.isUnsubscribed.not()) {
                 val observer = object : ContentObserver(MAIN_HANDLER) {
                     override fun onChange(selfChange: Boolean) {
                         super.onChange(selfChange)
-                        scheduler.createWorker().schedule {
-                            try {
-                                subscriber.onNext(func())
-                            } catch(e: Exception) {
-                                subscriber.onError(e)
-                            }
-                        }
+                        subscriber.onNext(Unit)
                     }
                 }
 
                 uris.forEach { context.contentResolver.registerContentObserver(it, true, observer) }
                 subscriber.add(Subscriptions.create { context.contentResolver.unregisterContentObserver(observer) })
             }
-            else {
-                subscriber.onCompleted()
-            }
-        }.subscribeOn(scheduler)
-    }
-
-    fun <R> map(transform : (T) -> R) : RepoQueryResult<R> {
-        return RepoQueryResult(context, uris, { transform(func()) })
+        }.observeOn(scheduler).map { func() }
     }
 }
 

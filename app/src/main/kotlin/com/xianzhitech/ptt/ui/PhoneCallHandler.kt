@@ -56,7 +56,7 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
         }
     }
 
-    internal fun onCallStateChanged(callState: Int, roomState : RoomState) {
+    private fun onCallStateChanged(callState: Int, roomState : RoomState) {
         if (callState == TelephonyManager.CALL_STATE_RINGING &&
                 EnumSet.of(RoomStatus.ACTIVE, RoomStatus.JOINED, RoomStatus.JOINING).contains(roomState.status) &&
                 (appContext as AppComponent).preference.blockCalls) {

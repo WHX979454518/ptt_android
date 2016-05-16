@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.util
 
-import android.content.Context
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
@@ -8,9 +7,7 @@ import com.xianzhitech.ptt.repo.ExtraRoomInfo
 import java.text.Collator
 import java.util.*
 
-class RoomComparator(private val context: Context,
-                     private val collator: Collator = Collator.getInstance()) : Comparator<Room> {
-
+object RoomComparator : Comparator<Room> {
 
     override fun compare(p0: Room, p1: Room): Int {
         if (p0.id == p1.id) {
@@ -18,7 +15,7 @@ class RoomComparator(private val context: Context,
         }
 
         if (p0 is ExtraRoomInfo && p1 is ExtraRoomInfo) {
-            var rc: Int = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
+            val rc = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
             if (rc != 0) {
                 return -rc
             }

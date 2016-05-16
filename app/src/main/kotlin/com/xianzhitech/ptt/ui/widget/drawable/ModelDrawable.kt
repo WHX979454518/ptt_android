@@ -16,7 +16,7 @@ import java.lang.ref.WeakReference
 
 class ModelDrawable(private val context: Context,
                     private val model : Model,
-                    private val maxMemberDisplayCount : Int = Constants.MAX_MEMBER_DISPLAY_COUNT) : DrawableWrapper() {
+                    private val maxMemberDisplayCount : Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT) : DrawableWrapper() {
 
     init {
         val appComponent = (context.applicationContext as AppComponent)
@@ -58,6 +58,6 @@ class ModelDrawable(private val context: Context,
     }
 }
 
-fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_DISPLAY_COUNT) : ModelDrawable {
+fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT) : ModelDrawable {
     return ModelDrawable(context, this, maxMemberDisplayCount)
 }

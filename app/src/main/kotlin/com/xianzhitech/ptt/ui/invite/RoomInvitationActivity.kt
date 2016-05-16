@@ -175,16 +175,11 @@ class RoomInvitationActivity : BaseActivity() {
         finish()
     }
 
-    internal fun joinRoom(roomInvitation: RoomInvitation) {
+    private fun joinRoom(roomInvitation: RoomInvitation) {
         joinRoom(roomInvitation.roomId)
     }
 
-    override fun onRoomJoined() {
-        finish()
-        super.onRoomJoined()
-    }
-
-    internal fun cancelJoinRoom() {
+    private fun cancelJoinRoom() {
         finish()
     }
 

@@ -7,7 +7,6 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.getConnectivity
-import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
@@ -59,8 +58,8 @@ class Service : android.app.Service() {
         return START_STICKY
     }
 
-    internal fun onStateChanged(state : State) {
-        logd("State changed to $state")
+    private fun onStateChanged(state : State) {
+//        logd("State changed to $state")
         val builder = NotificationCompat.Builder(this)
         builder.setOngoing(true)
         builder.setAutoCancel(false)
@@ -122,7 +121,7 @@ class Service : android.app.Service() {
         startForeground(R.id.notification_main, builder.build())
     }
 
-    internal data class State(val roomState: RoomState,
+    private data class State(val roomState: RoomState,
                               val currRoom: Room?,
                               val currRoomName: String?,
                               val loginState: LoginState,

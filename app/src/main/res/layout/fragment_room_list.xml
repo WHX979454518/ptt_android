@@ -10,7 +10,7 @@
         android:id="@+id/roomList_recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:listitem="@layout/view_group_list_item" />
+        tools:listitem="@layout/view_room_item" />
 
     <TextView
         style="@style/Text.Headline"

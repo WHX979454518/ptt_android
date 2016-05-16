@@ -9,7 +9,8 @@ object Constants {
     const val REQUEST_MIC_TIMEOUT_SECONDS: Long = 2
     const val JOIN_ROOM_TIMEOUT_SECONDS: Long = 10
 
-    const val MAX_MEMBER_DISPLAY_COUNT: Int = 3
+    const val MAX_MEMBER_NAME_DISPLAY_COUNT: Int = 3
+    const val MAX_MEMBER_ICON_DISPLAY_COUNT: Int = 9
 
     const val ADMIN_USER_ID = "0"
     const val ADMIN_USER_PRIORITY = 0

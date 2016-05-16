@@ -12,6 +12,7 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.fromTextChanged
 import com.xianzhitech.ptt.ext.getColorCompat
@@ -28,7 +29,6 @@ import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.ContactComparator
-import rx.Observable
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
@@ -77,11 +77,8 @@ class ContactsFragment : BaseFragment() {
                 }
 
         views?.apply {
-            Observable.combineLatest(
-                    contactItemSubject,
-                    searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchBox.getString()),
-                    { items, needle -> items to needle }
-            ).observeOn(Schedulers.computation())
+            contactItemSubject.combineWith(searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchBox.getString()))
+                    .observeOn(Schedulers.computation())
                     .map {
                         val (items, needle) = it
                         if (needle.isNullOrBlank()) {
@@ -130,8 +127,8 @@ class ContactsFragment : BaseFragment() {
     }
 
     private class ContactHolder(container: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false)) {
-        lateinit var iconView: ImageView
-        lateinit var nameView: TextView
+        val iconView: ImageView
+        val nameView: TextView
 
         init {
             iconView = itemView.findView(R.id.contactItem_icon)

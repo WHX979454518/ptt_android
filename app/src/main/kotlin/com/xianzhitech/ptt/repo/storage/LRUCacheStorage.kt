@@ -17,15 +17,15 @@ class UserLRUCacheStorage(private val userStorage: UserStorage) : UserStorage by
     }
 
     override fun saveUsers(users: Iterable<User>) {
-        userStorage.saveUsers(users)
         invalidateModels(users)
+        userStorage.saveUsers(users)
     }
 }
 
 class GroupLRUCacheStorage(private val groupStorage: GroupStorage) : GroupStorage by groupStorage, BaseLRUCacheStorage<Group>() {
     override fun saveGroups(groups: Iterable<Group>) {
-        groupStorage.saveGroups(groups)
         invalidateModels(groups)
+        groupStorage.saveGroups(groups)
     }
 
     override fun getGroups(groupIds: Iterable<String>): List<Group> {
@@ -63,18 +63,18 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
     }
 
     override fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String) {
-        roomStorage.updateLastRoomActiveUser(roomId, activeTime, activeMemberId)
         invalidateIds(listOf(roomId))
+        roomStorage.updateLastRoomActiveUser(roomId, activeTime, activeMemberId)
     }
 
     override fun saveRooms(rooms: Iterable<Room>) {
-        roomStorage.saveRooms(rooms)
         invalidateModels(rooms)
+        roomStorage.saveRooms(rooms)
     }
 
     override fun clearRooms() {
-        synchronized(this, { initialized = false })
         cacheLock.write { cache.evictAll() }
+        synchronized(this, { initialized = false })
     }
 }
 

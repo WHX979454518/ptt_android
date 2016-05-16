@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="?attr/selectableItemBackground"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
@@ -8,16 +9,16 @@
     <ImageView
         android:layout_width="@dimen/group_list_icon_size"
         android:layout_height="@dimen/group_list_icon_size"
-        android:id="@+id/groupListItem_icon"
+        android:id="@+id/roomItem_icon"
         android:layout_centerVertical="true"
         android:layout_marginLeft="@dimen/unit_one" />
 
     <LinearLayout
-        android:id="@+id/groupListItem_titleContainer"
+        android:id="@+id/roomItem_titleContainer"
         android:orientation="vertical"
         android:layout_centerVertical="true"
-        android:layout_toRightOf="@+id/groupListItem_icon"
-        android:layout_toLeftOf="@+id/groupListItem_arrow"
+        android:layout_toRightOf="@+id/roomItem_icon"
+        android:layout_toLeftOf="@+id/roomItem_arrow"
         android:gravity="center_vertical|left"
         android:minHeight="60dp"
         android:layout_width="wrap_content"
@@ -26,16 +27,17 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="群组1"
-            android:id="@+id/groupListItem_name"
+            tools:text="群组1"
+            android:id="@+id/roomItem_primaryTitle"
             style="@style/Text.Subhead"
             android:layout_marginLeft="@dimen/unit_one"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="成员1 成员2 成员3"
-            android:id="@+id/groupListItem_members"
+            android:drawablePadding="@dimen/unit_half"
+            tools:text="1分钟以前"
+            android:id="@+id/roomItem_secondaryTitle"
             android:layout_marginLeft="@dimen/unit_one"
             android:layout_marginTop="@dimen/unit_one"
             style="@style/Text.Caption"/>
@@ -44,7 +46,7 @@
 
 
     <ImageView
-        android:id="@+id/groupListItem_arrow"
+        android:id="@+id/roomItem_arrow"
         android:src="@drawable/ic_arrow_right"
         android:layout_centerVertical="true"
         android:tint="@color/secondary_text"
@@ -56,6 +58,6 @@
     <View
         style="@style/Divider.Lighter"
         android:layout_marginTop="@dimen/unit_one"
-        android:layout_below="@+id/groupListItem_titleContainer"/>
+        android:layout_below="@+id/roomItem_titleContainer"/>
 
 </RelativeLayout>

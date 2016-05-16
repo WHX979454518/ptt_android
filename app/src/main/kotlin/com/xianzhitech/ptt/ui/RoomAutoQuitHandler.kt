@@ -52,7 +52,7 @@ class RoomAutoQuitHandler(private val application: Application) {
         })
     }
 
-    internal fun onRoomStateChanged(roomState: RoomState) {
+    private fun onRoomStateChanged(roomState: RoomState) {
         if (lastRoomState?.let { it.currentRoomID == roomState.currentRoomID && it.currentRoomOnlineMemberIDs.size > 1 } ?: false &&
                 roomState.status.inRoom &&
                 roomState.currentRoomOnlineMemberIDs.size <= 1 &&

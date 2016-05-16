@@ -28,7 +28,7 @@ class RoomInvitationReceiver(private val appContext: Context,
 
             if (roomStatus == RoomStatus.IDLE || invite.inviterId == Constants.ADMIN_USER_ID) {
                 // 当前没有对讲会话, 或者最高权限用户拉起的会话, 直接响应
-                (startedActivity as? BaseActivity)?.joinRoom(invite.roomId, confirmed = true) ?:
+                (startedActivity as? BaseActivity)?.joinRoomConfirmed(invite.roomId) ?:
                         BaseActivity.startActivityJoiningRoom(context, RoomActivity::class.java, invite.roomId)
             }
             else if (startedActivity != null) {

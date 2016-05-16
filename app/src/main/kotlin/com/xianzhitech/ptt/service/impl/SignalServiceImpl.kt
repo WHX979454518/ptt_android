@@ -123,6 +123,8 @@ class SignalServiceImpl(private val appContext: Context,
 
         // Record last active speaker to database
         roomState.distinctUntilChanged { it.currentRoomActiveSpeakerID }
+                .filter { it.currentRoomActiveSpeakerID != null }
+                .debounce(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .subscribeSimple {
                     if (it.currentRoomID != null && it.currentRoomActiveSpeakerID != null) {
                         roomRepository.updateLastRoomActiveUser(it.currentRoomID, Date(), it.currentRoomActiveSpeakerID).execAsync().subscribeSimple()
@@ -788,7 +790,7 @@ private class JoinRoomResponse(private val obj : JSONObject) {
         get() = obj.getJSONArray("activeMembers").toStringIterable()
 
     val activeSpeakerId : String?
-        get() = obj.optString("speaker")
+        get() = if (obj.isNull("speaker")) null else obj.optString("speaker", null)
 
     val serverConfiguration : Map<String, Any?>
         get() {
