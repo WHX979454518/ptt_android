@@ -18,7 +18,7 @@ import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.widget.createDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
 import rx.Observable
 import java.text.Collator

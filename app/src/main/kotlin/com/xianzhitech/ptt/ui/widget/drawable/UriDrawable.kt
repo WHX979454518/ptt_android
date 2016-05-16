@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.ui.widget
+package com.xianzhitech.ptt.ui.widget.drawable
 
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
@@ -9,6 +9,7 @@ import com.bumptech.glide.request.Request
 import com.bumptech.glide.request.animation.GlideAnimation
 import com.bumptech.glide.request.target.SizeReadyCallback
 import com.bumptech.glide.request.target.Target
+import com.xianzhitech.ptt.ui.widget.DrawableWrapper
 import rx.subjects.BehaviorSubject
 
 

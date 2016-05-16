@@ -1,7 +1,8 @@
-package com.xianzhitech.ptt.ui.widget
+package com.xianzhitech.ptt.ui.widget.drawable
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import com.xianzhitech.ptt.ui.widget.DrawableWrapper
 
 class IntrinsicSizeDrawable(drawable : Drawable,
                             private val width : Int,

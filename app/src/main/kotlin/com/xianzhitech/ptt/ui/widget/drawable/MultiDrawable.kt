@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.ui.widget
+package com.xianzhitech.ptt.ui.widget.drawable
 
 import android.content.Context
 import android.graphics.Canvas
@@ -34,7 +34,7 @@ class MultiDrawable(val context: Context,
     private var selfAlpha : Int = 255
     private var selfColorFilter : ColorFilter? = null
 
-    private val childrenCallbacks = object : Drawable.Callback {
+    private val childrenCallbacks = object : Callback {
         override fun unscheduleDrawable(drawable: Drawable?, runnable: Runnable?) {
             callback?.unscheduleDrawable(this@MultiDrawable, runnable)
         }

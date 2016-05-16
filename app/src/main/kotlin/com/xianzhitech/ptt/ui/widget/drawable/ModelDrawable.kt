@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.ui.widget
+package com.xianzhitech.ptt.ui.widget.drawable
 
 import android.content.Context
 import com.xianzhitech.ptt.AppComponent
@@ -10,6 +10,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.ui.widget.DrawableWrapper
 import rx.Subscriber
 import java.lang.ref.WeakReference
 

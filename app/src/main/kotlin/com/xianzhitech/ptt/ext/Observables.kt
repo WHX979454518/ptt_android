@@ -4,20 +4,15 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.db.ResultSet
 import com.xianzhitech.ptt.service.UserDescribableException
 import rx.Completable
 import rx.Observable
-import rx.Scheduler
 import rx.Single
 import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import rx.functions.Func1
-import java.util.*
 import java.util.concurrent.TimeoutException
 
-fun <T> Observable<T>.toBlockingFirst() = toBlocking().first()
 
 /**
  * 一个有全局错误处理的Observeable结果处理对象. 如果提供了Context, 错误将通过Toast报告
@@ -49,36 +44,6 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
     override fun onCompleted() {
     }
 }
-
-fun <T> Observable<ResultSet>.mapToOne(mapper: Func1<ResultSet, T>) = map {
-    it.use {
-        if (it.moveToFirst()) {
-            mapper.call(it)
-        }
-        else {
-            throw NoSuchElementException()
-        }
-    }
-}
-
-fun <T> Observable<ResultSet>.mapToOneOrDefault(mapper: Func1<ResultSet, T>, defaultValue: T?) = map {
-    it.use {
-        if (it.moveToFirst()) mapper.call(it)
-        else defaultValue
-    }
-}
-
-fun <T> Observable<ResultSet>.mapToList(mapper: Func1<ResultSet, T>): Observable<List<T>> = map {
-    it.use {
-        ArrayList<T>(it.getCount()).apply {
-            while (it.moveToNext()) {
-                add(mapper.call(it))
-            }
-        }
-    }
-}
-
-fun <T> Observable<T>.subscribeOnOptional(scheduler: Scheduler?): Observable<T> = scheduler?.let { subscribeOn(it) } ?: this
 
 fun <T> Observable<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
     return subscribe(object : GlobalSubscriber<T>() {

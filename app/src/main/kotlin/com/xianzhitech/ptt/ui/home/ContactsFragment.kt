@@ -26,7 +26,7 @@ import com.xianzhitech.ptt.service.CreateRoomFromGroup
 import com.xianzhitech.ptt.service.CreateRoomFromUser
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.widget.createDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.Observable
 import rx.schedulers.Schedulers

@@ -9,8 +9,8 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestManager
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.ui.widget.TextDrawable
-import com.xianzhitech.ptt.ui.widget.UriDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.TextDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.UriDrawable
 
 fun User.createAvatarDrawable(fragment: Fragment) = createAvatarDrawable(fragment.context, Glide.with(fragment))
 fun User.createAvatarDrawable(activity: FragmentActivity) = createAvatarDrawable(activity, Glide.with(activity))
