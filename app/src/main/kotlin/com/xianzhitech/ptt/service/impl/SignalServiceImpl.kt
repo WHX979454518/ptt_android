@@ -68,7 +68,6 @@ import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import rx.subscriptions.Subscriptions
 import java.util.*
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class SignalServiceImpl(private val appContext: Context,
@@ -93,8 +92,6 @@ class SignalServiceImpl(private val appContext: Context,
             second.put(R.raw.pttup_offline, first.load(appContext, R.raw.pttup_offline, 0))
         }
     }
-    private val soundPlayExecutor by lazy { Executors.newSingleThreadExecutor() }
-    private var audioManager: AudioManager
     private var vibrator : Vibrator? = null
 
     private var socketSubject = BehaviorSubject.create<Socket>()
@@ -104,7 +101,6 @@ class SignalServiceImpl(private val appContext: Context,
 
     init {
         vibrator = (appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let { if (it.hasVibrator()) it else null }
-        audioManager = (appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
 
         val loginStateValue = loginState.value
         if (loginStateValue.currentUserID == null && loginStateValue.status == LoginStatus.IDLE) {
@@ -364,8 +360,8 @@ class SignalServiceImpl(private val appContext: Context,
 
     private fun onRoomJoined(roomId: String, talkEngineProperties : Map<String, Any?>) {
         //roomSubscription?.add()
-        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-        audioManager.isSpeakerphoneOn = true
+//        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+//        audioManager.isSpeakerphoneOn = true
         createTalkEngine(roomId, talkEngineProperties, false)
     }
 
@@ -389,7 +385,7 @@ class SignalServiceImpl(private val appContext: Context,
     }
 
     private fun onRoomQuited(roomId: String) {
-        audioManager.isSpeakerphoneOn = false
+//        audioManager.isSpeakerphoneOn = false
     }
 
     private fun onMicActivated(isSelf: Boolean) {
@@ -714,9 +710,7 @@ class SignalServiceImpl(private val appContext: Context,
     }
 
     private fun playSound(@RawRes res: Int) {
-        soundPlayExecutor.submit {
-            soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
-        }
+        soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
     }
 
     companion object {

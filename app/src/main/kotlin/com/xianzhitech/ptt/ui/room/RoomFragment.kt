@@ -13,10 +13,7 @@ import android.widget.ImageView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.callbacks
-import com.xianzhitech.ptt.ext.combineWith
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getConnectivity
-import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
@@ -28,7 +25,6 @@ import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
-import rx.Observable
 
 class RoomFragment : BaseFragment()
         , BackPressable
@@ -104,19 +100,6 @@ class RoomFragment : BaseFragment()
 
         val appComponent = context.applicationContext as AppComponent
 
-        appComponent.signalService.roomState.flatMap { roomState ->
-            Observable.combineLatest(
-                    appComponent.roomRepository.getRoom(roomState.currentRoomID).observe(),
-                    appComponent.roomRepository.getRoomMembers(roomState.currentRoomID).observe(),
-                    appComponent.userRepository.getUser(roomState.currentRoomActiveSpeakerID).getAsync().toObservable(),
-                    { room, members, currentActiveUser -> RoomData(roomState, room, members, currentActiveUser) }) }
-                .combineWith(context.getConnectivity())
-                .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribeSimple {
-                    updateRoomState(it.first, it.second)
-                }
-
         appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomID }
                 .flatMap { appComponent.roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(appComponent.signalService.peekLoginState().currentUserID!!)).observe() }
                 .observeOnMainThread()
@@ -137,27 +120,6 @@ class RoomFragment : BaseFragment()
                         joiningProgressDialog = null
                     }
                 }
-    }
-
-    private fun updateRoomState(roomData: RoomData, hasConnectivity: Boolean) {
-        val loginState = (context.applicationContext as AppComponent).signalService.peekLoginState()
-        logd("updateRoomState, roomState: %s, loginState: %s", roomData.roomState, loginState)
-//        adapter.setMembers(roomData.roomMembers, if (hasConnectivity) roomData.roomState.currentRoomOnlineMemberIDs else emptyList())
-        views?.apply {
-            val show: Boolean
-
-            if (roomData.roomState.currentRoomActiveSpeakerID == null) {
-                show = false
-            } else if (roomData.roomState.currentRoomActiveSpeakerID == loginState.currentUserID) {
-                show = true
-            } else if (roomData.currentActiveUser != null) {
-                show = true
-            } else {
-                show = false
-            }
-
-            //            roomStatusView.animate().alpha(if (show) 1f else 0f).start()
-        }
     }
 
     override fun onBackPressed(): Boolean {

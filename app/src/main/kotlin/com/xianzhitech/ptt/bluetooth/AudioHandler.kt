@@ -20,31 +20,24 @@ import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.ext.subscribeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.loginStatus
 import com.xianzhitech.ptt.service.roomStatus
 import rx.Observable
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.Subscriptions
 import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
-class BluetoothHandler(private val appContext: Context,
-                       private val signalService: SignalService) {
+class AudioHandler(private val appContext: Context,
+                   private val signalService: SignalService) {
 
     companion object {
         private val BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-        const val MESSAGE_DEV_PTT_OK = "DEV_PTT_OK"
-        const val MESSAGE_DEV_PTT_DISCONNECTED = "DEV_PTT_DISCONNECTED"
         const val MESSAGE_PUSH_DOWN = "+PTT=P"
         const val MESSAGE_PUSH_RELEASE = "+PTT=R"
 
@@ -69,16 +62,28 @@ class BluetoothHandler(private val appContext: Context,
         // 当进入房间时, 连接当前的蓝牙设备到SCO上, 退出时则关闭
         Observable.combineLatest(
                 signalService.roomStatus.distinctUntilChanged { it.inRoom },
+                signalService.loginState.distinctUntilChanged { it.currentUserID },
                 currentBluetoothDevice,
-                { status, device -> status to device})
+                { status, loginState, device -> Triple(status, loginState, device)})
                 .observeOnMainThread()
                 .subscribeSimple {
-                    val (status, device) = it
-                    if (status.inRoom && device != null) {
-                        logd("SCO: Turning on bluetooth sco")
-                        startSco()
-                    } else if (status.inRoom.not() || device == null) {
+                    val (status, loginState, device) = it
+                    if (status.inRoom) {
+                        if (device != null) {
+                            audioManager.isSpeakerphoneOn = false
+                            audioManager.mode = AudioManager.MODE_NORMAL
+                            logd("SCO: Turning on bluetooth sco")
+                            startSco()
+                        }
+                        else {
+                            stopSco()
+                            audioManager.isSpeakerphoneOn = true
+                            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+                        }
+                    }
+                    else if (loginState.currentUserID == null || device == null) {
                         logd("SCO: Turning off bluetooth sco")
+                        audioManager.isSpeakerphoneOn = false
                         stopSco()
                     }
                 }
@@ -229,83 +234,15 @@ class BluetoothHandler(private val appContext: Context,
         }
     }
 
-    private val scoAudioState : Observable<Int> by lazy {
-        BehaviorSubject.create<Int>().apply {
-            appContext.receiveBroadcasts(false, AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
-                    .subscribeSimple {
-                        val newAudioState = it.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
-                        logd("SCO: New audio state: $newAudioState")
-                        this.onNext(newAudioState)
-                    }
-        }
-    }
-
-    private var scoSubscription : Subscription? = null
 
     private fun startSco() {
-        scoSubscription?.unsubscribe()
-        scoSubscription = scoAudioState
-                // 如果我们刚好正在连接的过程, 要等这个过程完了才进行下一步
-                .first { it != AudioManager.SCO_AUDIO_STATE_CONNECTING }
-                .flatMap {
-                    // 请求开启SCO
-                    logd("SCO: audioManager.startBluetoothSco()")
-                    audioManager.mode = AudioManager.MODE_NORMAL
-                    audioManager.startBluetoothSco()
-                    audioManager.isBluetoothScoOn = true
-                    audioManager.mode = AudioManager.MODE_IN_CALL
-
-                    if (it == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
-                        // 如果现在SCO已经连接, 那么不需要等待什么
-                        Unit.toObservable()
-                    }
-                    else {
-                        // 如果现在SCO状态不为已经连接, 等待连接状态变为连接, 并有2秒的超时时间.
-                        scoAudioState.map {
-                            if (it == AudioManager.SCO_AUDIO_STATE_ERROR) {
-                                throw RuntimeException("SCO connection error")
-                            }
-                            else {
-                                it
-                            }
-                        }.first { it == AudioManager.SCO_AUDIO_STATE_CONNECTED }
-                                .timeout(2, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                    }
-                }
-                .doOnError {
-                    logd("SCO: Error: $it")
-                    // 出现错误要停掉SCO
-                    audioManager.stopBluetoothSco()
-                    audioManager.mode = AudioManager.MODE_NORMAL
-                }
-                .retry { count : Int, throwable : Throwable  ->
-                    (throwable is TimeoutException).apply {
-                        if (this && count <= BT_RETRY_COUNT) {
-                            logd("SCO: Retrying starting sco...")
-                        }
-                    }
-                }
-                .onErrorReturn { Unit }
-                .subscribeSimple()
+        audioManager.startBluetoothSco()
+        audioManager.isBluetoothScoOn = true
     }
 
     private fun stopSco() {
-        scoSubscription?.unsubscribe()
-        scoSubscription = scoAudioState
-                // 如果我们刚好正在连接的过程, 要等这个过程完了才进行下一步
-                .first { it != AudioManager.SCO_AUDIO_STATE_CONNECTING }
-                .map {
-                    if (it == AudioManager.SCO_AUDIO_STATE_CONNECTED || it == AudioManager.SCO_AUDIO_STATE_ERROR) {
-                        // 请求关闭SCO
-                        logd("SCO: audioManager.stopBluetoothSco()")
-                        audioManager.stopBluetoothSco()
-                        audioManager.mode = AudioManager.MODE_NORMAL
-                    }
-                    else {
-                        Unit.toObservable()
-                    }
-                }
-                .subscribeSimple()
+        audioManager.isBluetoothScoOn = false
+        audioManager.stopBluetoothSco()
     }
 
 

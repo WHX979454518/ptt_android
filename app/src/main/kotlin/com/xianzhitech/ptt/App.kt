@@ -8,7 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
-import com.xianzhitech.ptt.bluetooth.BluetoothHandler
+import com.xianzhitech.ptt.bluetooth.AudioHandler
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
@@ -105,7 +105,7 @@ open class App : Application(), AppComponent, ActivityProvider {
                 }
             }
         })
-        BluetoothHandler(this, signalService)
+        AudioHandler(this, signalService)
     }
 
     override val currentStartedActivity: Activity?
