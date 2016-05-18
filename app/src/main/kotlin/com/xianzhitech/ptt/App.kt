@@ -34,12 +34,11 @@ import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
 import com.xianzhitech.ptt.ui.invite.RoomInvitationReceiver
 import com.xianzhitech.ptt.update.UpdateManager
 import com.xianzhitech.ptt.update.UpdateManagerImpl
-import com.xianzhitech.ptt.util.SimpleActivityLifecycleCallbacks
 import okhttp3.OkHttpClient
 import java.lang.ref.WeakReference
 
 
-open class App : Application(), AppComponent, ActivityProvider {
+open class App : Application(), AppComponent {
 
     override val httpClient by lazy { OkHttpClient() }
     override val talkEngineProvider = object : TalkEngineProvider {
@@ -61,7 +60,7 @@ open class App : Application(), AppComponent, ActivityProvider {
 
     override lateinit var signalService : SignalService
 
-    override val activityProvider = this
+    override lateinit var activityProvider : ActivityProvider
 
     private var currentStartedActivityReference = WeakReference<Activity>(null)
 
@@ -91,26 +90,14 @@ open class App : Application(), AppComponent, ActivityProvider {
             PhoneCallHandler.register(this)
         }
 
+        activityProvider = ActivityProviderImpl().apply {
+            registerActivityLifecycleCallbacks(this)
+        }
+
         RoomAutoQuitHandler(this)
         RoomInvitationReceiver(this, signalService, activityProvider)
-
-        registerActivityLifecycleCallbacks(object : SimpleActivityLifecycleCallbacks() {
-            override fun onActivityStarted(activity: Activity) {
-                currentStartedActivityReference = WeakReference(activity)
-            }
-
-            override fun onActivityStopped(activity: Activity) {
-                if (currentStartedActivity == activity) {
-                    currentStartedActivityReference = WeakReference<Activity>(null)
-                }
-            }
-        })
-        AudioHandler(this, signalService)
+        AudioHandler(this, signalService, activityProvider)
     }
-
-    override val currentStartedActivity: Activity?
-        get() = currentStartedActivityReference.get()
-
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
         override var userSessionToken: UserToken?

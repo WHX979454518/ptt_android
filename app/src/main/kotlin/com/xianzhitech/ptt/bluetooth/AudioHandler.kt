@@ -8,16 +8,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
+import android.os.Build
+import android.support.v4.media.session.MediaSessionCompat
+import android.view.KeyEvent
 import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.logtagd
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.onSingleValue
 import com.xianzhitech.ptt.ext.receiveBroadcasts
-import com.xianzhitech.ptt.ext.subscribeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.LoginStatus
@@ -25,28 +25,27 @@ import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.loginStatus
 import com.xianzhitech.ptt.service.roomStatus
+import com.xianzhitech.ptt.ui.ActivityProvider
 import rx.Observable
 import rx.subjects.BehaviorSubject
-import rx.subscriptions.Subscriptions
 import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
 class AudioHandler(private val appContext: Context,
-                   private val signalService: SignalService) {
+                   private val signalService: SignalService,
+                   private val activityProvider: ActivityProvider) {
 
     companion object {
         private val BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-        const val MESSAGE_PUSH_DOWN = "+PTT=P"
-        const val MESSAGE_PUSH_RELEASE = "+PTT=R"
+//        const val MESSAGE_PUSH_DOWN = "+PTT=P"
+//        const val MESSAGE_PUSH_RELEASE = "+PTT=R"
 
         private val BT_RETRY_COUNT = 5
     }
 
     private val audioManager : AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val currentBluetoothDevice = BehaviorSubject.create<BluetoothDevice?>()
-    private val bluetoothExecutor : Executor by lazy { Executors.newSingleThreadExecutor() }
+//    private val bluetoothExecutor : Executor by lazy { Executors.newSingleThreadExecutor() }
 
     init {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -89,33 +88,60 @@ class AudioHandler(private val appContext: Context,
                 }
 
 
-        // 连接并监听蓝牙设备的命令
-        currentBluetoothDevice
-                .distinctUntilChanged { it?.address }
-                .subscribeSimple { device ->
-                    if (device == null) {
-                        receiveCommandRunnable?.requestedStop = true
-                        receiveCommandRunnable = null
+//        // 连接并监听蓝牙设备的命令
+//        currentBluetoothDevice
+//                .distinctUntilChanged { it?.address }
+//                .subscribeSimple { device ->
+//                    if (device == null) {
+//                        receiveCommandRunnable?.requestedStop = true
+//                        receiveCommandRunnable = null
+//                    }
+//                    else if (receiveCommandRunnable == null || (receiveCommandRunnable!!.device != device && receiveCommandRunnable!!.stopped.not())) {
+//                        receiveCommandRunnable?.requestedStop = true
+//                        receiveCommandRunnable = ReceiveCommandRunnable(device).apply {
+//                            bluetoothExecutor.execute(this)
+//                        }
+//                    }
+//                }
+
+        // 绑定媒体按键事件
+        signalService.loginStatus
+                .map { it != LoginStatus.IDLE }
+                .distinctUntilChanged()
+                .observeOnMainThread()
+                .subscribeSimple {
+                    if (it) {
+                        onUserLoggedIn()
                     }
-                    else if (receiveCommandRunnable == null || (receiveCommandRunnable!!.device != device && receiveCommandRunnable!!.stopped.not())) {
-                        receiveCommandRunnable?.requestedStop = true
-                        receiveCommandRunnable = ReceiveCommandRunnable(device).apply {
-                            bluetoothExecutor.execute(this)
-                        }
+                    else {
+                        onUserLoggedOut()
                     }
                 }
 
-        // 绑定媒体按键事件
-        currentBluetoothDevice
-                .flatMap {
-                    if (it == null) {
-                        Observable.empty()
-                    }
-                    else {
-                        retrieveMediaButtonEvent()
+        signalService.roomState
+                .distinctUntilChanged { it.status }
+                .subscribeSimple {
+                    if (it.status == RoomStatus.ACTIVE && signalService.peekLoginState().currentUserID == it.currentRoomActiveSpeakerID) {
+                        audioManager.startBluetoothSco()
                     }
                 }
-                .subscribeSimple()
+
+        signalService.roomState
+                .distinctUntilChanged { it.currentRoomActiveSpeakerID }
+                .subscribeSimple {
+                    if (it.currentRoomActiveSpeakerID != null) {
+                        val hint = if (Build.VERSION.SDK_INT >= 19 && it.currentRoomActiveSpeakerID == signalService.peekLoginState().currentUserID) {
+                            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+                        } else {
+                            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+                        }
+
+                        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, hint)
+                    }
+                    else {
+                        audioManager.abandonAudioFocus(null)
+                    }
+                }
 
         // 在用户登陆时监听蓝牙设备
         signalService.loginStatus
@@ -147,92 +173,136 @@ class AudioHandler(private val appContext: Context,
                 }
     }
 
-    private fun handleCommand(command: String) {
-        val roomStatus = signalService.peekRoomState().status
 
-        when {
-            command == MESSAGE_PUSH_DOWN &&
-                    roomStatus == RoomStatus.JOINED -> signalService.requestMic().subscribeSimple()
-            command == MESSAGE_PUSH_RELEASE &&
-                    roomStatus.inRoom -> signalService.releaseMic().subscribeSimple()
+    private var mediaSession : MediaSessionCompat? = null
+
+    private fun onUserLoggedOut() {
+        mediaSession?.apply {
+            isActive = false
+            release()
         }
+        mediaSession = null
     }
 
-
-    private val receiveCommandHandler = object : Handler(Looper.getMainLooper()) {
-        override fun handleMessage(msg: Message) {
-            handleCommand(msg.obj as String)
-        }
-    }
-    private var receiveCommandRunnable : ReceiveCommandRunnable? = null
-
-    private inner class ReceiveCommandRunnable(val device: BluetoothDevice) : Runnable {
-        @Volatile var requestedStop = false
-        @Volatile var stopped = false
-
-        private fun onCommand(command : String) {
-            if (requestedStop.not()) {
-                receiveCommandHandler.obtainMessage(0, command).sendToTarget()
-            }
-        }
-
-        override fun run() {
-            var triedTimes = 0
-            while (triedTimes <= BT_RETRY_COUNT && requestedStop.not()) {
-                logd("SOCKET: Connecting to $device socket: $triedTimes time")
-                triedTimes++
-                try {
-                    device.createRfcommSocketToServiceRecord(BT_UUID)?.use { socket ->
-                        if (!socket.isConnected) {
-                            socket.connect()
-                        }
-                        logd("SOCKET: Connected to bluetooth socket")
-                        socket.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
-                            // 成功连接的时候, 清空重试次数
-                            triedTimes = 0
-                            val allCommands = listOf(MESSAGE_PUSH_DOWN, MESSAGE_PUSH_RELEASE)
-                            val matchedCommands = allCommands.toMutableList()
-                            var matchedSize = 0
-
-                            // 一直死循环读取数据直到取消订阅为止
-                            while (requestedStop.not()) {
-                                val b = reader.read()
-
-                                if (b < 0) {
-                                    // -1表明这个流已经读完了.
-                                    break
-                                }
-
-                                var char = b.toChar()
-
-                                // 去除不匹配当前字符的消息
-                                matchedCommands.removeAll { it.length <= matchedSize || it[matchedSize] != char }
-
-                                if (matchedCommands.isEmpty()) {
-                                    throw RuntimeException("SOCKET: Unknown command $char received from bluetooth adapter")
-                                }
-
-                                matchedSize++
-
-                                if (matchedCommands.size == 1 && matchedSize == matchedCommands[0].length) {
-                                    onCommand(matchedCommands[0])
-                                    matchedSize = 0
-                                    matchedCommands.clear()
-                                    matchedCommands.addAll(allCommands)
-                                }
+    private fun onUserLoggedIn() {
+        if (mediaSession == null) {
+            val session = MediaSessionCompat(appContext, "ptt", ComponentName(appContext, RemoteControlClientReceiver::class.java), null)
+            session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS)
+            session.setCallback(object : MediaSessionCompat.Callback() {
+                override fun onMediaButtonEvent(mediaButtonEvent: Intent): Boolean {
+                    val keyEvent : KeyEvent? = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                    if (keyEvent != null) {
+                        logtagd("MEDIAKEY", "Got key event %s", keyEvent)
+                        if (signalService.peekRoomState().status.inRoom) {
+                            if (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY &&
+                                    keyEvent.action == KeyEvent.ACTION_DOWN) {
+                                signalService.requestMic().subscribeSimple()
+                            }
+                            else if (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_STOP &&
+                                    keyEvent.action == KeyEvent.ACTION_UP) {
+                                signalService.releaseMic().subscribeSimple()
                             }
                         }
                     }
-
-                } catch (throwable: Throwable) {
-                    logd("SOCKET: Error receiving command: $throwable")
-                    Thread.sleep(2000)
+                    return true
                 }
-            }
-
-            stopped = true
+            })
+            session.isActive = true
+            mediaSession = session
         }
     }
+
+    class RemoteControlClientReceiver : BroadcastReceiver() {
+        override fun onReceive(content: Context, intent: Intent) {
+        }
+    }
+
+//    private fun handleCommand(command: String) {
+//        val roomStatus = signalService.peekRoomState().status
+//
+//        when {
+//            command == MESSAGE_PUSH_DOWN &&
+//                    roomStatus == RoomStatus.JOINED -> signalService.requestMic().subscribeSimple()
+//            command == MESSAGE_PUSH_RELEASE &&
+//                    roomStatus.inRoom -> signalService.releaseMic().subscribeSimple()
+//        }
+//    }
+
+
+//    private val receiveCommandHandler = object : Handler(Looper.getMainLooper()) {
+//        override fun handleMessage(msg: Message) {
+//            handleCommand(msg.obj as String)
+//        }
+//    }
+//    private var receiveCommandRunnable : ReceiveCommandRunnable? = null
+//
+//    private inner class ReceiveCommandRunnable(val device: BluetoothDevice) : Runnable {
+//        @Volatile var requestedStop = false
+//        @Volatile var stopped = false
+//
+//        private fun onCommand(command : String) {
+//            if (requestedStop.not()) {
+//                receiveCommandHandler.obtainMessage(0, command).sendToTarget()
+//            }
+//        }
+//
+//        override fun run() {
+//            var triedTimes = 0
+//            while (triedTimes <= BT_RETRY_COUNT && requestedStop.not()) {
+//                logd("SOCKET: Connecting to $device socket: $triedTimes time")
+//                triedTimes++
+//                try {
+//                    device.createRfcommSocketToServiceRecord(BT_UUID)?.use { socket ->
+//                        if (!socket.isConnected) {
+//                            socket.connect()
+//                        }
+//                        logd("SOCKET: Connected to bluetooth socket")
+//                        socket.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+//                            // 成功连接的时候, 清空重试次数
+//                            triedTimes = 0
+//                            val allCommands = listOf(MESSAGE_PUSH_DOWN, MESSAGE_PUSH_RELEASE)
+//                            val matchedCommands = allCommands.toMutableList()
+//                            var matchedSize = 0
+//
+//                            // 一直死循环读取数据直到取消订阅为止
+//                            while (requestedStop.not()) {
+//                                val b = reader.read()
+//
+//                                if (b < 0) {
+//                                    // -1表明这个流已经读完了.
+//                                    break
+//                                }
+//
+//                                var char = b.toChar()
+//
+//                                // 去除不匹配当前字符的消息
+//                                matchedCommands.removeAll { it.length <= matchedSize || it[matchedSize] != char }
+//
+//                                if (matchedCommands.isEmpty()) {
+//                                    throw RuntimeException("SOCKET: Unknown command $char received from bluetooth adapter")
+//                                }
+//
+//                                matchedSize++
+//
+//                                if (matchedCommands.size == 1 && matchedSize == matchedCommands[0].length) {
+//                                    onCommand(matchedCommands[0])
+//                                    matchedSize = 0
+//                                    matchedCommands.clear()
+//                                    matchedCommands.addAll(allCommands)
+//                                }
+//                            }
+//                        }
+//                    }
+//
+//                } catch (throwable: Throwable) {
+//                    logd("SOCKET: Error receiving command: $throwable")
+//                    Thread.sleep(2000)
+//                }
+//            }
+//
+//            stopped = true
+//        }
+//    }
 
 
     private fun startSco() {
@@ -243,23 +313,6 @@ class AudioHandler(private val appContext: Context,
     private fun stopSco() {
         audioManager.isBluetoothScoOn = false
         audioManager.stopBluetoothSco()
-    }
-
-
-    private fun retrieveMediaButtonEvent() : Observable<Intent> {
-        return Observable.create<Intent> { subscriber ->
-            val componentName = ComponentName(appContext, RemoteControlClientReceive::class.java.name)
-            audioManager.registerMediaButtonEventReceiver(componentName)
-
-            subscriber.add(Subscriptions.create {
-                audioManager.unregisterMediaButtonEventReceiver(componentName)
-            })
-        }.subscribeOnMainThread()
-    }
-
-    class RemoteControlClientReceive : BroadcastReceiver() {
-        override fun onReceive(content: Context, intent: Intent) {
-        }
     }
 
     /**

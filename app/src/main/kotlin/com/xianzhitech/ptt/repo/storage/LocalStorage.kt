@@ -70,7 +70,9 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         return executeInTransaction {
             val contentValues = ContentValues()
             rooms.forEach {
-                if (db.insertWithOnConflict(Rooms.TABLE_NAME, null, it.toContentValues(contentValues), SQLiteDatabase.CONFLICT_FAIL) == -1L) {
+                try {
+                    db.insert(Rooms.TABLE_NAME, null, it.toContentValues(contentValues))
+                } catch(e: Exception) {
                     db.update(Rooms.TABLE_NAME, contentValues, "${Rooms.ID} = ?", arrayOf(it.id))
                 }
             }
