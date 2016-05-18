@@ -104,6 +104,13 @@ class AudioHandler(private val appContext: Context,
 //                    }
 //                }
 
+        currentBluetoothDevice
+            .subscribeSimple {
+                if (it != null) {
+                    mediaSession?.isActive = true
+                }
+            }
+
         // 绑定媒体按键事件
         signalService.loginStatus
                 .map { it != LoginStatus.IDLE }
