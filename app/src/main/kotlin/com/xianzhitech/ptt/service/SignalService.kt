@@ -1,8 +1,11 @@
 package com.xianzhitech.ptt.service
 
 import com.xianzhitech.ptt.ext.sizeAtLeast
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import rx.Completable
 import rx.Observable
+import rx.Single
 import java.io.Serializable
 import java.util.*
 
@@ -39,6 +42,9 @@ interface SignalService {
     fun requestMic(): Observable<Unit>
     fun releaseMic() : Observable<Unit>
     fun quitRoom(): Observable<Unit>
+
+    fun retrieveRoomInfo(roomId : String): Single<Room>
+    fun retrieveUserInfo(userId : String) : Single<User>
 
     fun changePassword(oldPassword: String,
                        newPassword: String): Completable

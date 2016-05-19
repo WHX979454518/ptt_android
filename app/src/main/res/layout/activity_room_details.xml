@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:background="@color/grey_300"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:background="@android:color/white"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.wefika.flowlayout.FlowLayout
+                android:id="@+id/roomDetails_members"
+                android:layout_marginTop="@dimen/unit_three"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <View style="@style/Divider.Lighter" />
+
+            <TextView
+                android:id="@+id/roomDetails_allMemberLabel"
+                style="@style/Text.ProfileItem"
+                android:padding="@dimen/unit_two"
+                tools:text="所有成员 (156)"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:background="@android:color/white"
+            android:layout_marginTop="@dimen/unit_three"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                style="@style/Text.ProfileItem"
+                android:padding="@dimen/unit_two"
+                android:text="@string/room_name"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/roomDetails_name"
+                style="@style/Text.ProfileItem.Value"
+                tools:text="临时会话"
+                android:layout_marginRight="@dimen/unit_two"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/roomDetails_deleteRoom"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_one"
+            android:text="@string/delete_room"
+            android:layout_marginTop="@dimen/unit_three"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+</ScrollView>

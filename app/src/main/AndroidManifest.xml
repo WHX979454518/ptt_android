@@ -70,6 +70,9 @@
         <activity android:name=".ui.user.ChangePasswordActivity"
                   android:label="@string/change_password" />
 
+        <activity android:name=".ui.room.RoomDetailsActivity"
+                  android:label="@string/room_info" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />

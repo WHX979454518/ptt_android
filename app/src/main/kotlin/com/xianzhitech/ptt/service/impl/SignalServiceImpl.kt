@@ -689,6 +689,20 @@ class SignalServiceImpl(private val appContext: Context,
         Unit.toObservable()
     }.subscribeOnMainThread()
 
+    override fun retrieveRoomInfo(roomId: String): Single<Room> {
+        return Single.defer<Room> {
+            val socket = socketSubject.value ?: throw IllegalStateException()
+            socket.sendEvent<JSONObject>(EVENT_CLIENT_GET_ROOM, roomId).map { RoomObject(it) }
+        }.subscribeOn(AndroidSchedulers.mainThread())
+    }
+
+    override fun retrieveUserInfo(userId: String): Single<User> {
+        return Single.defer<User> {
+            val socket = socketSubject.value ?: throw IllegalStateException()
+            socket.sendEvent<JSONObject>(EVENT_CLIENT_GET_USER, userId).map { UserObject(it) }
+        }.subscribeOn(AndroidSchedulers.mainThread())
+    }
+
     override fun changePassword(oldPassword: String, newPassword: String): Completable {
         return Completable.defer {
             socketSubject.value.sendEventIgnoringResult("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5())
@@ -722,6 +736,8 @@ class SignalServiceImpl(private val appContext: Context,
         const val EVENT_CLIENT_LEAVE_ROOM = "c_leave_room"
         const val EVENT_CLIENT_CONTROL_MIC = "c_control_mic"
         const val EVENT_CLIENT_RELEASE_MIC = "c_release_mic"
+        const val EVENT_CLIENT_GET_ROOM = "c_get_room"
+        const val EVENT_CLIENT_GET_USER = "c_get_user"
     }
 
 }
