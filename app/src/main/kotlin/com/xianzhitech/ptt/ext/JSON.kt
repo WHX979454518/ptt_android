@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ext
 
 import org.json.JSONArray
+import org.json.JSONObject
 
 
 /**
@@ -29,4 +30,24 @@ fun <T> JSONArray?.transform(map: (Any) -> T): Iterable<T> {
             }
         }
     }
+}
+
+fun <T> Iterable<T>.toJSONArray() : JSONArray {
+    val arr = JSONArray()
+    forEach {
+        arr.put(it)
+    }
+    return arr
+}
+
+fun JSONObject.nullOrString(name : String) : String? {
+    if (isNull(name)) {
+        return null
+    }
+
+    return optString(name, null)
+}
+
+fun JSONObject.getStringValue(name : String, fallback : String = "") : String {
+    return nullOrString(name) ?: fallback
 }

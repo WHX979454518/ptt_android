@@ -49,6 +49,32 @@ class ServerException(val serverMsg: String) : RuntimeException(serverMsg), User
     override fun describe(context: Context) = serverMsg
 }
 
+class KnownServerException(val errorName : String, val errorMessage : String? = null) : RuntimeException(errorName), UserDescribableException {
+    var errorMessageResolved : String? = null
+
+    override fun describe(context: Context): CharSequence {
+        if (errorMessage != null) {
+            return errorMessage
+        }
+
+        if (errorMessageResolved?.isNotBlank() ?: false) {
+            return errorMessageResolved!!
+        }
+
+        errorMessageResolved = context.getString(context.resources.getIdentifier("error_$errorName", "string", context.packageName)) ?: ""
+        if (errorMessageResolved!!.isBlank()) {
+            if (BuildConfig.DEBUG && errorName.isNotBlank()) {
+                return errorName
+            }
+            else {
+                return context.getString(R.string.error_unknown);
+            }
+        }
+
+        return errorMessageResolved!!
+    }
+}
+
 class ConnectivityException() : StaticUserException(R.string.error_unable_to_connect)
 
 class EmptyServerResponseException() : StaticUserException(R.string.error_service_empty_response)

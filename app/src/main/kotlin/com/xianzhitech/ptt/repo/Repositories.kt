@@ -112,6 +112,10 @@ class RoomRepository(private val context: Context,
             val groups = groupStorage.getGroups(room.associatedGroupIds)
             val memberIds = linkedSetOf<String>()
 
+            if (memberIds.size < maxMemberCount && excludeUserIds.contains(room.ownerId).not()) {
+                memberIds.add(room.ownerId)
+            }
+
             // Add members from associated groups first
             loopGroup@ for (group in groups) {
                 for (memberId in group.memberIds) {

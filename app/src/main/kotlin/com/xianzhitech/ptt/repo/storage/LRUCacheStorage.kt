@@ -102,19 +102,30 @@ open class BaseLRUCacheStorage<T : Model>(capacity : Int = 10240) {
                     resultList.add(result)
                 }
             }
-        }
 
-        if (missedIds.isNotEmpty()) {
-            val fetchedResult = fetch(missedIds)
-            if (fetchedResult.isNotEmpty()) {
+            if (missedIds.isNotEmpty()) {
+                // Now go fetching.
                 cacheLock.write {
-                    fetchedResult.forEach {
-                        cache.put(it.id, it)
+                    // Upgrading from read lock IS NOT THREAD SAFE!!!
+                    // Check again for missed ids in cache to avoid race-condition
+                    val missedIter = missedIds.iterator()
+                    while (missedIter.hasNext()) {
+                        val result = cache[missedIter.next()]
+                        if (result != null) {
+                            resultList.add(result)
+                            missedIter.remove()
+                        }
+                    }
+
+                    // Now fetch
+                    if (missedIds.isNotEmpty()) {
+                        fetch(missedIds).forEach {
+                            cache.put(it.id, it)
+                            resultList.add(it)
+                        }
                     }
                 }
             }
-
-            resultList.addAll(fetchedResult)
         }
 
         return resultList

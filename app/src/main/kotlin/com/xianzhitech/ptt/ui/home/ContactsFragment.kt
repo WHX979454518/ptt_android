@@ -20,11 +20,9 @@ import com.xianzhitech.ptt.ext.getString
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.CreateRoomFromGroup
-import com.xianzhitech.ptt.service.CreateRoomFromUser
+import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
@@ -119,7 +117,8 @@ class ContactsFragment : BaseFragment() {
             holder.iconView.setImageDrawable(item.createDrawable(holder.itemView.context))
 
             holder.itemView.setOnClickListener {
-                (activity as BaseActivity).joinRoom(if (item is User) CreateRoomFromUser(item.id) else CreateRoomFromGroup((item as Group).id))
+                (activity as BaseActivity).joinRoom(if (item is User) CreateRoomRequest(extraMemberIds = listOf(item.id))
+                    else CreateRoomRequest(groupIds = listOf(item.id)))
             }
         }
 

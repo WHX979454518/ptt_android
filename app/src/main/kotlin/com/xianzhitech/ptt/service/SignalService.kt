@@ -1,29 +1,21 @@
 package com.xianzhitech.ptt.service
 
+import com.xianzhitech.ptt.ext.sizeAtLeast
 import rx.Completable
 import rx.Observable
 import java.io.Serializable
 import java.util.*
 
 
-/**
- * 新建一个会话的请求
- */
-interface CreateRoomRequest {
-    val name: String?
+data class CreateRoomRequest(val name : String? = null,
+                             val groupIds : Iterable<String> = emptyList(),
+                             val extraMemberIds : Iterable<String> = emptyList()) {
+    init {
+        if (groupIds.sizeAtLeast(1).not() && extraMemberIds.sizeAtLeast(1).not()) {
+            throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time");
+        }
+    }
 }
-
-/**
- * 从一个联系人创建会话请求
- */
-data class CreateRoomFromUser(val userId: String,
-                              override val name: String? = null) : CreateRoomRequest
-
-/**
- * 从一个组创建会话请求
- */
-data class CreateRoomFromGroup(val groupId: String,
-                               override val name: String? = null) : CreateRoomRequest
 
 interface RoomInvitation : Serializable {
     val roomId : String

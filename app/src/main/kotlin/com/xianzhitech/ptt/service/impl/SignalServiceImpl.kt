@@ -18,12 +18,15 @@ import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.getActiveNetwork
+import com.xianzhitech.ptt.ext.getStringValue
 import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.nullOrString
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.onSingleValue
 import com.xianzhitech.ptt.ext.subscribeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toBase64
+import com.xianzhitech.ptt.ext.toJSONArray
 import com.xianzhitech.ptt.ext.toMD5
 import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.ext.toStringIterable
@@ -36,15 +39,13 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.service.CreateRoomFromGroup
-import com.xianzhitech.ptt.service.CreateRoomFromUser
 import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.KnownServerException
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.UserToken
@@ -56,7 +57,6 @@ import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.emitter.Emitter
 import io.socket.engineio.client.Transport
-import org.json.JSONArray
 import org.json.JSONObject
 import rx.Completable
 import rx.Observable
@@ -238,7 +238,7 @@ class SignalServiceImpl(private val appContext: Context,
                          *   }
                          */
                         logd("Requesting syncing contacts")
-                        newSocket.sendEvent<JSONObject>(EVENT_CLIENT_SYNC_CONTACTS, JSONObject().put("enterMemberVersion", 1).put("enterGroupVersion", 1))
+                        newSocket.sendEvent<JSONObject>(EVENT_CLIENT_SYNC_CONTACTS)
                                 .subscribeSimple { response ->
                                     logd("Received sync result")
 
@@ -449,7 +449,7 @@ class SignalServiceImpl(private val appContext: Context,
                     if (user == null) {
                         Observable.error<String>(StaticUserException(R.string.error_no_permission))
                     } else {
-                        socket.sendEvent<JSONObject>(EVENT_CLIENT_CREATE_ROOM, request.toJSON())
+                        socket.sendEvent<JSONObject>(EVENT_CLIENT_CREATE_ROOM, request.name, request.groupIds.toJSONArray(), request.extraMemberIds.toJSONArray())
                                 .map { response ->
                                     /**
                                      * Response:
@@ -479,7 +479,7 @@ class SignalServiceImpl(private val appContext: Context,
              * Request: { roomId : "room ID" }
              * Response: Ignored
              */
-            socket.sendEventIgnoringResult(EVENT_CLIENT_LEAVE_ROOM, JSONObject().put("roomId", state.currentRoomID)).subscribeSimple()
+            socket.sendEventIgnoringResult(EVENT_CLIENT_LEAVE_ROOM, state.currentRoomID).subscribeSimple()
             roomState.onNext(RoomState())
             onRoomQuited(state.currentRoomID)
         }
@@ -551,16 +551,16 @@ class SignalServiceImpl(private val appContext: Context,
                         roomState.onNext(roomState.value.copy(status = RoomStatus.JOINING, currentRoomID = roomId, currentRoomOnlineMemberIDs = emptySet()))
 
                         // Join the room
-                        socket.sendEvent<JSONObject>(EVENT_CLIENT_JOIN_ROOM, JSONObject().put("roomId", roomId))
+                        socket.sendEvent<JSONObject>(EVENT_CLIENT_JOIN_ROOM, roomId)
                                 .map { response ->
                                     /**
                                      * Join room request: { roomId : "room ID" }
                                      * Response:
                                      * {
-                                     *      roomInfo: { room object, members: [user IDs] },
-                                     *      activeMembers: [user IDs],
-                                     *      speaker: "speaker ID",
-                                     *      server: {
+                                     *      room: { room object, members: [user IDs] },
+                                     *      onlineMemberIds: [user IDs],
+                                     *      speakerId: "speaker ID",
+                                     *      voiceServer: {
                                      *          host: "webrtc host",
                                      *          port: 9002,
                                      *          protocol: "udp"
@@ -569,7 +569,7 @@ class SignalServiceImpl(private val appContext: Context,
                                      *
                                      */
                                     val joinRoomResponse = JoinRoomResponse(response)
-                                    roomRepository.saveRooms(listOf(joinRoomResponse.room))
+                                    roomRepository.saveRooms(listOf(joinRoomResponse.room)).execAsync().subscribeSimple {  }
                                     joinRoomResponse
                                 }
                                 .toObservable()
@@ -620,35 +620,31 @@ class SignalServiceImpl(private val appContext: Context,
             return@create
         }
 
-        val micRequest = JSONObject().put("roomId", currRoomState.currentRoomID)
-
         requestMicSubscription?.unsubscribe()
 
         requestMicSubscription = Observable.timer(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .flatMap {
                     roomState.onNext(roomState.value.copy(status = RoomStatus.REQUESTING_MIC))
-                    socket.sendEvent<JSONObject>(EVENT_CLIENT_CONTROL_MIC, micRequest)
+                    socket.sendEvent<Boolean>(EVENT_CLIENT_CONTROL_MIC, currRoomState.currentRoomID)
                             .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                             .toObservable()
                 }
                 .observeOnMainThread()
-                .subscribe(SafeSubscriber(object : GlobalSubscriber<JSONObject>() {
+                .subscribe(SafeSubscriber(object : GlobalSubscriber<Boolean>() {
                     override fun onError(e: Throwable) {
                         subscriber.onError(e)
                         // When error happens, always requests release mic to prevent further damage to the state
-                        socket.sendEventIgnoringResult(EVENT_CLIENT_RELEASE_MIC, micRequest).subscribeSimple()
+                        socket.sendEventIgnoringResult(EVENT_CLIENT_RELEASE_MIC, currUserId).subscribeSimple()
                         roomState.onNext(roomState.value.copy(status = RoomStatus.JOINED))
                         playSound(R.raw.pttup_offline)
                     }
 
-                    override fun onNext(t: JSONObject) {
+                    override fun onNext(t: Boolean) {
                         /**
-                         * Mic request: { roomId : "roomId" }
-                         * Response: { success: true, speaker: "speaker ID" }
+                         * Response: true|false
                          */
 
-                        val newSpeakerID = if (t.isNull("speaker").not()) t.optString("speaker") else null
-                        if (t.getBoolean("success") && newSpeakerID == currUserId) {
+                        if (t) {
                             if (isUnsubscribed || roomState.value.status != RoomStatus.REQUESTING_MIC) {
                                 // 如果返回的时候我们已经不是请求状态了, 必须发回服务器一个RELEASE做最后保证
                                 releaseMic().subscribe(GlobalSubscriber())
@@ -681,10 +677,9 @@ class SignalServiceImpl(private val appContext: Context,
         }
 
         /**
-         * Mic release request: { roomId : "roomId" }
          * Response: Ignored.
          */
-        currRoomSubscription.add(socket.sendEventIgnoringResult(EVENT_CLIENT_RELEASE_MIC, JSONObject().put("roomId", currRoomState.currentRoomID)).subscribeSimple())
+        currRoomSubscription.add(socket.sendEventIgnoringResult(EVENT_CLIENT_RELEASE_MIC, currRoomState.currentRoomID).subscribeSimple())
 
         if (currRoomState.currentRoomActiveSpeakerID == currUserId || currRoomState.currentRoomActiveSpeakerID == null) {
             roomState.onNext(currRoomState.copy(currentRoomActiveSpeakerID = null, status = RoomStatus.JOINED))
@@ -716,9 +711,8 @@ class SignalServiceImpl(private val appContext: Context,
     companion object {
         const val EVENT_SERVER_USER_LOGON = "s_logon"
         const val EVENT_SERVER_USER_LOGIN_FAILED = "s_login_failed"
-        const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_member_update"
+        const val EVENT_SERVER_ROOM_ACTIVE_MEMBER_UPDATED = "s_online_member_update"
         const val EVENT_SERVER_SPEAKER_CHANGED = "s_speaker_changed"
-        const val EVENT_SERVER_ROOM_INFO_CHANGED = "s_room_summary"
         const val EVENT_SERVER_INVITE_TO_JOIN = "s_invite_to_join"
         const val EVENT_SERVER_USER_KICK_OUT = "s_kick_out"
 
@@ -739,11 +733,11 @@ private class UserObject(private val obj : JSONObject) : User {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String
-        get() = obj.getString("name")
+        get() = obj.getStringValue("name")
     override val avatar: String?
-        get() = obj.optString("avatar")
+        get() = obj.nullOrString("avatar")
     override val permissions: Set<Permission>
-        get() = obj.optString("privileges").toPermissionSet()
+        get() = obj.getStringValue("privileges").toPermissionSet()
     override val priority: Int
         get() = obj.optInt("priority", Constants.DEFAULT_USER_PRIORITY)
 }
@@ -752,9 +746,9 @@ private class GroupObject(private val obj : JSONObject) : Group {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String
-        get() = obj.getString("name")
+        get() = obj.getStringValue("name")
     override val description: String?
-        get() = obj.optString("description")
+        get() = obj.getStringValue("description")
     override val avatar: String?
         get() = obj.optString("avatar")
     override val memberIds: Iterable<String>
@@ -765,30 +759,30 @@ private class RoomObject(private val obj : JSONObject) : Room {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String
-        get() = obj.getString("name")
+        get() = obj.getStringValue("name")
     override val description: String?
-        get() = obj.optString("description")
+        get() = obj.getStringValue("description")
     override val ownerId: String
-        get() = obj.getString("owner")
+        get() = obj.getString("ownerId")
     override val associatedGroupIds: Iterable<String>
         get() = obj.optJSONArray("associatedGroupIds").toStringIterable()
     override val extraMemberIds: Iterable<String>
-        get() = obj.optJSONArray("members").toStringIterable() //TODO: Update field
+        get() = obj.optJSONArray("extraMemberIds").toStringIterable()
 }
 
 private class JoinRoomResponse(private val obj : JSONObject) {
 
-    val room : Room = RoomObject(obj.getJSONObject("roomInfo"))
+    val room : Room = RoomObject(obj.getJSONObject("room"))
 
     val activeMemberIds : Iterable<String>
-        get() = obj.getJSONArray("activeMembers").toStringIterable()
+        get() = obj.getJSONArray("onlineMemberIds").toStringIterable()
 
     val activeSpeakerId : String?
-        get() = if (obj.isNull("speaker")) null else obj.optString("speaker", null)
+        get() = obj.nullOrString("speakerId")
 
     val serverConfiguration : Map<String, Any?>
         get() {
-            val server = obj.getJSONObject("server")
+            val server = obj.getJSONObject("voiceServer")
             return mapOf(
                     "host" to server.getString("host"),
                     "port" to server.getInt("port"),
@@ -805,25 +799,6 @@ private fun String?.toPermissionSet() : Set<Permission> {
     //TODO:
     return emptySet()
 }
-
-
-private fun Array<Any?>.ensureNoError() {
-    val arg = getOrNull(0)
-
-    if (arg is JSONObject && arg.has("error")) {
-        throw ServerException(arg.getString("error"))
-    }
-}
-
-private fun CreateRoomRequest.toJSON(): JSONArray {
-    // 0代表通讯组 1代表联系人
-    return when (this) {
-        is CreateRoomFromUser -> JSONArray().put(JSONObject().put("srcType", 1).put("srcData", userId))
-        is CreateRoomFromGroup -> JSONArray().put(JSONObject().put("srcType", 0).put("srcData", groupId))
-        else -> throw IllegalArgumentException("Unknown request type: " + this)
-    }
-}
-
 
 private fun <T> Emitter.receiveEventRaw(eventName : String, clazz: Class<T>?) : Observable<T> {
     return Observable.create { subscriber ->
@@ -851,8 +826,25 @@ private fun Emitter.receiveEventIgnoringArguments(eventName: String) : Observabl
 private fun <T> Socket.sendEventRaw(eventName: String, clazz : Class<T>?, args: Array<out Any?>) : Single<T> {
     return Single.create { subscriber ->
         val ack = Ack {
+            if (subscriber.isUnsubscribed) {
+                return@Ack
+            }
+
             try {
-                subscriber.onSuccess(clazz?.cast(it[0]))
+                val result = it.first() as JSONObject
+                if (result.getBoolean("success")) {
+                    subscriber.onSuccess(clazz?.cast(result.opt("data")));
+                }
+                else {
+                    val err : JSONObject? = result.optJSONObject("error");
+                    if (err != null) {
+                        subscriber.onError(KnownServerException(err.getString("name"), err.getStringValue("message")))
+                    }
+                    else {
+                        subscriber.onError(KnownServerException(""))
+                    }
+                }
+
             } catch(e: Exception) {
                 subscriber.onError(e)
             }
