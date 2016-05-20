@@ -9,18 +9,14 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.lazySplit
 import com.xianzhitech.ptt.ext.logtagd
 import com.xianzhitech.ptt.ext.toSqlSet
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Model
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.ExtraRoomInfo
 import java.util.*
 
 
 class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStorage {
-    override fun getUsers(ids: Iterable<String>): List<User> {
-        return queryList(Users.MAPPER, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${ids.toSqlSet()}")
+    override fun getUsers(ids: Iterable<String>, out: MutableList<User>): List<User> {
+        return queryList(Users.MAPPER, out, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${ids.toSqlSet()}")
     }
 
     override fun saveUsers(users: Iterable<User>)  {
@@ -34,8 +30,8 @@ class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStora
 }
 
 class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupStorage {
-    override fun getGroups(groupIds: Iterable<String>): List<Group> {
-        return queryList(Groups.MAPPER, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${groupIds.toSqlSet()}")
+    override fun getGroups(groupIds: Iterable<String>, out: MutableList<Group>): List<Group> {
+        return queryList(Groups.MAPPER, out, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${groupIds.toSqlSet()}")
     }
 
     override fun saveGroups(groups: Iterable<Group>)  {
@@ -50,11 +46,11 @@ class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupSto
 
 class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStorage {
     override fun getAllRooms(): List<Room> {
-        return queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME}")
+        return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME}")
     }
 
     override fun getRooms(roomIds: Iterable<String>): List<Room> {
-        return queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
+        return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
     }
 
     override fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String)  {
@@ -104,7 +100,12 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
             }
         }
 
-        return userStorage.getUsers(userIds) + groupStorage.getGroups(groupIds)
+        val result = ArrayList<Model>(userIds.size + groupIds.size)
+
+        userStorage.getUsers(userIds, result as MutableList<User>)
+        groupStorage.getGroups(groupIds, result as MutableList<Group>)
+
+        return result
     }
 
     override fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>)  {
@@ -146,10 +147,12 @@ open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
         }
     }
 
-    protected fun <T> queryList(mapper : (Cursor) -> T, sql: String, vararg args : String?) : List<T> {
+    protected fun <T> queryList(mapper : (Cursor) -> T, out: MutableList<T>, sql: String, vararg args : String?) : List<T> {
         val startTime = System.currentTimeMillis()
         return db.rawQuery(sql, args)?.use { cursor : Cursor ->
-            ArrayList<T>(cursor.count).apply {
+            out.apply {
+                out.ensureMoreCapacity(cursor.count)
+
                 if (cursor.moveToFirst()) {
                     do {
                         add(mapper(cursor))
@@ -341,4 +344,14 @@ private fun String?.toPermissionSet() : Set<Permission> {
     }
 
     return set
+}
+
+private fun <T> MutableList<T>.ensureMoreCapacity(cap : Int) {
+    if (this is ArrayList) {
+        ensureCapacity(size + cap)
+    }
+}
+
+private fun <T> Cursor.mapToIterable(mapper : (Cursor) -> T) : Iterable<T> {
+
 }

@@ -62,6 +62,7 @@
         <Button
             android:id="@+id/roomDetails_deleteRoom"
             style="@style/Widget.AppCompat.Button.Colored"
+            android:visibility="gone"
             android:layout_marginLeft="@dimen/unit_one"
             android:layout_marginRight="@dimen/unit_one"
             android:text="@string/delete_room"

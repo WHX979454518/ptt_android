@@ -11,7 +11,7 @@ import java.util.*
  * 用户相关的接口
  */
 interface UserStorage {
-    fun getUsers(ids: Iterable<String>): List<User>
+    fun getUsers(ids: Iterable<String>, out: MutableList<User> = arrayListOf()): List<User>
     fun saveUsers(users: Iterable<User>)
 }
 
@@ -19,7 +19,7 @@ interface UserStorage {
  * 群相关的接口
  */
 interface GroupStorage {
-    fun getGroups(groupIds: Iterable<String>): List<Group>
+    fun getGroups(groupIds: Iterable<String>, out: MutableList<Group> = arrayListOf()): List<Group>
     fun saveGroups(groups: Iterable<Group>)
 }
 
