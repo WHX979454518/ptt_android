@@ -85,25 +85,21 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
                            private val groupStorage: GroupStorage) : BaseSQLiteStorage(db), ContactStorage {
 
     override fun getContactItems(): List<Model> {
-        val groupIds = arrayListOf<String>()
-        val userIds = arrayListOf<String>()
-        db.rawQuery("SELECT ${Contacts.GROUP_ID}, ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME}", arrayOf())?.use { cursor ->
+        val result = ArrayList<Model>()
+
+        // Query groups
+        db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME}", arrayOf())?.use { cursor ->
             if (cursor.moveToFirst()) {
-                do {
-                    if (cursor.getString(0).isNullOrBlank()) {
-                        userIds.add(cursor.getString(1))
-                    }
-                    else {
-                        groupIds.add(cursor.getString(0))
-                    }
-                } while (cursor.moveToNext())
+                groupStorage.getGroups(cursor.mapToIterable { it.getString(0) }, result as MutableList<Group>)
             }
         }
 
-        val result = ArrayList<Model>(userIds.size + groupIds.size)
-
-        userStorage.getUsers(userIds, result as MutableList<User>)
-        groupStorage.getGroups(groupIds, result as MutableList<Group>)
+        // Query users
+        db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME}", arrayOf())?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                userStorage.getUsers(cursor.mapToIterable { it.getString(0) }, result as MutableList<User>)
+            }
+        }
 
         return result
     }
@@ -353,5 +349,18 @@ private fun <T> MutableList<T>.ensureMoreCapacity(cap : Int) {
 }
 
 private fun <T> Cursor.mapToIterable(mapper : (Cursor) -> T) : Iterable<T> {
+    return object : Iterable<T> {
+        override fun iterator(): Iterator<T> {
+            return object : Iterator<T> {
+                override fun hasNext(): Boolean {
+                    return this@mapToIterable.isAfterLast.not()
+                }
 
+                override fun next(): T {
+                    moveToNext()
+                    return mapper(this@mapToIterable)
+                }
+            }
+        }
+    }
 }
