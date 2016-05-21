@@ -149,7 +149,7 @@ class RoomRepository(private val context: Context,
     }
 
     fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String?> = emptyArray(),
-                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = "等") : QueryResult<RoomName> {
+                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = " 等") : QueryResult<RoomName> {
         if (roomId == null) {
             return fixedResult(RoomName.EMPTY)
         }
@@ -219,6 +219,12 @@ class ContactRepository(private val context: Context,
     fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) : UpdateResult {
         return RepoUpdateResult(context, arrayOf(GROUP_URI, USER_URI), {
             contactStorage.replaceAllContacts(users, groups)
+        })
+    }
+
+    fun getAllContactUsers() : QueryResult<List<User>> {
+        return RepoQueryResult(context, arrayOf(USER_URI), {
+            contactStorage.getAllContactUsers()
         })
     }
 }

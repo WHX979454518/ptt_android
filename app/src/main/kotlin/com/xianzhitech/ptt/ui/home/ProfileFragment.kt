@@ -20,7 +20,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getColorCompat
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivity
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -106,7 +106,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
                 startActivity(Intent(context, SettingsActivity::class.java))
             }
             R.id.profile_edit -> {
-                activity.startActivity(Intent(context, EditProfileActivity::class.java),
+                activity.startActivityWithAnimation(Intent(context, EditProfileActivity::class.java),
                         R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
             }
             R.id.profile_feedback,

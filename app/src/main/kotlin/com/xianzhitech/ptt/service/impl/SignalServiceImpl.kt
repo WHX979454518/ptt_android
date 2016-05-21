@@ -689,6 +689,16 @@ class SignalServiceImpl(private val appContext: Context,
         Unit.toObservable()
     }.subscribeOnMainThread()
 
+    override fun updateRoomMembers(roomId: String, userIds: Iterable<String>): Completable {
+        return Completable.defer {
+            val socket = socketSubject.value ?: throw IllegalStateException()
+            Completable.fromSingle(
+                    socket.sendEvent<JSONObject>(EVENT_CLIENT_ADD_ROOM_MEMBERS, roomId, userIds.toJSONArray())
+                            .map { roomRepository.saveRooms(listOf(RoomObject(it))).exec() }
+            )
+        }.subscribeOn(AndroidSchedulers.mainThread())
+    }
+
     override fun retrieveRoomInfo(roomId: String): Single<Room> {
         return Single.defer<Room> {
             val socket = socketSubject.value ?: throw IllegalStateException()
@@ -738,6 +748,7 @@ class SignalServiceImpl(private val appContext: Context,
         const val EVENT_CLIENT_RELEASE_MIC = "c_release_mic"
         const val EVENT_CLIENT_GET_ROOM = "c_get_room"
         const val EVENT_CLIENT_GET_USER = "c_get_user"
+        const val EVENT_CLIENT_ADD_ROOM_MEMBERS = "c_add_room_members"
     }
 
 }

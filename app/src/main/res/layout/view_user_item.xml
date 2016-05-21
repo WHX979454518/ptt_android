@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:orientation="vertical"
+              android:background="?attr/selectableItemBackground"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content">
+
+    <CheckedTextView
+        android:id="@+id/userItem_name"
+        style="@style/Text.Body1"
+        tools:text="用户2"
+        android:duplicateParentState="true"
+        android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+        android:drawablePadding="@dimen/unit_one"
+        android:gravity="left|center_vertical"
+        android:padding="@dimen/unit_two"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <View style="@style/Divider.Lighter" />
+
+</LinearLayout>

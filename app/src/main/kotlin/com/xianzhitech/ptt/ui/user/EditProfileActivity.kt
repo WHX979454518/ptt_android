@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.ext.createAvatarDrawable
 import com.xianzhitech.ptt.ext.dismissImmediately
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivity
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.StaticUserException
@@ -73,7 +73,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
     override fun onClick(v: View) {
         when (v.id) {
             R.id.editProfile_name, R.id.editProfile_avatar -> Toast.makeText(this, "TODO", Toast.LENGTH_LONG).show()
-            R.id.editProfile_password -> startActivity(Intent(this, ChangePasswordActivity::class.java),
+            R.id.editProfile_password -> startActivityWithAnimation(Intent(this, ChangePasswordActivity::class.java),
                     R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
         }
     }

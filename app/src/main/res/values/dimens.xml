@@ -9,6 +9,7 @@
     <dimen name="divider_thick">2dp</dimen>
     <dimen name="group_list_icon_size">48dp</dimen>
     <dimen name="contact_list_icon_size">35dp</dimen>
+    <dimen name="user_list_icon_size">50dp</dimen>
     <dimen name="profile_icon_size">60dp</dimen>
     <dimen name="room_dark_height">140dp</dimen>
     <dimen name="push_button">180dp</dimen>

@@ -43,6 +43,8 @@ interface SignalService {
     fun releaseMic() : Observable<Unit>
     fun quitRoom(): Observable<Unit>
 
+    fun updateRoomMembers(roomId : String, userIds : Iterable<String>) : Completable
+
     fun retrieveRoomInfo(roomId : String): Single<Room>
     fun retrieveUserInfo(userId : String) : Single<User>
 
@@ -56,7 +58,10 @@ interface SignalService {
 }
 
 val SignalService.roomStatus : Observable<RoomStatus>
-get() = roomState.distinctUntilChanged { it.status }.map { it.status }
+    get() = roomState.distinctUntilChanged { it.status }.map { it.status }
 
 val SignalService.loginStatus : Observable<LoginStatus>
-get() = loginState.distinctUntilChanged { it.status }.map { it.status }
+    get() = loginState.distinctUntilChanged { it.status }.map { it.status }
+
+val SignalService.currentUserId : String?
+    get() = peekLoginState().currentUserID

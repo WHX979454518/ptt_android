@@ -73,6 +73,9 @@
         <activity android:name=".ui.room.RoomDetailsActivity"
                   android:label="@string/room_info" />
 
+        <activity android:name=".ui.user.UserListActivity"
+                  android:label="@string/user_list" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />

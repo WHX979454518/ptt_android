@@ -53,8 +53,8 @@ class KnownServerException(val errorName : String, val errorMessage : String? = 
     var errorMessageResolved : String? = null
 
     override fun describe(context: Context): CharSequence {
-        if (errorMessage != null) {
-            return errorMessage
+        if (errorMessage.isNullOrBlank().not()) {
+            return errorMessage!!
         }
 
         if (errorMessageResolved?.isNotBlank() ?: false) {

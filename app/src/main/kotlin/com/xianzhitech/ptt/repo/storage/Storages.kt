@@ -39,5 +39,6 @@ interface RoomStorage {
  */
 interface ContactStorage {
     fun getContactItems(): List<Model>
+    fun getAllContactUsers() : List<User>
     fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>)
 }

@@ -12,6 +12,7 @@
 
         <LinearLayout
             android:orientation="vertical"
+            android:layout_marginTop="@dimen/unit_three"
             android:background="@android:color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -19,6 +20,7 @@
             <com.wefika.flowlayout.FlowLayout
                 android:id="@+id/roomDetails_members"
                 android:layout_marginTop="@dimen/unit_three"
+                android:paddingRight="@dimen/unit_two"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 

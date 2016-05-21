@@ -10,7 +10,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.ensureConnectivity
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivity
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.MainActivity
@@ -86,7 +86,7 @@ class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
                         hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
                         Toast.makeText(this@RoomActivity, e.describeInHumanMessage(this@RoomActivity), Toast.LENGTH_LONG).show()
 
-                        startActivity(Intent(this@RoomActivity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                        startActivityWithAnimation(Intent(this@RoomActivity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
                                 R.anim.slide_in_from_left, R.anim.slide_out_to_right, 0, 0)
                     }
 

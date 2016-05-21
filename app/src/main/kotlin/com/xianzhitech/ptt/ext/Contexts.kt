@@ -16,6 +16,7 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.content.LocalBroadcastManager
 import android.view.View
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.service.ConnectivityException
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import rx.Observable
@@ -150,9 +151,26 @@ fun DialogFragment.dismissImmediately() {
     fragmentManager.executePendingTransactions()
 }
 
-fun Activity.startActivity(intent : Intent, enterAnim : Int, exitAnim : Int, backEnterAnim : Int, backExitAnim : Int) {
+fun Activity.startActivityWithAnimation(intent : Intent,
+                                        enterAnim : Int = R.anim.slide_in_from_right,
+                                        exitAnim : Int = R.anim.slide_out_to_left,
+                                        backEnterAnim : Int = R.anim.slide_in_from_left,
+                                        backExitAnim : Int = R.anim.slide_out_to_right) {
     intent.putExtra(BaseActivity.EXTRA_FINISH_ENTER_ANIM, backEnterAnim)
     intent.putExtra(BaseActivity.EXTRA_FINISH_EXIT_ANIM, backExitAnim)
     ActivityCompat.startActivity(this, intent, ActivityOptionsCompat.makeCustomAnimation(this, enterAnim, exitAnim).toBundle())
+    overridePendingTransition(enterAnim, exitAnim)
+}
+
+fun Activity.startActivityForResultWithAnimation(intent : Intent,
+                                                 requestCode : Int,
+                                                 enterAnim : Int = R.anim.slide_in_from_right,
+                                                 exitAnim : Int = R.anim.slide_out_to_left,
+                                                 backEnterAnim : Int = R.anim.slide_in_from_left,
+                                                 backExitAnim : Int = R.anim.slide_out_to_right) {
+
+    intent.putExtra(BaseActivity.EXTRA_FINISH_ENTER_ANIM, backEnterAnim)
+    intent.putExtra(BaseActivity.EXTRA_FINISH_EXIT_ANIM, backExitAnim)
+    ActivityCompat.startActivityForResult(this, intent, requestCode, ActivityOptionsCompat.makeCustomAnimation(this, enterAnim, exitAnim).toBundle())
     overridePendingTransition(enterAnim, exitAnim)
 }

@@ -16,7 +16,6 @@ class TextDrawable(context: Context, private val text: String, private val tintC
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
     private val textBounds = Rect()
-    private var enabled = true
     private var selected = false
 
     init {
@@ -38,24 +37,6 @@ class TextDrawable(context: Context, private val text: String, private val tintC
     }
 
     override fun isStateful() = true
-
-    override fun onStateChange(states: IntArray?): Boolean {
-        return states?.let {
-            var changed = false
-            if (enabled != it.contains(android.R.attr.state_enabled)) {
-                enabled = enabled.not()
-                paint.color = if (enabled) tintColor else Color.GRAY
-                changed = true
-            }
-
-            if (selected != it.contains(android.R.attr.state_selected)) {
-                selected = selected.not()
-                changed = true
-            }
-
-            changed
-        } ?: false
-    }
 
     override fun draw(canvas: Canvas) {
         val width = bounds.width()

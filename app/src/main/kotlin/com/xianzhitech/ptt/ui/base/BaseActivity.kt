@@ -13,7 +13,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.dismissImmediately
 import com.xianzhitech.ptt.ext.findFragment
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivity
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.CreateRoomRequest
@@ -126,7 +126,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     open fun joinRoomConfirmed(roomId: String) {
         // Base 类不知道具体怎么加入房间, 打开RoomActivity来加入房间
-        startActivity(
+        startActivityWithAnimation(
                 Intent(this, RoomActivity::class.java)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true),

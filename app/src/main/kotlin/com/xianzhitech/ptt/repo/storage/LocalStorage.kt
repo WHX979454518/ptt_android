@@ -9,7 +9,11 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.lazySplit
 import com.xianzhitech.ptt.ext.logtagd
 import com.xianzhitech.ptt.ext.toSqlSet
-import com.xianzhitech.ptt.model.*
+import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.Permission
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.ExtraRoomInfo
 import java.util.*
 
@@ -85,23 +89,58 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
                            private val groupStorage: GroupStorage) : BaseSQLiteStorage(db), ContactStorage {
 
     override fun getContactItems(): List<Model> {
-        val result = ArrayList<Model>()
+        val ids = arrayListOf<String>()
+        val result = arrayListOf<Model>()
+
+        // Query group ids
+        db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+            ids.ensureCapacity(ids.size + cursor.count)
+            if (cursor.moveToFirst()) {
+                do {
+                    ids.add(cursor.getString(0))
+                } while (cursor.moveToNext())
+            }
+        }
 
         // Query groups
-        db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME}", arrayOf())?.use { cursor ->
+        if (ids.isNotEmpty()) {
+            groupStorage.getGroups(ids, result as MutableList<Group>)
+            ids.clear()
+        }
+
+        // Query user ids
+        db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+            ids.ensureCapacity(ids.size + cursor.count)
             if (cursor.moveToFirst()) {
-                groupStorage.getGroups(cursor.mapToIterable { it.getString(0) }, result as MutableList<Group>)
+                do {
+                    ids.add(cursor.getString(0))
+                } while (cursor.moveToNext())
             }
         }
 
         // Query users
-        db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME}", arrayOf())?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                userStorage.getUsers(cursor.mapToIterable { it.getString(0) }, result as MutableList<User>)
-            }
+        if (ids.isNotEmpty()) {
+            userStorage.getUsers(ids, result as MutableList<User>)
+            ids.clear()
         }
 
         return result
+    }
+
+    override fun getAllContactUsers(): List<User> {
+        val ids = arrayListOf<String>()
+
+        // Query user ids
+        db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+            ids.ensureCapacity(ids.size + cursor.count)
+            if (cursor.moveToFirst()) {
+                do {
+                    ids.add(cursor.getString(0))
+                } while (cursor.moveToNext())
+            }
+        }
+
+        return userStorage.getUsers(ids)
     }
 
     override fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>)  {
@@ -348,19 +387,3 @@ private fun <T> MutableList<T>.ensureMoreCapacity(cap : Int) {
     }
 }
 
-private fun <T> Cursor.mapToIterable(mapper : (Cursor) -> T) : Iterable<T> {
-    return object : Iterable<T> {
-        override fun iterator(): Iterator<T> {
-            return object : Iterator<T> {
-                override fun hasNext(): Boolean {
-                    return this@mapToIterable.isAfterLast.not()
-                }
-
-                override fun next(): T {
-                    moveToNext()
-                    return mapper(this@mapToIterable)
-                }
-            }
-        }
-    }
-}

@@ -21,6 +21,7 @@ import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.inflate
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
@@ -29,6 +30,7 @@ import com.xianzhitech.ptt.repo.ExtraRoomInfo
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
 import rx.Observable
@@ -94,7 +96,14 @@ class RoomListFragment : BaseFragment() {
         lateinit var currentUserId: String
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomItemHolder {
-            return RoomItemHolder(parent)
+            val holder = RoomItemHolder(parent)
+            holder.iconView.setOnClickListener {
+                holder.room?.let {
+                    (activity as? BaseActivity)?.startActivityWithAnimation(RoomDetailsActivity.build(activity, it.id),
+                            R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+                }
+            }
+            return holder
         }
 
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
@@ -116,12 +125,12 @@ class RoomListFragment : BaseFragment() {
 
     private class RoomItemHolder(container: ViewGroup,
                                  rootView : View = container.inflate(R.layout.view_room_item),
-                                 private val secondaryView: TextView = rootView.findView(R.id.roomItem_secondaryTitle),
-                                 private val primaryView: TextView = rootView.findView(R.id.roomItem_primaryTitle),
-                                 private val iconView: ImageView = rootView.findView(R.id.roomItem_icon)) : RecyclerView.ViewHolder(rootView) {
+                                 val secondaryView: TextView = rootView.findView(R.id.roomItem_secondaryTitle),
+                                 val primaryView: TextView = rootView.findView(R.id.roomItem_primaryTitle),
+                                 val iconView: ImageView = rootView.findView(R.id.roomItem_icon)) : RecyclerView.ViewHolder(rootView) {
 
         private var subscription : Subscription? = null
-        private var room : Room? = null
+        var room : Room? = null
 
         fun setRoom(room: Room, currentUserId: String) {
             if (this.room?.id == room.id) {
