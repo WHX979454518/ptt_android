@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
@@ -119,7 +120,7 @@ class RoomDetailsActivity : BaseToolbarActivity() {
 
         // Add member button
         val addButton = items.last()
-        addButton.nameView.text = R.string.add.toFormattedString(this)
+        addButton.nameView.text = " "
         getTintedDrawable(R.drawable.ic_person_add_24dp, addButton.nameView.currentTextColor).let {
             it.setBounds(0, 0, addButton.iconSize, addButton.iconSize)
             addButton.nameView.setCompoundDrawables(null, it, null, null)
@@ -167,6 +168,7 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         override fun onSubscribe(d: Subscription?) { }
 
         override fun onError(e: Throwable?) {
+            Log.e("RoomDetailsActivity", "Error updating room: ", e)
             Toast.makeText(context, e.describeInHumanMessage(context), Toast.LENGTH_LONG).show()
         }
 

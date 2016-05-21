@@ -70,8 +70,8 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         return executeInTransaction {
             val contentValues = ContentValues()
             rooms.forEach {
-                if (db.insert(Rooms.TABLE_NAME, null, it.toContentValues(contentValues)) == -1L) {
-                    db.update(Rooms.TABLE_NAME, contentValues, "${Rooms.ID} = ?", arrayOf(it.id))
+                if (db.update(Rooms.TABLE_NAME, it.toContentValues(contentValues), "${Rooms.ID} = ?", arrayOf(it.id)) <= 0) {
+                    db.insert(Rooms.TABLE_NAME, null, contentValues)
                 }
             }
         }

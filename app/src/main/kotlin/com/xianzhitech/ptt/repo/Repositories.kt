@@ -276,6 +276,7 @@ private class RepoUpdateResult(private val context: Context,
                                private val func: () -> Unit) : UpdateResult {
     override fun exec() {
         func()
+        uris.forEach { context.contentResolver.notifyChange(it, null) }
     }
 
     override fun execAsync(scheduler: Scheduler): Completable {

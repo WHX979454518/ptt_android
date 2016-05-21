@@ -19,8 +19,9 @@
 
             <com.wefika.flowlayout.FlowLayout
                 android:id="@+id/roomDetails_members"
-                android:layout_marginTop="@dimen/unit_three"
-                android:paddingRight="@dimen/unit_two"
+                android:gravity="left"
+                android:paddingLeft="@dimen/unit_one"
+                android:paddingRight="@dimen/unit_one"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 

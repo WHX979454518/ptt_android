@@ -3,15 +3,13 @@ package com.xianzhitech.ptt.ext
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
-import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.service.UserDescribableException
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import rx.Completable
 import rx.Observable
 import rx.Single
 import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import java.util.concurrent.TimeoutException
 
 
 /**
@@ -21,11 +19,7 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
     override fun onError(e: Throwable) {
         val message : CharSequence?
         if (context != null) {
-            message = when (e) {
-                is UserDescribableException -> e.describe(context)
-                is TimeoutException -> R.string.error_timeout.toFormattedString(context)
-                else -> e.message
-            }
+            message = e.describeInHumanMessage(context)
         }
         else {
             message = e.message
@@ -35,7 +29,7 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
 
-        Log.e("GlobalSubscriber", "Error: ${message}", e)
+        Log.e("GlobalSubscriber", "Error: $message", e)
     }
 
     override fun onNext(t: T) {
