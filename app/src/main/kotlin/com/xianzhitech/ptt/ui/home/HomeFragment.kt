@@ -107,6 +107,9 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         }
     }
 
+    override fun requestCreateNewRoom() {
+        callbacks<Callbacks>()?.requestCreateNewRoom()
+    }
 
     override fun onDestroyView() {
         views = null
@@ -178,6 +181,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
 
     interface Callbacks {
         fun setTitle(title: CharSequence)
+        fun requestCreateNewRoom()
     }
 
     private data class LoginRoomInfo(val loginStatus: LoginStatus,

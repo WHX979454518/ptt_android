@@ -16,13 +16,17 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.dismissImmediately
 import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
+import com.xianzhitech.ptt.ui.user.ContactUserProvider
+import com.xianzhitech.ptt.ui.user.UserListActivity
 import com.xianzhitech.ptt.update.installPackage
 
 class MainActivity : BaseToolbarActivity(),
@@ -32,10 +36,14 @@ class MainActivity : BaseToolbarActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
         AlertDialogFragment.OnNeutralButtonClickListener {
 
+    private var pendingCreateRoomRequest: CreateRoomRequest? = null
+
     companion object {
         val EXTRA_KICKED_OUT = "extra_kicked_out"
         private const val TAG_UPDATE_DIALOG = "tag_update_dialog"
         private const val TAG_PERMISSION_DIALOG = "tag_permission"
+
+        const val REQUEST_CODE_CREATE_ROOM = 2
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,6 +102,31 @@ class MainActivity : BaseToolbarActivity(),
         super.onNewIntent(intent)
 
         handleIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (pendingCreateRoomRequest != null) {
+            joinRoom(pendingCreateRoomRequest!!)
+            pendingCreateRoomRequest = null
+        }
+    }
+
+    override fun requestCreateNewRoom() {
+        startActivityForResultWithAnimation(
+                UserListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(), true, null, emptyList(), false),
+                REQUEST_CODE_CREATE_ROOM
+        )
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_CODE_CREATE_ROOM && resultCode == RESULT_OK && data != null) {
+            pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(UserListActivity.RESULT_EXTRA_SELECTED_USER_IDS).toList())
+        }
+        else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
     }
 
     override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {

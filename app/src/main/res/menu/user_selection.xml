@@ -4,6 +4,5 @@
 
     <item android:id="@+id/userSelectionMenu_done"
           android:title="@string/finish"
-          android:enabled="false"
           app:showAsAction="always" />
 </menu>

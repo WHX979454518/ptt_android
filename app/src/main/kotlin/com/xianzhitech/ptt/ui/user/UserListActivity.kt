@@ -23,7 +23,6 @@ import com.xianzhitech.ptt.ext.getString
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
@@ -118,8 +117,7 @@ class UserListActivity : BaseToolbarActivity() {
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         if (isSelectable) {
             val doneItem = menu.findItem(R.id.userSelectionMenu_done)
-            doneItem.isEnabled = selectedUserIds.isNotEmpty()
-            doneItem.title = R.string.finish_with_number.toFormattedString(this, selectedUserIds.size)
+            doneItem.isVisible = selectedUserIds.isNotEmpty()
         }
         return super.onPrepareOptionsMenu(menu)
     }

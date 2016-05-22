@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.graphics.Color
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -7,6 +8,9 @@ import android.text.SpannableStringBuilder
 import android.text.format.DateUtils
 import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -51,6 +55,22 @@ class RoomListFragment : BaseFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.room_list, menu)
+        val menuItem = menu.findItem(R.id.roomList_menuNew)
+        menuItem.icon = context.getTintedDrawable(R.drawable.ic_group_add_24dp, Color.WHITE)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.roomList_menuNew) {
+            callbacks<Callbacks>()?.requestCreateNewRoom()
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onStart() {
@@ -187,5 +207,6 @@ class RoomListFragment : BaseFragment() {
 
     interface Callbacks {
         fun navigateToContactList()
+        fun requestCreateNewRoom()
     }
 }

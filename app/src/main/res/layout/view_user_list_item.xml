@@ -11,8 +11,8 @@
         android:layout_alignParentLeft="true"
         android:layout_centerVertical="true"
         android:layout_marginLeft="@dimen/unit_two"
-        android:layout_marginTop="@dimen/unit_two"
-        android:layout_marginBottom="@dimen/unit_two"
+        android:layout_marginTop="@dimen/unit_one"
+        android:layout_marginBottom="@dimen/unit_one"
         android:layout_width="@dimen/user_list_icon_size"
         android:layout_height="@dimen/user_list_icon_size"/>
 

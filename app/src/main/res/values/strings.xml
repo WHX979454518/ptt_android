@@ -137,6 +137,8 @@
     <string name="finish">完成</string>
     <string name="finish_with_number">完成(%1$d)</string>
     <string name="user_list">用户列表</string>
+    <string name="establish_new_room">发起新对讲</string>
+    <string name="create_room">创建新对讲</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>
