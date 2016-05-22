@@ -17,7 +17,6 @@ import android.widget.EditText
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.createAvatarDrawable
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.fromTextChanged
 import com.xianzhitech.ptt.ext.getString
@@ -151,7 +150,7 @@ class UserListActivity : BaseToolbarActivity() {
         }
     }
 
-    private inner class Adapter : RecyclerView.Adapter<ViewHolder>() {
+    private inner class Adapter : RecyclerView.Adapter<UserItemHolder>() {
         private val userList = arrayListOf<User>()
         private val userComparator = UserComparator()
 
@@ -170,7 +169,7 @@ class UserListActivity : BaseToolbarActivity() {
             }
         }
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: UserItemHolder, position: Int) {
             val user = userList[position]
             holder.setUser(user)
             if (holder.nameView is Checkable && isSelectable) {
@@ -179,12 +178,12 @@ class UserListActivity : BaseToolbarActivity() {
             }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserItemHolder {
             val layoutInflater = LayoutInflater.from(parent.context)
-            val holder = ViewHolder(layoutInflater.inflate(R.layout.view_user_item, parent, false))
-            if (isSelectable) {
+            val holder = UserItemHolder(layoutInflater.inflate(R.layout.view_user_list_item, parent, false))
+            if (holder.nameView is Checkable && isSelectable) {
                 holder.itemView.setOnClickListener {
-                    holder.getUserId()?.let { userId ->
+                    holder.userId ?.let { userId ->
                         holder.nameView.toggle()
                         val success = if (holder.nameView.isChecked) {
                             selectedUserIds.add(userId)
@@ -198,8 +197,10 @@ class UserListActivity : BaseToolbarActivity() {
                     }
                 }
             }
-            else  {
-                holder.nameView.checkMarkDrawable = null
+            else if (!isSelectable) {
+                if (holder.nameView is CheckedTextView) {
+                    holder.nameView.checkMarkDrawable = null
+                }
 
                 if (itemClickIntent != null) {
                     holder.itemView.setOnClickListener {
@@ -213,30 +214,6 @@ class UserListActivity : BaseToolbarActivity() {
 
         override fun getItemCount(): Int {
             return userList.size
-        }
-    }
-
-    private class ViewHolder(view : View,
-                             val nameView : CheckedTextView = view.findView(R.id.userItem_name)) : RecyclerView.ViewHolder(view) {
-        private var user : User? = null
-        private val iconSize = itemView.resources.getDimensionPixelSize(R.dimen.user_list_icon_size)
-
-        fun getUserId() : String? {
-            return user?.id
-        }
-
-        fun setUser(user : User) {
-            if (this.user?.id != user.id) {
-                this.user = user
-                nameView.text = user.name
-
-                val userDrawable = user.createAvatarDrawable(itemView.context)
-                userDrawable.setBounds(0, 0, iconSize, iconSize)
-                val compoundDrawables = nameView.compoundDrawables.apply {
-                    this[0] = userDrawable
-                }
-                nameView.setCompoundDrawables(compoundDrawables[0], compoundDrawables[1], compoundDrawables[2], compoundDrawables[3])
-            }
         }
     }
 

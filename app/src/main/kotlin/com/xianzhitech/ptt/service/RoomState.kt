@@ -1,7 +1,11 @@
 package com.xianzhitech.ptt.service
 
-data class RoomState(val status : RoomStatus = RoomStatus.IDLE,
-                     val currentRoomID: String? = null,
-                     val currentRoomActiveSpeakerID: String? = null,
-                     val currentRoomOnlineMemberIDs: Set<String> = emptySet()) {
+data class RoomState(val status : RoomStatus,
+                     val currentRoomId: String?,
+                     val speakerId: String?,
+                     val onlineMemberIds: Set<String>,
+                     val voiceServer : Map<String, Any?>) {
+    companion object {
+        @JvmStatic val EMPTY = RoomState(RoomStatus.IDLE, null, null, emptySet(), emptyMap())
+    }
 }

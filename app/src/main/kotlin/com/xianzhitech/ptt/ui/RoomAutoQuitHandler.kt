@@ -20,8 +20,8 @@ class RoomAutoQuitHandler(private val application: Application) {
 
     init {
         (application as AppComponent).signalService.roomState
-                .doOnNext { logd("Current online members are: ${it.currentRoomOnlineMemberIDs}") }
-                .distinctUntilChanged { it.currentRoomOnlineMemberIDs }
+                .doOnNext { logd("Current online members are: ${it.onlineMemberIds}") }
+                .distinctUntilChanged { it.onlineMemberIds }
                 .subscribe { onRoomStateChanged(it) }
 
         application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
@@ -53,12 +53,12 @@ class RoomAutoQuitHandler(private val application: Application) {
     }
 
     private fun onRoomStateChanged(roomState: RoomState) {
-        if (lastRoomState?.let { it.currentRoomID == roomState.currentRoomID && it.currentRoomOnlineMemberIDs.size > 1 } ?: false &&
+        if (lastRoomState?.let { it.currentRoomId == roomState.currentRoomId && it.onlineMemberIds.size > 1 } ?: false &&
                 roomState.status.inRoom &&
-                roomState.currentRoomOnlineMemberIDs.size <= 1 &&
+                roomState.onlineMemberIds.size <= 1 &&
                 (application as AppComponent).preference.autoExit) {
 
-            application.signalService.quitRoom().subscribeSimple()
+            application.signalService.leaveRoom().subscribeSimple()
             (currActiveActivity?.get() as? RoomActivity)?.finish()
         }
 

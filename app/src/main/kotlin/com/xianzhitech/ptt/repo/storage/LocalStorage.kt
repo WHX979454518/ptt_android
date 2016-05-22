@@ -14,7 +14,7 @@ import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.ExtraRoomInfo
+import com.xianzhitech.ptt.repo.RoomModel
 import java.util.*
 
 
@@ -49,19 +49,28 @@ class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupSto
 }
 
 class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStorage {
-    override fun getAllRooms(): List<Room> {
+    override fun getAllRooms(): List<RoomModel> {
         return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME}")
     }
 
-    override fun getRooms(roomIds: Iterable<String>): List<Room> {
+    override fun getRooms(roomIds: Iterable<String>): List<RoomModel> {
         return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
     }
 
-    override fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String)  {
+    override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String)  {
         return executeInTransaction {
-            val contentValue = ContentValues(2)
-            contentValue.put(Rooms.LAST_ACTIVE_TIME, activeTime.time)
-            contentValue.put(Rooms.LAST_ACTIVE_MEMBER_ID, activeMemberId)
+            val contentValue = ContentValues(3)
+            contentValue.put(Rooms.LAST_SPEAK_TIME, time.time)
+            contentValue.put(Rooms.LAST_SPEAK_MEMBER_ID, speakerId)
+            contentValue.put(Rooms.LAST_ACTIVE_TIME, time.time)
+            db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
+        }
+    }
+
+    override fun updateLastActiveTime(roomId: String, time: Date) {
+        return executeInTransaction {
+            val contentValue = ContentValues(1)
+            contentValue.put(Rooms.LAST_ACTIVE_TIME, time.time)
             db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
         }
     }
@@ -71,6 +80,7 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
             val contentValues = ContentValues()
             rooms.forEach {
                 if (db.update(Rooms.TABLE_NAME, it.toContentValues(contentValues), "${Rooms.ID} = ?", arrayOf(it.id)) <= 0) {
+                    contentValues.put(Rooms.LAST_ACTIVE_TIME, System.currentTimeMillis())
                     db.insert(Rooms.TABLE_NAME, null, contentValues)
                 }
             }
@@ -288,7 +298,7 @@ private object Groups  {
 
     const val ALL = "$ID,$NAME,$DESCRIPTION,$AVATAR,$MEMBER_IDS"
 
-    val CREATE_SQL = "CREATE TABLE ${TABLE_NAME} (${ID} INTEGER PRIMARY KEY NOT NULL,${NAME} TEXT NOT NULL,${DESCRIPTION} TEXT,${AVATAR} TEXT,${MEMBER_IDS} TEXT)"
+    val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID INTEGER PRIMARY KEY NOT NULL,$NAME TEXT NOT NULL,$DESCRIPTION TEXT,$AVATAR TEXT,$MEMBER_IDS TEXT)"
 
     val MAPPER : (Cursor) -> Group = { cursor ->
         GroupModel(
@@ -301,14 +311,15 @@ private object Groups  {
     }
 }
 
-private data class RoomModel(override val id: String,
-                             override val name: String,
-                             override val description: String?,
-                             override val ownerId: String,
-                             override val lastActiveMemberId: String?,
-                             override val lastActiveTime: Date?,
-                             override val extraMemberIds: Iterable<String>,
-                             override val associatedGroupIds: Iterable<String>) : Room, ExtraRoomInfo
+private data class RoomModelImpl(override val id: String,
+                                 override val name: String,
+                                 override val description: String?,
+                                 override val ownerId: String,
+                                 override val lastSpeakMemberId: String?,
+                                 override val lastSpeakTime: Date?,
+                                 override val lastActiveTime: Date,
+                                 override val extraMemberIds: Iterable<String>,
+                                 override val associatedGroupIds: Iterable<String>) : RoomModel
 
 private fun Room.toContentValues(contentValues: ContentValues = ContentValues(6)) : ContentValues {
     contentValues.put(Rooms.ID, id)
@@ -327,25 +338,27 @@ private object Rooms  {
     const val NAME = "room_name"
     const val DESC = "room_desc"
     const val OWNER_ID = "room_owner_id"
-    const val LAST_ACTIVE_MEMBER_ID = "room_last_active_user_id"
+    const val LAST_SPEAK_MEMBER_ID = "room_last_speak_member_id"
+    const val LAST_SPEAK_TIME = "room_last_speak_time"
     const val LAST_ACTIVE_TIME = "room_last_active_time"
     const val EXTRA_MEMBER_IDS = "room_extra_member_ids"
     const val ASSOCIATED_GROUP_IDS = "room_associated_group_ids"
 
-    const val ALL = "$ID,$NAME,$DESC,$OWNER_ID,$LAST_ACTIVE_MEMBER_ID,$LAST_ACTIVE_TIME,$EXTRA_MEMBER_IDS,$ASSOCIATED_GROUP_IDS"
+    const val ALL = "$ID,$NAME,$DESC,$OWNER_ID,$LAST_SPEAK_MEMBER_ID,$LAST_SPEAK_TIME,$LAST_ACTIVE_TIME,$EXTRA_MEMBER_IDS,$ASSOCIATED_GROUP_IDS"
 
-    val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY,$NAME TEXT,$DESC TEXT,$OWNER_ID TEXT NOT NULL,$LAST_ACTIVE_MEMBER_ID TEXT,$LAST_ACTIVE_TIME INTEGER,$EXTRA_MEMBER_IDS TEXT,$ASSOCIATED_GROUP_IDS TEXT)"
+    val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY,$NAME TEXT,$DESC TEXT,$OWNER_ID TEXT NOT NULL,$LAST_SPEAK_MEMBER_ID TEXT,$LAST_SPEAK_TIME INTEGER, $LAST_ACTIVE_TIME INTEGER NOT NULL,$EXTRA_MEMBER_IDS TEXT,$ASSOCIATED_GROUP_IDS TEXT)"
 
-    val MAPPER : (Cursor) -> Room = { cursor ->
-        RoomModel(
+    val MAPPER : (Cursor) -> RoomModel = { cursor ->
+        RoomModelImpl(
                 id = cursor.getString(0),
                 name = cursor.getString(1),
                 description = cursor.getString(2),
                 ownerId = cursor.getString(3),
-                lastActiveMemberId = cursor.getString(4),
-                lastActiveTime = cursor.getLong(5).let { if (it <= 0L) null else Date(it) },
-                extraMemberIds = cursor.getString(6).lazySplit(','),
-                associatedGroupIds = cursor.getString(7).lazySplit(',')
+                lastSpeakMemberId = cursor.getString(4),
+                lastSpeakTime = cursor.getLong(5).let { if (it <= 0L) null else Date(it) },
+                lastActiveTime = Date(cursor.getLong(6)),
+                extraMemberIds = cursor.getString(7).lazySplit(','),
+                associatedGroupIds = cursor.getString(8).lazySplit(',')
         )
     }
 }

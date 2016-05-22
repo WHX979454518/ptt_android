@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.service
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
@@ -17,6 +18,8 @@ import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.service.loginStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
@@ -38,9 +41,9 @@ class Service : android.app.Service() {
 
         subscription = Observable.combineLatest(
                 signalService.roomState,
-                signalService.roomState.distinctUntilChanged { it.currentRoomID }.flatMap {
-                    appComponent.roomRepository.getRoom(it.currentRoomID).observe()
-                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID)).observe())
+                signalService.roomState.distinctUntilChanged { it.currentRoomId }.flatMap {
+                    appComponent.roomRepository.getRoom(it.currentRoomId).observe()
+                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID)).observe())
                 },
                 signalService.loginState,
                 signalService.loginState.distinctUntilChanged { it.currentUserID }.flatMap { appComponent.userRepository.getUser(it.currentUserID).observe() },
@@ -129,4 +132,19 @@ class Service : android.app.Service() {
                               val loginState: LoginState,
                               val currUser : User?,
                               val connectivity : Boolean)
+}
+
+class ServiceHandler(private val appContext: Context,
+                     private val signalService: SignalService) {
+    init {
+        signalService.loginStatus
+            .subscribeSimple {
+                if (it != LoginStatus.IDLE) {
+                    appContext.startService(Intent(appContext, Service::class.java))
+                }
+                else {
+                    appContext.stopService(Intent(appContext, Service::class.java))
+                }
+            }
+    }
 }

@@ -72,7 +72,7 @@ class LoginFragment : BaseFragment()
 
                         val signalService = (context.applicationContext as AppComponent).signalService
                         context.ensureConnectivity()
-                                .flatMap { signalService.login(nameEditText.getString(), passwordEditText.getString()) }
+                                .flatMap { signalService.login(nameEditText.getString(), passwordEditText.getString()).toSingleDefault(Unit).toObservable() }
                                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                                 .observeOnMainThread()
                                 .compose(bindToLifecycle())
@@ -80,7 +80,7 @@ class LoginFragment : BaseFragment()
                                     override fun onError(e: Throwable) {
                                         super.onError(e)
                                         progressDialog.dismiss()
-                                        signalService.logout().subscribeSimple(context)
+                                        signalService.logout().subscribeSimple()
                                         Snackbar.make(rootView, e.describeInHumanMessage(context), Snackbar.LENGTH_LONG).show()
                                     }
 

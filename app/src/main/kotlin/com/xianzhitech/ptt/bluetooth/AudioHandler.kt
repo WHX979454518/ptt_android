@@ -128,16 +128,16 @@ class AudioHandler(private val appContext: Context,
         signalService.roomState
                 .distinctUntilChanged { it.status }
                 .subscribeSimple {
-                    if (it.status == RoomStatus.ACTIVE && signalService.peekLoginState().currentUserID == it.currentRoomActiveSpeakerID) {
+                    if (it.status == RoomStatus.ACTIVE && signalService.peekLoginState().currentUserID == it.speakerId) {
                         audioManager.startBluetoothSco()
                     }
                 }
 
         signalService.roomState
-                .distinctUntilChanged { it.currentRoomActiveSpeakerID }
+                .distinctUntilChanged { it.speakerId }
                 .subscribeSimple {
-                    if (it.currentRoomActiveSpeakerID != null) {
-                        val hint = if (Build.VERSION.SDK_INT >= 19 && it.currentRoomActiveSpeakerID == signalService.peekLoginState().currentUserID) {
+                    if (it.speakerId != null) {
+                        val hint = if (Build.VERSION.SDK_INT >= 19 && it.speakerId == signalService.peekLoginState().currentUserID) {
                             AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
                         } else {
                             AudioManager.AUDIOFOCUS_GAIN_TRANSIENT

@@ -6,6 +6,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.RoomModel
 import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -34,13 +35,13 @@ class GroupLRUCacheStorage(private val groupStorage: GroupStorage) : GroupStorag
     }
 }
 
-class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by roomStorage, BaseLRUCacheStorage<Room>() {
+class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by roomStorage, BaseLRUCacheStorage<RoomModel>() {
     private var allRoomIds : HashSet<String>? = null
     private var allRoomIdsLock = Any()
 
-    override fun getAllRooms(): List<Room> {
+    override fun getAllRooms(): List<RoomModel> {
         return synchronized(allRoomIdsLock, {
-            val ret : List<Room>
+            val ret : List<RoomModel>
             if (allRoomIds == null) {
                 ret = roomStorage.getAllRooms()
                 cacheLock.write {
@@ -56,13 +57,18 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
         })
     }
 
-    override fun getRooms(roomIds: Iterable<String>): List<Room> {
+    override fun getRooms(roomIds: Iterable<String>): List<RoomModel> {
         return getOrFetch(roomIds, { roomStorage.getRooms(it) }, arrayListOf())
     }
 
-    override fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String) {
+    override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) {
         invalidateIds(listOf(roomId))
-        roomStorage.updateLastRoomActiveUser(roomId, activeTime, activeMemberId)
+        roomStorage.updateLastRoomSpeaker(roomId, time, speakerId)
+    }
+
+    override fun updateLastActiveTime(roomId: String, time: Date) {
+        invalidateIds(listOf(roomId))
+        roomStorage.updateLastActiveTime(roomId, time)
     }
 
     override fun saveRooms(rooms: Iterable<Room>) {

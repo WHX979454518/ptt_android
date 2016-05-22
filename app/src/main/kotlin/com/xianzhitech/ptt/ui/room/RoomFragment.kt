@@ -53,7 +53,7 @@ class RoomFragment : BaseFragment()
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.room_exit) {
-            (context.applicationContext as AppComponent).signalService.quitRoom().subscribeSimple()
+            (context.applicationContext as AppComponent).signalService.leaveRoom().subscribeSimple()
             activity?.finish()
             return true
         }
@@ -65,8 +65,8 @@ class RoomFragment : BaseFragment()
 
         val appComponent = context.applicationContext as AppComponent
 
-        appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomID }
-                .flatMap { appComponent.roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(appComponent.signalService.peekLoginState().currentUserID!!)).observe() }
+        appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomId }
+                .flatMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(appComponent.signalService.peekLoginState().currentUserID!!)).observe() }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {

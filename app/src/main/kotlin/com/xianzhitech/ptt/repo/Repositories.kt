@@ -80,7 +80,7 @@ class RoomRepository(private val context: Context,
                      private val groupStorage: GroupStorage,
                      private val userStorage: UserStorage) {
 
-    fun getAllRooms() : QueryResult<List<Room>> {
+    fun getAllRooms() : QueryResult<List<RoomModel>> {
         return RepoQueryResult(context, arrayOf(ROOM_URI), {
             roomStorage.getAllRooms()
         })
@@ -188,9 +188,15 @@ class RoomRepository(private val context: Context,
         })
     }
 
-    fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String) : UpdateResult {
+    fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) : UpdateResult {
         return RepoUpdateResult(context, arrayOf(ROOM_URI), {
-            roomStorage.updateLastRoomActiveUser(roomId, activeTime, activeMemberId)
+            roomStorage.updateLastRoomSpeaker(roomId, time, speakerId)
+        })
+    }
+
+    fun updateLastRoomActiveTime(roomId : String, time: Date? = null) : UpdateResult {
+        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+            roomStorage.updateLastActiveTime(roomId, time ?: Date())
         })
     }
 
@@ -243,11 +249,6 @@ interface QueryResult<T> {
 interface UpdateResult {
     fun exec()
     fun execAsync(scheduler: Scheduler = Schedulers.computation()): Completable
-}
-
-interface ExtraRoomInfo {
-    val lastActiveTime : Date?
-    val lastActiveMemberId : String?
 }
 
 data class RoomName(val name : String,

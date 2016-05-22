@@ -1,21 +1,21 @@
 package com.xianzhitech.ptt.ui.room
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
-import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.ensureConnectivity
+import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import rx.Completable
+import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
@@ -69,31 +69,49 @@ class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
         finish()
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        (application as AppComponent).signalService
+                .roomStatus
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                    if (it == RoomStatus.JOINING) {
+                        showProgressDialog(R.string.please_wait, R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
+                    } else {
+                        hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
+                    }
+                }
+    }
+
     override fun joinRoomConfirmed(roomId: String) {
         val appComponent = application as AppComponent
 
-        showProgressDialog(R.string.please_wait, R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
-        ensureConnectivity()
-                .flatMap { appComponent.signalService.joinRoom(roomId) }
+        appComponent.signalService.joinRoom(roomId)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                .observeOnMainThread()
-                .doOnUnsubscribe { hideProgressDialog(TAG_JOIN_ROOM_PROGRESS) }
-                .compose(bindUntil(ActivityEvent.STOP))
-                .subscribe(object : GlobalSubscriber<Unit>() {
-                    override fun onError(e: Throwable) {
-                        super.onError(e)
-                        appComponent.signalService.quitRoom().subscribeSimple()
-                        hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
-                        Toast.makeText(this@RoomActivity, e.describeInHumanMessage(this@RoomActivity), Toast.LENGTH_LONG).show()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(JoinRoomSubscriber(applicationContext, roomId))
+    }
 
-                        startActivityWithAnimation(Intent(this@RoomActivity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
-                                R.anim.slide_in_from_left, R.anim.slide_out_to_right, 0, 0)
-                    }
+    private class JoinRoomSubscriber(private val appContext : Context,
+                                     private val roomId : String) : Completable.CompletableSubscriber {
+        override fun onSubscribe(d: Subscription?) { }
+        override fun onError(e: Throwable) {
+            globalHandleError(e, appContext)
 
-                    override fun onNext(t: Unit) {
-                        hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
-                    }
-                })
+            val activity = (appContext as AppComponent).activityProvider.currentStartedActivity
+            if (activity is RoomActivity) {
+                activity.finish()
+            } else {
+                appContext.startActivity(Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            }
+        }
+
+        override fun onCompleted() {
+            val appComponent = appContext as AppComponent
+            appComponent.roomRepository.updateLastRoomActiveTime(roomId).execAsync().subscribeSimple()
+        }
     }
 
     companion object {

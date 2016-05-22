@@ -6,6 +6,7 @@ import android.widget.Toast
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import rx.Completable
 import rx.Observable
+import rx.Observer
 import rx.Single
 import rx.Subscriber
 import rx.Subscription
@@ -17,26 +18,27 @@ import rx.android.schedulers.AndroidSchedulers
  */
 open class GlobalSubscriber<T>(private val context: Context? = null) : Subscriber<T>() {
     override fun onError(e: Throwable) {
-        val message : CharSequence?
-        if (context != null) {
-            message = e.describeInHumanMessage(context)
-        }
-        else {
-            message = e.message
-        }
-
-        if (context != null) {
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-        }
-
-        Log.e("GlobalSubscriber", "Error: $message", e)
+        globalHandleError(e, context)
     }
 
-    override fun onNext(t: T) {
+    override fun onNext(t: T) { }
+    override fun onCompleted() { }
+}
+
+fun globalHandleError(e: Throwable, context: Context? = null) {
+    val message : CharSequence?
+    if (context != null) {
+        message = e.describeInHumanMessage(context)
+    }
+    else {
+        message = e.message
     }
 
-    override fun onCompleted() {
+    if (context != null) {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
+
+    Log.e("GlobalSubscriber", "Error: $message", e)
 }
 
 fun <T> Observable<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
@@ -90,4 +92,8 @@ fun <T> Subscriber<T>.onSingleValue(value: T) {
 
 fun <T> Subscription.addToSubscriber(subscriber: Subscriber<T>) {
     subscriber.add(this)
+}
+
+operator fun <T> Observer<T>.plusAssign(obj : T?) {
+    onNext(obj)
 }

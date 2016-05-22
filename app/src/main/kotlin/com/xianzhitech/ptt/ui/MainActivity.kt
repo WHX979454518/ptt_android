@@ -192,7 +192,7 @@ class MainActivity : BaseToolbarActivity(),
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).signalService.loginState
+        (application as AppComponent).signalService.loginState.distinctUntilChanged { it.currentUserID }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {

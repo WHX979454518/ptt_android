@@ -4,6 +4,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.repo.RoomModel
 import java.util.*
 
 
@@ -27,9 +28,10 @@ interface GroupStorage {
  * 会话数据的接口
  */
 interface RoomStorage {
-    fun getAllRooms(): List<Room>
-    fun getRooms(roomIds: Iterable<String>): List<Room>
-    fun updateLastRoomActiveUser(roomId: String, activeTime: Date, activeMemberId: String)
+    fun getAllRooms(): List<RoomModel>
+    fun getRooms(roomIds: Iterable<String>): List<RoomModel>
+    fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String)
+    fun updateLastActiveTime(roomId: String, time: Date)
     fun saveRooms(rooms: Iterable<Room>)
     fun clearRooms()
 }

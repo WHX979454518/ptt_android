@@ -128,10 +128,10 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         Observable.combineLatest(
                 signalService.loginStatus,
                 signalService.roomStatus,
-                signalService.roomState.distinctUntilChanged { it.currentRoomID }
+                signalService.roomState.distinctUntilChanged { it.currentRoomId }
                         .flatMap {
-                            roomRepository.getRoom(it.currentRoomID).observe()
-                                    .combineWith(roomRepository.getRoomName(it.currentRoomID, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID!!)).observe())
+                            roomRepository.getRoom(it.currentRoomId).observe()
+                                    .combineWith(roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID!!)).observe())
                         },
                 { loginStatus, roomStatus, roomInfo -> LoginRoomInfo(loginStatus, roomStatus, roomInfo?.first, roomInfo?.second) })
                 .compose(bindToLifecycle())

@@ -9,7 +9,6 @@ import com.xianzhitech.ptt.service.UserToken
 interface Preference {
     var updateDownloadId : Pair<Uri, Long>?
     var userSessionToken: UserToken?
-    var lastLoginUserId: String?
     var blockCalls : Boolean
     var autoExit : Boolean
 }

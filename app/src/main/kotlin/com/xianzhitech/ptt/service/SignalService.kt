@@ -33,15 +33,15 @@ interface SignalService {
     fun peekRoomState() : RoomState
     fun peekLoginState() : LoginState
 
-    fun login(username: String, password: String): Observable<Unit>
-    fun logout(): Observable<Unit>
+    fun login(loginName: String, password: String): Completable
+    fun logout(): Completable
 
-    fun createRoom(request: CreateRoomRequest): Observable<String>
+    fun createRoom(request: CreateRoomRequest): Single<Room>
 
-    fun joinRoom(roomId: String): Observable<Unit>
-    fun requestMic(): Observable<Unit>
-    fun releaseMic() : Observable<Unit>
-    fun quitRoom(): Observable<Unit>
+    fun joinRoom(roomId: String): Completable
+    fun requestMic(): Single<Boolean>
+    fun releaseMic(): Completable
+    fun leaveRoom(): Completable
 
     fun updateRoomMembers(roomId : String, userIds : Iterable<String>) : Completable
 

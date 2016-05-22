@@ -3,7 +3,7 @@ package com.xianzhitech.ptt.util
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.ExtraRoomInfo
+import com.xianzhitech.ptt.repo.RoomModel
 import java.text.Collator
 import java.util.*
 
@@ -14,8 +14,13 @@ object RoomComparator : Comparator<Room> {
             return 0
         }
 
-        if (p0 is ExtraRoomInfo && p1 is ExtraRoomInfo) {
-            val rc = p0.lastActiveTime.timeOrZero().compareTo(p1.lastActiveTime.timeOrZero())
+        if (p0 is RoomModel && p1 is RoomModel) {
+            var rc = p0.lastActiveTime.compareTo(p1.lastActiveTime)
+            if (rc != 0) {
+                return -rc
+            }
+
+            rc = p0.lastSpeakTime.timeOrZero().compareTo(p1.lastSpeakTime.timeOrZero())
             if (rc != 0) {
                 return -rc
             }

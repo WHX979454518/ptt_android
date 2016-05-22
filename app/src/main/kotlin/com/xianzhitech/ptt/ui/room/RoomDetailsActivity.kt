@@ -3,18 +3,18 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import com.wefika.flowlayout.FlowLayout
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.createAvatarDrawable
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
@@ -26,14 +26,15 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.currentUserId
-import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.user.ContactUserProvider
+import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListActivity
 import rx.Completable
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 
 class RoomDetailsActivity : BaseToolbarActivity() {
     private lateinit var memberView : FlowLayout
@@ -109,23 +110,20 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         val createSize = displayMemberCount - items.size + 1 // Extra one for 'add' button
         val inflater = LayoutInflater.from(this)
         for (i in 0..createSize-1) {
-            items.add(UserItemHolder(inflater.inflate(R.layout.view_room_member_item, memberView, false)))
+            items.add(UserItemHolder(inflater.inflate(R.layout.view_room_member_list_item, memberView, false)))
         }
 
         // Set up holders
         roomMembers.subList(0, displayMemberCount).forEachIndexed { i, member ->
             items[i].setUser(member)
-            memberView.addView(items[i].rootView)
+            memberView.addView(items[i].itemView)
         }
 
         // Add member button
         val addButton = items.last()
-        addButton.nameView.text = " "
-        getTintedDrawable(R.drawable.ic_person_add_24dp, addButton.nameView.currentTextColor).let {
-            it.setBounds(0, 0, addButton.iconSize, addButton.iconSize)
-            addButton.nameView.setCompoundDrawables(null, it, null, null)
-        }
-        addButton.rootView.setOnClickListener {
+        addButton.nameView!!.text = " "
+        addButton.avatarView!!.setImageDrawable(getTintedDrawable(R.drawable.ic_person_add_24dp, addButton.nameView.currentTextColor))
+        addButton.itemView.setOnClickListener {
             startActivityForResultWithAnimation(
                     UserListActivity.build(this, R.string.add_members.toFormattedString(this),
                             ContactUserProvider(), true, null,
@@ -133,7 +131,7 @@ class RoomDetailsActivity : BaseToolbarActivity() {
                     REQUEST_SELECT_USER
             )
         }
-        memberView.addView(addButton.rootView)
+        memberView.addView(addButton.itemView)
 
 
         // Setup label
@@ -157,43 +155,27 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
             val selectedUserIds = data.getStringArrayExtra(UserListActivity.RESULT_EXTRA_SELECTED_USER_IDS)
             (application as AppComponent).signalService.updateRoomMembers(roomId, selectedUserIds.toList())
-                .observeOn(AndroidSchedulers.mainThread()).subscribe(RoomUpdateSubscriber(this))
+                    .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
         }
         else {
             super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
-    private class RoomUpdateSubscriber(private val context: Context) : Completable.CompletableSubscriber {
+    private class RoomUpdateSubscriber(private val context: Context,
+                                       private val roomId : String) : Completable.CompletableSubscriber {
+
         override fun onSubscribe(d: Subscription?) { }
 
-        override fun onError(e: Throwable?) {
-            Log.e("RoomDetailsActivity", "Error updating room: ", e)
-            Toast.makeText(context, e.describeInHumanMessage(context), Toast.LENGTH_LONG).show()
+        override fun onError(e: Throwable) {
+            globalHandleError(e, context)
         }
 
         override fun onCompleted() {
             Toast.makeText(context, R.string.room_updated.toFormattedString(context), Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private class UserItemHolder(val rootView : View,
-                                 val nameView : TextView = rootView.findView(R.id.roomMemberItem_name)) {
-
-        val iconSize = rootView.resources.getDimensionPixelSize(R.dimen.room_details_member_icon_size)
-        private var user : User? = null
-
-        init {
-            rootView.tag = this
-        }
-
-        fun setUser(user : User) {
-            if (this.user?.id != user.id) {
-                val drawable = user.createAvatarDrawable(rootView.context)
-                drawable.setBounds(0, 0, iconSize, iconSize)
-                nameView.setCompoundDrawables(null, drawable, null, null)
-                nameView.text = user.name
-            }
+            (context.applicationContext as AppComponent).roomRepository.updateLastRoomActiveTime(roomId).execAsync().subscribeSimple()
         }
     }
 

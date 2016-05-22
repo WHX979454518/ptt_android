@@ -40,13 +40,10 @@ open class StaticUserException : UserDescribableException, RuntimeException {
     }
 }
 
-class UserNotLogonException : RuntimeException(), UserDescribableException {
-    override fun describe(context: Context) = R.string.error_user_not_logon.toFormattedString(context)
-}
-
-
-class ServerException(val serverMsg: String) : RuntimeException(serverMsg), UserDescribableException {
-    override fun describe(context: Context) = serverMsg
+object UnknownServerException : RuntimeException("Unknown server exception"), UserDescribableException {
+    override fun describe(context: Context): CharSequence {
+        return R.string.error_unknown_server.toFormattedString(context)
+    }
 }
 
 class KnownServerException(val errorName : String, val errorMessage : String? = null) : RuntimeException(errorName), UserDescribableException {
@@ -76,9 +73,6 @@ class KnownServerException(val errorName : String, val errorMessage : String? = 
 }
 
 class ConnectivityException() : StaticUserException(R.string.error_unable_to_connect)
-
-class EmptyServerResponseException() : StaticUserException(R.string.error_service_empty_response)
-class InvalidSavedTokenException : RuntimeException()
 
 fun Throwable?.describeInHumanMessage(context: Context) : CharSequence {
     return when {

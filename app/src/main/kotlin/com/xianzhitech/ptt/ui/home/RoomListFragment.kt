@@ -26,7 +26,7 @@ import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.ExtraRoomInfo
+import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -47,7 +47,7 @@ class RoomListFragment : BaseFragment() {
     private var errorView : View? = null
     private val adapter = Adapter()
 
-    private val roomList = arrayListOf<Room>()
+    private val roomList = arrayListOf<RoomModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,27 +132,26 @@ class RoomListFragment : BaseFragment() {
         private var subscription : Subscription? = null
         var room : Room? = null
 
-        fun setRoom(room: Room, currentUserId: String) {
+        fun setRoom(room: RoomModel, currentUserId: String) {
             if (this.room?.id == room.id) {
                 return
             }
 
-            room as ExtraRoomInfo
             this.room = room
             this.subscription?.unsubscribe()
             val appComponent = itemView.context.applicationContext as AppComponent
             this.subscription = appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe()
-                    .combineWith(appComponent.userRepository.getUser(room.lastActiveMemberId).observe())
+                    .combineWith(appComponent.userRepository.getUser(room.lastSpeakMemberId).observe())
                     .flatMap { result ->
                         (Observable.interval(0, 1, TimeUnit.MINUTES, AndroidSchedulers.mainThread()) as Observable<*>)
-                                .mergeWith(appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomID } as Observable<out Nothing>)
+                                .mergeWith(appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomId } as Observable<out Nothing>)
                                 .map { result }
                     }
                     .observeOnMainThread()
                     .subscribeSimple {
                         val (roomName : RoomName, lastActiveUser : User?) = it
-                        val lastActiveTime = room.lastActiveTime
-                        val currentRoomId = appComponent.signalService.peekRoomState().currentRoomID
+                        val lastActiveTime = room.lastSpeakTime
+                        val currentRoomId = appComponent.signalService.peekRoomState().currentRoomId
                         if (currentRoomId == room.id) {
                             val postfix = R.string.in_room_postfix.toFormattedString(itemView.context)
                             val fullRoomName = roomName.name + postfix

@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.registerLocalBroadcastReceiver
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
@@ -26,7 +25,8 @@ class RoomInvitationReceiver(private val appContext: Context,
             val roomStatus = signalService.peekRoomState().status
             val startedActivity = activityProvider.currentStartedActivity
 
-            if (roomStatus == RoomStatus.IDLE || invite.inviterId == Constants.ADMIN_USER_ID) {
+            if (roomStatus == RoomStatus.IDLE) {
+                //TODO: 判断是否最高权限用户
                 // 当前没有对讲会话, 或者最高权限用户拉起的会话, 直接响应
                 (startedActivity as? BaseActivity)?.joinRoomConfirmed(invite.roomId) ?:
                         BaseActivity.startActivityJoiningRoom(context, RoomActivity::class.java, invite.roomId)

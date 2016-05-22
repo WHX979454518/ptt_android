@@ -27,11 +27,12 @@ import com.xianzhitech.ptt.repo.storage.UserSQLiteStorage
 import com.xianzhitech.ptt.repo.storage.createSQLiteStorageHelper
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.UserToken
-import com.xianzhitech.ptt.service.impl.SignalServiceImpl
+import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
 import com.xianzhitech.ptt.ui.invite.RoomInvitationReceiver
+import com.xianzhitech.ptt.ui.service.ServiceHandler
 import com.xianzhitech.ptt.update.UpdateManager
 import com.xianzhitech.ptt.update.UpdateManagerImpl
 import okhttp3.OkHttpClient
@@ -75,15 +76,13 @@ open class App : Application(), AppComponent {
         roomRepository = RoomRepository(this, RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage, userStorage)
         contactRepository = ContactRepository(this, ContactSQLiteStorage(helper, userStorage, groupStorage))
 
-        signalService = SignalServiceImpl(
-                appContext = this,
-                signalServerEndpoint = BuildConfig.SIGNAL_SERVER_ENDPOINT,
+        signalService = IOSignalService(
+                context = this,
+                endpoint = BuildConfig.SIGNAL_SERVER_ENDPOINT,
                 preference = preference,
                 userRepository = userRepository,
-                groupRepository = groupRepository,
                 contactRepository = contactRepository,
-                roomRepository = roomRepository,
-                talkEngineProvider = talkEngineProvider)
+                roomRepository = roomRepository)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
@@ -97,6 +96,7 @@ open class App : Application(), AppComponent {
         RoomAutoQuitHandler(this)
         RoomInvitationReceiver(this, signalService, activityProvider)
         AudioHandler(this, signalService, activityProvider)
+        ServiceHandler(this, signalService)
     }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
@@ -104,12 +104,6 @@ open class App : Application(), AppComponent {
             get() = pref.getString(KEY_USER_TOKEN, null)?.fromBase64ToSerializable() as? UserToken
             set(value) {
                 pref.edit().putString(KEY_USER_TOKEN, value?.serializeToBase64()).apply()
-            }
-
-        override var lastLoginUserId: String?
-            get() = pref.getString(KEY_LAST_USER_ID, null)
-            set(value) {
-                pref.edit().putString(KEY_LAST_USER_ID, value).apply()
             }
 
         override var blockCalls: Boolean
@@ -142,7 +136,6 @@ open class App : Application(), AppComponent {
 
         companion object {
             const val KEY_USER_TOKEN = "user_token"
-            const val KEY_LAST_USER_ID = "last_user_id"
             const val KEY_BLOCK_CALLS = "block_calls"
             const val KEY_AUTO_EXIT = "auto_exit"
             const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"

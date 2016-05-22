@@ -5,26 +5,26 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
-import android.widget.Toast
 import com.trello.rxlifecycle.ActivityEvent
 import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.dismissImmediately
 import com.xianzhitech.ptt.ext.findFragment
-import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
-import rx.Single
+import rx.SingleSubscriber
+import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
+import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
@@ -93,35 +93,31 @@ abstract class BaseActivity : AppCompatActivity(),
     fun joinRoom(roomId: String) {
         val appComponent = application as AppComponent
 
-        val currentRoomID = appComponent.signalService.peekRoomState().currentRoomID
+        val currentRoomID = appComponent.signalService.peekRoomState().currentRoomId
+
+        // 如果用户已经加入这个房间, 直接确认这个操作
         if (currentRoomID == roomId) {
             joinRoomConfirmed(roomId)
             return
         }
 
-        Single.zip(
-                appComponent.roomRepository.getRoom(currentRoomID).getAsync(),
-                appComponent.roomRepository.getRoom(roomId).getAsync().map { it ?: throw StaticUserException(R.string.error_no_such_room) },
-                { currentRoom, requestedRoom -> currentRoom to requestedRoom })
-                .toObservable()
-                .observeOnMainThread()
-                .compose(bindUntil(ActivityEvent.STOP))
-                .doOnError { Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show() }
-                .subscribeSimple {
-                    val (currentRoom, requestedRoom) = it
-                    if (requestedRoom.id != currentRoom?.id && currentRoom != null) {
-                        AlertDialogFragment.Builder().apply {
-                            title = R.string.dialog_confirm_switch_title.toFormattedString(this@BaseActivity)
-                            message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
-                            btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
-                            btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
-                            attachment = roomId
-                        }.show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
-                        supportFragmentManager.executePendingTransactions()
-                    } else {
-                        joinRoomConfirmed(roomId)
-                    }
-                }
+        // 如果用户已经加入另外一个房间, 需要提示
+        if (currentRoomID != null) {
+            AlertDialogFragment.Builder().apply {
+                title = R.string.dialog_confirm_switch_title.toFormattedString(this@BaseActivity)
+                message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
+                btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
+                btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
+                attachment = roomId
+
+                show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
+            }
+            supportFragmentManager.executePendingTransactions()
+            return
+        }
+
+        // 如果用户没有加入任意一个房间, 则确认操作
+        joinRoomConfirmed(roomId)
     }
 
     open fun joinRoomConfirmed(roomId: String) {
@@ -140,16 +136,9 @@ abstract class BaseActivity : AppCompatActivity(),
         showProgressDialog(R.string.please_wait, R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
 
         signalService.createRoom(createRoomRequest)
-                .observeOnMainThread()
-                .doOnUnsubscribe { hideProgressDialog(TAG_CREATE_ROOM_PROGRESS) }
-                .compose(bindUntil(ActivityEvent.STOP))
-                .doOnEach {
-                    hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
-                    if (it.hasThrowable()) {
-                        Toast.makeText(this@BaseActivity, it.throwable.describeInHumanMessage(this@BaseActivity), Toast.LENGTH_LONG).show()
-                    }
-                }
-                .subscribeSimple { joinRoom(it) }
+                .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(CreateRoomSubscriber(applicationContext))
     }
 
     protected fun showProgressDialog(title : Int, message : Int, tag : String) {
@@ -180,6 +169,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     override fun onPause() {
         lifecycleEventSubject.onNext(ActivityEvent.PAUSE)
+        hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
 
         super.onPause()
     }
@@ -198,6 +188,23 @@ abstract class BaseActivity : AppCompatActivity(),
 
     protected fun <T> Observable<T>.bindUntil(event : ActivityEvent) : Observable<T> {
         return compose(this@BaseActivity.bindUntil(event))
+    }
+
+    private class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
+        override fun onError(error: Throwable) {
+            globalHandleError(error, appContext)
+
+            ((appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity)?.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+        }
+
+        override fun onSuccess(value: Room) {
+            val currActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
+            if (currActivity != null) {
+                currActivity.joinRoom(value.id)
+            } else {
+                startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
+            }
+        }
     }
 
     companion object {

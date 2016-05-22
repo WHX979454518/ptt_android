@@ -18,7 +18,7 @@ fun User.createAvatarDrawable(context: Context) = createAvatarDrawable(context, 
 
 private fun User.createAvatarDrawable(context: Context, requestManager: RequestManager) : Drawable {
     if (avatar.isNullOrEmpty()) {
-        return TextDrawable(context, name[0].toString(), context.resources.getIntArray(R.array.account_colors).let {
+        return TextDrawable(name[0].toString(), context.resources.getIntArray(R.array.account_colors).let {
             it[Math.abs(name.hashCode()) % it.size]
         })
     }
