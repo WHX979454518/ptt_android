@@ -16,7 +16,6 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
@@ -25,7 +24,6 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.user.ContactUserProvider
 import com.xianzhitech.ptt.ui.user.UserItemHolder
@@ -137,9 +135,8 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         // Setup label
         allMemberLabelView.text = R.string.room_all_member_with_number.toFormattedString(this, roomMembers.size)
 
-        // Setup delete button
-        deleteRoomButton.setVisible(room.ownerId == appComponent.signalService.currentUserId)
-
+        // TODO: Setup delete button
+        // deleteRoomButton.setVisible(room.ownerId == appComponent.signalService.currentUserId)
 
         // Set up all member views
         allMemberLabelView.setOnClickListener {

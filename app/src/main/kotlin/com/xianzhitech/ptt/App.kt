@@ -27,6 +27,7 @@ import com.xianzhitech.ptt.repo.storage.UserSQLiteStorage
 import com.xianzhitech.ptt.repo.storage.createSQLiteStorageHelper
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.UserToken
+import com.xianzhitech.ptt.service.handler.RoomStatusHandler
 import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -97,6 +98,7 @@ open class App : Application(), AppComponent {
         RoomInvitationReceiver(this, signalService, activityProvider)
         AudioHandler(this, signalService, talkEngineProvider, activityProvider)
         ServiceHandler(this, signalService)
+        RoomStatusHandler(roomRepository, signalService)
     }
 
     private class SharedPreferenceProvider(private val pref: SharedPreferences) : Preference {
