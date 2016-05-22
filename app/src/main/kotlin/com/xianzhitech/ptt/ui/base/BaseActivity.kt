@@ -15,8 +15,10 @@ import com.xianzhitech.ptt.ext.findFragment
 import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.media.MediaButtonReceiver
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -68,6 +70,11 @@ abstract class BaseActivity : AppCompatActivity(),
 
     override fun onStart() {
         super.onStart()
+
+        // 时刻重新注册媒体按键事件
+        if ((application as AppComponent).signalService.currentUserId != null) {
+            MediaButtonReceiver.registerMediaButtonEvent(this)
+        }
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
     }

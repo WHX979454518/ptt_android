@@ -1,7 +1,9 @@
 package com.xianzhitech.ptt.service.impl
 
 import android.content.Context
+import android.content.Intent
 import android.os.Looper
+import android.support.v4.content.LocalBroadcastManager
 import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
@@ -28,13 +30,16 @@ import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.KnownServerException
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.UnknownServerException
 import com.xianzhitech.ptt.service.UserToken
+import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.ui.KickOutActivity
 import io.socket.client.Ack
 import io.socket.client.IO
 import io.socket.client.Manager
@@ -46,6 +51,7 @@ import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Action1
 import rx.subjects.BehaviorSubject
+import java.util.*
 
 
 class IOSignalService(endpoint : String,
@@ -176,6 +182,8 @@ class IOSignalService(endpoint : String,
             socket.on("s_logon", { onLoginSuccess(it.firstOrNull() as? JSONObject, savedUserToken?.password ?: password) })
             socket.on("s_online_member_update", { onRoomActiveInfoUpdate(it.firstOrNull() as? JSONObject) })
             socket.on("s_speaker_changed", { onSpeakerChanged(it.firstOrNull() as? JSONObject) })
+            socket.on("s_invite_to_join", { onInviteToJoin(it.firstOrNull() as? JSONObject) })
+            socket.on("s_kick_out", { onUserKickedOut() })
 
             loginState += peekLoginState().copy(status = LoginStatus.LOGIN_IN_PROGRESS, currentUserID = savedUserToken?.userId)
 
@@ -195,6 +203,28 @@ class IOSignalService(endpoint : String,
         }
     }
 
+    private fun onUserKickedOut() {
+        mainThread {
+            if (currentUserId != null) {
+                logout().subscribeSimple()
+                context.startActivity(Intent(context, KickOutActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            }
+        }
+    }
+
+    private fun onInviteToJoin(inviteObject: JSONObject?) {
+        if (inviteObject != null) {
+            val invitation = RoomInvitationObject(inviteObject)
+
+            roomRepository.saveRooms(listOf(invitation.room)).execAsync()
+                .subscribeSimple {
+                    LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(SignalService.ACTION_INVITE_TO_JOIN)
+                            .putExtra(SignalService.EXTRA_INVITE, invitation))
+                }
+        }
+    }
+
     private fun onConnectError() {
         mainThread {
             val currLoginState = peekLoginState()
@@ -211,12 +241,12 @@ class IOSignalService(endpoint : String,
                 val speakerUpdate = RoomSpeakerUpdate(data)
                 val currRoomState = peekRoomState()
                 if (currRoomState.currentRoomId == speakerUpdate.roomId) {
-                    val newStatus = if (currRoomState.speakerId != null && currRoomState.speakerId != speakerUpdate.speakerId &&
-                            currRoomState.status == RoomStatus.REQUESTING_MIC) {
+                    val newStatus = if (speakerUpdate.speakerId == null) {
                         RoomStatus.JOINED
                     } else {
-                        currRoomState.status
+                        RoomStatus.ACTIVE
                     }
+
                     roomState += currRoomState.copy(speakerId = speakerUpdate.speakerId, status = newStatus)
                 }
             }
@@ -270,14 +300,20 @@ class IOSignalService(endpoint : String,
 
     override fun joinRoom(roomId: String): Completable {
         return Completable.fromSingle(deferFlatSingle {
-            if (peekRoomState().currentRoomId == roomId) {
+            val currRoomState = peekRoomState()
+            if (currRoomState.currentRoomId == roomId) {
                 return@deferFlatSingle Single.just(Unit)
             }
 
-            roomState += peekRoomState().copy(
+            if (currRoomState.currentRoomId != null) {
+                leaveRoom().subscribeSimple()
+            }
+
+            roomState += currRoomState.copy(
                     status = RoomStatus.JOINING,
                     currentRoomId = roomId,
                     speakerId = null,
+                    voiceServer = emptyMap(),
                     onlineMemberIds = emptySet())
 
             socket.sendEvent<JSONObject>("c_join_room", roomId)
@@ -368,13 +404,19 @@ class IOSignalService(endpoint : String,
     }
 
     override fun releaseMic(): Completable {
-        return deferComplete {
+        return deferFlatComplete {
             val currRoomState = peekRoomState()
             val currLoginState = peekLoginState()
 
             if (currRoomState.speakerId == null || currRoomState.speakerId == currLoginState.currentUserID) {
                 roomState += currRoomState.copy(status = RoomStatus.JOINED, speakerId = null)
+
+                if (currRoomState.speakerId == currLoginState.currentUserID) {
+                    return@deferFlatComplete socket.sendEventIgnoringResult("c_release_mic", currRoomState.currentRoomId)
+                }
             }
+
+            Completable.complete()
         }
     }
 
@@ -400,9 +442,6 @@ class IOSignalService(endpoint : String,
         return Completable.fromSingle(deferFlatSingle {
             socket.sendEvent<JSONObject>("c_add_room_members", roomId, userIds.toJSONArray())
                     .map { roomRepository.saveRooms(listOf(RoomObject(it))).exec() }
-                    .doOnUnsubscribe {
-                        logd("Unsubscribe!")
-                    }
         })
     }
 
@@ -428,6 +467,7 @@ class IOSignalService(endpoint : String,
                         if (newLoginState.currentUserID == newLoginState.currentUserID) {
                             savedUserToken = ExplicitUserToken(currLoginState.currentUserID, newPassword)
                         }
+
                     }
         }
     }
@@ -588,6 +628,14 @@ private open class RoomSpeakerUpdate(protected val obj : JSONObject) {
 private class RoomActiveInfoUpdate(obj : JSONObject) : RoomSpeakerUpdate(obj) {
     val onlineMemberIds : Iterable<String>
         get() = obj.optJSONArray("onlineMemberIds")?.toStringIterable() ?: emptyList()
+}
+
+private class RoomInvitationObject(private @Transient val obj : JSONObject) : RoomInvitation {
+    @Transient val room : Room = RoomObject(obj.getJSONObject("room"))
+
+    override val roomId: String = room.id
+    override val inviterId: String = obj.getString("inviterId")
+    override val inviteTime: Date = Date()
 }
 
 private class GroupObject(private val obj : JSONObject) : Group {

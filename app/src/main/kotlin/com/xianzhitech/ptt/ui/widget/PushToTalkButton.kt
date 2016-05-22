@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.Build
+import android.os.Vibrator
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.ImageButton
@@ -16,8 +17,10 @@ import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toColorValue
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.service.roomStatus
 import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 
 /**
 
@@ -31,6 +34,8 @@ class PushToTalkButton : ImageButton {
     private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var roomStatus : RoomStatus = RoomStatus.IDLE
     private val requestFocusRunnable = Runnable { signalService.requestMic().subscribeSimple() }
+    private var vibrator: Vibrator? = null
+    private var isPressingDown = false
 
     constructor(context: Context) : super(context) {
         init(context)
@@ -50,10 +55,19 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun init(context: Context) {
+        vibrator = (context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let {
+            if (it.hasVibrator()) {
+                it
+            } else {
+                null
+            }
+        }
+
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
         if (isInEditMode.not()) {
             signalService = (context.applicationContext as AppComponent).signalService
+
         }
         applyRoomStatus()
     }
@@ -62,6 +76,17 @@ class PushToTalkButton : ImageButton {
         super.onAttachedToWindow()
 
         if (isInEditMode.not()) {
+            subscription = CompositeSubscription().apply {
+                if (vibrator != null) {
+                    this.add(signalService.roomState.distinctUntilChanged { it.status }
+                            .observeOnMainThread()
+                            .subscribeSimple {
+                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.currentUserId) {
+                                    vibrator!!.vibrate(120)
+                                }
+                            })
+                }
+            }
             subscription = signalService.roomStatus
                     .observeOnMainThread()
                     .subscribeSimple {
@@ -104,15 +129,19 @@ class PushToTalkButton : ImageButton {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> if (isEnabled) {
-                postDelayed(requestFocusRunnable, 100)
-                return true
-            } else return false
+            MotionEvent.ACTION_DOWN -> {
+                if (isEnabled) {
+                    isPressingDown = true
+                    postDelayed(requestFocusRunnable, 100)
+                    return true
+                } else return false
+            }
 
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
                 removeCallbacks(requestFocusRunnable)
                 signalService.releaseMic().subscribeSimple()
+                isPressingDown = false
             }
         }
 

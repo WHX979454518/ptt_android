@@ -8,11 +8,11 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
-import com.xianzhitech.ptt.bluetooth.AudioHandler
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
+import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
@@ -95,7 +95,7 @@ open class App : Application(), AppComponent {
 
         RoomAutoQuitHandler(this)
         RoomInvitationReceiver(this, signalService, activityProvider)
-        AudioHandler(this, signalService, activityProvider)
+        AudioHandler(this, signalService, talkEngineProvider, activityProvider)
         ServiceHandler(this, signalService)
     }
 

@@ -100,12 +100,15 @@ class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
         override fun onError(e: Throwable) {
             globalHandleError(e, appContext)
 
-            val activity = (appContext as AppComponent).activityProvider.currentStartedActivity
+            val appComponent = appContext as AppComponent
+            val activity = appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {
                 activity.finish()
             } else {
                 appContext.startActivity(Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
             }
+
+            appComponent.signalService.leaveRoom().subscribeSimple()
         }
 
         override fun onCompleted() {

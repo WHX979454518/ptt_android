@@ -82,7 +82,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".bluetooth.AudioHandler$RemoteControlClientReceiver">
+        <receiver android:name=".media.MediaButtonReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
