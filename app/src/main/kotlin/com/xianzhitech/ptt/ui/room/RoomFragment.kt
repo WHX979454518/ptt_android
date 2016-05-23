@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.room
 
 import android.app.ProgressDialog
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -11,7 +12,9 @@ import android.view.ViewGroup
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.repo.RoomRepository
@@ -46,15 +49,18 @@ class RoomFragment : BaseFragment()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-
         inflater.inflate(R.menu.room, menu)
+        val menuItem = menu.findItem(R.id.room_details)
+        menuItem.icon = context.getTintedDrawable(R.drawable.ic_people_filled, Color.WHITE)
+        super.onCreateOptionsMenu(menu, inflater)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.room_exit) {
-            (context.applicationContext as AppComponent).signalService.leaveRoom().subscribeSimple()
-            activity?.finish()
+        if (item.itemId == R.id.room_details) {
+            val roomId = (context.applicationContext as AppComponent).signalService.peekRoomState().currentRoomId
+            if (roomId != null) {
+                activity.startActivityWithAnimation(RoomDetailsActivity.build(context, roomId))
+            }
             return true
         }
         return super.onOptionsItemSelected(item)

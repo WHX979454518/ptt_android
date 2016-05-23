@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
@@ -42,6 +43,7 @@ class MainActivity : BaseToolbarActivity(),
         val EXTRA_KICKED_OUT = "extra_kicked_out"
         private const val TAG_UPDATE_DIALOG = "tag_update_dialog"
         private const val TAG_PERMISSION_DIALOG = "tag_permission"
+        private const val TAG_LOGIN_IN_PROGRESS = "tag_logging_in"
 
         const val REQUEST_CODE_CREATE_ROOM = 2
     }
@@ -225,7 +227,21 @@ class MainActivity : BaseToolbarActivity(),
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).signalService.loginState.distinctUntilChanged { it.currentUserID }
+        val signalService = (application as AppComponent).signalService
+
+        signalService.loginState.distinctUntilChanged { it.status }
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                    if (it.status == LoginStatus.LOGIN_IN_PROGRESS && it.currentUserID == null) {
+                        showProgressDialog(R.string.please_wait, R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
+                    }
+                    else {
+                        (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()
+                    }
+                }
+
+        signalService.loginState.distinctUntilChanged { it.currentUserID }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {

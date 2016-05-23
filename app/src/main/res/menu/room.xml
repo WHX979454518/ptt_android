@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item android:id="@+id/room_exit"
-          android:title="@string/exit_room"
-          app:showAsAction="always|withText" />
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools">
+    <item android:id="@+id/room_details"
+          tools:icon="@drawable/ic_people_filled"
+          android:title="@string/room_info"
+          app:showAsAction="always" />
 </menu>
