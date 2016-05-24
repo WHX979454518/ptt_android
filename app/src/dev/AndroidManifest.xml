@@ -4,6 +4,20 @@
 
     <application
             tools:replace="android:name"
-            android:name="com.xianzhitech.ptt.DevApp"/>
+            android:name="com.xianzhitech.ptt.DevApp">
+
+        <activity
+            android:name="com.xianzhitech.ptt.ui.ServerInitActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:label="初始化信号服务器"
+            android:theme="@style/AppTheme.NoActionBar">
+
+            <intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+    </application>
 
 </manifest>
