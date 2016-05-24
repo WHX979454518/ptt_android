@@ -55,11 +55,13 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun init(context: Context) {
-        vibrator = (context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let {
-            if (it.hasVibrator()) {
-                it
-            } else {
-                null
+        if (isInEditMode.not()) {
+            vibrator = (context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).let {
+                if (it.hasVibrator()) {
+                    it
+                } else {
+                    null
+                }
             }
         }
 

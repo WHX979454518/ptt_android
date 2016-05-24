@@ -149,13 +149,13 @@ class RoomRepository(private val context: Context,
     }
 
     fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String?> = emptyArray(),
-                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = " 等") : QueryResult<RoomName> {
+                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = " 等") : QueryResult<RoomName?> {
         if (roomId == null) {
             return fixedResult(RoomName.EMPTY)
         }
 
         return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
-            val room = roomStorage.getRooms(listOf(roomId)).first()
+            val room = roomStorage.getRooms(listOf(roomId)).firstOrNull() ?: return@RepoQueryResult null
 
             // 有预定房间名称, 直接返回
             if (room.name.isNullOrEmpty().not()) {

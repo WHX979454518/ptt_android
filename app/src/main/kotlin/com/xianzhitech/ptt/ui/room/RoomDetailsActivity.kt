@@ -72,7 +72,7 @@ class RoomDetailsActivity : BaseToolbarActivity() {
                 appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalService.peekLoginState().currentUserID)).observe(),
                 appComponent.roomRepository.getRoomMembers(roomId, maxMemberCount = Int.MAX_VALUE).observe(),
                 { room, name, members ->
-                    RoomData(room, name, members)
+                    RoomData(room, name!!, members)
                 }
         )
                 .observeOnMainThread()

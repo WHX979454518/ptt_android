@@ -65,3 +65,6 @@ val SignalService.loginStatus : Observable<LoginStatus>
 
 val SignalService.currentUserId : String?
     get() = peekLoginState().currentUserID
+
+val SignalService.currentRoomId : String?
+    get() = peekRoomState().currentRoomId

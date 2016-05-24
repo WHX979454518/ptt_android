@@ -184,7 +184,7 @@ class AudioHandler(private val appContext: Context,
         signalService.loginStatus
                 .map { it != LoginStatus.IDLE }
                 .distinctUntilChanged()
-                .flatMap { loggedIn ->
+                .switchMap { loggedIn ->
                     if (loggedIn) {
                         queryBluetoothDevice(bluetoothAdapter)
                     }
@@ -260,7 +260,7 @@ class AudioHandler(private val appContext: Context,
      */
     private fun queryBluetoothDevice(btAdapter : BluetoothAdapter) : Observable<Collection<BluetoothDevice>> {
         return getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.HEADSET)
-                .flatMap { allConnectedDevices ->
+                .switchMap { allConnectedDevices ->
                     appContext.receiveBroadcasts(false, BluetoothDevice.ACTION_ACL_CONNECTED)
                             .map {
                                 val connectedDevice = it.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)

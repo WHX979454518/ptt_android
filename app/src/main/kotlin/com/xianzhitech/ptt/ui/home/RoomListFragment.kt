@@ -162,26 +162,26 @@ class RoomListFragment : BaseFragment() {
             val appComponent = itemView.context.applicationContext as AppComponent
             this.subscription = appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe()
                     .combineWith(appComponent.userRepository.getUser(room.lastSpeakMemberId).observe())
-                    .flatMap { result ->
+                    .switchMap { result ->
                         (Observable.interval(0, 1, TimeUnit.MINUTES, AndroidSchedulers.mainThread()) as Observable<*>)
                                 .mergeWith(appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomId } as Observable<out Nothing>)
                                 .map { result }
                     }
                     .observeOnMainThread()
                     .subscribeSimple {
-                        val (roomName : RoomName, lastActiveUser : User?) = it
+                        val (roomName : RoomName?, lastActiveUser : User?) = it
                         val lastActiveTime = room.lastSpeakTime
                         val currentRoomId = appComponent.signalService.peekRoomState().currentRoomId
                         if (currentRoomId == room.id) {
                             val postfix = R.string.in_room_postfix.toFormattedString(itemView.context)
-                            val fullRoomName = roomName.name + postfix
+                            val fullRoomName = roomName?.name + postfix
                             primaryView.text = SpannableStringBuilder(fullRoomName).apply {
                                 setSpan(ForegroundColorSpan(itemView.context.getColorCompat(R.color.red)),
                                         0, fullRoomName.length, SpannableStringBuilder.SPAN_INCLUSIVE_EXCLUSIVE)
                             }
 
                         } else {
-                            primaryView.text = roomName.name
+                            primaryView.text = roomName?.name
                         }
 
                         secondaryView.setVisible(lastActiveUser != null && lastActiveTime != null)

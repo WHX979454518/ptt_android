@@ -72,7 +72,7 @@ class LoginFragment : BaseFragment()
 
                         val signalService = (context.applicationContext as AppComponent).signalService
                         context.ensureConnectivity()
-                                .flatMap { signalService.login(nameEditText.getString(), passwordEditText.getString()).toSingleDefault(Unit).toObservable() }
+                                .switchMap { signalService.login(nameEditText.getString(), passwordEditText.getString()).toSingleDefault(Unit).toObservable() }
                                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                                 .observeOnMainThread()
                                 .compose(bindToLifecycle())

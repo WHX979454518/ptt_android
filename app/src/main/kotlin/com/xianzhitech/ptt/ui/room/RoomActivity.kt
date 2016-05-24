@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
@@ -10,10 +11,11 @@ import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import rx.Completable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -24,7 +26,10 @@ import java.util.concurrent.TimeUnit
 
  * Created by fanchao on 11/12/15.
  */
-class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
+class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
+
+    private lateinit var signalService: SignalService
+    private lateinit var titleView : TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,10 +80,10 @@ class RoomActivity : BaseToolbarActivity(), RoomFragment.Callbacks {
         (application as AppComponent).signalService
                 .roomStatus
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
+                .bindToLifecycle()
                 .subscribeSimple {
                     if (it == RoomStatus.JOINING) {
-                        showProgressDialog(R.string.please_wait, R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
+                        showProgressDialog(R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
                     } else {
                         hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
                     }

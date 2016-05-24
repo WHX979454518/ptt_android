@@ -234,7 +234,7 @@ class MainActivity : BaseToolbarActivity(),
                 .compose(bindToLifecycle())
                 .subscribeSimple {
                     if (it.status == LoginStatus.LOGIN_IN_PROGRESS && it.currentUserID == null) {
-                        showProgressDialog(R.string.please_wait, R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
+                        showProgressDialog(R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
                     }
                     else {
                         (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()

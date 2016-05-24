@@ -132,7 +132,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                 signalService.loginStatus,
                 signalService.roomStatus,
                 signalService.roomState.distinctUntilChanged { it.currentRoomId }
-                        .flatMap {
+                        .switchMap {
                             roomRepository.getRoom(it.currentRoomId).observe()
                                     .combineWith(roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID!!)).observe())
                         },

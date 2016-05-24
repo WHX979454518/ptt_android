@@ -140,7 +140,7 @@ abstract class BaseActivity : AppCompatActivity(),
         val component = application as AppComponent
         val signalService = component.signalService
 
-        showProgressDialog(R.string.please_wait, R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
+        showProgressDialog(R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
 
         signalService.createRoom(createRoomRequest)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
@@ -148,9 +148,8 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribe(CreateRoomSubscriber(applicationContext))
     }
 
-    protected fun showProgressDialog(title : Int, message : Int, tag : String) {
+    protected fun showProgressDialog(message : Int, tag : String) {
         supportFragmentManager.findFragment<DialogFragment>(tag) ?: ProgressDialogFragment.Builder().apply {
-            this.title = title.toFormattedString(this@BaseActivity)
             this.message = message.toFormattedString(this@BaseActivity)
             showImmediately(supportFragmentManager, tag)
         }

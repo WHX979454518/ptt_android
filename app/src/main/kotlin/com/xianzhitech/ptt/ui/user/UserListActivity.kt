@@ -79,7 +79,7 @@ class UserListActivity : BaseToolbarActivity() {
 
         intent.getParcelableExtra<UserProvider>(EXTRA_USER_PROVIDER).getUsers(this)
                 .combineWith(searchView.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchView.getString()).distinctUntilChanged())
-                .flatMap {
+                .switchMap {
                     val (source, needle) = it
                     if (needle.isNullOrBlank()) {
                         // Returns the full result

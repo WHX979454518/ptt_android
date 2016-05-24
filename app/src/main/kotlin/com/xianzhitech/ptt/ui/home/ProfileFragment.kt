@@ -70,7 +70,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
 
                 appComponent.signalService.loginState
                         .filter { it.currentUserID != null }
-                        .flatMap { appComponent.userRepository.getUser(it.currentUserID!!).observe() }
+                        .switchMap { appComponent.userRepository.getUser(it.currentUserID!!).observe() }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<User?>(context) {

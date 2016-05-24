@@ -41,12 +41,12 @@ class Service : android.app.Service() {
 
         subscription = Observable.combineLatest(
                 signalService.roomState,
-                signalService.roomState.distinctUntilChanged { it.currentRoomId }.flatMap {
+                signalService.roomState.distinctUntilChanged { it.currentRoomId }.switchMap {
                     appComponent.roomRepository.getRoom(it.currentRoomId).observe()
-                        .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID)).observe())
+                            .combineWith(appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID)).observe())
                 },
                 signalService.loginState,
-                signalService.loginState.distinctUntilChanged { it.currentUserID }.flatMap { appComponent.userRepository.getUser(it.currentUserID).observe() },
+                signalService.loginState.distinctUntilChanged { it.currentUserID }.switchMap { appComponent.userRepository.getUser(it.currentUserID).observe() },
                 getConnectivity(),
                 { roomState, currRoom, loginState, currUser, connectivity -> State(roomState, currRoom.first, currRoom.second, loginState, currUser, connectivity) })
                 .debounce(500, TimeUnit.MILLISECONDS)
@@ -127,24 +127,24 @@ class Service : android.app.Service() {
     }
 
     private data class State(val roomState: RoomState,
-                              val currRoom: Room?,
-                              val currRoomName: RoomName,
-                              val loginState: LoginState,
-                              val currUser : User?,
-                              val connectivity : Boolean)
+                             val currRoom: Room?,
+                             val currRoomName: RoomName?,
+                             val loginState: LoginState,
+                             val currUser : User?,
+                             val connectivity : Boolean)
 }
 
 class ServiceHandler(private val appContext: Context,
                      private val signalService: SignalService) {
     init {
         signalService.loginStatus
-            .subscribeSimple {
-                if (it != LoginStatus.IDLE) {
-                    appContext.startService(Intent(appContext, Service::class.java))
+                .subscribeSimple {
+                    if (it != LoginStatus.IDLE) {
+                        appContext.startService(Intent(appContext, Service::class.java))
+                    }
+                    else {
+                        appContext.stopService(Intent(appContext, Service::class.java))
+                    }
                 }
-                else {
-                    appContext.stopService(Intent(appContext, Service::class.java))
-                }
-            }
     }
 }
