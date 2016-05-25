@@ -15,12 +15,14 @@ class ProgressDialogFragment : AppCompatDialogFragment() {
         return ProgressDialog(context, theme).apply {
             setTitle(builder.title)
             setMessage(builder.message)
+            setCancelable(builder.cancelable)
         }
     }
 
     class Builder : Serializable {
         var title : String? = null
         var message : String? = null
+        var cancelable: Boolean = false
 
         fun showImmediately(fragmentManager: FragmentManager, tag: String) : ProgressDialogFragment {
             return ProgressDialogFragment().apply {

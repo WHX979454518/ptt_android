@@ -57,6 +57,12 @@ class UserRepository(private val context: Context,
             }
         })
     }
+
+    fun clear() : UpdateResult {
+        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+            userStorage.clear()
+        })
+    }
 }
 
 class GroupRepository(private val context: Context,
@@ -71,6 +77,12 @@ class GroupRepository(private val context: Context,
     fun saveGroups(groups: Iterable<Group>) : UpdateResult {
         return RepoUpdateResult(context, arrayOf(GROUP_URI), {
             groupStorage.saveGroups(groups)
+        })
+    }
+
+    fun clear() : UpdateResult {
+        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+            groupStorage.clear()
         })
     }
 }
@@ -206,9 +218,9 @@ class RoomRepository(private val context: Context,
         })
     }
 
-    fun clearRooms() : UpdateResult {
+    fun clear() : UpdateResult {
         return RepoUpdateResult(context, arrayOf(ROOM_URI), {
-            roomStorage.clearRooms()
+            roomStorage.clear()
         })
     }
 }
@@ -231,6 +243,12 @@ class ContactRepository(private val context: Context,
     fun getAllContactUsers() : QueryResult<List<User>> {
         return RepoQueryResult(context, arrayOf(USER_URI), {
             contactStorage.getAllContactUsers()
+        })
+    }
+
+    fun clear() : UpdateResult {
+        return RepoUpdateResult(context, arrayOf(USER_URI, GROUP_URI), {
+            contactStorage.clear()
         })
     }
 }

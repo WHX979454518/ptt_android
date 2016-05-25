@@ -31,6 +31,12 @@ class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStora
             }
         }
     }
+
+    override fun clear() {
+        return executeInTransaction {
+            db.delete(Users.TABLE_NAME, "1", arrayOf())
+        }
+    }
 }
 
 class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupStorage {
@@ -44,6 +50,12 @@ class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupSto
             groups.forEach {
                 db.insertWithOnConflict(Groups.TABLE_NAME, null, it.toContentValues(contentValues), SQLiteDatabase.CONFLICT_REPLACE)
             }
+        }
+    }
+
+    override fun clear() {
+        return executeInTransaction {
+            db.delete(Groups.TABLE_NAME, "1", arrayOf())
         }
     }
 }
@@ -87,7 +99,7 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         }
     }
 
-    override fun clearRooms()  {
+    override fun clear()  {
         return executeInTransaction {
             db.delete(Rooms.TABLE_NAME, "1", arrayOf())
         }
@@ -173,6 +185,12 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
                 contentValues.put(Contacts.GROUP_ID, it.id)
                 localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
             }
+        }
+    }
+
+    override fun clear() {
+        return executeInTransaction {
+            db.delete(Contacts.TABLE_NAME, "1", arrayOf())
         }
     }
 }
@@ -276,7 +294,7 @@ private data class GroupModel(override val id: String,
                               override val name: String,
                               override val description: String?,
                               override val avatar: String?,
-                              override val memberIds: Iterable<String>) : Group
+                              override val memberIds: Collection<String>) : Group
 
 private fun Group.toContentValues(contentValues: ContentValues = ContentValues(5)) : ContentValues {
     contentValues.put(Groups.ID, id)
@@ -318,8 +336,8 @@ private data class RoomModelImpl(override val id: String,
                                  override val lastSpeakMemberId: String?,
                                  override val lastSpeakTime: Date?,
                                  override val lastActiveTime: Date,
-                                 override val extraMemberIds: Iterable<String>,
-                                 override val associatedGroupIds: Iterable<String>) : RoomModel
+                                 override val extraMemberIds: Collection<String>,
+                                 override val associatedGroupIds: Collection<String>) : RoomModel
 
 private fun Room.toContentValues(contentValues: ContentValues = ContentValues(6)) : ContentValues {
     contentValues.put(Rooms.ID, id)

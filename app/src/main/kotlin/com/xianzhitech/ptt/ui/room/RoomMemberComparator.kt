@@ -5,7 +5,7 @@ import com.xianzhitech.ptt.model.User
 import java.text.Collator
 import java.util.*
 
-class RoomMemberComparator(private val room : Room,
+class RoomMemberComparator(private val room : Room?,
                            private val collator : Collator = Collator.getInstance(Locale.CHINESE)) : Comparator<User> {
 
     override fun compare(lhs: User, rhs: User): Int {
@@ -14,11 +14,12 @@ class RoomMemberComparator(private val room : Room,
         }
 
         // 房主在前
-        if (lhs.id == room.ownerId) {
-            return -1
-        }
-        else if (lhs.id == room.ownerId) {
-            return 1
+        if (room != null) {
+            if (lhs.id == room.ownerId) {
+                return -1
+            } else if (lhs.id == room.ownerId) {
+                return 1
+            }
         }
 
         // 等级高的在前

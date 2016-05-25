@@ -14,6 +14,7 @@ import java.util.*
 interface UserStorage {
     fun getUsers(ids: Iterable<String>, out: MutableList<User> = arrayListOf()): List<User>
     fun saveUsers(users: Iterable<User>)
+    fun clear()
 }
 
 /**
@@ -22,6 +23,7 @@ interface UserStorage {
 interface GroupStorage {
     fun getGroups(groupIds: Iterable<String>, out: MutableList<Group> = arrayListOf()): List<Group>
     fun saveGroups(groups: Iterable<Group>)
+    fun clear()
 }
 
 /**
@@ -33,7 +35,7 @@ interface RoomStorage {
     fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String)
     fun updateLastActiveTime(roomId: String, time: Date)
     fun saveRooms(rooms: Iterable<Room>)
-    fun clearRooms()
+    fun clear()
 }
 
 /**
@@ -43,4 +45,5 @@ interface ContactStorage {
     fun getContactItems(): List<Model>
     fun getAllContactUsers() : List<User>
     fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>)
+    fun clear()
 }

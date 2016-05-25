@@ -46,7 +46,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:tint="@color/red"
-        android:background="?attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_power_settings_new_white_24px"
         android:padding="@dimen/unit_two"/>
 
@@ -69,11 +69,12 @@
         android:id="@+id/room_title"
         android:layout_alignBottom="@+id/room_info"
         android:layout_toRightOf="@+id/room_leave"
-        android:layout_marginRight="@dimen/unit_one"
-        android:layout_marginLeft="@dimen/unit_one"
-        android:drawableRight="@drawable/ic_expand_more_24dp"
-        android:drawableTint="@android:color/white"
+        android:paddingRight="@dimen/unit_one"
+        android:paddingLeft="@dimen/unit_one"
+        tools:drawableRight="@drawable/ic_expand_more_24dp"
+        tools:drawableTint="@android:color/white"
         tools:text="商务部事宜非常非常非常长的名字(12/24)"
+        android:background="?attr/selectableItemBackground"
         android:singleLine="true"
         android:ellipsize="middle"
         android:layout_alignParentTop="true"
@@ -87,15 +88,16 @@
         android:layout_marginTop="@dimen/unit_two"
         android:background="@color/dark_grey"
         android:padding="@dimen/unit_one"
-        android:id="@+id/relativeLayout"
+        android:id="@+id/room_speakerView"
         android:layout_below="@+id/room_title"
-        android:layout_centerHorizontal="true">
+        android:layout_centerHorizontal="true"
+        android:visibility="gone">
 
         <ImageView
             android:layout_width="45dp"
             android:layout_height="45dp"
             tools:src="@color/blue"
-            android:id="@+id/user_avatar"/>
+            android:id="@+id/room_speakerAvatar"/>
 
         <TextView
             android:layout_width="90dp"
@@ -103,9 +105,9 @@
             android:layout_marginLeft="@dimen/unit_one"
             android:singleLine="true"
             android:ellipsize="end"
-            android:layout_toRightOf="@+id/user_avatar"
+            android:layout_toRightOf="@+id/room_speakerAvatar"
             tools:text="长长长长长的用户名"
-            android:id="@+id/user_name" />
+            android:id="@+id/room_speakerName" />
 
     </RelativeLayout>
 

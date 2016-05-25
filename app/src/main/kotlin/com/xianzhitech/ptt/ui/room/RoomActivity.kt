@@ -66,10 +66,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
         super.onBackPressed()
     }
 
-    override fun onRoomLoaded(name: CharSequence) {
-        this.title = name
-    }
-
     override fun onRoomQuited() {
         finish()
     }
