@@ -28,7 +28,6 @@ data class CreateUserRequest(val name: String,
                              val privileges: UserPrivileges)
 
 data class CreateGroupRequest(val name: String,
-                              val idNumber: String,
                               val description: String,
                               val members : List<String>)
 

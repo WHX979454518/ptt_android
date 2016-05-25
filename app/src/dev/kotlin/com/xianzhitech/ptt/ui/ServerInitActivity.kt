@@ -27,6 +27,7 @@ import rx.Observable
 import rx.schedulers.Schedulers
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+import java.util.concurrent.Executors
 
 
 class ServerInitActivity : BaseToolbarActivity() {
@@ -89,15 +90,41 @@ class ServerInitActivity : BaseToolbarActivity() {
                 val users = resources.getStringArray(R.array.user_names)
                 subscriber += "Creating ${users.size} users..."
 
-                val createdUserNumbers = arrayListOf<String>()
+                val createdUserNumbers = arrayListOf<String?>()
+                val tasks = arrayListOf<Observable<String>>()
+                val scheduler = Schedulers.from(Executors.newFixedThreadPool(10))
 
                 users.forEachIndexed { i, s ->
-                    val userNumber = service.createUserNumber().execute().body().number
-                    createdUserNumbers.add(userNumber)
-                    service.createUser(CreateUserRequest(s, userNumber, (13000000000L + i).toString(), "000000", UserPrivileges((1 + 6 * Math.random()).toInt()))).execute()
+                    tasks.add(Observable.fromCallable {
+                        val userNumber = service.createUserNumber().execute().body().number
+                        service.createUser(CreateUserRequest(s, userNumber, (13000000000L + i).toString(), "000000", UserPrivileges((1 + 6 * Math.random()).toInt()))).execute()
+                        userNumber
+                    }.subscribeOn(scheduler).onErrorReturn { null })
+                }
+
+                var lastProgress = 0
+                Observable.merge(tasks).toBlocking().forEach {
+                    val progress = createdUserNumbers.size * 100 / tasks.size
+                    if (progress - lastProgress >= 10 || progress == 100) {
+                        subscriber += "$progress%% completed creating users..."
+                        lastProgress = progress
+                    }
+                    createdUserNumbers.add(it)
                 }
 
                 subscriber += "Created ${users.size} users"
+
+                val categories = arrayOf(10, 20, 30, 50, 100, 200, 300)
+
+                createdUserNumbers.removeAll { it == null }
+                createdUserNumbers.sortBy { it!!.toInt() }
+
+                categories.forEach { category ->
+                    val createSize = Math.min(createdUserNumbers.size, category)
+                    val groupRequest = CreateGroupRequest("${createSize}人组", "这是一个${createSize}人组", createdUserNumbers.subList(0, createSize) as List<String>)
+                    service.createGroup(groupRequest).execute()
+                    subscriber.onNext("Created group ${groupRequest.name}")
+                }
 
             } catch(e: Exception) {
                 subscriber.onError(e)
