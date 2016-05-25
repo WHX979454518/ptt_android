@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.service
 
 import okhttp3.Response
+import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -35,25 +36,25 @@ data class EnterpriseNumberResponse(val number : String)
 data class UserNumberResponse(val number: String)
 data class GroupNumberResponse(val groupId: String)
 
-interface MatainService {
+interface MaintainService {
     @GET("/api/init")
-    fun init() : Response
+    fun init() : Call<Void>
 
     @POST("/admin/login")
-    fun login(@Body request : LoginRequest) : Response
+    fun login(@Body request : LoginRequest) : Call<Void>
 
     @GET("/api/enterprise/number")
-    fun createEnterpriseNumber() : EnterpriseNumberResponse
+    fun createEnterpriseNumber() : Call<EnterpriseNumberResponse>
 
     @POST("/api/enterprise")
-    fun createEnterprise(@Body request: EnterpriseCreateRequest) : Response
+    fun createEnterprise(@Body request: EnterpriseCreateRequest) : Call<Void>
 
     @GET("/api/contact/usernumber")
-    fun createUserNumber() : UserNumberResponse
+    fun createUserNumber() : Call<UserNumberResponse>
 
     @POST("/api/contact/user")
-    fun createUser(@Body request: CreateUserRequest) : Response
+    fun createUser(@Body request: CreateUserRequest) : Call<Void>
 
     @POST("/api/contact/group")
-    fun createGroup(@Body request: CreateGroupRequest) : GroupNumberResponse
+    fun createGroup(@Body request: CreateGroupRequest) : Call<GroupNumberResponse>
 }
