@@ -10,11 +10,7 @@ import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.dismissImmediately
-import com.xianzhitech.ptt.ext.findFragment
-import com.xianzhitech.ptt.ext.globalHandleError
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.media.MediaButtonReceiver
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.CreateRoomRequest
@@ -131,6 +127,7 @@ abstract class BaseActivity : AppCompatActivity(),
         // Base 类不知道具体怎么加入房间, 打开RoomActivity来加入房间
         startActivityWithAnimation(
                 Intent(this, RoomActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true),
                 R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)

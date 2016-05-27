@@ -116,7 +116,7 @@ class RoomRepository(private val context: Context,
 
     fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray()) : QueryResult<List<User>> {
         if (roomId == null) {
-            return nullResult()
+            return fixedResult(emptyList())
         }
 
         return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {

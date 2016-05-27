@@ -2,35 +2,23 @@ package com.xianzhitech.ptt.ui.user
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Looper
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Checkable
 import android.widget.CheckedTextView
 import android.widget.EditText
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.fromTextChanged
-import com.xianzhitech.ptt.ext.getString
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.toObservable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import rx.Observable
 import rx.schedulers.Schedulers
-import java.text.Collator
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 class UserListActivity : BaseToolbarActivity() {
@@ -38,13 +26,13 @@ class UserListActivity : BaseToolbarActivity() {
     private lateinit var userListView : RecyclerView
     private lateinit var progressView : View
 
-    private val adapter = Adapter()
     private val preselectedUserIds : Set<String> by lazy {
         hashSetOf(*intent.getStringArrayExtra(EXTRA_PRESELECTED_USER_IDS))
     }
     private val selectedUserIds = hashSetOf<String>()
     private val isSelectable : Boolean
         get() = intent.getBooleanExtra(EXTRA_SELECTABLE, false)
+    private val adapter = Adapter()
 
     private val isPreselectedUnselectable : Boolean
         get() = intent.getBooleanExtra(EXTRA_PRESELECTED_UNSELECTABLE, false)
@@ -52,7 +40,7 @@ class UserListActivity : BaseToolbarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_user_selection)
+        setContentView(R.layout.activity_user_list)
 
         searchView = findView(R.id.userSelection_search)
         userListView = findView(R.id.userSelection_list)
@@ -60,10 +48,6 @@ class UserListActivity : BaseToolbarActivity() {
 
         userListView.layoutManager = LinearLayoutManager(this)
         userListView.adapter = adapter
-
-        if (isSelectable) {
-            selectedUserIds.addAll(preselectedUserIds)
-        }
 
         title = intent.getCharSequenceExtra(EXTRA_TITLE)
 
@@ -98,7 +82,7 @@ class UserListActivity : BaseToolbarActivity() {
                 .compose(bindToLifecycle())
                 .subscribe(object : GlobalSubscriber<List<User>>(this) {
                     override fun onNext(t: List<User>) {
-                        adapter.addUsers(t)
+                        adapter.setUsers(t)
                         progressView.setVisible(false)
                     }
                 })
@@ -115,6 +99,7 @@ class UserListActivity : BaseToolbarActivity() {
         if (isSelectable) {
             val doneItem = menu.findItem(R.id.userSelectionMenu_done)
             doneItem.isVisible = selectedUserIds.isNotEmpty()
+            doneItem.title = R.string.finish_with_number.toFormattedString(this, selectedUserIds.size)
         }
         return super.onPrepareOptionsMenu(menu)
     }
@@ -133,82 +118,36 @@ class UserListActivity : BaseToolbarActivity() {
         }
     }
 
-    private class UserComparator : Comparator<User> {
-        private val collator = Collator.getInstance(Locale.CHINESE)
-
-        override fun compare(lhs: User, rhs: User): Int {
-            if (lhs.id == rhs.id) {
-                return 0
-            }
-
-            return collator.compare(lhs.name, rhs.name)
-        }
-    }
-
-    private inner class Adapter : RecyclerView.Adapter<UserItemHolder>() {
-        private val userList = arrayListOf<User>()
-        private val userComparator = UserComparator()
-
-        fun addUsers(newUsers : Collection<User>) {
-            var changed : Boolean = false
-            newUsers.forEach { u ->
-                if (userList.binarySearch(u, userComparator) < 0) {
-                    userList.add(u)
-                    changed = true
-                }
-            }
-
-            if (changed) {
-                newUsers.sortedWith(userComparator)
-                notifyDataSetChanged()
-            }
-        }
-
+    private inner class Adapter : UserListAdapter(R.layout.view_user_list_item) {
         override fun onBindViewHolder(holder: UserItemHolder, position: Int) {
-            val user = userList[position]
-            holder.setUser(user)
-            if (holder.nameView is Checkable && isSelectable) {
-                holder.nameView.isChecked = selectedUserIds.contains(user.id)
-                holder.itemView.isEnabled = preselectedUserIds.contains(user.id).not() || isPreselectedUnselectable
+            super.onBindViewHolder(holder, position)
+            if (isSelectable && holder.nameView is Checkable) {
+                val userId = getUser(position).id
+                val isPreselected = preselectedUserIds.contains(userId)
+                holder.nameView.isChecked = selectedUserIds.contains(userId) || isPreselected
+                holder.itemView.isEnabled = isPreselected.not() || isPreselectedUnselectable
+            } else if (isSelectable.not() && holder.nameView is CheckedTextView) {
+                holder.nameView.checkMarkDrawable = null as Drawable?
             }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserItemHolder {
-            val layoutInflater = LayoutInflater.from(parent.context)
-            val holder = UserItemHolder(layoutInflater.inflate(R.layout.view_user_list_item, parent, false))
-            if (holder.nameView is Checkable && isSelectable) {
-                holder.itemView.setOnClickListener {
-                    holder.userId ?.let { userId ->
-                        holder.nameView.toggle()
-                        val success = if (holder.nameView.isChecked) {
-                            selectedUserIds.add(userId)
-                        } else {
-                            selectedUserIds.remove(userId)
-                        }
-
-                        if (success) {
-                            onSelectedUserIdUpdated()
-                        }
+        override fun onItemClicked(userItemHolder: UserItemHolder) {
+            if (isSelectable) {
+                val userId = userItemHolder.userId!!
+                if (preselectedUserIds.contains(userId).not()) {
+                    val wasChecked = selectedUserIds.contains(userId)
+                    if (wasChecked) {
+                        selectedUserIds.remove(userId)
+                    } else {
+                        selectedUserIds.add(userId)
                     }
+
+                    (userItemHolder.nameView as Checkable).isChecked = wasChecked.not()
+                    onSelectedUserIdUpdated()
                 }
+            } else {
+                super.onItemClicked(userItemHolder)
             }
-            else if (!isSelectable) {
-                if (holder.nameView is CheckedTextView) {
-                    holder.nameView.checkMarkDrawable = null
-                }
-
-                holder.itemView.setOnClickListener {
-                    if (holder.userId != null) {
-                        startActivityWithAnimation(UserDetailsActivity.build(this@UserListActivity, holder.userId!!))
-                    }
-                }
-            }
-
-            return holder
-        }
-
-        override fun getItemCount(): Int {
-            return userList.size
         }
     }
 

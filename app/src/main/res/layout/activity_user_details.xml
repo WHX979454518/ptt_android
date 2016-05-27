@@ -16,7 +16,7 @@
             android:layout_width="@dimen/profile_icon_size"
             android:layout_height="@dimen/profile_icon_size"
             tools:src="@color/blue"
-            android:id="@+id/imageView"
+            android:id="@+id/userDetails_icon"
             android:layout_margin="@dimen/unit_two"/>
 
         <TextView
@@ -26,8 +26,8 @@
             tools:text="User 1"
             android:paddingTop="@dimen/unit_half"
             android:paddingBottom="@dimen/unit_half"
-            android:layout_alignTop="@+id/imageView"
-            android:layout_toRightOf="@+id/imageView"
+            android:layout_alignTop="@+id/userDetails_icon"
+            android:layout_toRightOf="@+id/userDetails_icon"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
             style="@style/Text.Subhead"/>
@@ -58,5 +58,15 @@
             android:layout_height="wrap_content"/>
 
     </LinearLayout>
+
+
+    <Button
+        android:id="@+id/userDetails_call"
+        android:layout_marginTop="@dimen/unit_two"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:text="@string/call"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
 
 </LinearLayout>

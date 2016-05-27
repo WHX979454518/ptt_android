@@ -10,12 +10,18 @@ import java.io.Serializable
 
 class ProgressDialogFragment : AppCompatDialogFragment() {
 
+    val builder : Builder by lazy { arguments.getSerializable(ARG_BUILDER) as Builder }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        isCancelable = builder.cancelable
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val builder = arguments.getSerializable(ARG_BUILDER) as Builder
         return ProgressDialog(context, theme).apply {
             setTitle(builder.title)
             setMessage(builder.message)
-            setCancelable(builder.cancelable)
         }
     }
 

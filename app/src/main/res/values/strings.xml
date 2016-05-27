@@ -50,6 +50,7 @@
     <string name="error_password_not_long_enough">密码位数太低</string>
     <string name="error_no_record_permission">录音权限被拒绝，对讲将无法工作, 请同意此权限</string>
     <string name="error_no_phone_permission">控制电话权限被拒绝，对讲将无法正常工作，请同意此权限</string>
+    <string name="error_getting_user_info">获取该用户信息失败</string>
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
     <string name="error_no_such_room">没有该房间</string>
@@ -143,6 +144,7 @@
     <string name="user_info">用户信息</string>
     <string name="enterprise">公司</string>
     <string name="view_all">查看所有成员</string>
+    <string name="call">呼叫</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>

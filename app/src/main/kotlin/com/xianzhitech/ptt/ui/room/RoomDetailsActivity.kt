@@ -3,11 +3,13 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import com.wefika.flowlayout.FlowLayout
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
@@ -17,17 +19,15 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import com.xianzhitech.ptt.ui.user.ContactUserProvider
-import com.xianzhitech.ptt.ui.user.UserItemHolder
-import com.xianzhitech.ptt.ui.user.UserListActivity
+import com.xianzhitech.ptt.ui.user.*
 import rx.Completable
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
-class RoomDetailsActivity : BaseToolbarActivity() {
-    private lateinit var memberView : FlowLayout
+class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
+    private lateinit var memberView : RecyclerView
     private lateinit var allMemberLabelView : TextView
     private lateinit var roomNameView : TextView
     private lateinit var deleteRoomButton : View
@@ -36,6 +36,9 @@ class RoomDetailsActivity : BaseToolbarActivity() {
 
     private val roomId : String
         get() = intent.getStringExtra(EXTRA_ROOM_ID)
+
+    private val memberAdapter = Adapter()
+    private var roomMembers = listOf<User>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +50,9 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         roomNameView = findView(R.id.roomDetails_name)
         deleteRoomButton = findView(R.id.roomDetails_deleteRoom)
         appComponent = application as AppComponent
+
+        memberView.layoutManager = GridLayoutManager(this, resources.getInteger(R.integer.horizontal_member_item_count))
+        memberView.adapter = memberAdapter
 
         title = R.string.room_info.toFormattedString(this)
     }
@@ -82,53 +88,11 @@ class RoomDetailsActivity : BaseToolbarActivity() {
     }
 
     private fun onRoomLoaded(room: Room, roomName : RoomName, roomMembers: List<User>) {
+        this.roomMembers = roomMembers
         roomNameView.text = roomName.name
-
-        val items = arrayListOf<UserItemHolder>()
-
-        // Collect holders from the flow view
-        for (i in 0..memberView.childCount-1) {
-            val tag = memberView.getChildAt(i).tag
-            if (tag is UserItemHolder) {
-                items.add(tag)
-            }
-        }
-        memberView.removeAllViews()
-
-        // Create holders for new member
-        val displayMemberCount = Math.min(MAX_MEMBER_DISPLAY_COUNT, roomMembers.size)
-        val createSize = displayMemberCount - items.size + 1 // Extra one for 'add' button
-        val inflater = LayoutInflater.from(this)
-        for (i in 0..createSize-1) {
-            items.add(UserItemHolder(inflater.inflate(R.layout.view_room_member_list_item, memberView, false)))
-        }
-
-        // Set up holders
-        roomMembers.subList(0, displayMemberCount).forEachIndexed { i, member ->
-            items[i].setUser(member)
-            memberView.addView(items[i].itemView)
-        }
-
-        // Add member button
-        val addButton = items.last()
-        addButton.nameView!!.text = " "
-        addButton.avatarView!!.setImageDrawable(getTintedDrawable(R.drawable.ic_person_add_24dp, addButton.nameView.currentTextColor))
-        addButton.itemView.setOnClickListener {
-            startActivityForResultWithAnimation(
-                    UserListActivity.build(this, R.string.add_members.toFormattedString(this),
-                            ContactUserProvider(), true, roomMembers.map { it.id }, false),
-                    REQUEST_SELECT_USER
-            )
-        }
-        memberView.addView(addButton.itemView)
-
 
         // Setup label
         allMemberLabelView.text = R.string.room_all_member_with_number.toFormattedString(this, roomMembers.size)
-
-        // TODO: Setup delete button
-        // deleteRoomButton.setVisible(room.ownerId == appComponent.signalService.currentUserId)
-
         // Set up all member views
         allMemberLabelView.setOnClickListener {
             startActivityWithAnimation(
@@ -136,7 +100,21 @@ class RoomDetailsActivity : BaseToolbarActivity() {
                             RoomMemberProvider(room.id), false, emptyList(), false)
             )
         }
+
+        // Display members
+        memberAdapter.setUsers(roomMembers.subList(0, Math.min(roomMembers.size, MAX_MEMBER_DISPLAY_COUNT)))
+
+        // TODO: Setup delete button
+        // deleteRoomButton.setVisible(room.ownerId == appComponent.signalService.currentUserId)
     }
+
+    override fun onClick(v: View) {
+        val memberItemHolder = v.tag as? UserItemHolder
+        if (memberItemHolder != null) {
+            startActivityWithAnimation(UserDetailsActivity.build(this, memberItemHolder.userId!!))
+        }
+    }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
@@ -166,6 +144,51 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         }
     }
 
+    private inner class Adapter : UserListAdapter(R.layout.view_room_member_list_item) {
+        override fun getItemCount(): Int {
+            val realCount = super.getItemCount()
+            return if (realCount == 0) {
+                0
+            } else {
+                realCount + 1
+            }
+        }
+
+        override fun getItemViewType(position: Int): Int {
+            return if (position == itemCount - 1) {
+                VIEW_TYPE_ADD
+            } else {
+                VIEW_TYPE_USER
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserItemHolder? {
+            return if (viewType == VIEW_TYPE_ADD) {
+                val holder = UserItemHolder(LayoutInflater.from(parent.context).inflate(R.layout.view_room_member_list_item, parent, false))
+                holder.nameView?.text = ""
+                holder.avatarView!!.setImageDrawable(holder.itemView.context.getTintedDrawable(R.drawable.ic_person_add_24dp, holder.nameView!!.currentTextColor))
+                holder.itemView.setOnClickListener {
+                    startActivityForResultWithAnimation(
+                            UserListActivity.build(this@RoomDetailsActivity, R.string.add_members.toFormattedString(parent.context),
+                                    ContactUserProvider(), true, roomMembers.map { it.id }, false),
+                            REQUEST_SELECT_USER
+                    )
+                }
+                holder
+            } else {
+                super.onCreateViewHolder(parent, viewType)
+            }
+        }
+
+        override fun onBindViewHolder(holder: UserItemHolder, position: Int) {
+            if (holder.itemViewType == VIEW_TYPE_USER) {
+                super.onBindViewHolder(holder, position)
+            }
+        }
+
+
+    }
+
     private data class RoomData(val room: Room,
                                 val name: RoomName,
                                 val members: List<User>)
@@ -174,8 +197,10 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         const val EXTRA_ROOM_ID = "room_id"
 
         private const val REQUEST_SELECT_USER = 1
-
         private const val MAX_MEMBER_DISPLAY_COUNT = 20
+
+        private const val VIEW_TYPE_USER = 0
+        private const val VIEW_TYPE_ADD = 1
 
         fun build(context: Context, roomId : String) : Intent {
             return Intent(context, RoomDetailsActivity::class.java).putExtra(EXTRA_ROOM_ID, roomId)

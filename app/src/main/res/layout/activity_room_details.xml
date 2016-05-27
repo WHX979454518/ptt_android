@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <com.wefika.flowlayout.FlowLayout
+            <android.support.v7.widget.RecyclerView
                 android:id="@+id/roomDetails_members"
                 android:gravity="left"
                 android:paddingLeft="@dimen/unit_one"
