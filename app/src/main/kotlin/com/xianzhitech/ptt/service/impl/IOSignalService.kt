@@ -17,13 +17,14 @@ import com.xianzhitech.ptt.ext.toBase64
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ext.toJSONArray
 import com.xianzhitech.ptt.ext.toMD5
-import com.xianzhitech.ptt.ext.toStringIterable
+import com.xianzhitech.ptt.ext.toStringList
 import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.ContactRepository
+import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.CreateRoomRequest
@@ -57,6 +58,7 @@ import java.util.*
 class IOSignalService(endpoint : String,
                       private val context: Context,
                       private val userRepository: UserRepository,
+                      private val groupRepository: GroupRepository,
                       private val roomRepository: RoomRepository,
                       private val contactRepository: ContactRepository,
                       private val preference: Preference) : SignalService {
@@ -96,7 +98,10 @@ class IOSignalService(endpoint : String,
                     if (savedUserToken?.userId != user.id) {
                         // Clear room information if it's this user's first login
                         logd("Clearing room database because different user has logged in")
-                        roomRepository.clearRooms().execAsync()
+                        roomRepository.clear().execAsync()
+                                .concatWith(contactRepository.clear().execAsync())
+                                .concatWith(groupRepository.clear().execAsync())
+                                .concatWith(userRepository.clear().execAsync())
                     } else {
                         Completable.complete()
                     }
@@ -597,7 +602,7 @@ private class JoinRoomResponse(private val obj : JSONObject) {
     val room : Room = RoomObject(obj.getJSONObject("room"))
 
     val onlineMemberIds: Iterable<String>
-        get() = obj.getJSONArray("onlineMemberIds").toStringIterable()
+        get() = obj.getJSONArray("onlineMemberIds").toStringList()
 
     val speakerId: String?
         get() = obj.nullOrString("speakerId")
@@ -627,7 +632,7 @@ private open class RoomSpeakerUpdate(protected val obj : JSONObject) {
 
 private class RoomActiveInfoUpdate(obj : JSONObject) : RoomSpeakerUpdate(obj) {
     val onlineMemberIds : Iterable<String>
-        get() = obj.optJSONArray("onlineMemberIds")?.toStringIterable() ?: emptyList()
+        get() = obj.optJSONArray("onlineMemberIds")?.toStringList() ?: emptyList()
 }
 
 private class RoomInvitationObject(private @Transient val obj : JSONObject) : RoomInvitation {
@@ -647,8 +652,8 @@ private class GroupObject(private val obj : JSONObject) : Group {
         get() = obj.getStringValue("description")
     override val avatar: String?
         get() = obj.optString("avatar")
-    override val memberIds: Iterable<String>
-        get() = obj.optJSONArray("members").toStringIterable()
+    override val memberIds: Collection<String>
+        get() = obj.optJSONArray("members").toStringList()
 
     override fun toString(): String {
         return obj.toString()
@@ -664,10 +669,10 @@ private class RoomObject(private val obj : JSONObject) : Room {
         get() = obj.getStringValue("description")
     override val ownerId: String
         get() = obj.getString("ownerId")
-    override val associatedGroupIds: Iterable<String>
-        get() = obj.optJSONArray("associatedGroupIds").toStringIterable()
-    override val extraMemberIds: Iterable<String>
-        get() = obj.optJSONArray("extraMemberIds").toStringIterable()
+    override val associatedGroupIds: Collection<String>
+        get() = obj.optJSONArray("associatedGroupIds").toStringList()
+    override val extraMemberIds: Collection<String>
+        get() = obj.optJSONArray("extraMemberIds").toStringList()
 
     override fun toString(): String {
         return obj.toString()

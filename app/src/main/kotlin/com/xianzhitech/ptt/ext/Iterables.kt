@@ -51,25 +51,46 @@ fun <T> Iterable<T>.sizeAtLeast(size : Int) : Boolean {
     return currSize >= size
 }
 
-fun String?.lazySplit(separator: Char) : Iterable<String> {
-    return lazySplit(separator, { it })
-}
-
-fun <T> String?.lazySplit(separator: Char, transform: (String) -> T) : Iterable<T> {
+fun String?.lazySplit(separator: Char) : Collection<String> {
     if (this == null) {
         return emptyList()
     }
 
-    return object : Iterable<T> {
-        override fun iterator(): Iterator<T> {
-            return object : Iterator<T> {
+    return object : AbstractCollection<String>() {
+        override val size: Int by lazy { this@lazySplit.count { it == separator } + 1 }
+
+        override fun contains(element: String): Boolean {
+            val index = indexOf(element)
+            if (index < 0) {
+                return false
+            }
+
+            // 必须前一个或者后一个是分隔符才能算是找到
+            if ((index == 0 || get(index - 1) == separator) &&
+                    (index == this@lazySplit.length - 1 || get(index + 1) == separator)) {
+                return true
+            }
+
+            return false
+        }
+
+        override fun isEmpty(): Boolean {
+            return this@lazySplit.isEmpty()
+        }
+
+        override fun iterator(): MutableIterator<String> {
+            return object : MutableIterator<String> {
                 var currIndex = 0
+
+                override fun remove() {
+                    throw UnsupportedOperationException()
+                }
 
                 override fun hasNext(): Boolean {
                     return currIndex < this@lazySplit.length - 1
                 }
 
-                override fun next(): T {
+                override fun next(): String {
                     val oldIndex = currIndex
                     var index = currIndex
                     val maxIndex = this@lazySplit.length - 1
@@ -82,9 +103,10 @@ fun <T> String?.lazySplit(separator: Char, transform: (String) -> T) : Iterable<
                     }
 
                     currIndex = index + 1
-                    return transform(substring(oldIndex, index))
+                    return substring(oldIndex, index)
                 }
             }
+
         }
     }
 }

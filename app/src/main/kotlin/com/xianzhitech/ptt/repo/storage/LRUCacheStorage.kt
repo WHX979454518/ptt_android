@@ -13,7 +13,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 
-class UserLRUCacheStorage(private val userStorage: UserStorage) : UserStorage by userStorage, BaseLRUCacheStorage<User>() {
+class UserLRUCacheStorage(private val userStorage: UserStorage) : UserStorage, BaseLRUCacheStorage<User>() {
     override fun getUsers(ids: Iterable<String>, out : MutableList<User>): List<User> {
         return getOrFetch(ids, { userStorage.getUsers(it) }, out)
     }
@@ -21,6 +21,10 @@ class UserLRUCacheStorage(private val userStorage: UserStorage) : UserStorage by
     override fun saveUsers(users: Iterable<User>) {
         invalidateModels(users)
         userStorage.saveUsers(users)
+    }
+
+    override fun clear() {
+        clearCache()
     }
 }
 
@@ -32,6 +36,10 @@ class GroupLRUCacheStorage(private val groupStorage: GroupStorage) : GroupStorag
 
     override fun getGroups(groupIds: Iterable<String>, out : MutableList<Group>): List<Group> {
         return getOrFetch(groupIds, { groupStorage.getGroups(it) }, out)
+    }
+
+    override fun clear() {
+        clearCache()
     }
 }
 
@@ -85,7 +93,7 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
         })
     }
 
-    override fun clearRooms() {
+    override fun clear() {
         cacheLock.write { cache.evictAll() }
         synchronized(allRoomIdsLock, { allRoomIds?.clear() })
     }
@@ -145,6 +153,12 @@ open class BaseLRUCacheStorage<T : Model>(capacity : Int = 10240) {
     protected fun invalidateIds(ids : Iterable<String>) {
         cacheLock.write {
             ids.forEach { cache.remove(it) }
+        }
+    }
+
+    protected fun clearCache() {
+        cacheLock.write {
+            cache.evictAll()
         }
     }
 }

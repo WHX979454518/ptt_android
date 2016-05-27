@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ext
 
 import android.app.Activity
+import android.graphics.drawable.Drawable
 import android.support.annotation.IdRes
 import android.support.annotation.LayoutRes
 import android.text.Editable
@@ -10,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.TextView
 import rx.Observable
 import rx.subscriptions.Subscriptions
 
@@ -53,3 +55,15 @@ val TRANSLATION_Y_FRACTION = object : Property<View, Float>(Float::class.java, "
         view.translationY =  value * view.height
     }
 }
+
+val TextView.compoundDrawableLeft : Drawable?
+    get() = compoundDrawables[0]
+
+val TextView.compoundDrawableTop : Drawable?
+    get() = compoundDrawables[1]
+
+val TextView.compoundDrawableRight : Drawable?
+    get() = compoundDrawables[2]
+
+val TextView.compoundDrawableBottom : Drawable?
+    get() = compoundDrawables[3]

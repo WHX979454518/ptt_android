@@ -36,9 +36,7 @@ object RoomComparator : Comparator<Room> {
 class ContactComparator : Comparator<Any> {
     private val collator: Collator
 
-    constructor() {
-        collator = Collator.getInstance()
-    }
+    constructor() : this(Locale.CHINESE)
 
     constructor(locale: Locale) {
         collator = Collator.getInstance(locale)
