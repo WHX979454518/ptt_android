@@ -11,15 +11,7 @@ import com.wefika.flowlayout.FlowLayout
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.globalHandleError
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
@@ -124,8 +116,7 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         addButton.itemView.setOnClickListener {
             startActivityForResultWithAnimation(
                     UserListActivity.build(this, R.string.add_members.toFormattedString(this),
-                            ContactUserProvider(), true, null,
-                            roomMembers.map { it.id }, false),
+                            ContactUserProvider(), true, roomMembers.map { it.id }, false),
                     REQUEST_SELECT_USER
             )
         }
@@ -142,8 +133,7 @@ class RoomDetailsActivity : BaseToolbarActivity() {
         allMemberLabelView.setOnClickListener {
             startActivityWithAnimation(
                     UserListActivity.build(this, R.string.room_members.toFormattedString(this),
-                            RoomMemberProvider(room.id), false, null,
-                            emptyList(), false)
+                            RoomMemberProvider(room.id), false, emptyList(), false)
             )
         }
     }

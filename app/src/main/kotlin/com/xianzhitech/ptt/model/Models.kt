@@ -24,4 +24,7 @@ interface User : Model {
     val avatar: String?
     val permissions: Set<Permission>
     val priority: Int
+    val phoneNumber : String?
+    val enterpriseId : String
+    val enterpriseName : String
 }

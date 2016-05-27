@@ -26,6 +26,7 @@ import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toObservable
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import rx.Observable
 import rx.schedulers.Schedulers
 import java.text.Collator
@@ -47,10 +48,6 @@ class UserListActivity : BaseToolbarActivity() {
 
     private val isPreselectedUnselectable : Boolean
         get() = intent.getBooleanExtra(EXTRA_PRESELECTED_UNSELECTABLE, false)
-
-    private val itemClickIntent : Intent? by lazy {
-        intent.getParcelableExtra<Intent>(EXTRA_CLICK_INTENT)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -200,9 +197,9 @@ class UserListActivity : BaseToolbarActivity() {
                     holder.nameView.checkMarkDrawable = null
                 }
 
-                if (itemClickIntent != null) {
-                    holder.itemView.setOnClickListener {
-                        startActivityWithAnimation(itemClickIntent!!)
+                holder.itemView.setOnClickListener {
+                    if (holder.userId != null) {
+                        startActivityWithAnimation(UserDetailsActivity.build(this@UserListActivity, holder.userId!!))
                     }
                 }
             }
@@ -219,7 +216,6 @@ class UserListActivity : BaseToolbarActivity() {
         const val EXTRA_TITLE = "extra_title"
         const val EXTRA_USER_PROVIDER = "extra_user_provider"
         const val EXTRA_SELECTABLE = "extra_selectable"
-        const val EXTRA_CLICK_INTENT = "extra_click_intent"
         const val EXTRA_PRESELECTED_USER_IDS = "extra_preselected_user_ids"
         const val EXTRA_PRESELECTED_UNSELECTABLE = "extra_preselected_unselectable"
 
@@ -229,7 +225,6 @@ class UserListActivity : BaseToolbarActivity() {
                   title: CharSequence,
                   userProvider: UserProvider,
                   selectable : Boolean,
-                  itemClickIntent : Intent?,
                   preselectedUserIds : Collection<String>,
                   preselectedUnselectable : Boolean) : Intent {
 
@@ -237,7 +232,6 @@ class UserListActivity : BaseToolbarActivity() {
                     .putExtra(EXTRA_TITLE, title)
                     .putExtra(EXTRA_USER_PROVIDER, userProvider)
                     .putExtra(EXTRA_SELECTABLE, selectable)
-                    .putExtra(EXTRA_CLICK_INTENT, itemClickIntent)
                     .putExtra(EXTRA_PRESELECTED_USER_IDS, preselectedUserIds.toTypedArray())
                     .putExtra(EXTRA_PRESELECTED_UNSELECTABLE, preselectedUnselectable)
         }

@@ -237,14 +237,20 @@ private data class UserModel(override val id: String,
                              override val name: String,
                              override val priority: Int,
                              override val permissions: Set<Permission>,
-                             override val avatar: String?) : User
+                             override val avatar: String?,
+                             override val phoneNumber: String?,
+                             override val enterpriseId: String,
+                             override val enterpriseName: String) : User
 
-private fun User.toContentValues(contentValues: ContentValues = ContentValues(5)) : ContentValues {
+private fun User.toContentValues(contentValues: ContentValues = ContentValues(8)) : ContentValues {
     contentValues.put(Users.ID, id)
     contentValues.put(Users.NAME, name)
     contentValues.put(Users.AVATAR, avatar)
     contentValues.put(Users.PRIORITY, priority)
     contentValues.put(Users.PERMISSIONS, permissions.toDbString())
+    contentValues.put(Users.PHONE_NUMBER, phoneNumber)
+    contentValues.put(Users.ENTERPRISE_ID, enterpriseId)
+    contentValues.put(Users.ENTERPRISE_NAME, enterpriseName)
     return contentValues
 }
 
@@ -256,10 +262,13 @@ private object Users {
     const val PERMISSIONS = "person_perms"
     const val PRIORITY = "person_level"
     const val AVATAR = "person_avatar"
+    const val PHONE_NUMBER = "person_phone_number"
+    const val ENTERPRISE_ID = "person_enterprise_id"
+    const val ENTERPRISE_NAME = "person_enterprise_name"
 
-    const val ALL = "$ID,$NAME,$PERMISSIONS,$PRIORITY,$AVATAR"
+    const val ALL = "$ID,$NAME,$PERMISSIONS,$PRIORITY,$AVATAR,$PHONE_NUMBER,$ENTERPRISE_ID,$ENTERPRISE_NAME"
 
-    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY NOT NULL, $NAME TEXT NOT NULL, $AVATAR TEXT, $PRIORITY INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, $PERMISSIONS TEXT NOT NULL)"
+    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY NOT NULL, $NAME TEXT NOT NULL, $AVATAR TEXT, $PRIORITY INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, $PERMISSIONS TEXT NOT NULL, $PHONE_NUMBER TEXT, $ENTERPRISE_ID TEXT NOT NULL, $ENTERPRISE_NAME TEXT NOT NULL)"
 
     val MAPPER : (Cursor) -> User = { cursor ->
         UserModel(
@@ -267,7 +276,10 @@ private object Users {
                 name = cursor.getString(1),
                 avatar = cursor.getString(2),
                 priority = cursor.getInt(3),
-                permissions = cursor.getString(4).toPermissionSet()
+                permissions = cursor.getString(4).toPermissionSet(),
+                phoneNumber = cursor.getString(5),
+                enterpriseId = cursor.getString(6),
+                enterpriseName = cursor.getString(7)
         )
     }
 }

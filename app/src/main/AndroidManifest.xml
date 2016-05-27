@@ -76,6 +76,9 @@
         <activity android:name=".ui.user.UserListActivity"
                   android:label="@string/user_list" />
 
+        <activity android:name=".ui.user.UserDetailsActivity"
+                  android:label="@string/user_info" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />

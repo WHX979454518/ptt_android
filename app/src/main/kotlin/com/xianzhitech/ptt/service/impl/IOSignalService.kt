@@ -685,6 +685,12 @@ private class UserObject(private val obj : JSONObject) : User {
         get() = obj.getStringValue("privileges").toPermissionSet()
     override val priority: Int
         get() = obj.optInt("priority", Constants.DEFAULT_USER_PRIORITY)
+    override val phoneNumber: String?
+        get() = obj.nullOrString("phoneNumber")
+    override val enterpriseId: String
+        get() = obj.getStringValue("enterpriseId", "") // TODO:
+    override val enterpriseName: String
+        get() = obj.getStringValue("enterpriseName", "TODO: 企业名称")
 
     override fun toString(): String {
         return obj.toString()

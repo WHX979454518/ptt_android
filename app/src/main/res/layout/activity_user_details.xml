@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@color/grey_300">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/unit_two"
+        android:background="@android:color/white">
+
+        <ImageView
+            android:layout_width="@dimen/profile_icon_size"
+            android:layout_height="@dimen/profile_icon_size"
+            tools:src="@color/blue"
+            android:id="@+id/imageView"
+            android:layout_margin="@dimen/unit_two"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/userDetails_name"
+            tools:text="User 1"
+            android:paddingTop="@dimen/unit_half"
+            android:paddingBottom="@dimen/unit_half"
+            android:layout_alignTop="@+id/imageView"
+            android:layout_toRightOf="@+id/imageView"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            style="@style/Text.Subhead"/>
+    </RelativeLayout>
+
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:background="@android:color/white"
+        android:layout_marginTop="@dimen/unit_two"
+        android:paddingLeft="@dimen/unit_two"
+        android:paddingRight="@dimen/unit_two"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            style="@style/Text.ProfileItem"
+            android:text="@string/enterprise"
+            android:layout_weight="1"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/userDetails_enterpriseName"
+            style="@style/Text.ProfileItem.Value"
+            tools:text="我的公司"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+</LinearLayout>
