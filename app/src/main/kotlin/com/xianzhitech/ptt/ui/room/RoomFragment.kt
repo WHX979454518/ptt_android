@@ -15,16 +15,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.callbacks
-import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.createAvatarDrawable
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
@@ -113,7 +104,7 @@ class RoomFragment : BaseFragment()
             if (currentRoomId != null) {
                 activity.startActivityWithAnimation(
                         UserListActivity.build(context, R.string.room_members.toFormattedString(context),
-                                RoomMemberProvider(currentRoomId), false, null, emptyList(), false)
+                                RoomMemberProvider(currentRoomId), false, emptyList(), false)
                 )
             }
         }

@@ -13,14 +13,7 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.repo.storage.ContactSQLiteStorage
-import com.xianzhitech.ptt.repo.storage.GroupLRUCacheStorage
-import com.xianzhitech.ptt.repo.storage.GroupSQLiteStorage
-import com.xianzhitech.ptt.repo.storage.RoomLRUCacheStorage
-import com.xianzhitech.ptt.repo.storage.RoomSQLiteStorage
-import com.xianzhitech.ptt.repo.storage.UserLRUCacheStorage
-import com.xianzhitech.ptt.repo.storage.UserSQLiteStorage
-import com.xianzhitech.ptt.repo.storage.createSQLiteStorageHelper
+import com.xianzhitech.ptt.repo.storage.*
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.handler.RoomStatusHandler
 import com.xianzhitech.ptt.service.impl.IOSignalService

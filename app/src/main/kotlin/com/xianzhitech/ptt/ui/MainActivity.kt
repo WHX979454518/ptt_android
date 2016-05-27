@@ -14,11 +14,7 @@ import android.view.View
 import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.dismissImmediately
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -117,7 +113,7 @@ class MainActivity : BaseToolbarActivity(),
 
     override fun requestCreateNewRoom() {
         startActivityForResultWithAnimation(
-                UserListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(), true, null, emptyList(), false),
+                UserListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(), true, emptyList(), false),
                 REQUEST_CODE_CREATE_ROOM
         )
     }
