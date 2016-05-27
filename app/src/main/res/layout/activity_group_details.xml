@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:background="@color/grey_300"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/unit_three"
+            android:background="@android:color/white"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/groupDetails_members"
+                android:gravity="left"
+                android:paddingLeft="@dimen/unit_one"
+                android:paddingRight="@dimen/unit_one"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <View style="@style/Divider.Lighter" />
+
+            <TextView
+                android:id="@+id/groupDetails_allMemberLabel"
+                style="@style/Text.ProfileItem"
+                android:background="?attr/selectableItemBackground"
+                android:padding="@dimen/unit_two"
+                tools:text="所有成员 (156)"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:background="?attr/selectableItemBackground"
+            android:layout_marginTop="@dimen/unit_three"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                style="@style/Text.ProfileItem"
+                android:background="@android:color/white"
+                android:padding="@dimen/unit_two"
+                android:text="@string/group_name"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:background="@android:color/white"
+                android:id="@+id/groupDetails_name"
+                style="@style/Text.ProfileItem.Value"
+                tools:text="组1"
+                android:paddingRight="@dimen/unit_two"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/groupDetails_call"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_one"
+            android:text="@string/call"
+            android:layout_marginTop="@dimen/unit_three"
+            android:layout_marginBottom="@dimen/unit_two"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+</ScrollView>

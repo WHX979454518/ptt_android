@@ -78,6 +78,9 @@
 
         <activity android:name=".ui.user.UserDetailsActivity"
                   android:label="@string/user_info" />
+        
+        <activity android:name=".ui.group.GroupDetailsActivity"
+                  android:label="@string/group_info" />
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>

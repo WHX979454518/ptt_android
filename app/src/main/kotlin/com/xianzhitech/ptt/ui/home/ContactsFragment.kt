@@ -12,19 +12,13 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.fromTextChanged
-import com.xianzhitech.ptt.ext.getColorCompat
-import com.xianzhitech.ptt.ext.getString
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.group.GroupDetailsActivity
+import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.ContactComparator
 import rx.schedulers.Schedulers
@@ -117,8 +111,11 @@ class ContactsFragment : BaseFragment() {
             holder.iconView.setImageDrawable(item.createDrawable(holder.itemView.context))
 
             holder.itemView.setOnClickListener {
-                (activity as BaseActivity).joinRoom(if (item is User) CreateRoomRequest(extraMemberIds = listOf(item.id))
-                    else CreateRoomRequest(groupIds = listOf(item.id)))
+                if (item is User) {
+                    activity.startActivityWithAnimation(UserDetailsActivity.build(context, item.id))
+                } else if (item is Group) {
+                    activity.startActivityWithAnimation(GroupDetailsActivity.build(context, item.id))
+                }
             }
         }
 

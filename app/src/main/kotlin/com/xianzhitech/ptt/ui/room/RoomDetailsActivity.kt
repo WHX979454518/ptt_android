@@ -92,7 +92,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         roomNameView.text = roomName.name
 
         // Setup label
-        allMemberLabelView.text = R.string.room_all_member_with_number.toFormattedString(this, roomMembers.size)
+        allMemberLabelView.text = R.string.all_member_with_number.toFormattedString(this, roomMembers.size)
         // Set up all member views
         allMemberLabelView.setOnClickListener {
             startActivityWithAnimation(
