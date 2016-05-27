@@ -73,6 +73,7 @@
             android:layout_marginRight="@dimen/unit_one"
             android:text="@string/delete_room"
             android:layout_marginTop="@dimen/unit_three"
+            android:layout_marginBottom="@dimen/unit_two"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 

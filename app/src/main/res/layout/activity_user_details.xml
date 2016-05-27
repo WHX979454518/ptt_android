@@ -64,6 +64,7 @@
         android:id="@+id/userDetails_call"
         android:layout_marginTop="@dimen/unit_two"
         style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_marginBottom="@dimen/unit_two"
         android:text="@string/call"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
