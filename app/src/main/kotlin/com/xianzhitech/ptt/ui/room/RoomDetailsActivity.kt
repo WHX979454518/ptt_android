@@ -206,7 +206,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         const val EXTRA_ROOM_ID = "room_id"
 
         private const val REQUEST_SELECT_USER = 1
-        private const val MAX_MEMBER_DISPLAY_COUNT = 20
+        private const val MAX_MEMBER_DISPLAY_COUNT = 14
 
         private const val VIEW_TYPE_USER = 0
         private const val VIEW_TYPE_ADD = 1
