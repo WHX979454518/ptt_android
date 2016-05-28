@@ -14,18 +14,12 @@ import android.widget.Toast
 import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.createAvatarDrawable
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getColorCompat
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.EditProfileActivity
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 class ProfileFragment : BaseFragment(), View.OnClickListener {
     private var views : Views? = null
@@ -75,7 +69,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
                         .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<User?>(context) {
                             override fun onNext(t: User?) {
-                                iconView.setImageDrawable(t?.createAvatarDrawable(this@ProfileFragment))
+                                iconView.setImageDrawable(t?.createDrawable(context))
                                 nameView.text = t?.name
                             }
                         })

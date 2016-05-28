@@ -8,17 +8,12 @@ import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.createAvatarDrawable
-import com.xianzhitech.ptt.ext.dismissImmediately
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutralButtonClickListener, View.OnClickListener {
     private lateinit var avatarImage : ImageView
@@ -66,7 +61,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
                 }
                 .subscribeSimple { user ->
                     nameView.text = user.name
-                    avatarImage.setImageDrawable(user.createAvatarDrawable(this))
+                    avatarImage.setImageDrawable(user.createDrawable(this))
                 }
     }
 

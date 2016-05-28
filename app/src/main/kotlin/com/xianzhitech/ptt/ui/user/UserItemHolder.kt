@@ -5,8 +5,8 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.createAvatarDrawable
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 
 class UserItemHolder(rootView : View,
@@ -21,7 +21,7 @@ class UserItemHolder(rootView : View,
     fun setUser(user: User) {
         if (this.userId != user.id) {
             this.user = user
-            avatarView?.setImageDrawable(user.createAvatarDrawable(itemView.context))
+            avatarView?.setImageDrawable(user.createDrawable(itemView.context))
             nameView?.text = user.name
         }
     }

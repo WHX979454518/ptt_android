@@ -1,10 +1,6 @@
 package com.xianzhitech.ptt.repo
 
 import android.content.Context
-import android.database.ContentObserver
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.first
@@ -18,13 +14,15 @@ import com.xianzhitech.ptt.repo.storage.ContactStorage
 import com.xianzhitech.ptt.repo.storage.GroupStorage
 import com.xianzhitech.ptt.repo.storage.RoomStorage
 import com.xianzhitech.ptt.repo.storage.UserStorage
-import rx.Completable
+import rx.*
 import rx.Observable
-import rx.Scheduler
-import rx.Single
+import rx.Observer
+import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import rx.subscriptions.Subscriptions
+import rx.subjects.PublishSubject
 import java.util.*
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 
 /**
  *
@@ -33,75 +31,73 @@ import java.util.*
  * Created by fanchao on 9/01/16.
  */
 
-class UserRepository(private val context: Context,
-                     private val userStorage: UserStorage) {
+class UserRepository(private val userStorage: UserStorage,
+                     private val userNotification: PublishSubject<Unit>) {
+
     fun getUsers(ids: Iterable<String>): QueryResult<List<User>> {
-        return RepoQueryResult(context, arrayOf(USER_URI), {
+        return RepoQueryResult({
             userStorage.getUsers(ids)
-        })
+        }, userNotification)
     }
 
     fun saveUsers(users: Iterable<User>) : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(USER_URI), {
+        return RepoUpdateResult({
             userStorage.saveUsers(users)
-        })
+        }, userNotification)
     }
 
     fun getUser(userId: String?): QueryResult<User?> {
-        return RepoQueryResult(context, arrayOf(USER_URI), {
-            if (userId == null) {
-                null
-            }
-            else {
-                userStorage.getUsers(listOf(userId)).firstOrNull()
-            }
-        })
+        return RepoQueryResult({
+            userId?.let { userStorage.getUsers(listOf(it)).firstOrNull() }
+        }, userNotification)
     }
 
     fun clear() : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+        return RepoUpdateResult({
             userStorage.clear()
-        })
+        }, userNotification)
     }
 }
 
-class GroupRepository(private val context: Context,
-                      private val groupStorage: GroupStorage) {
+class GroupRepository(private val groupStorage: GroupStorage,
+                      private val groupNotification: PublishSubject<Unit>) {
 
     fun getGroups(groupIds: Iterable<String>): QueryResult<List<Group>> {
-        return RepoQueryResult(context, arrayOf(GROUP_URI), {
+        return RepoQueryResult({
             groupStorage.getGroups(groupIds)
-        })
+        }, groupNotification)
     }
 
     fun saveGroups(groups: Iterable<Group>) : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(GROUP_URI), {
+        return RepoUpdateResult({
             groupStorage.saveGroups(groups)
-        })
+        }, groupNotification)
     }
 
     fun clear() : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+        return RepoUpdateResult({
             groupStorage.clear()
-        })
+        }, groupNotification)
     }
 }
 
-class RoomRepository(private val context: Context,
-                     private val roomStorage: RoomStorage,
+class RoomRepository(private val roomStorage: RoomStorage,
                      private val groupStorage: GroupStorage,
-                     private val userStorage: UserStorage) {
+                     private val userStorage: UserStorage,
+                     private val roomNotification: PublishSubject<Unit>,
+                     private val userNotification: PublishSubject<Unit>,
+                     private val groupNotification: PublishSubject<Unit>) {
 
     fun getAllRooms() : QueryResult<List<RoomModel>> {
-        return RepoQueryResult(context, arrayOf(ROOM_URI), {
+        return RepoQueryResult({
             roomStorage.getAllRooms()
-        })
+        }, roomNotification)
     }
 
     fun getRooms(roomIds: Iterable<String>): QueryResult<List<Room>> {
-        return RepoQueryResult(context, arrayOf(ROOM_URI), {
+        return RepoQueryResult({
             roomStorage.getRooms(roomIds)
-        })
+        }, roomNotification)
     }
 
     fun getRoom(roomId : String?) : QueryResult<Room?> {
@@ -109,9 +105,9 @@ class RoomRepository(private val context: Context,
             return nullResult()
         }
 
-        return RepoQueryResult(context, arrayOf(ROOM_URI), {
+        return RepoQueryResult({
             roomStorage.getRooms(listOf(roomId)).firstOrNull()
-        })
+        }, roomNotification)
     }
 
     fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray()) : QueryResult<List<User>> {
@@ -119,7 +115,7 @@ class RoomRepository(private val context: Context,
             return fixedResult(emptyList())
         }
 
-        return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
+        return RepoQueryResult({
             val room = roomStorage.getRooms(listOf(roomId)).first()
             val groups = groupStorage.getGroups(room.associatedGroupIds)
             val memberIds = linkedSetOf<String>()
@@ -157,7 +153,7 @@ class RoomRepository(private val context: Context,
             }
 
             userStorage.getUsers(memberIds)
-        })
+        }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
     fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String?> = emptyArray(),
@@ -166,7 +162,7 @@ class RoomRepository(private val context: Context,
             return fixedResult(RoomName.EMPTY)
         }
 
-        return RepoQueryResult(context, arrayOf(ROOM_URI, GROUP_URI, USER_URI), {
+        return RepoQueryResult({
             val room = roomStorage.getRooms(listOf(roomId)).firstOrNull() ?: return@RepoQueryResult null
 
             // 有预定房间名称, 直接返回
@@ -183,7 +179,7 @@ class RoomRepository(private val context: Context,
             }
 
             // 否则返回成员名称组合
-            val members = getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).get()
+            val members = getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).call()
             val usedMemberList : List<User>
             val ellipizes : Boolean
             if (members.size > maxDisplayMemberNames) {
@@ -197,69 +193,64 @@ class RoomRepository(private val context: Context,
 
             val name = usedMemberList.joinToString(separator = separator, transform = { it.name })
             RoomName(if (ellipizes) name + ellipsizeEnd else name, usedMemberList.size == 1)
-        })
+        }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
     fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+        return RepoUpdateResult({
             roomStorage.updateLastRoomSpeaker(roomId, time, speakerId)
-        })
+        }, roomNotification)
     }
 
     fun updateLastRoomActiveTime(roomId : String, time: Date? = null) : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+        return RepoUpdateResult({
             roomStorage.updateLastActiveTime(roomId, time ?: Date())
-        })
+        }, roomNotification)
     }
 
     fun saveRooms(rooms: Iterable<Room>) : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+        return RepoUpdateResult({
             roomStorage.saveRooms(rooms)
-        })
+        }, roomNotification)
     }
 
     fun clear() : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(ROOM_URI), {
+        return RepoUpdateResult({
             roomStorage.clear()
-        })
+        }, roomNotification)
     }
 }
 
-class ContactRepository(private val context: Context,
-                        private val contactStorage: ContactStorage) {
+class ContactRepository(private val contactStorage: ContactStorage,
+                        private val userNotification: PublishSubject<Unit>,
+                        private val groupNotification: PublishSubject<Unit>) {
 
     fun getContactItems(): QueryResult<List<Model>> {
-        return RepoQueryResult(context, arrayOf(USER_URI, GROUP_URI), {
+        return RepoQueryResult({
             contactStorage.getContactItems()
-        })
+        }, userNotification, groupNotification)
     }
 
     fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(GROUP_URI, USER_URI), {
+        return RepoUpdateResult({
             contactStorage.replaceAllContacts(users, groups)
-        })
+        }, userNotification, groupNotification)
     }
 
     fun getAllContactUsers() : QueryResult<List<User>> {
-        return RepoQueryResult(context, arrayOf(USER_URI), {
+        return RepoQueryResult({
             contactStorage.getAllContactUsers()
-        })
+        }, userNotification)
     }
 
     fun clear() : UpdateResult {
-        return RepoUpdateResult(context, arrayOf(USER_URI, GROUP_URI), {
+        return RepoUpdateResult({
             contactStorage.clear()
-        })
+        }, userNotification, groupNotification)
     }
 }
 
-private val BASE_MODEL_URI = Uri.parse("content://com.xianzhi.ptt/")
-private val USER_URI = BASE_MODEL_URI.buildUpon().appendPath("users").build()
-private val GROUP_URI = BASE_MODEL_URI.buildUpon().appendPath("groups").build()
-private val ROOM_URI = BASE_MODEL_URI.buildUpon().appendPath("rooms").build()
-
-interface QueryResult<T> {
-    fun get() : T
+interface QueryResult<T> : Callable<T> {
     fun getAsync(scheduler: Scheduler = Schedulers.computation()): Single<T>
     fun observe(scheduler: Scheduler = Schedulers.computation()): Observable<T>
 }
@@ -288,27 +279,20 @@ fun RoomName?.getInRoomDescription(context: Context) : CharSequence {
     }
 }
 
-private val MAIN_HANDLER: Handler by lazy { Handler(Looper.getMainLooper()) }
-
-private class RepoUpdateResult(private val context: Context,
-                               private val uris : Array<Uri>,
-                               private val func: () -> Unit) : UpdateResult {
+private class RepoUpdateResult(private val func: () -> Unit,
+                               vararg private val notifications : Observer<Unit>) : UpdateResult {
     override fun exec() {
         func()
-        uris.forEach { context.contentResolver.notifyChange(it, null) }
+        notifications.forEach { it.onNext(Unit) }
     }
 
     override fun execAsync(scheduler: Scheduler): Completable {
-        return Completable.defer {
-            func()
-            uris.forEach { context.contentResolver.notifyChange(it, null) }
-            Completable.complete()
-        }.subscribeOn(scheduler)
+        return Completable.fromCallable { exec() }.subscribeOn(scheduler)
     }
 }
 
 private object NullQueryResult : QueryResult<Any?> {
-    override fun get(): Any? {
+    override fun call(): Any? {
         return null
     }
 
@@ -327,7 +311,7 @@ private fun <T> nullResult() : QueryResult<T> {
 
 private fun <T> fixedResult(obj : T) : QueryResult<T> {
     return object : QueryResult<T> {
-        override fun get(): T {
+        override fun call(): T {
             return obj
         }
 
@@ -342,33 +326,22 @@ private fun <T> fixedResult(obj : T) : QueryResult<T> {
     }
 }
 
-private class RepoQueryResult<T>(private val context: Context,
-                                 private val uris : Array<Uri>,
-                                 private val func: () -> T) : QueryResult<T> {
-    override fun get(): T {
+private class RepoQueryResult<T>(private val func: () -> T,
+                                 vararg private val eventNotifications: Observable<Unit>) : QueryResult<T>, Callable<T> {
+    override fun call(): T {
         return func()
     }
 
     override fun getAsync(scheduler: Scheduler): Single<T> {
-        return Single.defer<T> { Single.just(get()) }.subscribeOn(scheduler)
+        return Single.fromCallable(this).subscribeOn(scheduler)
     }
 
     override fun observe(scheduler: Scheduler): Observable<T> {
-        return Observable.create<Unit> { subscriber ->
-            subscriber.onNext(Unit)
-
-            if (subscriber.isUnsubscribed.not()) {
-                val observer = object : ContentObserver(MAIN_HANDLER) {
-                    override fun onChange(selfChange: Boolean) {
-                        super.onChange(selfChange)
-                        subscriber.onNext(Unit)
-                    }
-                }
-
-                uris.forEach { context.contentResolver.registerContentObserver(it, true, observer) }
-                subscriber.add(Subscriptions.create { context.contentResolver.unregisterContentObserver(observer) })
-            }
-        }.observeOn(scheduler).map { func() }
+        return Observable.merge(eventNotifications)
+                .debounce(100, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                .startWith(Unit)
+                .observeOn(scheduler)
+                .map { func() }
     }
 }
 

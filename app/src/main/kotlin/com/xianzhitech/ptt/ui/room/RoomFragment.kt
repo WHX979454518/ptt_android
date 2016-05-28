@@ -25,6 +25,7 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.user.UserListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
 import rx.Observable
 
@@ -167,7 +168,7 @@ class RoomFragment : BaseFragment()
                             }
                         } else if (speakerView.tag != speaker) {
                             speakerNameView.text = speaker.name
-                            speakerAvatarView.setImageDrawable(speaker.createAvatarDrawable(this@RoomFragment))
+                            speakerAvatarView.setImageDrawable(speaker.createDrawable(context))
 
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 1f).apply {

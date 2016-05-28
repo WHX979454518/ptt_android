@@ -9,11 +9,15 @@ import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 class UserDetailsActivity : BaseToolbarActivity() {
 
@@ -56,7 +60,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                         finish()
                     } else {
                         this@UserDetailsActivity.user = user
-                        iconView.setImageDrawable(user.createAvatarDrawable(this@UserDetailsActivity))
+                        iconView.setImageDrawable(user.createDrawable(this@UserDetailsActivity))
                         nameView.text = user.name
                         companyNameView.text = user.enterpriseName
                         callButton.isEnabled = true

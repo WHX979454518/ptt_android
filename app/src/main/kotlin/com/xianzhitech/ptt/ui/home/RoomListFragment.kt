@@ -7,27 +7,12 @@ import android.support.v7.widget.RecyclerView
 import android.text.SpannableStringBuilder
 import android.text.format.DateUtils
 import android.text.style.ForegroundColorSpan
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.callbacks
-import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getColorCompat
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.inflate
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
@@ -35,6 +20,7 @@ import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
+import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
 import rx.Observable
@@ -118,9 +104,13 @@ class RoomListFragment : BaseFragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomItemHolder {
             val holder = RoomItemHolder(parent)
             holder.iconView.setOnClickListener {
-                holder.room?.let {
-                    (activity as? BaseActivity)?.startActivityWithAnimation(RoomDetailsActivity.build(activity, it.id),
-                            R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+                holder.room?.let { room ->
+                    val intent = if (room.associatedGroupIds.isEmpty() && room.extraMemberIds.size == 1) {
+                        UserDetailsActivity.build(activity, room.extraMemberIds.first())
+                    } else {
+                        RoomDetailsActivity.build(activity, room.id)
+                    }
+                    activity.startActivityWithAnimation(intent)
                 }
             }
             return holder

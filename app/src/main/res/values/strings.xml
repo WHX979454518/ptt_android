@@ -20,6 +20,7 @@
     <string name="in_room_with_individual">正在与 %1$s 对讲</string>
     <string name="in_room_with_groups">正在 %1$s 中对讲</string>
     <string name="in_room_postfix">" (对讲中)"</string>
+    <string name="in_room">正在该房间中对讲</string>
 
     <string name="dialog_confirm">确定</string>
     <string name="dialog_cancel">取消</string>
@@ -149,6 +150,7 @@
     <string name="call">呼叫</string>
     <string name="group_name">群组名称</string>
     <string name="group_info">群组信息</string>
+    <string name="join_room">加入房间</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>

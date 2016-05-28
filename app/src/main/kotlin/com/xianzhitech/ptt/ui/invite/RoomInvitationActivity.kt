@@ -19,17 +19,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.createAvatarDrawable
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.formatInvite
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import rx.Observable
 import rx.Subscription
 
@@ -223,7 +218,7 @@ class RoomInvitationActivity : BaseActivity() {
                             .getUser(value?.inviterId).observe()
                             .observeOnMainThread()
                             .subscribeSimple { inviter ->
-                                inviterIcon.setImageDrawable(inviter?.createAvatarDrawable(itemView.context))
+                                inviterIcon.setImageDrawable(inviter?.createDrawable(itemView.context))
                                 inviterName.text = inviter?.name
                                 inviteTime?.text = value?.inviteTime?.formatInvite(itemView.context)
                             }

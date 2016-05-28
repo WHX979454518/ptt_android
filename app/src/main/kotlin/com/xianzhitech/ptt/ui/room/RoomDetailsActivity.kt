@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.user.*
 import rx.Completable
@@ -30,7 +31,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
     private lateinit var memberView : RecyclerView
     private lateinit var allMemberLabelView : TextView
     private lateinit var roomNameView : TextView
-    private lateinit var deleteRoomButton : View
+    private lateinit var joinRoomButton : TextView
 
     private lateinit var appComponent : AppComponent
 
@@ -48,13 +49,18 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         memberView = findView(R.id.roomDetails_members)
         allMemberLabelView = findView(R.id.roomDetails_allMemberLabel)
         roomNameView = findView(R.id.roomDetails_name)
-        deleteRoomButton = findView(R.id.roomDetails_deleteRoom)
+        joinRoomButton = findView(R.id.roomDetails_join)
         appComponent = application as AppComponent
 
         memberView.layoutManager = GridLayoutManager(this, resources.getInteger(R.integer.horizontal_member_item_count))
         memberView.adapter = memberAdapter
 
         title = R.string.room_info.toFormattedString(this)
+
+        joinRoomButton.isEnabled = false
+        joinRoomButton.setOnClickListener {
+            joinRoom(roomId)
+        }
     }
 
     override fun onStart() {
@@ -104,8 +110,13 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         // Display members
         memberAdapter.setUsers(roomMembers.subList(0, Math.min(roomMembers.size, MAX_MEMBER_DISPLAY_COUNT)))
 
-        // TODO: Setup delete button
-        // deleteRoomButton.setVisible(room.ownerId == appComponent.signalService.currentUserId)
+        if (room.id == appComponent.signalService.currentRoomId) {
+            joinRoomButton.setText(R.string.in_room)
+            joinRoomButton.isEnabled = false
+        } else {
+            joinRoomButton.setText(R.string.join_room)
+            joinRoomButton.isEnabled = true
+        }
     }
 
     override fun onClick(v: View) {
@@ -185,8 +196,6 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
                 super.onBindViewHolder(holder, position)
             }
         }
-
-
     }
 
     private data class RoomData(val room: Room,

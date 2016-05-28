@@ -66,12 +66,11 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/roomDetails_deleteRoom"
+            android:id="@+id/roomDetails_join"
             style="@style/Widget.AppCompat.Button.Colored"
-            android:visibility="gone"
+            android:text="@string/join_room"
             android:layout_marginLeft="@dimen/unit_one"
             android:layout_marginRight="@dimen/unit_one"
-            android:text="@string/delete_room"
             android:layout_marginTop="@dimen/unit_three"
             android:layout_marginBottom="@dimen/unit_two"
             android:layout_width="match_parent"

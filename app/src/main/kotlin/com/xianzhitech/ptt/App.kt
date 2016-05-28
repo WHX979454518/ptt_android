@@ -25,6 +25,7 @@ import com.xianzhitech.ptt.ui.service.ServiceHandler
 import com.xianzhitech.ptt.update.UpdateManager
 import com.xianzhitech.ptt.update.UpdateManagerImpl
 import okhttp3.OkHttpClient
+import rx.subjects.PublishSubject
 
 
 open class App : Application(), AppComponent {
@@ -56,10 +57,15 @@ open class App : Application(), AppComponent {
         val helper = createSQLiteStorageHelper(this, "data")
         val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
         val groupStorage = GroupLRUCacheStorage(GroupSQLiteStorage(helper))
-        userRepository = UserRepository(this, userStorage)
-        groupRepository = GroupRepository(this, groupStorage)
-        roomRepository = RoomRepository(this, RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage, userStorage)
-        contactRepository = ContactRepository(this, ContactSQLiteStorage(helper, userStorage, groupStorage))
+        val userNotification = PublishSubject.create<Unit>()
+        val groupNotification = PublishSubject.create<Unit>()
+        val roomNotification = PublishSubject.create<Unit>()
+
+        userRepository = UserRepository(userStorage, userNotification)
+        groupRepository = GroupRepository(groupStorage, groupNotification)
+        roomRepository = RoomRepository(RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage,
+                userStorage, roomNotification, userNotification, groupNotification)
+        contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
         signalService = IOSignalService(
                 context = this,
