@@ -84,7 +84,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
 
     companion object {
         const val EXTRA_GROUP_ID = "egi"
-        const val MAX_MEMBER_DISPLAY_SIZE = 20
+        const val MAX_MEMBER_DISPLAY_SIZE = 15
 
         fun build(context: Context, groupId : String) : Intent {
             return Intent(context, GroupDetailsActivity::class.java).putExtra(EXTRA_GROUP_ID, groupId)
