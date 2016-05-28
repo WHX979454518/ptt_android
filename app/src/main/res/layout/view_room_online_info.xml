@@ -3,26 +3,37 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
                 android:background="@color/background_floating_material_dark">
 
-    <android.support.v7.widget.RecyclerView
-        android:layout_width="wrap_content"
-        android:layout_height="200dp"
-        android:id="@+id/roomOnlineInfo_list"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:padding="@dimen/unit_two"
-        tools:listitem="@layout/view_room_member_list_item"/>
+    <com.xianzhitech.ptt.ui.widget.MaxHeightFrameLayout
+        android:id="@+id/roomOnlineInfo_listContainer"
+        app:maxHeight="200dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <android.support.v7.widget.RecyclerView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/roomOnlineInfo_list"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:padding="@dimen/unit_two"
+            tools:listitem="@layout/view_room_member_list_item"/>
+
+
+    </com.xianzhitech.ptt.ui.widget.MaxHeightFrameLayout>
+
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/view_all"
         android:id="@+id/roomOnlineInfo_all"
-        android:layout_below="@+id/roomOnlineInfo_list"
+        android:layout_below="@+id/roomOnlineInfo_listContainer"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentRight="true"

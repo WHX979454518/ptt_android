@@ -5,4 +5,8 @@
         <attr name="shadowColor" format="color" />
         <attr name="fgColor" format="color" />
     </declare-styleable>
+
+    <declare-styleable name="MaxHeightFrameLayout">
+        <attr name="maxHeight" />
+    </declare-styleable>
 </resources>

@@ -23,8 +23,8 @@ import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListActivity
+import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
 import rx.Observable
 
@@ -45,9 +45,12 @@ class RoomFragment : BaseFragment()
     }
 
     private var views: Views? = null
-    private val onlineUserAdapter = OnlineUserAdapter()
+    private val onlineUserAdapter = UserListAdapter(R.layout.view_room_member_list_item)
     private lateinit var appComponent : AppComponent
     private var popupWindow : PopupWindow? = null
+    private val onlineUserColumnSpan : Int by lazy {
+        resources.getInteger(R.integer.horizontal_member_item_count)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,7 +99,7 @@ class RoomFragment : BaseFragment()
     private fun onCreatePopupWindowView(): View {
         val view = LayoutInflater.from(context).inflate(R.layout.view_room_online_info, null)
         view.findView<RecyclerView>(R.id.roomOnlineInfo_list).apply {
-            layoutManager = GridLayoutManager(context, 5)
+            layoutManager = GridLayoutManager(context, onlineUserColumnSpan)
             adapter = onlineUserAdapter
         }
         view.findViewById(R.id.roomOnlineInfo_all)!!.setOnClickListener {
@@ -142,7 +145,7 @@ class RoomFragment : BaseFragment()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
-                    onlineUserAdapter.setUsers(it.first, it.second)
+                    onlineUserAdapter.setUsers(it.first)
                 }
 
         signalService.roomState.distinctUntilChanged { it.speakerId }
@@ -195,28 +198,6 @@ class RoomFragment : BaseFragment()
         }
 
         return false
-    }
-
-    private class OnlineUserAdapter : RecyclerView.Adapter<UserItemHolder>() {
-        private var userList = emptyList<User>()
-
-        fun setUsers(users : Collection<User>, room: Room?) {
-            this.userList = users.distinctBy { it.id }
-            this.userList.sortedWith(RoomMemberComparator(room))
-            notifyDataSetChanged()
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserItemHolder {
-            return UserItemHolder(LayoutInflater.from(parent.context).inflate(R.layout.view_room_member_list_item, parent, false))
-        }
-
-        override fun onBindViewHolder(holder: UserItemHolder, position: Int) {
-            holder.setUser(userList[position])
-        }
-
-        override fun getItemCount(): Int {
-            return userList.size
-        }
     }
 
     private data class RoomInfo(val roomName: RoomName?,
