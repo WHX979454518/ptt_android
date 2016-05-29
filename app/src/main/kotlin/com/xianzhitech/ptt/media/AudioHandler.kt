@@ -119,6 +119,7 @@ class AudioHandler(private val appContext: Context,
                             logd("SCO: Turning off bluetooth sco")
                             stopSco()
                         }
+                        audioManager.mode = AudioManager.MODE_NORMAL
                     }
                 }
 
