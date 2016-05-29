@@ -16,18 +16,8 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
-import com.xianzhitech.ptt.ext.logd
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.onSingleValue
-import com.xianzhitech.ptt.ext.receiveBroadcasts
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.SignalService
-import com.xianzhitech.ptt.service.currentUserId
-import com.xianzhitech.ptt.service.loginStatus
-import com.xianzhitech.ptt.service.roomStatus
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.ui.ActivityProvider
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -45,7 +35,7 @@ class AudioHandler(private val appContext: Context,
     }
 
     private val audioManager : AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val currentBluetoothDevice = BehaviorSubject.create<BluetoothDevice?>()
+    private val currentBluetoothDevice = BehaviorSubject.create<BluetoothDevice>(null as BluetoothDevice?)
     //    private var mediaSession : MediaSessionCompat? = null
     private var currentTalkEngine : TalkEngine? = null
     private val soundPool: Pair<SoundPool, SparseIntArray> by lazy {
@@ -97,6 +87,38 @@ class AudioHandler(private val appContext: Context,
                     }
                 }
 
+        // 当进入房间时, 连接当前的蓝牙设备到SCO上, 退出时则关闭
+        Observable.combineLatest(
+                signalService.roomStatus.distinctUntilChanged { it.inRoom },
+                signalService.loginState.distinctUntilChanged { it.currentUserID },
+                currentBluetoothDevice,
+                { status, loginState, device -> Triple(status, loginState, device)})
+                .observeOnMainThread()
+                .subscribeSimple {
+                    val (status, loginState, device) = it
+                    if (status.inRoom) {
+                        if (device != null) {
+                            audioManager.isSpeakerphoneOn = false
+                            logd("SPEAKER: Turning off to enable bluetooth")
+                            audioManager.mode = AudioManager.MODE_NORMAL
+                            logd("SCO: Turning on bluetooth sco")
+                            startSco()
+                        }
+                        else {
+                            stopSco()
+                            logd("SPEAKER: Turning on because bluetooth disconnected")
+                            audioManager.isSpeakerphoneOn = true
+                            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+                        }
+                    }
+                    else if (loginState.currentUserID == null || device == null) {
+                        logd("SCO: Turning off bluetooth sco")
+                        logd("SPEAKER: Turning off because not in room")
+                        audioManager.isSpeakerphoneOn = false
+                        stopSco()
+                    }
+                }
+
 
         // 绑定talk engine震动和提示音
         signalService.roomState
@@ -141,37 +163,6 @@ class AudioHandler(private val appContext: Context,
     }
 
     private fun initializeBluetooth(bluetoothAdapter: BluetoothAdapter) {
-        // 当进入房间时, 连接当前的蓝牙设备到SCO上, 退出时则关闭
-        Observable.combineLatest(
-                signalService.roomStatus.distinctUntilChanged { it.inRoom },
-                signalService.loginState.distinctUntilChanged { it.currentUserID },
-                currentBluetoothDevice,
-                { status, loginState, device -> Triple(status, loginState, device)})
-                .observeOnMainThread()
-                .subscribeSimple {
-                    val (status, loginState, device) = it
-                    if (status.inRoom) {
-                        if (device != null) {
-                            audioManager.isSpeakerphoneOn = false
-                            audioManager.mode = AudioManager.MODE_NORMAL
-                            logd("SCO: Turning on bluetooth sco")
-                            startSco()
-                        }
-                        else {
-                            stopSco()
-                            audioManager.isSpeakerphoneOn = true
-                            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-                        }
-                    }
-                    else if (loginState.currentUserID == null || device == null) {
-                        logd("SCO: Turning off bluetooth sco")
-                        audioManager.isSpeakerphoneOn = false
-                        stopSco()
-                    }
-                }
-
-
-
         signalService.roomState
                 .distinctUntilChanged { it.status }
                 .subscribeSimple {
