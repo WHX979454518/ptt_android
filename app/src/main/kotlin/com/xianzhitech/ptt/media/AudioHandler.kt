@@ -111,11 +111,14 @@ class AudioHandler(private val appContext: Context,
                             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
                         }
                     }
-                    else if (loginState.currentUserID == null || device == null) {
-                        logd("SCO: Turning off bluetooth sco")
+                    else {
                         logd("SPEAKER: Turning off because not in room")
                         audioManager.isSpeakerphoneOn = false
-                        stopSco()
+
+                        if (loginState.currentUserID == null || device == null) {
+                            logd("SCO: Turning off bluetooth sco")
+                            stopSco()
+                        }
                     }
                 }
 
