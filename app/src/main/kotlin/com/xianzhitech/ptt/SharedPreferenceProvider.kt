@@ -25,6 +25,12 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
             pref.edit().putBoolean(KEY_AUTO_EXIT, value).apply()
         }
 
+    override var lastLoginUserId: String?
+        get() = pref.getString(KEY_LAST_LOGIN_USER_ID, null)
+        set(value) {
+            pref.edit().putString(KEY_LAST_LOGIN_USER_ID, value).apply()
+        }
+
     override var updateDownloadId: Pair<Uri, Long>?
         get() = pref.getString(KEY_LAST_UPDATE_DOWNLOAD_URL, null) ?.let { Pair(Uri.parse(it), pref.getLong(KEY_LAST_UPDATE_DOWNLOAD_ID, 0)) }
         set(value) {
@@ -47,5 +53,6 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
         const val KEY_AUTO_EXIT = "auto_exit"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
+        const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"
     }
 }

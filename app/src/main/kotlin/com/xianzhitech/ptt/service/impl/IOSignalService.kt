@@ -73,7 +73,9 @@ class IOSignalService(endpoint : String,
         val user = UserObject(userObject)
         userRepository.saveUsers(listOf(user)).execAsync()
                 .concatWith(Completable.defer {
-                    if (savedUserToken?.userId != user.id) {
+                    val lastLoginUserId = preference.lastLoginUserId
+                    preference.lastLoginUserId = user.id
+                    if (lastLoginUserId != null && lastLoginUserId != user.id) {
                         // Clear room information if it's this user's first login
                         logd("Clearing room database because different user has logged in")
                         roomRepository.clear().execAsync()
