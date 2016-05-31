@@ -1,21 +1,13 @@
 package com.xianzhitech.ptt.ext
 
 import android.app.Activity
-import android.content.BroadcastReceiver
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.content.ServiceConnection
+import android.content.*
 import android.net.ConnectivityManager
 import android.os.IBinder
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.ActivityOptionsCompat
-import android.support.v4.app.DialogFragment
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
+import android.support.v4.app.*
 import android.support.v4.content.LocalBroadcastManager
 import android.view.View
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.service.ConnectivityException
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -145,6 +137,12 @@ inline fun <reified T : Fragment> FragmentManager.findFragment(tag: String) : T?
 inline fun <reified T> Fragment.callbacks() : T? {
     return (parentFragment as? T) ?: (activity as? T)
 }
+
+val Context.appComponent : AppComponent
+    get() = applicationContext as AppComponent
+
+val Fragment.appComponent : AppComponent
+    get() = activity.appComponent
 
 fun DialogFragment.dismissImmediately() {
     dismiss()

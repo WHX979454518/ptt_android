@@ -3,7 +3,6 @@ package com.xianzhitech.ptt.service.impl
 import android.content.Context
 import android.content.Intent
 import android.os.Looper
-import android.support.v4.content.LocalBroadcastManager
 import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
@@ -26,10 +25,12 @@ import io.socket.client.Socket
 import io.socket.engineio.client.Transport
 import org.json.JSONObject
 import rx.Completable
+import rx.Observable
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Action1
 import rx.subjects.BehaviorSubject
+import rx.subjects.PublishSubject
 import java.util.*
 
 
@@ -42,6 +43,7 @@ class IOSignalService(endpoint : String,
                       private val preference: Preference) : SignalService {
     private val socket = IO.socket(endpoint)
 
+    private val roomInvitationSubject = PublishSubject.create<RoomInvitation>()
     override val roomState = BehaviorSubject.create<RoomState>(RoomState.EMPTY)
     override val loginState = BehaviorSubject.create<LoginState>(LoginState.EMPTY)
     private val errorToastAction = Action1<Throwable> {
@@ -188,6 +190,10 @@ class IOSignalService(endpoint : String,
         }
     }
 
+    override fun retrieveInvitation(): Observable<RoomInvitation> {
+        return roomInvitationSubject
+    }
+
     private fun onUserKickedOut() {
         mainThread {
             if (currentUserId != null) {
@@ -203,10 +209,7 @@ class IOSignalService(endpoint : String,
             val invitation = RoomInvitationObject(inviteObject)
 
             roomRepository.saveRooms(listOf(invitation.room)).execAsync()
-                .subscribeSimple {
-                    LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(SignalService.ACTION_INVITE_TO_JOIN)
-                            .putExtra(SignalService.EXTRA_INVITE, invitation))
-                }
+                .subscribeSimple { roomInvitationSubject += invitation }
         }
     }
 

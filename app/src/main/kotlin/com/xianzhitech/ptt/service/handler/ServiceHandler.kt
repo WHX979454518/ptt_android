@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.ui.service
+package com.xianzhitech.ptt.service.handler
 
 import android.app.PendingIntent
 import android.content.Context
@@ -14,12 +14,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
-import com.xianzhitech.ptt.service.LoginState
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomState
-import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.SignalService
-import com.xianzhitech.ptt.service.loginStatus
+import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable

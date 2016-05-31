@@ -57,7 +57,7 @@
         <activity android:name=".ui.KickOutActivity" />
 
 
-        <service android:name=".ui.service.Service"/>
+        <service android:name=".service.handler.Service"/>
 
         <activity android:name=".ui.invite.RoomInvitationActivity"
                   android:launchMode="singleInstance"

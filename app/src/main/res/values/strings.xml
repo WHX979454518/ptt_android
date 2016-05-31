@@ -107,6 +107,8 @@
     <string name="app_updating">%1$s的更新包</string>
     <string name="invite_you_to_join">邀请你加入对讲</string>
     <string name="invite_you_to_join_by_whom">%1$s 邀请你加入对讲</string>
+    <string name="invite_you_to_join_group_by_whom">%1$s 邀请你加入房间 %2$s</string>
+    <string name="received_multiple_invitations">收到%1$s条邀请</string>
     <string name="ignore_all_and_cancel">忽略全部</string>
     <string name="dialog_ignore">忽略</string>
 

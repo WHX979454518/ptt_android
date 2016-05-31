@@ -13,7 +13,7 @@
     <dimen name="profile_icon_size">60dp</dimen>
     <dimen name="room_dark_height">140dp</dimen>
     <dimen name="push_button">180dp</dimen>
-    <dimen name="button_stroke">4dp</dimen>
+    <dimen name="button_stroke">6dp</dimen>
     <dimen name="member_highlight_stroke">2dp</dimen>
     <dimen name="shadow_size">2dp</dimen>
     <dimen name="circle_top_height">10dp</dimen>

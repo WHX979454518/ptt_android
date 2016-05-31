@@ -33,6 +33,8 @@ interface SignalService {
     fun peekRoomState() : RoomState
     fun peekLoginState() : LoginState
 
+    fun retrieveInvitation() : Observable<RoomInvitation>
+
     fun login(loginName: String, password: String): Completable
     fun logout(): Completable
 
@@ -50,11 +52,6 @@ interface SignalService {
 
     fun changePassword(oldPassword: String,
                        newPassword: String): Completable
-
-    companion object {
-        const val ACTION_INVITE_TO_JOIN = "acton_invite_to_join"
-        const val EXTRA_INVITE = "extra_invite"
-    }
 }
 
 val SignalService.roomStatus : Observable<RoomStatus>

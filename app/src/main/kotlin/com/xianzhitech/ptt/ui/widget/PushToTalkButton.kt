@@ -9,12 +9,8 @@ import android.os.Vibrator
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.ImageButton
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.logd
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toColorValue
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.currentUserId
@@ -36,6 +32,7 @@ class PushToTalkButton : ImageButton {
     private val requestFocusRunnable = Runnable { signalService.requestMic().subscribeSimple() }
     private var vibrator: Vibrator? = null
     private var isPressingDown = false
+    private var ringPadding : Float = 0f
 
     constructor(context: Context) : super(context) {
         init(context)
@@ -65,11 +62,12 @@ class PushToTalkButton : ImageButton {
             }
         }
 
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = context.resources.getDimension(R.dimen.button_stroke)
-        if (isInEditMode.not()) {
-            signalService = (context.applicationContext as AppComponent).signalService
+        ringPadding = R.dimen.divider_thick.toDimen(context)
 
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = R.dimen.button_stroke.toDimen(context)
+        if (isInEditMode.not()) {
+            signalService = context.appComponent.signalService
         }
         applyRoomStatus()
     }
@@ -126,7 +124,7 @@ class PushToTalkButton : ImageButton {
             else  -> android.R.color.darker_gray
         }.toColorValue(context)
 
-        canvas.drawCircle(width / 2f, height / 2f, (width - paint.strokeWidth)/ 2f, paint)
+        canvas.drawCircle(width / 2f, height / 2f, (width - paint.strokeWidth) / 2f - ringPadding, paint)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

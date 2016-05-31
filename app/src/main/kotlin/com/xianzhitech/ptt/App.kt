@@ -15,13 +15,12 @@ import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.repo.storage.*
 import com.xianzhitech.ptt.service.SignalService
+import com.xianzhitech.ptt.service.handler.RoomInvitationHandler
 import com.xianzhitech.ptt.service.handler.RoomStatusHandler
+import com.xianzhitech.ptt.service.handler.ServiceHandler
 import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
-import com.xianzhitech.ptt.ui.RoomAutoQuitHandler
-import com.xianzhitech.ptt.ui.invite.RoomInvitationReceiver
-import com.xianzhitech.ptt.ui.service.ServiceHandler
 import com.xianzhitech.ptt.update.UpdateManager
 import com.xianzhitech.ptt.update.UpdateManagerImpl
 import okhttp3.OkHttpClient
@@ -85,8 +84,7 @@ open class App : Application(), AppComponent {
             registerActivityLifecycleCallbacks(this)
         }
 
-        RoomAutoQuitHandler(this)
-        RoomInvitationReceiver(this, signalService, activityProvider)
+        RoomInvitationHandler(this, signalService, userRepository, roomRepository, activityProvider)
         AudioHandler(this, signalService, talkEngineProvider, activityProvider)
         ServiceHandler(this, signalService)
         RoomStatusHandler(roomRepository, signalService)

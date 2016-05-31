@@ -94,13 +94,13 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, roomNotification)
     }
 
-    fun getRooms(roomIds: Iterable<String>): QueryResult<List<Room>> {
+    fun getRooms(roomIds: Iterable<String>): QueryResult<List<RoomModel>> {
         return RepoQueryResult({
             roomStorage.getRooms(roomIds)
         }, roomNotification)
     }
 
-    fun getRoom(roomId : String?) : QueryResult<Room?> {
+    fun getRoom(roomId : String?) : QueryResult<RoomModel?> {
         if (roomId == null) {
             return nullResult()
         }
@@ -268,14 +268,18 @@ data class RoomName(val name : String,
 }
 
 fun RoomName?.getInRoomDescription(context: Context) : CharSequence {
-    return if (this == null || name.isNullOrBlank()) {
-        R.string.in_room_fallback.toFormattedString(context)
+    return when {
+        this == null || name.isNullOrBlank() -> R.string.in_room_fallback.toFormattedString(context)
+        isSingleMember -> R.string.in_room_with_individual.toFormattedString(context, name)
+        else -> R.string.in_room_with_groups.toFormattedString(context, name)
     }
-    else if (isSingleMember) {
-        R.string.in_room_with_individual.toFormattedString(context, name)
-    }
-    else {
-        R.string.in_room_with_groups.toFormattedString(context, name)
+}
+
+fun RoomName?.getInvitationDescription(context: Context, inviterId : String, inviter : User?) : CharSequence {
+    val inviterName = inviter?.name ?: inviterId
+    return when {
+        this == null || name.isNullOrBlank() || isSingleMember -> R.string.invite_you_to_join_by_whom.toFormattedString(context, inviterName)
+        else -> R.string.invite_you_to_join_group_by_whom.toFormattedString(context, inviterName, name)
     }
 }
 

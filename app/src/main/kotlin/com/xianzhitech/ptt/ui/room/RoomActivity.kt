@@ -3,15 +3,13 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.TextView
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -27,9 +25,6 @@ import java.util.concurrent.TimeUnit
  * Created by fanchao on 11/12/15.
  */
 class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
-
-    private lateinit var signalService: SignalService
-    private lateinit var titleView : TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +68,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     override fun onStart() {
         super.onStart()
 
-        (application as AppComponent).signalService
+        appComponent.signalService
                 .roomStatus
                 .observeOnMainThread()
                 .bindToLifecycle()
@@ -87,8 +82,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     override fun joinRoomConfirmed(roomId: String) {
-        val appComponent = application as AppComponent
-
         appComponent.signalService.joinRoom(roomId)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -101,25 +94,25 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
         override fun onError(e: Throwable) {
             globalHandleError(e, appContext)
 
-            val appComponent = appContext as AppComponent
-            val activity = appComponent.activityProvider.currentStartedActivity
+            val activity = appContext.appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {
                 activity.finish()
             } else {
                 appContext.startActivity(Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
             }
 
-            appComponent.signalService.leaveRoom().subscribeSimple()
+            appContext.appComponent.signalService.leaveRoom().subscribeSimple()
         }
 
         override fun onCompleted() {
-            val appComponent = appContext as AppComponent
-            appComponent.roomRepository.updateLastRoomActiveTime(roomId).execAsync().subscribeSimple()
+            appContext.appComponent.roomRepository.updateLastRoomActiveTime(roomId).execAsync().subscribeSimple()
         }
     }
 
     companion object {
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
+
+        const val EXTRA_INVITATIONS = "extra_invitation"
     }
 
 }
