@@ -9,6 +9,7 @@ import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.globalHandleError
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.MainActivity
@@ -42,13 +43,17 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     private fun handleIntent(intent: Intent) {
-        supportFragmentManager.apply {
-            if (findFragmentById(R.id.room_content) == null) {
-                beginTransaction()
-                        .replace(R.id.room_content, RoomFragment())
-                        .commit()
-                executePendingTransactions()
-            }
+        var roomFragment = supportFragmentManager.findFragmentById(R.id.room_content) as? RoomFragment
+        if (roomFragment == null) {
+            roomFragment = RoomFragment()
+            supportFragmentManager.beginTransaction()
+                    .replace(R.id.room_content, roomFragment)
+                    .commit()
+            supportFragmentManager.executePendingTransactions()
+        }
+
+        if (intent.hasExtra(EXTRA_INVITATIONS)) {
+            roomFragment!!.addInvitations(intent.getSerializableExtra(EXTRA_INVITATIONS) as List<RoomInvitation>)
         }
     }
 

@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
+import java.io.Serializable
 
 class RoomInvitationHandler(private val appContext: Context,
                             private val signalService: SignalService,
@@ -57,7 +58,7 @@ class RoomInvitationHandler(private val appContext: Context,
             intent.putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.roomId)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
         } else {
-            intent.putExtra(RoomActivity.EXTRA_INVITATIONS, invitation)
+            intent.putExtra(RoomActivity.EXTRA_INVITATIONS, listOf(invitation) as Serializable)
         }
 
         val startedActivity = activityProvider.currentStartedActivity

@@ -89,7 +89,7 @@ class RoomFragment : BaseFragment()
                 roomNameObservable = Single.just(R.string.received_multiple_invitations.toFormattedString(context, pendingInvitations.size))
             } else {
                 val invitation = pendingInvitations.first()
-                roomNameObservable = appComponent.roomRepository.getRoomName(invitation.roomId)
+                roomNameObservable = appComponent.roomRepository.getRoomName(invitation.roomId, excludeUserIds = arrayOf(appComponent.signalService.currentUserId))
                         .getAsync()
                         .flatMap { roomName ->
                             appComponent.userRepository.getUser(invitation.inviterId).getAsync().map { roomName to it }
@@ -120,8 +120,9 @@ class RoomFragment : BaseFragment()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        pendingInvitations.addAll((arguments?.getSerializable(ARG_PENDING_INVITATIONS) as? List<RoomInvitation>)
-                ?: (savedInstanceState?.getSerializable(STATE_PENDING_INVITATIONS) as? List<RoomInvitation>) ?: emptyList())
+        if (savedInstanceState != null) {
+            pendingInvitations.addAll(savedInstanceState.getSerializable(STATE_PENDING_INVITATIONS) as List<RoomInvitation>)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -294,7 +295,6 @@ class RoomFragment : BaseFragment()
     }
 
     companion object {
-        const val ARG_PENDING_INVITATIONS = "arg_pi"
         private const val STATE_PENDING_INVITATIONS = "state_pi"
     }
 }
