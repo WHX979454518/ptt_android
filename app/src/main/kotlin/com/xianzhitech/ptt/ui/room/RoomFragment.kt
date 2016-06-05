@@ -19,8 +19,6 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.repo.getInvitationDescription
-import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -30,10 +28,7 @@ import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
 import rx.Observable
-import rx.Single
 import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
-import java.util.*
 
 class RoomFragment : BaseFragment()
         , BackPressable {
@@ -51,17 +46,6 @@ class RoomFragment : BaseFragment()
         }
     }
 
-    private val pendingInvitations = TreeSet<RoomInvitation> { lhs, rhs ->
-        var rc = lhs.inviteTime.compareTo(rhs.inviteTime)
-        if (rc != 0) {
-            rc = lhs.inviterId.compareTo(rhs.inviterId)
-        }
-
-        if (rc != 0) {
-            rc = lhs.roomId.compareTo(rhs.roomId)
-        }
-        rc
-    }
     private var views: Views? = null
     private val onlineUserAdapter = UserListAdapter(R.layout.view_room_member_list_item)
     private var popupWindow : PopupWindow? = null
@@ -69,66 +53,6 @@ class RoomFragment : BaseFragment()
     private var invitationSubscription : Subscription? = null
     private val onlineUserColumnSpan : Int by lazy {
         resources.getInteger(R.integer.horizontal_member_item_count)
-    }
-
-    fun addInvitations(invitations : Collection<RoomInvitation>) {
-        pendingInvitations.addAll(invitations)
-        syncInvitationState()
-    }
-
-    private fun syncInvitationState() {
-        if (views == null) {
-            return
-        }
-
-        invitationSubscription?.unsubscribe()
-
-        if (pendingInvitations.isNotEmpty()) {
-            val roomNameObservable : Single<CharSequence>
-            if (pendingInvitations.size > 1) {
-                roomNameObservable = Single.just(R.string.received_multiple_invitations.toFormattedString(context, pendingInvitations.size))
-            } else {
-                val invitation = pendingInvitations.first()
-                roomNameObservable = appComponent.roomRepository.getRoomName(invitation.roomId, excludeUserIds = arrayOf(appComponent.signalService.currentUserId))
-                        .getAsync()
-                        .flatMap { roomName ->
-                            appComponent.userRepository.getUser(invitation.inviterId).getAsync().map { roomName to it }
-                        }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .map { it.first.getInvitationDescription(context, invitation.inviterId, it.second) }
-            }
-
-            invitationSubscription = roomNameObservable.subscribeSimple {
-                if (view == null) {
-                    return@subscribeSimple
-                }
-
-                if (invitationSnackBar == null) {
-                    invitationSnackBar = Snackbar.make(view!!, it, Snackbar.LENGTH_INDEFINITE)
-                } else {
-                    invitationSnackBar!!.setText(it)
-                }
-
-                invitationSnackBar!!.show()
-            }
-        }
-        else if (invitationSnackBar?.isShownOrQueued ?: false) {
-            invitationSnackBar!!.dismiss()
-        }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        if (savedInstanceState != null) {
-            pendingInvitations.addAll(savedInstanceState.getSerializable(STATE_PENDING_INVITATIONS) as List<RoomInvitation>)
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-
-        outState.putSerializable(STATE_PENDING_INVITATIONS, ArrayList(pendingInvitations))
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -162,12 +86,6 @@ class RoomFragment : BaseFragment()
     override fun onDestroyView() {
         invitationSubscription?.unsubscribe()
         super.onDestroyView()
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        syncInvitationState()
     }
 
     private fun ensurePopupWindow() : PopupWindow {
@@ -292,9 +210,5 @@ class RoomFragment : BaseFragment()
     interface Callbacks {
         fun setTitle(title : CharSequence)
         fun onRoomQuited()
-    }
-
-    companion object {
-        private const val STATE_PENDING_INVITATIONS = "state_pi"
     }
 }

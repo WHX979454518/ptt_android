@@ -45,9 +45,8 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:tint="@color/red"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_power_settings_new_white_24px"
+        android:src="@drawable/ic_power"
         android:padding="@dimen/unit_two"/>
 
     <ImageView
@@ -60,7 +59,6 @@
         android:layout_alignParentEnd="true"
         android:layout_alignBottom="@+id/room_leave"
         android:src="@drawable/ic_people_filled"
-        android:tint="@android:color/white"
         android:padding="@dimen/unit_two"/>
 
     <TextView

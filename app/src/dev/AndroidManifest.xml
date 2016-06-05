@@ -10,14 +10,7 @@
             android:name="com.xianzhitech.ptt.ui.ServerInitActivity"
             android:windowSoftInputMode="adjustResize"
             android:label="初始化信号服务器"
-            android:theme="@style/AppTheme.NoActionBar">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar" />
 
     </application>
 

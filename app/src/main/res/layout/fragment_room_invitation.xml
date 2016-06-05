@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:theme="@style/AppTheme.Dark"
+    android:background="?attr/colorPrimary"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/roomInvite_iconContainer"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/unit_one"
+        android:paddingBottom="@dimen/unit_one"
+        android:paddingLeft="@dimen/unit_half"
+        android:paddingRight="@dimen/unit_half"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <include layout="@layout/view_invitee_icon" />
+
+    </LinearLayout>
+
+    <TextView
+        style="@style/Text.Body1"
+        tools:text="何丽芳邀请你加入对讲"
+        android:layout_weight="1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:id="@+id/roomInvite_title" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:text="@string/ignore"
+        android:id="@+id/roomInvite_ignore" />
+
+    <Button
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:text="@string/join"
+        android:id="@+id/roomInvite_join" />
+
+    <Button
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:text="@string/view"
+        android:drawableRight="@drawable/ic_expand_more_24dp"
+        android:id="@+id/roomInvite_view" />
+
+</LinearLayout>

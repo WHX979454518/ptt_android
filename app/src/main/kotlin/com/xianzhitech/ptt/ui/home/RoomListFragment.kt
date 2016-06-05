@@ -105,8 +105,8 @@ class RoomListFragment : BaseFragment() {
             val holder = RoomItemHolder(parent)
             holder.iconView.setOnClickListener {
                 holder.room?.let { room ->
-                    val intent = if (room.associatedGroupIds.isEmpty() && room.extraMemberIds.size == 1) {
-                        UserDetailsActivity.build(activity, room.extraMemberIds.first())
+                    val intent = if (room.associatedGroupIds.isEmpty() && room.extraMemberIds.size <= 2) {
+                        UserDetailsActivity.build(activity, room.extraMemberIds.first { it != currentUserId })
                     } else {
                         RoomDetailsActivity.build(activity, room.id)
                     }

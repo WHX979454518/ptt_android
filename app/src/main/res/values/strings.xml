@@ -153,6 +153,11 @@
     <string name="group_name">群组名称</string>
     <string name="group_info">群组信息</string>
     <string name="join_room">加入房间</string>
+    <string name="ignore">忽略</string>
+    <string name="join">加入</string>
+    <string name="view">查看</string>
+    <string name="ignore_all">忽略全部</string>
+    <string name="invitation_list">邀请列表(%1$d)</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>

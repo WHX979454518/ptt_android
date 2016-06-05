@@ -201,9 +201,10 @@ abstract class BaseActivity : AppCompatActivity(),
         }
 
         override fun onSuccess(value: Room) {
-            val currActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
-            if (currActivity != null) {
-                currActivity.joinRoom(value.id)
+            val currentActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
+            if (currentActivity != null) {
+                currentActivity.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+                currentActivity.joinRoom(value.id)
             } else {
                 startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
             }

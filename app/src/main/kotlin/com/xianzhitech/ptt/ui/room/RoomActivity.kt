@@ -3,14 +3,15 @@ package com.xianzhitech.ptt.ui.room
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.support.v4.app.DialogFragment
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentTransaction
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.globalHandleError
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -18,6 +19,7 @@ import com.xianzhitech.ptt.ui.base.BaseActivity
 import rx.Completable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -25,7 +27,7 @@ import java.util.concurrent.TimeUnit
 
  * Created by fanchao on 11/12/15.
  */
-class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
+class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragment.Callbacks, RoomInvitationListFragment.Callbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +55,41 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
         }
 
         if (intent.hasExtra(EXTRA_INVITATIONS)) {
-            roomFragment!!.addInvitations(intent.getSerializableExtra(EXTRA_INVITATIONS) as List<RoomInvitation>)
+            var frag = supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment
+
+            if (frag == null) {
+                frag = RoomInvitationFragment()
+                supportFragmentManager.beginTransaction()
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                        .replace(R.id.room_invitationContainer, frag, TAG_INVITE_DIALOG)
+                        .commit()
+            }
+
+            frag.addInvitations(intent.getSerializableExtra(EXTRA_INVITATIONS) as List<RoomInvitation>)
+        }
+    }
+
+    override fun showInvitationList(invitations: List<RoomInvitation>) {
+        RoomInvitationListFragment.build(invitations).show(supportFragmentManager, TAG_INVITATION_LIST_DIALOG)
+        supportFragmentManager.executePendingTransactions()
+    }
+
+    override fun ignoreAllInvitations(from: Fragment?) {
+        (from as? DialogFragment)?.dismissImmediately()
+        (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.ignoreAllInvitations()
+    }
+
+    private class RoomInvitationImpl(override val inviterId: String,
+                                     override val roomId: String = "123",
+                                     override val inviteTime: Date = Date()) : RoomInvitation
+
+    override fun dismissInvitations() {
+        supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG)?.let {
+            supportFragmentManager.beginTransaction()
+                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                    .remove(it)
+                    .commit()
+            supportFragmentManager.executePendingTransactions()
         }
     }
 
@@ -87,6 +123,18 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
     }
 
     override fun joinRoomConfirmed(roomId: String) {
+        val currentRoomId = appComponent.signalService.currentRoomId
+        if (currentRoomId == roomId) {
+            return
+        }
+
+        if (currentRoomId != null) {
+            // Switching room...
+            (supportFragmentManager.findFragmentByTag(TAG_INVITATION_LIST_DIALOG) as? DialogFragment)?.dismissImmediately()
+        }
+
+        (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
+
         appComponent.signalService.joinRoom(roomId)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -116,6 +164,8 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks {
 
     companion object {
         private const val TAG_JOIN_ROOM_PROGRESS = "tag_join_room_progress"
+        private const val TAG_INVITE_DIALOG = "tag_invite_dialog"
+        private const val TAG_INVITATION_LIST_DIALOG = "invitation_list_tag"
 
         const val EXTRA_INVITATIONS = "extra_invitation"
     }
