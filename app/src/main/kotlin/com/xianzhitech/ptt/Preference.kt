@@ -11,5 +11,4 @@ interface Preference {
     var userSessionToken: UserToken?
     var lastLoginUserId : String?
     var blockCalls : Boolean
-    var autoExit : Boolean
 }

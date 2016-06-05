@@ -19,12 +19,6 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
             pref.edit().putBoolean(KEY_BLOCK_CALLS, value).apply()
         }
 
-    override var autoExit: Boolean
-        get() = pref.getBoolean(KEY_AUTO_EXIT, true)
-        set(value) {
-            pref.edit().putBoolean(KEY_AUTO_EXIT, value).apply()
-        }
-
     override var lastLoginUserId: String?
         get() = pref.getString(KEY_LAST_LOGIN_USER_ID, null)
         set(value) {
