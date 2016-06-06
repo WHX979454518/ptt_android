@@ -3,11 +3,13 @@ package com.xianzhitech.ptt.ui.room
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.graphics.Color
+import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.support.design.widget.Snackbar
+import android.support.v4.content.ContextCompat
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,12 +25,15 @@ import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
 import rx.Observable
 import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 
 class RoomFragment : BaseFragment()
         , BackPressable {
@@ -37,6 +42,9 @@ class RoomFragment : BaseFragment()
                         val titleView : TextView = rootView.findView(R.id.room_title),
                         val speakerView : View = rootView.findView(R.id.room_speakerView),
                         val speakerAvatarView : ImageView = speakerView.findView(R.id.room_speakerAvatar),
+                        val speakerAnimationView : ImageView = speakerView.findView(R.id.room_speakerAnimationView),
+                        val speakerEllapseTimeView : View = speakerView.findView(R.id.room_speakerEllapseTime),
+                        val speakerDurationTimeView : TextView = speakerView.findView(R.id.room_speakerDuration),
                         val speakerNameView : TextView = speakerView.findView(R.id.room_speakerName)) {
         var speakerAnimator : ObjectAnimator? = null
 
@@ -49,8 +57,8 @@ class RoomFragment : BaseFragment()
     private var views: Views? = null
     private val onlineUserAdapter = UserListAdapter(R.layout.view_room_member_list_item)
     private var popupWindow : PopupWindow? = null
-    private var invitationSnackBar : Snackbar? = null
     private var invitationSubscription : Subscription? = null
+    private var updateDurationSubscription : Subscription? = null
     private val onlineUserColumnSpan : Int by lazy {
         resources.getInteger(R.integer.horizontal_member_item_count)
     }
@@ -76,6 +84,13 @@ class RoomFragment : BaseFragment()
                 popupWindow?.dismiss()
             } else {
                 ensurePopupWindow().showAsDropDown(views.titleView)
+            }
+        }
+
+        views.speakerView.setOnClickListener {
+            val speaker = it.getTag(R.id.key_last_speaker) as? User
+            if (speaker != null) {
+                activity.startActivityWithAnimation(UserDetailsActivity.build(activity, speaker.id))
             }
         }
 
@@ -170,7 +185,7 @@ class RoomFragment : BaseFragment()
                         } else if (speakerView.tag != speaker) {
                             speakerNameView.text = speaker.name
                             speakerAvatarView.setImageDrawable(speaker.createDrawable(context))
-
+                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalService.currentUserId) R.drawable.sending else R.drawable.receiving))
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 1f).apply {
                                 addListener(object : SimpleAnimatorListener() {
@@ -182,14 +197,56 @@ class RoomFragment : BaseFragment()
                             }
                         }
 
+                        val animateDrawable = speakerAnimationView.drawable
+
+                        if (speaker == null) {
+                            speakerAnimationView.visibility = View.INVISIBLE
+                            speakerEllapseTimeView.visibility = View.VISIBLE
+                            if (animateDrawable is AnimationDrawable) {
+                                animateDrawable.stop()
+                            }
+                            stopUpdatingDurationView()
+                        } else {
+                            if (animateDrawable is AnimationDrawable && !animateDrawable.isRunning) {
+                                animateDrawable.start()
+                            }
+                            speakerAnimationView.visibility = View.VISIBLE
+                            speakerEllapseTimeView.visibility = View.INVISIBLE
+                            startUpdatingDurationView()
+                        }
+
                         speakerView.tag = speaker
+                        if (speaker != null) {
+                            speakerView.setTag(R.id.key_last_speaker, speaker)
+                        }
                     }
                 }
+    }
+
+    private fun startUpdatingDurationView() {
+        if (updateDurationSubscription == null) {
+            updateDurationSubscription = Observable.interval(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .subscribe {
+                        updateDurationView()
+                    }
+        }
+    }
+
+    private fun stopUpdatingDurationView() {
+        updateDurationSubscription?.unsubscribe()
+        updateDurationSubscription = null
+    }
+
+    private fun updateDurationView() {
+        views?.apply {
+            speakerDurationTimeView.text = DateUtils.formatElapsedTime(appComponent.statisticCollector.lastSpeakerDuration / 1000)
+        }
     }
 
     override fun onStop() {
         super.onStop()
 
+        stopUpdatingDurationView()
         popupWindow?.dismiss()
     }
 

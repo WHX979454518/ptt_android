@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.handler.RoomInvitationHandler
 import com.xianzhitech.ptt.service.handler.RoomStatusHandler
 import com.xianzhitech.ptt.service.handler.ServiceHandler
+import com.xianzhitech.ptt.service.handler.StatisticCollector
 import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -47,6 +48,7 @@ open class App : Application(), AppComponent {
     override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
     override lateinit var signalService : SignalService
     override lateinit var activityProvider : ActivityProvider
+    override lateinit var statisticCollector: StatisticCollector
 
     override fun onCreate() {
         super.onCreate()
@@ -88,6 +90,7 @@ open class App : Application(), AppComponent {
         AudioHandler(this, signalService, talkEngineProvider, activityProvider)
         ServiceHandler(this, signalService)
         RoomStatusHandler(roomRepository, signalService)
+        statisticCollector = StatisticCollector(signalService)
     }
 
 }

@@ -2,4 +2,5 @@
 <resources>
     <item name="notification_main" type="id" />
     <item name="notification_invite" type="id" />
+    <item name="key_last_speaker" type="id" />
 </resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list android:oneshot="false"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:duration="@integer/animation_frame" android:drawable="@drawable/sending0" />
+    <item android:duration="@integer/animation_frame" android:drawable="@drawable/sending1" />
+    <item android:duration="@integer/animation_frame" android:drawable="@drawable/sending2" />
+    <item android:duration="@integer/animation_frame" android:drawable="@drawable/sending3" />
+</animation-list>

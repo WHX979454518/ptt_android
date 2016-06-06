@@ -94,6 +94,7 @@
         <ImageView
             android:layout_width="45dp"
             android:layout_height="45dp"
+            android:layout_centerVertical="true"
             tools:src="@color/blue"
             android:id="@+id/room_speakerAvatar"/>
 
@@ -106,6 +107,40 @@
             android:layout_toRightOf="@+id/room_speakerAvatar"
             tools:text="长长长长长的用户名"
             android:id="@+id/room_speakerName" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/room_speakerAnimationView"
+            tools:src="@drawable/receiving"
+            android:layout_alignBottom="@+id/room_speakerAvatar"
+            android:layout_below="@+id/room_speakerName"
+            android:layout_alignLeft="@+id/room_speakerName"/>
+
+        <TextView
+            android:id="@+id/room_speakerEllapseTime"
+            android:text="@string/just_now"
+            style="@style/Text.Caption"
+            android:visibility="gone"
+            android:gravity="center_vertical|left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/room_speakerAvatar"
+            android:layout_below="@+id/room_speakerName"
+            android:layout_alignLeft="@+id/room_speakerName"/>
+
+        <TextView
+            android:id="@+id/room_speakerDuration"
+            style="@style/Text.Caption"
+            android:layout_toRightOf="@+id/room_speakerAnimationView"
+            android:layout_alignRight="@+id/room_speakerName"
+            android:layout_alignTop="@+id/room_speakerAnimationView"
+            android:layout_alignBottom="@+id/room_speakerAnimationView"
+            android:gravity="right|center_vertical"
+            tools:text="00:03"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
 
     </RelativeLayout>
 

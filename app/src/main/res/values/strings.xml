@@ -158,6 +158,7 @@
     <string name="view">查看</string>
     <string name="ignore_all">忽略全部</string>
     <string name="invitation_list">邀请列表(%1$d)</string>
+    <string name="just_now">刚刚</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>

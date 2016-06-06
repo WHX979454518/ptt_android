@@ -1,10 +1,10 @@
 package com.xianzhitech.ptt
 
 object Constants {
-    @JvmStatic val LOGIN_TIMEOUT_SECONDS : Long = if (BuildConfig.DEBUG) 3600 else 10
-    @JvmStatic val REQUEST_MIC_TIMEOUT_SECONDS: Long = if (BuildConfig.DEBUG) 3600 else 2
-    @JvmStatic val JOIN_ROOM_TIMEOUT_SECONDS: Long = if (BuildConfig.DEBUG) 3600 else 10
-    @JvmStatic val UPDATE_ROOM_TIMEOUT_SECONDS : Long = if (BuildConfig.DEBUG) 3600 else 10
+    @JvmStatic val LOGIN_TIMEOUT_SECONDS : Long = if (BuildConfig.DEBUG && false) 3600 else 10
+    @JvmStatic val REQUEST_MIC_TIMEOUT_SECONDS: Long = if (BuildConfig.DEBUG && false) 3600 else 2
+    @JvmStatic val JOIN_ROOM_TIMEOUT_SECONDS: Long = if (BuildConfig.DEBUG && false) 3600 else 10
+    @JvmStatic val UPDATE_ROOM_TIMEOUT_SECONDS : Long = if (BuildConfig.DEBUG && false) 3600 else 10
 
     const val ROOM_IDLE_TIME_SECONDS : Long = 30L
 
