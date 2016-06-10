@@ -12,7 +12,7 @@ class ContactUserProvider() : UserProvider, Parcelable {
         return (context.applicationContext as AppComponent).contactRepository.getAllContactUsers().observe()
     }
 
-    constructor(source: Parcel): this()
+    constructor(source: Parcel) : this()
 
     override fun describeContents(): Int {
         return 0

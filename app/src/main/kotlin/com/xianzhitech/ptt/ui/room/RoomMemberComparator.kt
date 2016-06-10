@@ -5,8 +5,8 @@ import com.xianzhitech.ptt.model.User
 import java.text.Collator
 import java.util.*
 
-class RoomMemberComparator(private val room : Room?,
-                           private val collator : Collator = Collator.getInstance(Locale.CHINESE)) : Comparator<User> {
+class RoomMemberComparator(private val room: Room?,
+                           private val collator: Collator = Collator.getInstance(Locale.CHINESE)) : Comparator<User> {
 
     override fun compare(lhs: User, rhs: User): Int {
         if (lhs.id == rhs.id) {

@@ -12,9 +12,7 @@ import android.widget.ImageButton
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.SignalService
-import com.xianzhitech.ptt.service.currentUserId
-import com.xianzhitech.ptt.service.roomStatus
+import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
 
@@ -25,14 +23,14 @@ import rx.subscriptions.CompositeSubscription
  * Created by fanchao on 12/12/15.
  */
 class PushToTalkButton : ImageButton {
-    private lateinit var signalService : SignalService
-    private var subscription : Subscription? = null
+    private lateinit var signalService: SignalServiceHandler
+    private var subscription: Subscription? = null
     private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var roomStatus : RoomStatus = RoomStatus.IDLE
+    private var roomStatus: RoomStatus = RoomStatus.IDLE
     private val requestFocusRunnable = Runnable { signalService.requestMic().subscribeSimple() }
     private var vibrator: Vibrator? = null
     private var isPressingDown = false
-    private var ringPadding : Float = 0f
+    private var ringPadding: Float = 0f
 
     constructor(context: Context) : super(context) {
         init(context)
@@ -67,7 +65,7 @@ class PushToTalkButton : ImageButton {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = R.dimen.button_stroke.toDimen(context)
         if (isInEditMode.not()) {
-            signalService = context.appComponent.signalService
+            signalService = context.appComponent.signalHandler
         }
         applyRoomStatus()
     }
@@ -117,11 +115,11 @@ class PushToTalkButton : ImageButton {
 
         logd("Paint ptt button roomStatus: $roomStatus")
 
-        paint.color = when(roomStatus) {
-            RoomStatus.ACTIVE ->  android.R.color.holo_red_dark
+        paint.color = when (roomStatus) {
+            RoomStatus.ACTIVE -> android.R.color.holo_red_dark
             RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
             RoomStatus.JOINED -> android.R.color.holo_green_dark
-            else  -> android.R.color.darker_gray
+            else -> android.R.color.darker_gray
         }.toColorValue(context)
 
         canvas.drawCircle(width / 2f, height / 2f, (width - paint.strokeWidth) / 2f - ringPadding, paint)
@@ -140,7 +138,7 @@ class PushToTalkButton : ImageButton {
             MotionEvent.ACTION_CANCEL,
             MotionEvent.ACTION_UP -> {
                 removeCallbacks(requestFocusRunnable)
-                signalService.releaseMic().subscribeSimple()
+                signalService.releaseMic()
                 isPressingDown = false
             }
         }

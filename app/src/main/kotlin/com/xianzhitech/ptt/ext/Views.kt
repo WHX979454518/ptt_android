@@ -36,8 +36,8 @@ fun EditText.fromTextChanged() = Observable.create<String> {
 
 fun EditText.isEmpty() = text.isEmpty()
 
-fun ViewGroup.inflate(@LayoutRes layout : Int, attachToRoot : Boolean = false) =
-    LayoutInflater.from(context).inflate(layout, this, attachToRoot)
+fun ViewGroup.inflate(@LayoutRes layout: Int, attachToRoot: Boolean = false) =
+        LayoutInflater.from(context).inflate(layout, this, attachToRoot)
 
 inline fun <reified T : View> Activity.findView(@IdRes id: Int) = findViewById(id) as T
 inline fun <reified T : View> View.findView(@IdRes id: Int) = findViewById(id) as T
@@ -52,18 +52,18 @@ val TRANSLATION_Y_FRACTION = object : Property<View, Float>(Float::class.java, "
     } ?: 0f
 
     override fun set(view: View, value: Float) {
-        view.translationY =  value * view.height
+        view.translationY = value * view.height
     }
 }
 
-val TextView.compoundDrawableLeft : Drawable?
+val TextView.compoundDrawableLeft: Drawable?
     get() = compoundDrawables[0]
 
-val TextView.compoundDrawableTop : Drawable?
+val TextView.compoundDrawableTop: Drawable?
     get() = compoundDrawables[1]
 
-val TextView.compoundDrawableRight : Drawable?
+val TextView.compoundDrawableRight: Drawable?
     get() = compoundDrawables[2]
 
-val TextView.compoundDrawableBottom : Drawable?
+val TextView.compoundDrawableBottom: Drawable?
     get() = compoundDrawables[3]

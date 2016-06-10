@@ -14,12 +14,12 @@ import rx.subjects.BehaviorSubject
 
 
 class UriDrawable constructor(requestManager: RequestManager,
-                              private val uri : Uri,
-                              placeholder : Drawable? = null,
+                              private val uri: Uri,
+                              placeholder: Drawable? = null,
                               errorDrawable: Drawable? = null) : DrawableWrapper(placeholder), Target<GlideDrawable> {
 
     // For glide target
-    private var request : Request? = null
+    private var request: Request? = null
     private var sizeSubject = BehaviorSubject.create<Rect>()
 
 

@@ -46,8 +46,8 @@ object UnknownServerException : RuntimeException("Unknown server exception"), Us
     }
 }
 
-class KnownServerException(val errorName : String, val errorMessage : String? = null) : RuntimeException(errorName), UserDescribableException {
-    var errorMessageResolved : String? = null
+class KnownServerException(val errorName: String, val errorMessage: String? = null) : RuntimeException(errorName), UserDescribableException {
+    var errorMessageResolved: String? = null
 
     override fun describe(context: Context): CharSequence {
         if (errorMessage.isNullOrBlank().not()) {
@@ -62,8 +62,7 @@ class KnownServerException(val errorName : String, val errorMessage : String? = 
         if (errorMessageResolved!!.isBlank()) {
             if (BuildConfig.DEBUG && errorName.isNotBlank()) {
                 return errorName
-            }
-            else {
+            } else {
                 return context.getString(R.string.error_unknown);
             }
         }
@@ -74,15 +73,14 @@ class KnownServerException(val errorName : String, val errorMessage : String? = 
 
 class ConnectivityException() : StaticUserException(R.string.error_unable_to_connect)
 
-fun Throwable?.describeInHumanMessage(context: Context) : CharSequence {
+fun Throwable?.describeInHumanMessage(context: Context): CharSequence {
     return when {
         this is UserDescribableException -> describe(context)
         this is TimeoutException -> R.string.error_timeout.toFormattedString(context)
         else -> {
             if (BuildConfig.DEBUG && this != null) {
                 this.message ?: R.string.error_unknown.toFormattedString(context)
-            }
-            else {
+            } else {
                 R.string.error_unknown.toFormattedString(context)
             }
         }

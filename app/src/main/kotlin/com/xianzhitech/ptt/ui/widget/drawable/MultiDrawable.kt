@@ -11,28 +11,28 @@ import android.support.v4.content.ContextCompat
 import com.xianzhitech.ptt.R
 
 class MultiDrawable(val context: Context,
-                    children : List<Drawable> = emptyList(),
-                    @ColorInt val backgroundColor : Int = ContextCompat.getColor(context, R.color.grey_300),
+                    children: List<Drawable> = emptyList(),
+                    @ColorInt val backgroundColor: Int = ContextCompat.getColor(context, R.color.grey_300),
                     val gridSpacerSize: Int = context.resources.getDimensionPixelSize(R.dimen.divider_normal),
                     val maxColumnCount: Int = 3) : Drawable() {
 
-    var children : List<Drawable> = children
-    set(value) {
-        if (field != value) {
-            field.forEach {
-                if (it.callback == childrenCallbacks) {
-                    it.callback = null
+    var children: List<Drawable> = children
+        set(value) {
+            if (field != value) {
+                field.forEach {
+                    if (it.callback == childrenCallbacks) {
+                        it.callback = null
+                    }
                 }
+
+                field = value
+                value.forEach { it.callback = childrenCallbacks }
+                invalidateSelf()
             }
-
-            field = value
-            value.forEach { it.callback = childrenCallbacks }
-            invalidateSelf()
         }
-    }
 
-    private var selfAlpha : Int = 255
-    private var selfColorFilter : ColorFilter? = null
+    private var selfAlpha: Int = 255
+    private var selfColorFilter: ColorFilter? = null
 
     private val childrenCallbacks = object : Callback {
         override fun unscheduleDrawable(drawable: Drawable?, runnable: Runnable?) {
@@ -74,7 +74,7 @@ class MultiDrawable(val context: Context,
                 children.size < 4 -> 2
                 else -> maxColumnCount
             }
-            
+
             var childSize = Math.floor((width - (columnCount - 1 + 2) * gridSpacerSize) / columnCount.toDouble()).toInt()
             val padding = (width - childSize * columnCount - gridSpacerSize * (columnCount - 1)) / 2
 
@@ -98,15 +98,14 @@ class MultiDrawable(val context: Context,
                     val rowStartIndex = (children.size - firstRowColumnCount) / rowCount * i
                     drawRow(padding, y, childSize, canvas, rowStartIndex, columnCount)
                 }
-            }
-            else {
+            } else {
                 // Draw the only row from left
                 drawRow(padding, padding, childSize, canvas, 0, children.size)
             }
         }
     }
 
-    private fun drawRow(x : Int, y : Int, childSize : Int, canvas : Canvas, childStartIndex : Int, childCount : Int) {
+    private fun drawRow(x: Int, y: Int, childSize: Int, canvas: Canvas, childStartIndex: Int, childCount: Int) {
         var childX = x
         for (i in 0..childCount - 1) {
             if (i > 0) {
@@ -116,7 +115,7 @@ class MultiDrawable(val context: Context,
         }
     }
 
-    private fun drawChild(x : Int, y : Int, size : Int, canvas: Canvas, child : Drawable) {
+    private fun drawChild(x: Int, y: Int, size: Int, canvas: Canvas, child: Drawable) {
         child.alpha = selfAlpha
         child.colorFilter = selfColorFilter
         child.setBounds(x, y, x + size, y + size)

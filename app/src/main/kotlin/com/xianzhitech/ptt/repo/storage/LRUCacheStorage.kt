@@ -14,7 +14,7 @@ import kotlin.concurrent.write
 
 
 class UserLRUCacheStorage(private val userStorage: UserStorage) : UserStorage, BaseLRUCacheStorage<User>() {
-    override fun getUsers(ids: Iterable<String>, out : MutableList<User>): List<User> {
+    override fun getUsers(ids: Iterable<String>, out: MutableList<User>): List<User> {
         return getOrFetch(ids, { userStorage.getUsers(it) }, out)
     }
 
@@ -34,7 +34,7 @@ class GroupLRUCacheStorage(private val groupStorage: GroupStorage) : GroupStorag
         groupStorage.saveGroups(groups)
     }
 
-    override fun getGroups(groupIds: Iterable<String>, out : MutableList<Group>): List<Group> {
+    override fun getGroups(groupIds: Iterable<String>, out: MutableList<Group>): List<Group> {
         return getOrFetch(groupIds, { groupStorage.getGroups(it) }, out)
     }
 
@@ -44,20 +44,19 @@ class GroupLRUCacheStorage(private val groupStorage: GroupStorage) : GroupStorag
 }
 
 class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by roomStorage, BaseLRUCacheStorage<RoomModel>() {
-    private var allRoomIds : HashSet<String>? = null
+    private var allRoomIds: HashSet<String>? = null
     private var allRoomIdsLock = Any()
 
     override fun getAllRooms(): List<RoomModel> {
         return synchronized(allRoomIdsLock, {
-            val ret : List<RoomModel>
+            val ret: List<RoomModel>
             if (allRoomIds == null) {
                 ret = roomStorage.getAllRooms()
                 cacheLock.write {
                     ret.forEach { cache.put(it.id, it) }
                 }
                 allRoomIds = ret.transform { it.id }.toHashSet()
-            }
-            else {
+            } else {
                 ret = getOrFetch(allRoomIds!!, { roomStorage.getRooms(it) }, arrayListOf())
             }
 
@@ -99,19 +98,18 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
     }
 }
 
-open class BaseLRUCacheStorage<T : Model>(capacity : Int = 10240) {
+open class BaseLRUCacheStorage<T : Model>(capacity: Int = 10240) {
     protected val cache = LruCache<String, T>(capacity)
     protected val cacheLock = ReentrantReadWriteLock()
 
-    protected inline fun getOrFetch(ids : Iterable<String>, fetch : (Iterable<String>) -> List<T>, out : MutableList<T>) : List<T> {
+    protected inline fun getOrFetch(ids: Iterable<String>, fetch: (Iterable<String>) -> List<T>, out: MutableList<T>): List<T> {
         val missedIds = arrayListOf<String>()
         cacheLock.read {
             ids.forEach {
                 val result = cache[it]
                 if (result == null) {
                     missedIds.add(it)
-                }
-                else {
+                } else {
                     out.add(result)
                 }
             }
@@ -144,13 +142,13 @@ open class BaseLRUCacheStorage<T : Model>(capacity : Int = 10240) {
         return out
     }
 
-    protected fun invalidateModels(models : Iterable<Model>) {
+    protected fun invalidateModels(models: Iterable<Model>) {
         cacheLock.write {
             models.forEach { cache.remove(it.id) }
         }
     }
 
-    protected fun invalidateIds(ids : Iterable<String>) {
+    protected fun invalidateIds(ids: Iterable<String>) {
         cacheLock.write {
             ids.forEach { cache.remove(it) }
         }

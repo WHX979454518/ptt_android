@@ -10,7 +10,7 @@ import java.io.Serializable
 
 class ProgressDialogFragment : AppCompatDialogFragment() {
 
-    val builder : Builder by lazy { arguments.getSerializable(ARG_BUILDER) as Builder }
+    val builder: Builder by lazy { arguments.getSerializable(ARG_BUILDER) as Builder }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,11 +26,11 @@ class ProgressDialogFragment : AppCompatDialogFragment() {
     }
 
     class Builder : Serializable {
-        var title : String? = null
-        var message : String? = null
+        var title: String? = null
+        var message: String? = null
         var cancelable: Boolean = false
 
-        fun showImmediately(fragmentManager: FragmentManager, tag: String) : ProgressDialogFragment {
+        fun showImmediately(fragmentManager: FragmentManager, tag: String): ProgressDialogFragment {
             return ProgressDialogFragment().apply {
                 this.arguments = Bundle(1).apply { putSerializable(ARG_BUILDER, this@Builder) }
                 this.show(fragmentManager, tag)

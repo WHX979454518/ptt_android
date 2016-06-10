@@ -40,7 +40,7 @@ class UserRepository(private val userStorage: UserStorage,
         }, userNotification)
     }
 
-    fun saveUsers(users: Iterable<User>) : UpdateResult {
+    fun saveUsers(users: Iterable<User>): UpdateResult {
         return RepoUpdateResult({
             userStorage.saveUsers(users)
         }, userNotification)
@@ -52,7 +52,7 @@ class UserRepository(private val userStorage: UserStorage,
         }, userNotification)
     }
 
-    fun clear() : UpdateResult {
+    fun clear(): UpdateResult {
         return RepoUpdateResult({
             userStorage.clear()
         }, userNotification)
@@ -68,13 +68,13 @@ class GroupRepository(private val groupStorage: GroupStorage,
         }, groupNotification)
     }
 
-    fun saveGroups(groups: Iterable<Group>) : UpdateResult {
+    fun saveGroups(groups: Iterable<Group>): UpdateResult {
         return RepoUpdateResult({
             groupStorage.saveGroups(groups)
         }, groupNotification)
     }
 
-    fun clear() : UpdateResult {
+    fun clear(): UpdateResult {
         return RepoUpdateResult({
             groupStorage.clear()
         }, groupNotification)
@@ -88,7 +88,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
                      private val userNotification: PublishSubject<Unit>,
                      private val groupNotification: PublishSubject<Unit>) {
 
-    fun getAllRooms() : QueryResult<List<RoomModel>> {
+    fun getAllRooms(): QueryResult<List<RoomModel>> {
         return RepoQueryResult({
             roomStorage.getAllRooms()
         }, roomNotification)
@@ -100,7 +100,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, roomNotification)
     }
 
-    fun getRoom(roomId : String?) : QueryResult<RoomModel?> {
+    fun getRoom(roomId: String?): QueryResult<RoomModel?> {
         if (roomId == null) {
             return nullResult()
         }
@@ -110,7 +110,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, roomNotification)
     }
 
-    fun getRoomMembers(roomId: String?, maxMemberCount : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray()) : QueryResult<List<User>> {
+    fun getRoomMembers(roomId: String?, maxMemberCount: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray()): QueryResult<List<User>> {
         if (roomId == null) {
             return fixedResult(emptyList())
         }
@@ -156,8 +156,8 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
-    fun getRoomName(roomId: String?, maxDisplayMemberNames : Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds : Array<String?> = emptyArray(),
-                    separator : CharSequence = "、", ellipsizeEnd : CharSequence = " 等") : QueryResult<RoomName?> {
+    fun getRoomName(roomId: String?, maxDisplayMemberNames: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray(),
+                    separator: CharSequence = "、", ellipsizeEnd: CharSequence = " 等"): QueryResult<RoomName?> {
         if (roomId == null) {
             return fixedResult(RoomName.EMPTY)
         }
@@ -180,13 +180,12 @@ class RoomRepository(private val roomStorage: RoomStorage,
 
             // 否则返回成员名称组合
             val members = getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).call()
-            val usedMemberList : List<User>
-            val ellipizes : Boolean
+            val usedMemberList: List<User>
+            val ellipizes: Boolean
             if (members.size > maxDisplayMemberNames) {
                 usedMemberList = members.subList(0, maxDisplayMemberNames - 1)
                 ellipizes = true
-            }
-            else {
+            } else {
                 usedMemberList = members
                 ellipizes = false
             }
@@ -196,25 +195,25 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
-    fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) : UpdateResult {
+    fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String): UpdateResult {
         return RepoUpdateResult({
             roomStorage.updateLastRoomSpeaker(roomId, time, speakerId)
         }, roomNotification)
     }
 
-    fun updateLastRoomActiveTime(roomId : String, time: Date? = null) : UpdateResult {
+    fun updateLastRoomActiveTime(roomId: String, time: Date? = null): UpdateResult {
         return RepoUpdateResult({
             roomStorage.updateLastActiveTime(roomId, time ?: Date())
         }, roomNotification)
     }
 
-    fun saveRooms(rooms: Iterable<Room>) : UpdateResult {
+    fun saveRooms(rooms: Iterable<Room>): UpdateResult {
         return RepoUpdateResult({
             roomStorage.saveRooms(rooms)
         }, roomNotification)
     }
 
-    fun clear() : UpdateResult {
+    fun clear(): UpdateResult {
         return RepoUpdateResult({
             roomStorage.clear()
         }, roomNotification)
@@ -231,19 +230,19 @@ class ContactRepository(private val contactStorage: ContactStorage,
         }, userNotification, groupNotification)
     }
 
-    fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) : UpdateResult {
+    fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>): UpdateResult {
         return RepoUpdateResult({
             contactStorage.replaceAllContacts(users, groups)
         }, userNotification, groupNotification)
     }
 
-    fun getAllContactUsers() : QueryResult<List<User>> {
+    fun getAllContactUsers(): QueryResult<List<User>> {
         return RepoQueryResult({
             contactStorage.getAllContactUsers()
         }, userNotification)
     }
 
-    fun clear() : UpdateResult {
+    fun clear(): UpdateResult {
         return RepoUpdateResult({
             contactStorage.clear()
         }, userNotification, groupNotification)
@@ -260,14 +259,14 @@ interface UpdateResult {
     fun execAsync(scheduler: Scheduler = Schedulers.computation()): Completable
 }
 
-data class RoomName(val name : String,
-                    val isSingleMember : Boolean) {
+data class RoomName(val name: String,
+                    val isSingleMember: Boolean) {
     companion object {
         val EMPTY = RoomName("", false)
     }
 }
 
-fun RoomName?.getInRoomDescription(context: Context) : CharSequence {
+fun RoomName?.getInRoomDescription(context: Context): CharSequence {
     return when {
         this == null || name.isNullOrBlank() -> R.string.in_room_fallback.toFormattedString(context)
         isSingleMember -> R.string.in_room_with_individual.toFormattedString(context, name)
@@ -275,7 +274,7 @@ fun RoomName?.getInRoomDescription(context: Context) : CharSequence {
     }
 }
 
-fun RoomName?.getInvitationDescription(context: Context, inviterId : String, inviter : User?) : CharSequence {
+fun RoomName?.getInvitationDescription(context: Context, inviterId: String, inviter: User?): CharSequence {
     val inviterName = inviter?.name ?: inviterId
     return when {
         this == null || name.isNullOrBlank() || isSingleMember -> R.string.invite_you_to_join_by_whom.toFormattedString(context, inviterName)
@@ -284,7 +283,7 @@ fun RoomName?.getInvitationDescription(context: Context, inviterId : String, inv
 }
 
 private class RepoUpdateResult(private val func: () -> Unit,
-                               vararg private val notifications : Observer<Unit>) : UpdateResult {
+                               vararg private val notifications: Observer<Unit>) : UpdateResult {
     override fun exec() {
         func()
         notifications.forEach { it.onNext(Unit) }
@@ -309,11 +308,11 @@ private object NullQueryResult : QueryResult<Any?> {
     }
 }
 
-private fun <T> nullResult() : QueryResult<T> {
+private fun <T> nullResult(): QueryResult<T> {
     return NullQueryResult as QueryResult<T>
 }
 
-private fun <T> fixedResult(obj : T) : QueryResult<T> {
+private fun <T> fixedResult(obj: T): QueryResult<T> {
     return object : QueryResult<T> {
         override fun call(): T {
             return obj

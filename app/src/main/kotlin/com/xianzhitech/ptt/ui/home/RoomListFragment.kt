@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 class RoomListFragment : BaseFragment() {
 
     private var listView: RecyclerView? = null
-    private var errorView : View? = null
+    private var errorView: View? = null
     private val adapter = Adapter()
 
     private val roomList = arrayListOf<RoomModel>()
@@ -65,7 +65,7 @@ class RoomListFragment : BaseFragment() {
         val appComponent = context.applicationContext as AppComponent
         Observable.combineLatest(
                 appComponent.roomRepository.getAllRooms().observe(),
-                appComponent.signalService.loginState.first { it.currentUserID != null },
+                appComponent.signalHandler.loginState.first { it.currentUserID != null },
                 { first, second -> first to second })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
@@ -134,13 +134,13 @@ class RoomListFragment : BaseFragment() {
     }
 
     private class RoomItemHolder(container: ViewGroup,
-                                 rootView : View = container.inflate(R.layout.view_room_item),
+                                 rootView: View = container.inflate(R.layout.view_room_item),
                                  val secondaryView: TextView = rootView.findView(R.id.roomItem_secondaryTitle),
                                  val primaryView: TextView = rootView.findView(R.id.roomItem_primaryTitle),
                                  val iconView: ImageView = rootView.findView(R.id.roomItem_icon)) : RecyclerView.ViewHolder(rootView) {
 
-        private var subscription : Subscription? = null
-        var room : Room? = null
+        private var subscription: Subscription? = null
+        var room: Room? = null
 
         fun setRoom(room: RoomModel, currentUserId: String) {
             if (this.room?.id == room.id) {
@@ -154,14 +154,14 @@ class RoomListFragment : BaseFragment() {
                     .combineWith(appComponent.userRepository.getUser(room.lastSpeakMemberId).observe())
                     .switchMap { result ->
                         (Observable.interval(0, 1, TimeUnit.MINUTES, AndroidSchedulers.mainThread()) as Observable<*>)
-                                .mergeWith(appComponent.signalService.roomState.distinctUntilChanged { it.currentRoomId } as Observable<out Nothing>)
+                                .mergeWith(appComponent.signalHandler.roomState.distinctUntilChanged { it.currentRoomId } as Observable<out Nothing>)
                                 .map { result }
                     }
                     .observeOnMainThread()
                     .subscribeSimple {
-                        val (roomName : RoomName?, lastActiveUser : User?) = it
+                        val (roomName: RoomName?, lastActiveUser: User?) = it
                         val lastActiveTime = room.lastSpeakTime
-                        val currentRoomId = appComponent.signalService.peekRoomState().currentRoomId
+                        val currentRoomId = appComponent.signalHandler.peekRoomState().currentRoomId
                         if (currentRoomId == room.id) {
                             val postfix = R.string.in_room_postfix.toFormattedString(itemView.context)
                             val fullRoomName = roomName?.name + postfix

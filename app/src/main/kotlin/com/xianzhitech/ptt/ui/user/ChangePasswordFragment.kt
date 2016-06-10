@@ -22,9 +22,9 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import rx.android.schedulers.AndroidSchedulers
 
 class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonClickListener, AlertDialogFragment.OnNegativeButtonClickListener {
-    private var views : Views? = null
-    private val callbacks : Callbacks?
-    get() = (activity as? Callbacks?)
+    private var views: Views? = null
+    private val callbacks: Callbacks?
+        get() = (activity as? Callbacks?)
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_change_password, container, false).apply {
@@ -41,8 +41,8 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
         views = null
         super.onDestroyView()
     }
-    
-    fun requestFinish() : Boolean {
+
+    fun requestFinish(): Boolean {
         views?.apply {
             if (oldPassword.visibility == View.VISIBLE && oldPassword.text.isNullOrEmpty().not() ||
                     (newPassword.text.isNullOrEmpty().not() || newPasswordConfirm.text.isNullOrEmpty().not())) {
@@ -102,7 +102,7 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
             newPasswordConfirm.error = null
 
             val dialog = ProgressDialog.show(context, null, R.string.saving.toFormattedString(context), true, false)
-            (activity.application as AppComponent).signalService
+            (activity.application as AppComponent).signalHandler
                     .changePassword(oldPassword.text!!, password)
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnError {
@@ -134,7 +134,7 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
     }
 
 
-    private val TextInputLayout.text : String?
+    private val TextInputLayout.text: String?
         get() = editText?.text?.toString()
 
     private class EditTextAutoClearErrorWatcher(private val editText: TextInputLayout) : TextWatcher {
@@ -142,15 +142,18 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
             editText.error = null
         }
 
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+        }
+
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+        }
     }
 
-    private class Views(rootView : View,
-                        val oldPassword : TextInputLayout = rootView.findView(R.id.changePassword_oldPassword),
-                        val newPassword : TextInputLayout = rootView.findView(R.id.changePassword_newPassword),
-                        val newPasswordConfirm : TextInputLayout = rootView.findView(R.id.changePassword_newPasswordConfirm),
-                        val saveButton : View = rootView.findView(R.id.changePassword_save))
+    private class Views(rootView: View,
+                        val oldPassword: TextInputLayout = rootView.findView(R.id.changePassword_oldPassword),
+                        val newPassword: TextInputLayout = rootView.findView(R.id.changePassword_newPassword),
+                        val newPasswordConfirm: TextInputLayout = rootView.findView(R.id.changePassword_newPasswordConfirm),
+                        val saveButton: View = rootView.findView(R.id.changePassword_save))
 
     interface Callbacks {
         fun confirmFinishing()

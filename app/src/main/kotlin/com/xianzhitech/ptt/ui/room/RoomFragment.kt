@@ -21,8 +21,6 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.service.currentRoomId
-import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
@@ -39,14 +37,14 @@ class RoomFragment : BaseFragment()
         , BackPressable {
 
     private class Views(rootView: View,
-                        val titleView : TextView = rootView.findView(R.id.room_title),
-                        val speakerView : View = rootView.findView(R.id.room_speakerView),
-                        val speakerAvatarView : ImageView = speakerView.findView(R.id.room_speakerAvatar),
-                        val speakerAnimationView : ImageView = speakerView.findView(R.id.room_speakerAnimationView),
-                        val speakerEllapseTimeView : View = speakerView.findView(R.id.room_speakerEllapseTime),
-                        val speakerDurationTimeView : TextView = speakerView.findView(R.id.room_speakerDuration),
-                        val speakerNameView : TextView = speakerView.findView(R.id.room_speakerName)) {
-        var speakerAnimator : ObjectAnimator? = null
+                        val titleView: TextView = rootView.findView(R.id.room_title),
+                        val speakerView: View = rootView.findView(R.id.room_speakerView),
+                        val speakerAvatarView: ImageView = speakerView.findView(R.id.room_speakerAvatar),
+                        val speakerAnimationView: ImageView = speakerView.findView(R.id.room_speakerAnimationView),
+                        val speakerEllapseTimeView: View = speakerView.findView(R.id.room_speakerEllapseTime),
+                        val speakerDurationTimeView: TextView = speakerView.findView(R.id.room_speakerDuration),
+                        val speakerNameView: TextView = speakerView.findView(R.id.room_speakerName)) {
+        var speakerAnimator: ObjectAnimator? = null
 
         init {
             titleView.setCompoundDrawablesWithIntrinsicBounds(null, null,
@@ -56,10 +54,10 @@ class RoomFragment : BaseFragment()
 
     private var views: Views? = null
     private val onlineUserAdapter = UserListAdapter(R.layout.view_room_member_list_item)
-    private var popupWindow : PopupWindow? = null
-    private var invitationSubscription : Subscription? = null
-    private var updateDurationSubscription : Subscription? = null
-    private val onlineUserColumnSpan : Int by lazy {
+    private var popupWindow: PopupWindow? = null
+    private var invitationSubscription: Subscription? = null
+    private var updateDurationSubscription: Subscription? = null
+    private val onlineUserColumnSpan: Int by lazy {
         resources.getInteger(R.integer.horizontal_member_item_count)
     }
 
@@ -67,12 +65,12 @@ class RoomFragment : BaseFragment()
         val rootView = inflater.inflate(R.layout.fragment_room, container, false)
         val views = Views(rootView)
         rootView.findViewById(R.id.room_leave)?.setOnClickListener {
-            appComponent.signalService.leaveRoom().subscribeSimple()
+            appComponent.signalHandler.quitRoom()
             activity.finish()
         }
 
         rootView.findViewById(R.id.room_info)?.setOnClickListener {
-            val roomId = appComponent.signalService.currentRoomId
+            val roomId = appComponent.signalHandler.currentRoomId
             if (roomId != null) {
                 activity.startActivityWithAnimation(RoomDetailsActivity.build(context, roomId))
             }
@@ -103,7 +101,7 @@ class RoomFragment : BaseFragment()
         super.onDestroyView()
     }
 
-    private fun ensurePopupWindow() : PopupWindow {
+    private fun ensurePopupWindow(): PopupWindow {
         if (popupWindow == null) {
             popupWindow = PopupWindow(onCreatePopupWindowView(), ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             popupWindow!!.isOutsideTouchable = true
@@ -120,7 +118,7 @@ class RoomFragment : BaseFragment()
             adapter = onlineUserAdapter
         }
         view.findViewById(R.id.roomOnlineInfo_all)!!.setOnClickListener {
-            val currentRoomId = appComponent.signalService.currentRoomId
+            val currentRoomId = appComponent.signalHandler.currentRoomId
             if (currentRoomId != null) {
                 activity.startActivityWithAnimation(
                         UserListActivity.build(context, R.string.room_members.toFormattedString(context),
@@ -134,7 +132,7 @@ class RoomFragment : BaseFragment()
     override fun onStart() {
         super.onStart()
 
-        val signalService = appComponent.signalService
+        val signalService = appComponent.signalHandler
         val stateByRoomId = signalService.roomState.distinctUntilChanged { it.currentRoomId }
 
         Observable.combineLatest(
@@ -185,7 +183,7 @@ class RoomFragment : BaseFragment()
                         } else if (speakerView.tag != speaker) {
                             speakerNameView.text = speaker.name
                             speakerAvatarView.setImageDrawable(speaker.createDrawable(context))
-                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalService.currentUserId) R.drawable.sending else R.drawable.receiving))
+                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalHandler.currentUserId) R.drawable.sending else R.drawable.receiving))
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 1f).apply {
                                 addListener(object : SimpleAnimatorListener() {
@@ -265,7 +263,7 @@ class RoomFragment : BaseFragment()
                                 val onlineMemberIds: Collection<String>)
 
     interface Callbacks {
-        fun setTitle(title : CharSequence)
+        fun setTitle(title: CharSequence)
         fun onRoomQuited()
     }
 }

@@ -22,19 +22,19 @@ import rx.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 class UserListActivity : BaseToolbarActivity() {
-    private lateinit var searchView : EditText
-    private lateinit var userListView : RecyclerView
-    private lateinit var progressView : View
+    private lateinit var searchView: EditText
+    private lateinit var userListView: RecyclerView
+    private lateinit var progressView: View
 
-    private val preselectedUserIds : Set<String> by lazy {
+    private val preselectedUserIds: Set<String> by lazy {
         hashSetOf(*intent.getStringArrayExtra(EXTRA_PRESELECTED_USER_IDS))
     }
     private val selectedUserIds = hashSetOf<String>()
-    private val isSelectable : Boolean
+    private val isSelectable: Boolean
         get() = intent.getBooleanExtra(EXTRA_SELECTABLE, false)
     private val adapter = Adapter()
 
-    private val isPreselectedUnselectable : Boolean
+    private val isPreselectedUnselectable: Boolean
         get() = intent.getBooleanExtra(EXTRA_PRESELECTED_UNSELECTABLE, false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -163,9 +163,9 @@ class UserListActivity : BaseToolbarActivity() {
         fun build(context: Context,
                   title: CharSequence,
                   userProvider: UserProvider,
-                  selectable : Boolean,
-                  preselectedUserIds : Collection<String>,
-                  preselectedUnselectable : Boolean) : Intent {
+                  selectable: Boolean,
+                  preselectedUserIds: Collection<String>,
+                  preselectedUnselectable: Boolean): Intent {
 
             return Intent(context, UserListActivity::class.java)
                     .putExtra(EXTRA_TITLE, title)

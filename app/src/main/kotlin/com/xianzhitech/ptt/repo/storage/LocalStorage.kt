@@ -19,7 +19,7 @@ class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStora
         return queryList(Users.MAPPER, out, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${ids.toSqlSet()}")
     }
 
-    override fun saveUsers(users: Iterable<User>)  {
+    override fun saveUsers(users: Iterable<User>) {
         return executeInTransaction {
             val contentValues = ContentValues()
             users.forEach {
@@ -40,7 +40,7 @@ class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupSto
         return queryList(Groups.MAPPER, out, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${groupIds.toSqlSet()}")
     }
 
-    override fun saveGroups(groups: Iterable<Group>)  {
+    override fun saveGroups(groups: Iterable<Group>) {
         return executeInTransaction {
             val contentValues = ContentValues()
             groups.forEach {
@@ -65,7 +65,7 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
     }
 
-    override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String)  {
+    override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) {
         return executeInTransaction {
             val contentValue = ContentValues(3)
             contentValue.put(Rooms.LAST_SPEAK_TIME, time.time)
@@ -83,7 +83,7 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         }
     }
 
-    override fun saveRooms(rooms: Iterable<Room>)  {
+    override fun saveRooms(rooms: Iterable<Room>) {
         return executeInTransaction {
             val contentValues = ContentValues()
             rooms.forEach {
@@ -95,7 +95,7 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         }
     }
 
-    override fun clear()  {
+    override fun clear() {
         return executeInTransaction {
             db.delete(Rooms.TABLE_NAME, "1", arrayOf())
         }
@@ -161,7 +161,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
         return userStorage.getUsers(ids)
     }
 
-    override fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>)  {
+    override fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) {
         return executeInTransaction {
             userStorage.saveUsers(users)
             groupStorage.saveGroups(groups)
@@ -192,11 +192,11 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
 }
 
 
-open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
+open class BaseSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) {
 
-    protected val db : SQLiteDatabase by lazy { dbOpenHelper.writableDatabase }
+    protected val db: SQLiteDatabase by lazy { dbOpenHelper.writableDatabase }
 
-    protected inline fun executeInTransaction(func: () -> Unit)   {
+    protected inline fun executeInTransaction(func: () -> Unit) {
         db.beginTransaction()
         try {
             func()
@@ -206,9 +206,9 @@ open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
         }
     }
 
-    protected fun <T> queryList(mapper : (Cursor) -> T, out: MutableList<T>, sql: String, vararg args : String?) : List<T> {
+    protected fun <T> queryList(mapper: (Cursor) -> T, out: MutableList<T>, sql: String, vararg args: String?): List<T> {
         val startTime = System.currentTimeMillis()
-        return db.rawQuery(sql, args)?.use { cursor : Cursor ->
+        return db.rawQuery(sql, args)?.use { cursor: Cursor ->
             out.apply {
                 out.ensureMoreCapacity(cursor.count)
 
@@ -225,7 +225,7 @@ open class BaseSQLiteStorage(dbOpenHelper : SQLiteOpenHelper) {
 }
 
 
-fun createSQLiteStorageHelper(context: Context, dbName : String) : SQLiteOpenHelper {
+fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelper {
     return object : SQLiteOpenHelper(context, dbName, null, 1) {
         override fun onCreate(db: SQLiteDatabase) {
             db.beginTransaction()
@@ -256,7 +256,7 @@ private data class UserModel(override val id: String,
                              override val enterpriseId: String,
                              override val enterpriseName: String) : User
 
-private fun User.toContentValues(contentValues: ContentValues = ContentValues(8)) : ContentValues {
+private fun User.toContentValues(contentValues: ContentValues = ContentValues(8)): ContentValues {
     contentValues.put(Users.ID, id)
     contentValues.put(Users.NAME, name)
     contentValues.put(Users.AVATAR, avatar)
@@ -284,7 +284,7 @@ private object Users {
 
     const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY NOT NULL, $NAME TEXT NOT NULL, $AVATAR TEXT, $PRIORITY INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, $PERMISSIONS TEXT NOT NULL, $PHONE_NUMBER TEXT, $ENTERPRISE_ID TEXT NOT NULL, $ENTERPRISE_NAME TEXT NOT NULL)"
 
-    val MAPPER : (Cursor) -> User = { cursor ->
+    val MAPPER: (Cursor) -> User = { cursor ->
         UserModel(
                 id = cursor.getString(0),
                 name = cursor.getString(1),
@@ -304,7 +304,7 @@ private data class GroupModel(override val id: String,
                               override val avatar: String?,
                               override val memberIds: Collection<String>) : Group
 
-private fun Group.toContentValues(contentValues: ContentValues = ContentValues(5)) : ContentValues {
+private fun Group.toContentValues(contentValues: ContentValues = ContentValues(5)): ContentValues {
     contentValues.put(Groups.ID, id)
     contentValues.put(Groups.NAME, name)
     contentValues.put(Groups.DESCRIPTION, description)
@@ -313,7 +313,7 @@ private fun Group.toContentValues(contentValues: ContentValues = ContentValues(5
     return contentValues
 }
 
-private object Groups  {
+private object Groups {
     const val TABLE_NAME = "groups"
 
     const val ID = "group_id"
@@ -326,7 +326,7 @@ private object Groups  {
 
     val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID INTEGER PRIMARY KEY NOT NULL,$NAME TEXT NOT NULL,$DESCRIPTION TEXT,$AVATAR TEXT,$MEMBER_IDS TEXT)"
 
-    val MAPPER : (Cursor) -> Group = { cursor ->
+    val MAPPER: (Cursor) -> Group = { cursor ->
         GroupModel(
                 id = cursor.getString(0),
                 name = cursor.getString(1),
@@ -347,7 +347,7 @@ private data class RoomModelImpl(override val id: String,
                                  override val extraMemberIds: Collection<String>,
                                  override val associatedGroupIds: Collection<String>) : RoomModel
 
-private fun Room.toContentValues(contentValues: ContentValues = ContentValues(6)) : ContentValues {
+private fun Room.toContentValues(contentValues: ContentValues = ContentValues(6)): ContentValues {
     contentValues.put(Rooms.ID, id)
     contentValues.put(Rooms.NAME, name)
     contentValues.put(Rooms.DESC, description)
@@ -357,7 +357,7 @@ private fun Room.toContentValues(contentValues: ContentValues = ContentValues(6)
     return contentValues
 }
 
-private object Rooms  {
+private object Rooms {
     const val TABLE_NAME = "rooms"
 
     const val ID = "room_id"
@@ -374,7 +374,7 @@ private object Rooms  {
 
     val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY,$NAME TEXT,$DESC TEXT,$OWNER_ID TEXT NOT NULL,$LAST_SPEAK_MEMBER_ID TEXT,$LAST_SPEAK_TIME INTEGER, $LAST_ACTIVE_TIME INTEGER NOT NULL,$EXTRA_MEMBER_IDS TEXT,$ASSOCIATED_GROUP_IDS TEXT)"
 
-    val MAPPER : (Cursor) -> RoomModel = { cursor ->
+    val MAPPER: (Cursor) -> RoomModel = { cursor ->
         RoomModelImpl(
                 id = cursor.getString(0),
                 name = cursor.getString(1),
@@ -389,7 +389,7 @@ private object Rooms  {
     }
 }
 
-private object Contacts  {
+private object Contacts {
     const val TABLE_NAME = "contacts";
 
     const val GROUP_ID = "contact_group_id"
@@ -399,11 +399,11 @@ private object Contacts  {
 }
 
 
-private fun Set<Permission>.toDbString() : String {
+private fun Set<Permission>.toDbString(): String {
     return joinToString(separator = ",", transform = { it.toString() })
 }
 
-private fun String?.toPermissionSet() : Set<Permission> {
+private fun String?.toPermissionSet(): Set<Permission> {
     if (this == null) {
         return emptySet()
     }
@@ -420,7 +420,7 @@ private fun String?.toPermissionSet() : Set<Permission> {
     return set
 }
 
-private fun <T> MutableList<T>.ensureMoreCapacity(cap : Int) {
+private fun <T> MutableList<T>.ensureMoreCapacity(cap: Int) {
     if (this is ArrayList) {
         ensureCapacity(size + cap)
     }

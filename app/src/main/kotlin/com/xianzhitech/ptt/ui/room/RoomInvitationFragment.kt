@@ -22,9 +22,9 @@ import java.util.*
 class RoomInvitationFragment : BaseFragment() {
 
     private val pendingInvitations = arrayListOf<RoomInvitation>()
-    private var subscription : Subscription? = null
+    private var subscription: Subscription? = null
 
-    private lateinit var views : Views
+    private lateinit var views: Views
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,13 +116,13 @@ class RoomInvitationFragment : BaseFragment() {
 
                         views.inviteeIconContainer.removeAllViews()
                         val size = Math.min(3, users.size)
-                        for (i in 0..size-1) {
+                        for (i in 0..size - 1) {
                             val holder = UserItemHolder(views.inviteeIconContainer, R.layout.view_invitee_icon)
                             holder.setUser(users[i])
                             views.inviteeIconContainer.addView(holder.itemView)
                         }
 
-                        val msg : CharSequence = if (size > 1) {
+                        val msg: CharSequence = if (size > 1) {
                             R.string.multiple_invite_to_join.toFormattedString(context)
                         } else {
                             val name = users.first().name
@@ -140,15 +140,15 @@ class RoomInvitationFragment : BaseFragment() {
     }
 
     private class Views(rootView: View,
-                        val inviteeIconContainer : ViewGroup = rootView.findView(R.id.roomInvite_iconContainer),
-                        val titleView : TextView = rootView.findView(R.id.roomInvite_title),
-                        val ignoreButton : View = rootView.findView(R.id.roomInvite_ignore),
-                        val acceptButton : View = rootView.findView(R.id.roomInvite_join),
-                        val viewButton : View = rootView.findView(R.id.roomInvite_view))
+                        val inviteeIconContainer: ViewGroup = rootView.findView(R.id.roomInvite_iconContainer),
+                        val titleView: TextView = rootView.findView(R.id.roomInvite_title),
+                        val ignoreButton: View = rootView.findView(R.id.roomInvite_ignore),
+                        val acceptButton: View = rootView.findView(R.id.roomInvite_join),
+                        val viewButton: View = rootView.findView(R.id.roomInvite_view))
 
     interface Callbacks {
         fun dismissInvitations()
-        fun showInvitationList(invitations : List<RoomInvitation>)
+        fun showInvitationList(invitations: List<RoomInvitation>)
     }
 
     companion object {

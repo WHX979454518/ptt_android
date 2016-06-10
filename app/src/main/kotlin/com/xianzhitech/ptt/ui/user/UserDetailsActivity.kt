@@ -15,18 +15,17 @@ import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.service.currentUserId
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 class UserDetailsActivity : BaseToolbarActivity() {
 
     private lateinit var iconView: ImageView
-    private lateinit var nameView : TextView
-    private lateinit var companyNameView : TextView
+    private lateinit var nameView: TextView
+    private lateinit var companyNameView: TextView
     private lateinit var callButton: View
 
-    private var user : User? = null
+    private var user: User? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +43,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                 joinRoom(CreateRoomRequest(extraMemberIds = listOf(user!!.id)))
             }
         }
-        callButton.setVisible((application as AppComponent).signalService.currentUserId != intent.getStringExtra(EXTRA_USER_ID))
+        callButton.setVisible((application as AppComponent).signalHandler.currentUserId != intent.getStringExtra(EXTRA_USER_ID))
     }
 
     override fun onStart() {
@@ -71,7 +70,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
     companion object {
         const val EXTRA_USER_ID = "extra_user_id"
 
-        fun build(context: Context, userId: String) : Intent {
+        fun build(context: Context, userId: String): Intent {
             return Intent(context, UserDetailsActivity::class.java)
                     .putExtra(EXTRA_USER_ID, userId)
         }

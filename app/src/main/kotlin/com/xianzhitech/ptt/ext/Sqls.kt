@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.ext
 
 import android.database.DatabaseUtils
-import kotlin.collections.joinToString
 
 fun String.escapeSql() = DatabaseUtils.sqlEscapeString(this)
 fun <T> Iterable<T>.toSqlSet(escape: Boolean = true): String {

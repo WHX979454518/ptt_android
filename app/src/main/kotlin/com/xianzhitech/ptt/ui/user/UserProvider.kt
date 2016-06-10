@@ -6,5 +6,5 @@ import com.xianzhitech.ptt.model.User
 import rx.Observable
 
 interface UserProvider : Parcelable {
-    fun getUsers(context: Context) : Observable<List<User>>
+    fun getUsers(context: Context): Observable<List<User>>
 }

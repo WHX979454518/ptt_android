@@ -14,19 +14,18 @@ import com.xianzhitech.ptt.ext.subscribeSimple
 class MediaButtonReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent != null && intent.action == Intent.ACTION_MEDIA_BUTTON) {
-            val signalService = (context.applicationContext as AppComponent).signalService
+            val signalService = (context.applicationContext as AppComponent).signalHandler
 
-            val keyEvent : KeyEvent? = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            val keyEvent: KeyEvent? = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
             if (keyEvent != null) {
                 logtagd("MEDIAKEY", "Got key event %s", keyEvent)
                 if (signalService.peekRoomState().status.inRoom) {
                     if (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY &&
                             keyEvent.action == KeyEvent.ACTION_DOWN) {
                         signalService.requestMic().subscribeSimple()
-                    }
-                    else if (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_STOP &&
+                    } else if (keyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_STOP &&
                             keyEvent.action == KeyEvent.ACTION_UP) {
-                        signalService.releaseMic().subscribeSimple()
+                        signalService.releaseMic()
                     }
                 }
             }

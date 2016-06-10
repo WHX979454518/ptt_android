@@ -22,86 +22,86 @@ import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.Subscriptions
 import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 
 
-class IOSignalService(val endpoint : String) : SignalService {
-    private val socket = IO.socket(endpoint)
-    private var currUserToken : ExplicitUserToken? = null
+class IOSignalService(val endpoint: String) : SignalService {
+    private val socket = IO.socket(endpoint, IO.Options().apply {
+        transports = arrayOf("websocket")
+    })
 
-    override fun login(loginName: String, password: String): Observable<LoginResult> {
+    override fun login(tokenProvider: TokenProvider): Observable<LoginResult> {
         return Observable.create<LoginResult> { subscriber ->
-            logd("Logging in user $loginName")
+            logd("Logging using $tokenProvider")
 
-            // Just in case someone called us before
-            socket.off()
+            val loginResultRef = AtomicReference<LoginResultObject>(LoginResultObject(status = LoginStatus.LOGIN_IN_PROGRESS, token = tokenProvider.authToken, user = null))
 
-            var loginResult = LoginResultObject(status = LoginStatus.LOGIN_IN_PROGRESS, token = currUserToken, user = null)
-
-            subscriber.onNext(loginResult)
+            subscriber.onNext(loginResultRef.get())
 
             // Set up connection events
             socket.onMainThread(Socket.EVENT_RECONNECTING, {
-                loginResult = loginResult.copy(status = LoginStatus.LOGIN_IN_PROGRESS)
-                subscriber.onNext(loginResult)
+                loginResultRef.set(loginResultRef.get().copy(status = LoginStatus.LOGIN_IN_PROGRESS))
+                subscriber.onNext(loginResultRef.get())
             })
 
             socket.onMainThread(Socket.EVENT_RECONNECT_FAILED, {
-                loginResult = loginResult.copy(status = LoginStatus.OFFLINE)
-                subscriber.onNext(loginResult)
+                loginResultRef.set(loginResultRef.get().copy(status = LoginStatus.OFFLINE))
+                subscriber.onNext(loginResultRef.get())
             })
 
             socket.onMainThread(Socket.EVENT_CONNECT_ERROR, {
                 subscriber.onError(StaticUserException(R.string.error_unknown))
             })
 
+            socket.onMainThread(Socket.EVENT_DISCONNECT, {
+                subscriber.onCompleted()
+            })
+
             // Set up server events
             socket.onMainThread("s_login_failed", { subscriber.onError((it as? JSONObject).toError()) })
             socket.onMainThread("s_logon", {
-                val user = UserObject(it as JSONObject)
-                if (currUserToken == null) {
-                    currUserToken = ExplicitUserToken(user.id, password)
-                }
-                loginResult = loginResult.copy(token = currUserToken, user = user)
-                subscriber.onNext(loginResult)
+                loginResultRef.set(loginResultRef.get().copy(user = UserObject(it as JSONObject), status = LoginStatus.LOGGED_IN))
+                subscriber.onNext(loginResultRef.get())
             })
 
             // Process headers
             socket.io().on(Manager.EVENT_TRANSPORT, {
                 (it[0] as Transport).on(Transport.EVENT_REQUEST_HEADERS, {
-                    val savedToken = currUserToken
-                    val authName = savedToken?.userId ?: loginName
-                    val authPassword = savedToken?.password ?: password
+                    try {
+                        val savedToken = (tokenProvider.authToken as? ExplicitUserToken) ?: ExplicitUserToken(tokenProvider.loginName!!, tokenProvider.loginPassword!!)
+                        loginResultRef.set(loginResultRef.get().copy(token = savedToken))
 
-                    (it[0] as MutableMap<String, List<String>>)["Authorization"] =
-                            listOf("Basic ${(authName + ':' + authPassword.toMD5()).toBase64()}");
+                        (it[0] as MutableMap<String, List<String>>)["Authorization"] =
+                                listOf("Basic ${(savedToken.userId + ':' + savedToken.password.toMD5()).toBase64()}");
+                    } catch(e: Exception) {
+                        subscriber.onError(e)
+                    }
                 })
             })
 
             socket.connect()
-
-            subscriber.add(Subscriptions.create {
-                socket.off()
-            })
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
     override fun retrieveInvitation(): Observable<RoomInvitation> {
         return socket.retrieveEvent<JSONObject>("s_invite_to_join")
-                .map { RoomInvitationObject(it!!) }
+                .map {
+                    RoomInvitationObject(it!!)
+                }
     }
 
     override fun retrieveUserKickedOutEvent(): Observable<UserKickedOutEvent> {
         //TODO:
-        return socket.retrieveEvent<Unit>("s_kicked_out")
+        return socket.retrieveEvent<Unit>("s_kick_out")
                 .map { null }
     }
 
     override fun retrieveRoomOnlineMemberUpdate(): Observable<RoomOnlineMemberUpdate> {
-        return socket.retrieveEvent<JSONObject>("s_room_active_member_update").map { RoomActiveInfoUpdate(it!!) }
+        return socket.retrieveEvent<JSONObject>("s_online_member_update").map { RoomActiveInfoUpdate(it!!) }
     }
 
     override fun retrieveRoomSpeakerUpdate(): Observable<RoomSpeakerUpdate> {
-        return socket.retrieveEvent<JSONObject>("s_room_speaker_changed").map { RoomSpeakerUpdateObject(it!!) }
+        return socket.retrieveEvent<JSONObject>("s_speaker_changed").map { RoomSpeakerUpdateObject(it!!) }
     }
 
     override fun retrieveContacts(): Single<Contacts> {
@@ -114,8 +114,6 @@ class IOSignalService(val endpoint : String) : SignalService {
             socket.off()
             socket.io().off()
             socket.disconnect()
-
-            currUserToken = null
         }
     }
 
@@ -146,32 +144,28 @@ class IOSignalService(val endpoint : String) : SignalService {
 
     override fun retrieveRoomInfo(roomId: String): Single<Room> {
         //TODO:
-        return Single.create {  }
+        return Single.create { }
     }
 
     override fun retrieveUserInfo(userId: String): Single<User> {
         throw UnsupportedOperationException()
     }
 
-    override fun changePassword(oldPassword: String, newPassword: String): Single<UserToken> {
-        return socket.sendEvent<Unit>("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5())
-                .observeOn(AndroidSchedulers.mainThread())
+    override fun changePassword(tokenProvider: TokenProvider, oldPassword: String, newPassword: String): Single<UserToken> {
+        return socket.sendEventIgnoringResult("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5()).toSingleDefault(Unit)
                 .map {
-                    currUserToken = currUserToken?.copy(password = newPassword) ?: throw IllegalStateException("User not logged in")
-                    currUserToken!!
+                    ExplicitUserToken(userId = tokenProvider.authToken?.userId ?: tokenProvider.loginName!!, password = newPassword)
                 }
     }
 
-    private data class ExplicitUserToken(val userId : String,
-                                         val password : String) : UserToken
 }
 
-
-private fun isMainThread() : Boolean {
+private fun isMainThread(): Boolean {
     return Looper.getMainLooper() == Looper.myLooper()
 }
 
-private fun deferComplete(func: () -> Unit) : Completable {
+
+private fun deferComplete(func: () -> Unit): Completable {
     val ret = Completable.defer {
         func()
         Completable.complete()
@@ -183,11 +177,11 @@ private fun deferComplete(func: () -> Unit) : Completable {
     return ret.subscribeOn(AndroidSchedulers.mainThread())
 }
 
-private fun mainThread(func : () -> Unit) {
+private fun mainThread(func: () -> Unit) {
     deferComplete(func).subscribeSimple()
 }
 
-private fun JSONObject?.toError() : Throwable {
+private fun JSONObject?.toError(): Throwable {
     return if (this != null && has("name")) {
         KnownServerException(getString("name"), getStringValue("message"))
     } else {
@@ -196,7 +190,7 @@ private fun JSONObject?.toError() : Throwable {
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T> Socket.retrieveEvent(eventName: String) : Observable<T?> {
+private fun <T> Socket.retrieveEvent(eventName: String): Observable<T?> {
     return Observable.create<T> { subscriber ->
         val listener: (Array<Any>) -> Unit = {
             logtagd("IOSignalService", "Received $eventName with args ${it.joinToString(",")}")
@@ -208,7 +202,7 @@ private fun <T> Socket.retrieveEvent(eventName: String) : Observable<T?> {
     }
 }
 
-private fun Socket.onMainThread(eventName: String, callback : (Any?) -> Unit) {
+private fun Socket.onMainThread(eventName: String, callback: (Any?) -> Unit) {
     on(eventName, { args ->
         mainThread {
             logtagd("IOSignalService", "Received $eventName with args ${args.joinToString(",")}")
@@ -217,7 +211,7 @@ private fun Socket.onMainThread(eventName: String, callback : (Any?) -> Unit) {
     })
 }
 
-private fun <T> Socket.sendEventRaw(eventName: String, clazz : Class<T>?, args: Array<out Any?>) : Single<T> {
+private fun <T> Socket.sendEventRaw(eventName: String, clazz: Class<T>?, args: Array<out Any?>): Single<T> {
     return Single.create { subscriber ->
         val ack = Ack {
             logtagd("IOSignalService", "$eventName received ${it.joinToString(",")}")
@@ -244,15 +238,15 @@ private fun <T> Socket.sendEventRaw(eventName: String, clazz : Class<T>?, args: 
     }
 }
 
-private inline fun <reified T : Any> Socket.sendEvent(eventName: String, vararg args : Any?) : Single<T> {
+private inline fun <reified T : Any> Socket.sendEvent(eventName: String, vararg args: Any?): Single<T> {
     return sendEventRaw(eventName, T::class.java, args)
 }
 
-private fun Socket.sendEventIgnoringResult(eventName: String, vararg args : Any?) : Completable {
+private fun Socket.sendEventIgnoringResult(eventName: String, vararg args: Any?): Completable {
     return Completable.fromSingle(sendEventRaw<Any>(eventName, null, args))
 }
 
-private fun String?.toPermissionSet() : Set<Permission> {
+private fun String?.toPermissionSet(): Set<Permission> {
     if (this == null) {
         return emptySet()
     }
@@ -261,21 +255,24 @@ private fun String?.toPermissionSet() : Set<Permission> {
     return emptySet()
 }
 
-private class ContactSyncObject(private val obj : JSONObject) : Contacts {
-    override val groups : Collection<Group>
+private data class ExplicitUserToken(override val userId: String,
+                                     val password: String) : UserToken
+
+private class ContactSyncObject(private val obj: JSONObject) : Contacts {
+    override val groups: Collection<Group>
         get() = obj.optJSONObject("enterpriseGroups")?.optJSONArray("add")?.transform { GroupObject(it as JSONObject) } ?: emptyList()
 
-    override val users : Collection<User>
-        get() =  obj.optJSONObject("enterpriseMembers")?.optJSONArray("add")?.transform { UserObject(it as JSONObject) } ?: emptyList()
+    override val users: Collection<User>
+        get() = obj.optJSONObject("enterpriseMembers")?.optJSONArray("add")?.transform { UserObject(it as JSONObject) } ?: emptyList()
 
     operator fun component1() = users
     operator fun component2() = groups
 }
 
 
-private class JoinRoomResponse(private val obj : JSONObject) : JoinRoomResult {
+private class JoinRoomResponse(private val obj: JSONObject) : JoinRoomResult {
 
-    override val room : Room = RoomObject(obj.getJSONObject("room"))
+    override val room: Room = RoomObject(obj.getJSONObject("room"))
 
     override val onlineMemberIds: Collection<String>
         get() = obj.getJSONArray("onlineMemberIds").toStringList()
@@ -283,7 +280,7 @@ private class JoinRoomResponse(private val obj : JSONObject) : JoinRoomResult {
     override val speakerId: String?
         get() = obj.nullOrString("speakerId")
 
-    override val voiceServerConfiguration : Map<String, Any>
+    override val voiceServerConfiguration: Map<String, Any>
         get() {
             val server = obj.getJSONObject("voiceServer")
             return mapOf(
@@ -298,16 +295,16 @@ private class JoinRoomResponse(private val obj : JSONObject) : JoinRoomResult {
     }
 }
 
-private open class RoomSpeakerUpdateObject(protected val obj : JSONObject) : RoomSpeakerUpdate {
-    override val roomId : String
+private open class RoomSpeakerUpdateObject(protected val obj: JSONObject) : RoomSpeakerUpdate {
+    override val roomId: String
         get() = obj.getString("roomId")
 
-    override val speakerId : String?
+    override val speakerId: String?
         get() = obj.nullOrString("speakerId")
 }
 
-private class RoomActiveInfoUpdate(obj : JSONObject) : RoomSpeakerUpdateObject(obj), RoomOnlineMemberUpdate {
-    override val memberIds : Collection<String>
+private class RoomActiveInfoUpdate(obj: JSONObject) : RoomSpeakerUpdateObject(obj), RoomOnlineMemberUpdate {
+    override val memberIds: Collection<String>
         get() = obj.optJSONArray("onlineMemberIds")?.toStringList() ?: emptyList()
 }
 
@@ -315,15 +312,14 @@ private data class LoginResultObject(override val user: User? = null,
                                      override val token: UserToken? = null,
                                      override val status: LoginStatus = LoginStatus.IDLE) : LoginResult
 
-private class RoomInvitationObject(private @Transient val obj : JSONObject) : RoomInvitation {
-    @Transient val room : Room = RoomObject(obj.getJSONObject("room"))
-
+private class RoomInvitationObject(private @Transient val obj: JSONObject) : RoomInvitation, ExtraRoomInvitation {
+    @Transient override val room: Room = RoomObject(obj.getJSONObject("room"))
     override val roomId: String = room.id
     override val inviterId: String = obj.getString("inviterId")
     override val inviteTime: Date = Date()
 }
 
-private class GroupObject(private val obj : JSONObject) : Group {
+private class GroupObject(private val obj: JSONObject) : Group {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String
@@ -340,7 +336,7 @@ private class GroupObject(private val obj : JSONObject) : Group {
     }
 }
 
-private class RoomObject(private val obj : JSONObject) : Room {
+private class RoomObject(private val obj: JSONObject) : Room {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String
@@ -359,7 +355,7 @@ private class RoomObject(private val obj : JSONObject) : Room {
     }
 }
 
-private class UserObject(private val obj : JSONObject) : User {
+private class UserObject(private val obj: JSONObject) : User {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String

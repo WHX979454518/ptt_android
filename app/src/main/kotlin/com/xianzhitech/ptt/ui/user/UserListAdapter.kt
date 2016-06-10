@@ -19,7 +19,7 @@ open class UserListAdapter(@LayoutRes private val itemLayoutId: Int) : RecyclerV
         onItemClicked(it.tag as UserItemHolder)
     }
 
-    fun setUsers(newUsers : Collection<User>) {
+    fun setUsers(newUsers: Collection<User>) {
         users.clear()
         users.addAll(newUsers)
         users.sortedWith(userComparator)

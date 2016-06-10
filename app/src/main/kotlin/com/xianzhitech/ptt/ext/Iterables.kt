@@ -17,16 +17,15 @@ fun <T, R> Iterable<T>.transform(mapper: (T) -> R) = object : Iterable<R> {
 
 }
 
-fun <T> Iterable<T>.first(count : Int) : List<T> {
+fun <T> Iterable<T>.first(count: Int): List<T> {
     if (this is List) {
         return subList(0, Math.min(count - 1, size - 1))
-    }
-    else {
+    } else {
         return mapFirst(count, { it })
     }
 }
 
-inline fun <T, R> Iterable<T>.mapFirst(count : Int, transform : (T) -> R) : List<R> {
+inline fun <T, R> Iterable<T>.mapFirst(count: Int, transform: (T) -> R): List<R> {
     val result = ArrayList<R>(count)
     var index = 0
     val iter = iterator()
@@ -37,7 +36,7 @@ inline fun <T, R> Iterable<T>.mapFirst(count : Int, transform : (T) -> R) : List
     return result
 }
 
-fun <T> Iterable<T>.sizeAtLeast(size : Int) : Boolean {
+fun <T> Iterable<T>.sizeAtLeast(size: Int): Boolean {
     if (this is List) {
         return this.size >= size
     }
@@ -51,7 +50,7 @@ fun <T> Iterable<T>.sizeAtLeast(size : Int) : Boolean {
     return currSize >= size
 }
 
-fun String?.lazySplit(separator: Char) : Collection<String> {
+fun String?.lazySplit(separator: Char): Collection<String> {
     if (this == null) {
         return emptyList()
     }

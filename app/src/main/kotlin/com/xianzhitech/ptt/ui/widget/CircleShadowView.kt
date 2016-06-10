@@ -11,48 +11,51 @@ import android.view.View
 import com.xianzhitech.ptt.R
 
 class CircleShadowView : View {
-    var circleRadius : Int = 0
-    set(value) {
-        if (field != value) {
-            field = value
-            path = null
-            invalidate()
+    var circleRadius: Int = 0
+        set(value) {
+            if (field != value) {
+                field = value
+                path = null
+                invalidate()
+            }
         }
-    }
-    var shadowColor : Int = Color.argb(120, 0, 0, 0)
-    set(value) {
-        if (field != value) {
-            field = value
-            applyShadowColor(paint)
-            invalidate()
+    var shadowColor: Int = Color.argb(120, 0, 0, 0)
+        set(value) {
+            if (field != value) {
+                field = value
+                applyShadowColor(paint)
+                invalidate()
+            }
         }
-    }
 
-    var color : Int
-    get() = paint.color
-    set(value) {
-        if (paint.color != value) {
-            paint.color = value
-            invalidate()
+    var color: Int
+        get() = paint.color
+        set(value) {
+            if (paint.color != value) {
+                paint.color = value
+                invalidate()
+            }
         }
-    }
 
     private val paint = Paint().apply {
         style = Paint.Style.FILL
         applyShadowColor(this)
     }
 
-    private var path : Path? = null
+    private var path: Path? = null
     private val shadowSize = resources.getDimensionPixelSize(R.dimen.shadow_size)
     private val circleTopHeight = resources.getDimensionPixelSize(R.dimen.circle_top_height)
 
     constructor(context: Context?) : super(context)
+
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
         init(context, attrs, 0, 0)
     }
+
     constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
         init(context, attrs, defStyleAttr, 0)
     }
+
     constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         init(context, attrs, defStyleAttr, defStyleRes)
     }
@@ -76,7 +79,7 @@ class CircleShadowView : View {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
 
         val heightSize = MeasureSpec.getSize(heightMeasureSpec)
-        val calculatedSize : Int = when (MeasureSpec.getMode(heightMeasureSpec)) {
+        val calculatedSize: Int = when (MeasureSpec.getMode(heightMeasureSpec)) {
             MeasureSpec.AT_MOST -> Math.min(circleRadius + circleTopHeight, heightSize)
             MeasureSpec.EXACTLY -> heightSize
             else -> circleRadius + circleTopHeight

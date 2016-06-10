@@ -22,6 +22,7 @@ fun String.toMD5(): String {
  * 将本字串以UTF8编码转换为base64字串
  */
 fun String.toBase64() = Base64.encodeToString(toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+
 fun String.decodeBase64() = Base64.decode(toByteArray(), Base64.NO_WRAP).toString(Charsets.UTF_8)
 
 /**

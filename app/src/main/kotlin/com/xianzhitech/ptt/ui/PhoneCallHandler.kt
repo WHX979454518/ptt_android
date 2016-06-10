@@ -13,7 +13,7 @@ import java.util.*
 /**
  * 处理电话和对讲交互的模块
  */
-class PhoneCallHandler private constructor(private val appContext : Context) {
+class PhoneCallHandler private constructor(private val appContext: Context) {
     companion object {
         fun register(context: Context) {
             PhoneCallHandler(context.applicationContext)
@@ -21,7 +21,7 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
     }
 
     private val telephonyManager = appContext.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-    private val iTelephony : Any? by lazy {
+    private val iTelephony: Any? by lazy {
         try {
             telephonyManager.javaClass.getDeclaredMethod("getITelephony").let {
                 it.isAccessible = true
@@ -32,7 +32,7 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
             null
         }
     }
-    private val endCallMethod : Method? by lazy {
+    private val endCallMethod: Method? by lazy {
         try {
             iTelephony?.javaClass?.getDeclaredMethod("endCall")?.apply {
                 isAccessible = true
@@ -49,14 +49,14 @@ class PhoneCallHandler private constructor(private val appContext : Context) {
                 appContext.receiveBroadcasts(false, TelephonyManager.ACTION_PHONE_STATE_CHANGED)
                         .map { telephonyManager.callState }
                         .startWith(telephonyManager.callState),
-                appComponent.signalService.roomState,
+                appComponent.signalHandler.roomState,
                 { callState, roomState -> callState to roomState }
         ).subscribe {
             onCallStateChanged(it.first, it.second)
         }
     }
 
-    private fun onCallStateChanged(callState: Int, roomState : RoomState) {
+    private fun onCallStateChanged(callState: Int, roomState: RoomState) {
         if (callState == TelephonyManager.CALL_STATE_RINGING &&
                 EnumSet.of(RoomStatus.ACTIVE, RoomStatus.JOINED, RoomStatus.JOINING).contains(roomState.status) &&
                 (appContext as AppComponent).preference.blockCalls) {

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
+import android.widget.Toast
 import com.trello.rxlifecycle.ActivityEvent
 import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
@@ -14,7 +15,7 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.media.MediaButtonReceiver
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.service.currentUserId
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
-        AlertDialogFragment.OnNegativeButtonClickListener  {
+        AlertDialogFragment.OnNegativeButtonClickListener {
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
 
@@ -49,8 +50,7 @@ abstract class BaseActivity : AppCompatActivity(),
         intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
             if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false)) {
                 joinRoomConfirmed(roomId)
-            }
-            else {
+            } else {
                 joinRoom(roomId)
             }
             intent.removeExtra(EXTRA_JOIN_ROOM_ID)
@@ -68,7 +68,7 @@ abstract class BaseActivity : AppCompatActivity(),
         super.onStart()
 
         // 时刻重新注册媒体按键事件
-        if ((application as AppComponent).signalService.currentUserId != null) {
+        if ((application as AppComponent).signalHandler.currentUserId != null) {
             MediaButtonReceiver.registerMediaButtonEvent(this)
         }
 
@@ -96,7 +96,7 @@ abstract class BaseActivity : AppCompatActivity(),
     fun joinRoom(roomId: String) {
         val appComponent = application as AppComponent
 
-        val currentRoomID = appComponent.signalService.peekRoomState().currentRoomId
+        val currentRoomID = appComponent.signalHandler.peekRoomState().currentRoomId
 
         // 如果用户已经加入这个房间, 直接确认这个操作
         if (currentRoomID == roomId) {
@@ -135,7 +135,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     fun joinRoom(createRoomRequest: CreateRoomRequest) {
         val component = application as AppComponent
-        val signalService = component.signalService
+        val signalService = component.signalHandler
 
         showProgressDialog(R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
 
@@ -145,7 +145,12 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribe(CreateRoomSubscriber(applicationContext))
     }
 
-    protected fun showProgressDialog(message : Int, tag : String) {
+    fun onLoginError(error: Throwable) {
+        //TODO:
+        Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
+    }
+
+    protected fun showProgressDialog(message: Int, tag: String) {
         supportFragmentManager.findFragment<DialogFragment>(tag) ?: ProgressDialogFragment.Builder().apply {
             this.message = message.toFormattedString(this@BaseActivity)
             showImmediately(supportFragmentManager, tag)
@@ -160,7 +165,7 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    protected fun hideProgressDialog(tag : String) {
+    protected fun hideProgressDialog(tag: String) {
         supportFragmentManager.findFragment<DialogFragment>(tag)?.dismissImmediately()
     }
 
@@ -185,11 +190,11 @@ abstract class BaseActivity : AppCompatActivity(),
         return RxLifecycle.bindUntilEvent(lifecycleEventSubject, event)
     }
 
-    protected fun <T> Observable<T>.bindToLifecycle() : Observable<T> {
+    protected fun <T> Observable<T>.bindToLifecycle(): Observable<T> {
         return compose(RxLifecycle.bindActivity<T>(lifecycleEventSubject))
     }
 
-    protected fun <T> Observable<T>.bindUntil(event : ActivityEvent) : Observable<T> {
+    protected fun <T> Observable<T>.bindUntil(event: ActivityEvent): Observable<T> {
         return compose(this@BaseActivity.bindUntil(event))
     }
 
@@ -221,7 +226,7 @@ abstract class BaseActivity : AppCompatActivity(),
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
 
-        fun startActivityJoiningRoom(context: Context, activity : Class<*>, roomId: String) {
+        fun startActivityJoiningRoom(context: Context, activity: Class<*>, roomId: String) {
             context.startActivity(Intent(context, activity)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
@@ -229,4 +234,6 @@ abstract class BaseActivity : AppCompatActivity(),
 
         }
     }
+
+
 }

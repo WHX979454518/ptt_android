@@ -16,9 +16,9 @@ import java.io.Serializable
  */
 class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickListener {
 
-    private lateinit var builder : Builder
-    val attachment : Serializable?
-    get() = builder.attachment
+    private lateinit var builder: Builder
+    val attachment: Serializable?
+        get() = builder.attachment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,9 +88,9 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
         var btnPositive: CharSequence? = null
         var btnNegative: CharSequence? = null
         var btnNeutral: CharSequence? = null
-        var autoDismiss : Boolean = true
-        var cancellabe : Boolean = true
-        var attachment : Serializable? = null
+        var autoDismiss: Boolean = true
+        var cancellabe: Boolean = true
+        var attachment: Serializable? = null
 
         fun create(): AlertDialogFragment {
             return AlertDialogFragment().apply {

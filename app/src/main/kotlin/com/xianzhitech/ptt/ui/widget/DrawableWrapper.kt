@@ -5,23 +5,23 @@ import android.graphics.ColorFilter
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 
-open class DrawableWrapper(drawable : Drawable? = null) : Drawable() {
-    var drawable : Drawable? = drawable
-    set(value) {
-        if (field != value) {
-            field?.let {
-                if (it.callback == childCallback) {
-                    it.callback = null
+open class DrawableWrapper(drawable: Drawable? = null) : Drawable() {
+    var drawable: Drawable? = drawable
+        set(value) {
+            if (field != value) {
+                field?.let {
+                    if (it.callback == childCallback) {
+                        it.callback = null
+                    }
                 }
-            }
 
-            field = value
-            field?.let { it.callback = childCallback }
-            invalidateSelf()
+                field = value
+                field?.let { it.callback = childCallback }
+                invalidateSelf()
+            }
         }
-    }
-    private var selfAlpha : Int = 255
-    private var selfColorFilter : ColorFilter? = null
+    private var selfAlpha: Int = 255
+    private var selfColorFilter: ColorFilter? = null
 
     private val childCallback = object : Drawable.Callback {
         override fun unscheduleDrawable(drawable: Drawable?, runnable: Runnable?) {

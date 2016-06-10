@@ -13,21 +13,12 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.callbacks
-import com.xianzhitech.ptt.ext.combineWith
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getColorCompat
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.loginStatus
-import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import rx.Observable
@@ -126,7 +117,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         callbacks<Callbacks>()?.setTitle(getString(R.string.app_name))
 
         val appComponent = context.applicationContext as AppComponent
-        val signalService = appComponent.signalService
+        val signalService = appComponent.signalHandler
         val roomRepository = appComponent.roomRepository
         Observable.combineLatest(
                 signalService.loginStatus,
@@ -141,7 +132,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                 .observeOnMainThread()
                 .subscribeSimple {
                     views?.topBanner?.apply {
-                        val (loginStatus, roomStatus, currRoom, roomName : RoomName?) = it
+                        val (loginStatus, roomStatus, currRoom, roomName: RoomName?) = it
                         setCompoundDrawables(null, null, null, null)
                         when (loginStatus) {
                             LoginStatus.LOGIN_IN_PROGRESS -> {
@@ -161,8 +152,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                     setOnClickListener {
                                         (activity as BaseActivity).joinRoom(currRoom.id)
                                     }
-                                }
-                                else {
+                                } else {
                                     setVisible(false)
                                 }
                             }
@@ -186,6 +176,6 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
 
     private data class LoginRoomInfo(val loginStatus: LoginStatus,
                                      val roomStatus: RoomStatus,
-                                     val currRoom : Room?,
-                                     val currRoomName : RoomName?)
+                                     val currRoom: Room?,
+                                     val currRoomName: RoomName?)
 }

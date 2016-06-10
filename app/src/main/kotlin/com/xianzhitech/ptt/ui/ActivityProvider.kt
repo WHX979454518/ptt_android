@@ -5,6 +5,6 @@ import com.trello.rxlifecycle.ActivityEvent
 import rx.Observable
 
 interface ActivityProvider {
-    val currentStartedActivity : Activity?
-    val activityEventSubject : Observable<ActivityEvent>
+    val currentStartedActivity: Activity?
+    val activityEventSubject: Observable<ActivityEvent>
 }

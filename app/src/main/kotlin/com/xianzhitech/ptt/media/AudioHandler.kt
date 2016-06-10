@@ -17,13 +17,15 @@ import com.xianzhitech.ptt.engine.TalkEngine
 import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import com.xianzhitech.ptt.ui.ActivityProvider
 import rx.Observable
 import rx.subjects.BehaviorSubject
 
 class AudioHandler(private val appContext: Context,
-                   private val signalService: SignalService,
+                   private val signalService: SignalServiceHandler,
                    private val talkEngineProvider: TalkEngineProvider,
                    private val activityProvider: ActivityProvider) {
 
@@ -34,10 +36,10 @@ class AudioHandler(private val appContext: Context,
 //        const val MESSAGE_PUSH_RELEASE = "+PTT=R"
     }
 
-    private val audioManager : AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val audioManager: AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val currentBluetoothDevice = BehaviorSubject.create<BluetoothDevice>(null as BluetoothDevice?)
     //    private var mediaSession : MediaSessionCompat? = null
-    private var currentTalkEngine : TalkEngine? = null
+    private var currentTalkEngine: TalkEngine? = null
     private val soundPool: Pair<SoundPool, SparseIntArray> by lazy {
         Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
             second.put(R.raw.incoming, first.load(appContext, R.raw.incoming, 0))
@@ -63,8 +65,7 @@ class AudioHandler(private val appContext: Context,
                 .subscribeSimple {
                     if (it) {
                         MediaButtonReceiver.registerMediaButtonEvent(appContext)
-                    }
-                    else {
+                    } else {
                         MediaButtonReceiver.unregisterMediaButtonEvent(appContext)
                     }
                 }
@@ -81,8 +82,7 @@ class AudioHandler(private val appContext: Context,
                         }
 
                         audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, hint)
-                    }
-                    else {
+                    } else {
                         audioManager.abandonAudioFocus(null)
                     }
                 }
@@ -92,7 +92,7 @@ class AudioHandler(private val appContext: Context,
                 signalService.roomStatus.distinctUntilChanged { it.inRoom },
                 signalService.loginState.distinctUntilChanged { it.currentUserID },
                 currentBluetoothDevice,
-                { status, loginState, device -> Triple(status, loginState, device)})
+                { status, loginState, device -> Triple(status, loginState, device) })
                 .observeOnMainThread()
                 .subscribeSimple {
                     val (status, loginState, device) = it
@@ -103,15 +103,13 @@ class AudioHandler(private val appContext: Context,
                             audioManager.mode = AudioManager.MODE_NORMAL
                             logd("SCO: Turning on bluetooth sco")
                             startSco()
-                        }
-                        else {
+                        } else {
                             stopSco()
                             logd("SPEAKER: Turning on because bluetooth disconnected")
                             audioManager.isSpeakerphoneOn = true
                             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
                         }
-                    }
-                    else {
+                    } else {
                         logd("SPEAKER: Turning off because not in room")
                         audioManager.isSpeakerphoneOn = false
 
@@ -156,10 +154,12 @@ class AudioHandler(private val appContext: Context,
                                     // 抢麦失败
                                     playSound(R.raw.pttup_offline)
                                 }
-                                else -> {}
+                                else -> {
+                                }
                             }
                         }
-                        else -> {}
+                        else -> {
+                        }
                     }
 
                     lastRoomState = it
@@ -182,8 +182,7 @@ class AudioHandler(private val appContext: Context,
                 .switchMap { loggedIn ->
                     if (loggedIn) {
                         queryBluetoothDevice(bluetoothAdapter)
-                    }
-                    else {
+                    } else {
                         Observable.just(emptyList<BluetoothDevice>())
                     }
                 }
@@ -253,7 +252,7 @@ class AudioHandler(private val appContext: Context,
     /**
      * 查找已连接的手咪设备
      */
-    private fun queryBluetoothDevice(btAdapter : BluetoothAdapter) : Observable<Collection<BluetoothDevice>> {
+    private fun queryBluetoothDevice(btAdapter: BluetoothAdapter): Observable<Collection<BluetoothDevice>> {
         return getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.HEADSET)
                 .switchMap { allConnectedDevices ->
                     appContext.receiveBroadcasts(false, BluetoothDevice.ACTION_ACL_CONNECTED)
@@ -276,10 +275,11 @@ class AudioHandler(private val appContext: Context,
                 .map { it.filter { it.name.contains("PTT") } }
     }
 
-    private fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int) : Observable<MutableSet<BluetoothDevice>> {
+    private fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int): Observable<MutableSet<BluetoothDevice>> {
         return Observable.create { subscriber ->
             btAdapter.getProfileProxy(appContext, object : BluetoothProfile.ServiceListener {
-                override fun onServiceDisconnected(profile: Int) { }
+                override fun onServiceDisconnected(profile: Int) {
+                }
 
                 override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
                     subscriber.onSingleValue(proxy?.connectedDevices?.toMutableSet() ?: hashSetOf())

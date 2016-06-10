@@ -11,8 +11,6 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.currentRoomId
-import com.xianzhitech.ptt.service.roomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -94,7 +92,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
     }
 
     override fun onBackPressed() {
-        supportFragmentManager.findFragmentById(R.id.room_content) ?. let {
+        supportFragmentManager.findFragmentById(R.id.room_content)?.let {
             if (it is BackPressable && it.onBackPressed()) {
                 return
             }
@@ -109,7 +107,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
     override fun onStart() {
         super.onStart()
 
-        appComponent.signalService
+        appComponent.signalHandler
                 .roomStatus
                 .observeOnMainThread()
                 .bindToLifecycle()
@@ -123,7 +121,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
     }
 
     override fun joinRoomConfirmed(roomId: String) {
-        val currentRoomId = appComponent.signalService.currentRoomId
+        val currentRoomId = appComponent.signalHandler.currentRoomId
         if (currentRoomId == roomId) {
             return
         }
@@ -135,15 +133,17 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
 
-        appComponent.signalService.joinRoom(roomId)
+        appComponent.signalHandler.joinRoom(roomId)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(JoinRoomSubscriber(applicationContext, roomId))
     }
 
-    private class JoinRoomSubscriber(private val appContext : Context,
-                                     private val roomId : String) : Completable.CompletableSubscriber {
-        override fun onSubscribe(d: Subscription?) { }
+    private class JoinRoomSubscriber(private val appContext: Context,
+                                     private val roomId: String) : Completable.CompletableSubscriber {
+        override fun onSubscribe(d: Subscription?) {
+        }
+
         override fun onError(e: Throwable) {
             globalHandleError(e, appContext)
 
@@ -154,7 +154,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 appContext.startActivity(Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
             }
 
-            appContext.appComponent.signalService.leaveRoom().subscribeSimple()
+            appContext.appComponent.signalHandler.quitRoom()
         }
 
         override fun onCompleted() {

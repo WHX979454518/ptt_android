@@ -86,7 +86,7 @@ fun ConnectivityManager.hasActiveConnection(): Boolean {
     return activeNetworkInfo?.isConnected ?: false
 }
 
-fun Context.getActiveNetwork() : Observable<NetworkInfoData?> {
+fun Context.getActiveNetwork(): Observable<NetworkInfoData?> {
     val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     return receiveBroadcasts(false, ConnectivityManager.CONNECTIVITY_ACTION)
             .map { connectivityManager.activeNetworkInfo?.let { NetworkInfoData(it) } }
@@ -127,21 +127,21 @@ fun Context.ensureConnectivity(): Observable<Unit> {
 }
 
 
-val Activity.contentView : View
-get() = findViewById(android.R.id.content)
+val Activity.contentView: View
+    get() = findViewById(android.R.id.content)
 
-inline fun <reified T : Fragment> FragmentManager.findFragment(tag: String) : T? {
+inline fun <reified T : Fragment> FragmentManager.findFragment(tag: String): T? {
     return findFragmentByTag(tag) as? T
 }
 
-inline fun <reified T> Fragment.callbacks() : T? {
+inline fun <reified T> Fragment.callbacks(): T? {
     return (parentFragment as? T) ?: (activity as? T)
 }
 
-val Context.appComponent : AppComponent
+val Context.appComponent: AppComponent
     get() = applicationContext as AppComponent
 
-val Fragment.appComponent : AppComponent
+val Fragment.appComponent: AppComponent
     get() = activity.appComponent
 
 fun DialogFragment.dismissImmediately() {
@@ -149,23 +149,23 @@ fun DialogFragment.dismissImmediately() {
     fragmentManager.executePendingTransactions()
 }
 
-fun Activity.startActivityWithAnimation(intent : Intent,
-                                        enterAnim : Int = R.anim.slide_in_from_right,
-                                        exitAnim : Int = R.anim.slide_out_to_left,
-                                        backEnterAnim : Int = R.anim.slide_in_from_left,
-                                        backExitAnim : Int = R.anim.slide_out_to_right) {
+fun Activity.startActivityWithAnimation(intent: Intent,
+                                        enterAnim: Int = R.anim.slide_in_from_right,
+                                        exitAnim: Int = R.anim.slide_out_to_left,
+                                        backEnterAnim: Int = R.anim.slide_in_from_left,
+                                        backExitAnim: Int = R.anim.slide_out_to_right) {
     intent.putExtra(BaseActivity.EXTRA_FINISH_ENTER_ANIM, backEnterAnim)
     intent.putExtra(BaseActivity.EXTRA_FINISH_EXIT_ANIM, backExitAnim)
     ActivityCompat.startActivity(this, intent, ActivityOptionsCompat.makeCustomAnimation(this, enterAnim, exitAnim).toBundle())
     overridePendingTransition(enterAnim, exitAnim)
 }
 
-fun Activity.startActivityForResultWithAnimation(intent : Intent,
-                                                 requestCode : Int,
-                                                 enterAnim : Int = R.anim.slide_in_from_right,
-                                                 exitAnim : Int = R.anim.slide_out_to_left,
-                                                 backEnterAnim : Int = R.anim.slide_in_from_left,
-                                                 backExitAnim : Int = R.anim.slide_out_to_right) {
+fun Activity.startActivityForResultWithAnimation(intent: Intent,
+                                                 requestCode: Int,
+                                                 enterAnim: Int = R.anim.slide_in_from_right,
+                                                 exitAnim: Int = R.anim.slide_out_to_left,
+                                                 backEnterAnim: Int = R.anim.slide_in_from_left,
+                                                 backExitAnim: Int = R.anim.slide_out_to_right) {
 
     intent.putExtra(BaseActivity.EXTRA_FINISH_ENTER_ANIM, backEnterAnim)
     intent.putExtra(BaseActivity.EXTRA_FINISH_EXIT_ANIM, backExitAnim)

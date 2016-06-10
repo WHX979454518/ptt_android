@@ -13,14 +13,14 @@ import java.net.URL
 import java.util.*
 
 
-class UpdateManagerImpl(private val appContext : Context,
-                        private val endpoint : Uri) : UpdateManager {
+class UpdateManagerImpl(private val appContext: Context,
+                        private val endpoint: Uri) : UpdateManager {
     companion object {
         private const val MIN_UPDATE_CHECK_INTERVAL = 5 * 60 * 1000L // 5min
     }
 
-    private var updateInfoSubject : BehaviorSubject<UpdateInfo>? = null
-    private var lastCheckDate : Date? = null
+    private var updateInfoSubject: BehaviorSubject<UpdateInfo>? = null
+    private var lastCheckDate: Date? = null
 
     override fun retrieveUpdateInfo(): Observable<UpdateInfo?> {
         return synchronized(this, {
@@ -40,8 +40,7 @@ class UpdateManagerImpl(private val appContext : Context,
                             val rawText = it.readText()
                             if (rawText.isNullOrEmpty() || rawText.equals("null", ignoreCase = true)) {
                                 subscriber.onSingleValue(null)
-                            }
-                            else {
+                            } else {
                                 val obj = JSONObject(rawText)
                                 subscriber.onSingleValue(UpdateInfo(
                                         updateMessage = obj.optString("updateMessage"),
@@ -54,15 +53,15 @@ class UpdateManagerImpl(private val appContext : Context,
                     }
 
                 }.subscribeOn(Schedulers.io())
-                .subscribe(object : GlobalSubscriber<UpdateInfo?>() {
-                    override fun onNext(t: UpdateInfo?) {
-                        updateInfoSubject!!.onNext(t)
-                    }
+                        .subscribe(object : GlobalSubscriber<UpdateInfo?>() {
+                            override fun onNext(t: UpdateInfo?) {
+                                updateInfoSubject!!.onNext(t)
+                            }
 
-                    override fun onError(e: Throwable) {
-                        updateInfoSubject!!.onError(e)
-                    }
-                })
+                            override fun onError(e: Throwable) {
+                                updateInfoSubject!!.onError(e)
+                            }
+                        })
             }
 
             updateInfoSubject!!

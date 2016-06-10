@@ -22,8 +22,8 @@ import com.xianzhitech.ptt.ui.user.EditProfileActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 class ProfileFragment : BaseFragment(), View.OnClickListener {
-    private var views : Views? = null
-    private lateinit var appComponent : AppComponent
+    private var views: Views? = null
+    private lateinit var appComponent: AppComponent
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +62,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
 
             views = Views(this).apply {
 
-                appComponent.signalService.loginState
+                appComponent.signalHandler.loginState
                         .filter { it.currentUserID != null }
                         .switchMap { appComponent.userRepository.getUser(it.currentUserID!!).observe() }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
@@ -89,11 +89,10 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
                         .setTitle(R.string.dialog_confirm_title)
                         .setMessage(R.string.log_out_confirm_message)
                         .setPositiveButton(R.string.logout, { dialogInterface: DialogInterface, i: Int ->
-                            appComponent.signalService
-                                    .logout().subscribeSimple()
+                            appComponent.signalHandler.logout()
                             dialogInterface.dismiss()
                         })
-                        .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss()})
+                        .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss() })
                         .show()
             }
             R.id.profile_settings -> {
@@ -110,6 +109,6 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
     }
 
     private class Views(rootView: View,
-                        val iconView : ImageView = rootView.findView(R.id.profile_icon),
-                        val nameView : TextView = rootView.findView(R.id.profile_name))
+                        val iconView: ImageView = rootView.findView(R.id.profile_icon),
+                        val nameView: TextView = rootView.findView(R.id.profile_name))
 }

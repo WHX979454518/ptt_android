@@ -11,7 +11,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
         if (intent != null) {
             val lastUpdateDownloadId = (context.applicationContext as AppComponent).preference.updateDownloadId
             if (lastUpdateDownloadId != null && lastUpdateDownloadId.second == intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)) {
-               installPackage(context, lastUpdateDownloadId.second)
+                installPackage(context, lastUpdateDownloadId.second)
             }
         }
     }

@@ -16,11 +16,7 @@ import com.xianzhitech.ptt.repo.storage.*
 import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.AppRequest
 import com.xianzhitech.ptt.service.AppService
-import com.xianzhitech.ptt.service.SignalService
-import com.xianzhitech.ptt.service.handler.RoomInvitationHandler
-import com.xianzhitech.ptt.service.handler.RoomStatusHandler
-import com.xianzhitech.ptt.service.handler.ServiceHandler
-import com.xianzhitech.ptt.service.handler.StatisticCollector
+import com.xianzhitech.ptt.service.handler.*
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import okhttp3.OkHttpClient
@@ -35,16 +31,17 @@ open class App : Application(), AppComponent {
         override fun createEngine() = WebRtcTalkEngine(this@App)
     }
 
-    override lateinit var userRepository : UserRepository
+    override lateinit var userRepository: UserRepository
     override lateinit var groupRepository: GroupRepository
     override lateinit var roomRepository: RoomRepository
     override lateinit var contactRepository: ContactRepository
 
     override lateinit var preference: Preference
 
-//    override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
-    override lateinit var signalService : SignalService
-    override lateinit var activityProvider : ActivityProvider
+    //    override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
+//    override lateinit var signalService : SignalService
+    override lateinit var signalHandler: SignalServiceHandler
+    override lateinit var activityProvider: ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
 
     override val appService: AppService = object : AppService {
@@ -71,15 +68,7 @@ open class App : Application(), AppComponent {
                 userStorage, roomNotification, userNotification, groupNotification)
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
-        signalService = AppParamSignalServiceWrapper(
-                appContext = this,
-                userRepository = userRepository,
-                groupRepository = groupRepository,
-                roomRepository = roomRepository,
-                contactRepository = contactRepository,
-                preference = preference,
-                appService = appService
-        )
+        signalHandler = SignalServiceHandler(this, this)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
@@ -90,11 +79,11 @@ open class App : Application(), AppComponent {
             registerActivityLifecycleCallbacks(this)
         }
 
-        RoomInvitationHandler(this, signalService, userRepository, roomRepository, activityProvider)
-        AudioHandler(this, signalService, talkEngineProvider, activityProvider)
-        ServiceHandler(this, signalService)
-        RoomStatusHandler(roomRepository, signalService)
-        statisticCollector = StatisticCollector(signalService)
+        RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
+        AudioHandler(this, signalHandler, talkEngineProvider, activityProvider)
+        ServiceHandler(this, signalHandler)
+        RoomStatusHandler(roomRepository, signalHandler)
+        statisticCollector = StatisticCollector(signalHandler)
     }
 
 }

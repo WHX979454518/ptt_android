@@ -5,6 +5,7 @@ import android.net.Uri
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.service.UserToken
+import java.util.*
 
 class AppPreference(private val pref: SharedPreferences) : Preference {
     override var userSessionToken: UserToken?
@@ -26,14 +27,13 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
         }
 
     override var updateDownloadId: Pair<Uri, Long>?
-        get() = pref.getString(KEY_LAST_UPDATE_DOWNLOAD_URL, null) ?.let { Pair(Uri.parse(it), pref.getLong(KEY_LAST_UPDATE_DOWNLOAD_ID, 0)) }
+        get() = pref.getString(KEY_LAST_UPDATE_DOWNLOAD_URL, null)?.let { Pair(Uri.parse(it), pref.getLong(KEY_LAST_UPDATE_DOWNLOAD_ID, 0)) }
         set(value) {
             pref.edit().apply {
                 if (value == null) {
                     remove(KEY_LAST_UPDATE_DOWNLOAD_URL)
                     remove(KEY_LAST_UPDATE_DOWNLOAD_ID)
-                }
-                else {
+                } else {
                     putString(KEY_LAST_UPDATE_DOWNLOAD_URL, value.first.toString())
                     putLong(KEY_LAST_UPDATE_DOWNLOAD_ID, value.second)
                 }
@@ -41,10 +41,20 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
             }
         }
 
+    override var lastSyncContactTime: Date?
+        get() = pref.getLong(KEY_LAST_SYNC_TIME, -1).let { if (it  < 0) null else Date(it) }
+        set(value) {
+            if (value == null) {
+                pref.edit().remove(KEY_LAST_SYNC_TIME).apply()
+            } else {
+                pref.edit().putLong(KEY_LAST_SYNC_TIME, value.time).apply()
+            }
+        }
+
     companion object {
         const val KEY_USER_TOKEN = "user_token"
         const val KEY_BLOCK_CALLS = "block_calls"
-        const val KEY_AUTO_EXIT = "auto_exit"
+        const val KEY_LAST_SYNC_TIME = "last_sync_contact_time"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"

@@ -16,8 +16,8 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutralButtonClickListener, View.OnClickListener {
-    private lateinit var avatarImage : ImageView
-    private lateinit var nameView : TextView
+    private lateinit var avatarImage: ImageView
+    private lateinit var nameView: TextView
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +39,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
         super.onStart()
 
         val comp = (application as AppComponent)
-        val currUserId = comp.signalService.peekLoginState().currentUserID
+        val currUserId = comp.signalHandler.currentUserId
         if (currUserId == null) {
             AlertDialogFragment.Builder().apply {
                 title = R.string.error_title.toFormattedString(this@EditProfileActivity)

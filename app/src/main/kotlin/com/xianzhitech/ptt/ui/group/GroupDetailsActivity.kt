@@ -20,11 +20,11 @@ import com.xianzhitech.ptt.ui.user.UserListAdapter
 
 class GroupDetailsActivity : BaseToolbarActivity() {
 
-    private lateinit var allMemberLabel : TextView
-    private lateinit var groupNameView : TextView
+    private lateinit var allMemberLabel: TextView
+    private lateinit var groupNameView: TextView
 
     private val adapter = UserListAdapter(R.layout.view_room_member_list_item)
-    private val groupId : String
+    private val groupId: String
         get() = intent.getStringExtra(EXTRA_GROUP_ID)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +38,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
 
         allMemberLabel = findView(R.id.groupDetails_allMemberLabel)
         groupNameView = findView(R.id.groupDetails_name)
-        val callButton : View = findView(R.id.groupDetails_call)
+        val callButton: View = findView(R.id.groupDetails_call)
 
         callButton.setOnClickListener {
             joinRoom(CreateRoomRequest(groupIds = listOf(groupId)))
@@ -59,7 +59,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
                 .switchMap { groups ->
                     val group = groups.firstOrNull() ?: throw StaticUserException(R.string.error_group_not_exists)
                     appComponent.userRepository.getUsers(group.memberIds).observe()
-                        .map { group to it }
+                            .map { group to it }
                 }
                 .observeOnMainThread()
                 .bindToLifecycle()
@@ -76,7 +76,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
                 })
     }
 
-    private fun onGroupLoaded(group : Group, groupMembers : List<User>) {
+    private fun onGroupLoaded(group: Group, groupMembers: List<User>) {
         adapter.setUsers(groupMembers.subList(0, Math.min(groupMembers.size, MAX_MEMBER_DISPLAY_SIZE)))
         groupNameView.text = group.name
         allMemberLabel.text = R.string.all_member_with_number.toFormattedString(this, groupMembers.size)
@@ -86,7 +86,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
         const val EXTRA_GROUP_ID = "egi"
         const val MAX_MEMBER_DISPLAY_SIZE = 15
 
-        fun build(context: Context, groupId : String) : Intent {
+        fun build(context: Context, groupId: String): Intent {
             return Intent(context, GroupDetailsActivity::class.java).putExtra(EXTRA_GROUP_ID, groupId)
         }
     }

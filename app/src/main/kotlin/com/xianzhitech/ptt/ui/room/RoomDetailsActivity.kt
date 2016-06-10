@@ -18,7 +18,6 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.user.*
 import rx.Completable
@@ -28,14 +27,14 @@ import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
 class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
-    private lateinit var memberView : RecyclerView
-    private lateinit var allMemberLabelView : TextView
-    private lateinit var roomNameView : TextView
-    private lateinit var joinRoomButton : TextView
+    private lateinit var memberView: RecyclerView
+    private lateinit var allMemberLabelView: TextView
+    private lateinit var roomNameView: TextView
+    private lateinit var joinRoomButton: TextView
 
-    private lateinit var appComponent : AppComponent
+    private lateinit var appComponent: AppComponent
 
-    private val roomId : String
+    private val roomId: String
         get() = intent.getStringExtra(EXTRA_ROOM_ID)
 
     private val memberAdapter = Adapter()
@@ -66,14 +65,14 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
     override fun onStart() {
         super.onStart()
 
-        appComponent.signalService.retrieveRoomInfo(roomId)
+        appComponent.signalHandler.retrieveRoomInfo(roomId)
                 .subscribeSimple {
                     appComponent.roomRepository.saveRooms(listOf(it)).execAsync().subscribeSimple()
                 }
 
         Observable.combineLatest(
                 appComponent.roomRepository.getRoom(roomId).observe().map { it ?: throw StaticUserException(R.string.error_room_not_exists) },
-                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalService.peekLoginState().currentUserID)).observe(),
+                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalHandler.peekLoginState().currentUserID)).observe(),
                 appComponent.roomRepository.getRoomMembers(roomId, maxMemberCount = Int.MAX_VALUE).observe(),
                 { room, name, members ->
                     RoomData(room, name!!, members)
@@ -93,7 +92,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
                 })
     }
 
-    private fun onRoomLoaded(room: Room, roomName : RoomName, roomMembers: List<User>) {
+    private fun onRoomLoaded(room: Room, roomName: RoomName, roomMembers: List<User>) {
         this.roomMembers = roomMembers
         roomNameView.text = roomName.name
 
@@ -110,7 +109,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         // Display members
         memberAdapter.setUsers(roomMembers.subList(0, Math.min(roomMembers.size, MAX_MEMBER_DISPLAY_COUNT)))
 
-        if (room.id == appComponent.signalService.currentRoomId) {
+        if (room.id == appComponent.signalHandler.currentRoomId) {
             joinRoomButton.setText(R.string.in_room)
             joinRoomButton.isEnabled = false
         } else {
@@ -130,20 +129,20 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
             val selectedUserIds = data.getStringArrayExtra(UserListActivity.RESULT_EXTRA_SELECTED_USER_IDS)
-            (application as AppComponent).signalService.updateRoomMembers(roomId, selectedUserIds.toList())
+            (application as AppComponent).signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
                     .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
-        }
-        else {
+        } else {
             super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
     private class RoomUpdateSubscriber(private val context: Context,
-                                       private val roomId : String) : Completable.CompletableSubscriber {
+                                       private val roomId: String) : Completable.CompletableSubscriber {
 
-        override fun onSubscribe(d: Subscription?) { }
+        override fun onSubscribe(d: Subscription?) {
+        }
 
         override fun onError(e: Throwable) {
             globalHandleError(e, context)
@@ -211,7 +210,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         private const val VIEW_TYPE_USER = 0
         private const val VIEW_TYPE_ADD = 1
 
-        fun build(context: Context, roomId : String) : Intent {
+        fun build(context: Context, roomId: String): Intent {
             return Intent(context, RoomDetailsActivity::class.java).putExtra(EXTRA_ROOM_ID, roomId)
         }
     }

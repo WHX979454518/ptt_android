@@ -26,7 +26,7 @@ fun <T> JSONArray?.transform(map: (Any) -> T): List<T> {
     }
 }
 
-fun <T> Iterable<T>.toJSONArray() : JSONArray {
+fun <T> Iterable<T>.toJSONArray(): JSONArray {
     val arr = JSONArray()
     forEach {
         arr.put(it)
@@ -34,7 +34,7 @@ fun <T> Iterable<T>.toJSONArray() : JSONArray {
     return arr
 }
 
-fun JSONObject.nullOrString(name : String) : String? {
+fun JSONObject.nullOrString(name: String): String? {
     if (isNull(name)) {
         return null
     }
@@ -42,6 +42,6 @@ fun JSONObject.nullOrString(name : String) : String? {
     return optString(name, null)
 }
 
-fun JSONObject.getStringValue(name : String, fallback : String = "") : String {
+fun JSONObject.getStringValue(name: String, fallback: String = ""): String {
     return nullOrString(name) ?: fallback
 }

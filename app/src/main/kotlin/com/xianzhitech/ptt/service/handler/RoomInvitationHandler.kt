@@ -1,19 +1,16 @@
 package com.xianzhitech.ptt.service.handler
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.ext.logd
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.service.RoomInvitation
-import com.xianzhitech.ptt.service.SignalService
-import com.xianzhitech.ptt.service.currentRoomId
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -21,26 +18,28 @@ import rx.Observable
 import java.io.Serializable
 
 class RoomInvitationHandler(private val appContext: Context,
-                            private val signalService: SignalService,
+                            private val signalService: SignalServiceHandler,
                             private val userRepository: UserRepository,
                             private val roomRepository: RoomRepository,
-                            private val activityProvider: ActivityProvider) {
+                            private val activityProvider: ActivityProvider) : BroadcastReceiver() {
     init {
-        signalService.retrieveInvitation()
-                .flatMap { invite ->
-                    Observable.combineLatest(
-                            userRepository.getUser(invite.inviterId).getAsync().toObservable(),
-                            roomRepository.getRoom(signalService.currentRoomId).getAsync().toObservable(),
-                            { user, room -> InviteInfo(invite, room, user) }
-                    )
-                }
-                .observeOnMainThread()
-                .subscribeSimple {
-                    onReceive(it.invitation, it.currentRoom, it.inviter)
-                }
+        appContext.registerLocalBroadcastReceiver(this, IntentFilter(SignalServiceHandler.ACTION_ROOM_INVITATION))
     }
 
-    private fun onReceive(invitation: RoomInvitation, currentRoom : RoomModel?, inviter : User?) {
+    override fun onReceive(context: Context, intent: Intent?) {
+        if (intent?.action == SignalServiceHandler.ACTION_ROOM_INVITATION) {
+            val invite: RoomInvitation = intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
+            Observable.combineLatest(
+                    userRepository.getUser(invite.inviterId).getAsync().toObservable(),
+                    roomRepository.getRoom(signalService.currentRoomId).getAsync().toObservable(),
+                    { user, room -> InviteInfo(invite, room, user) }
+            )
+                    .observeOnMainThread()
+                    .subscribeSimple { onReceive(it.invitation, it.currentRoom, it.inviter) }
+        }
+    }
+
+    private fun onReceive(invitation: RoomInvitation, currentRoom: RoomModel?, inviter: User?) {
         if (invitation.roomId == currentRoom?.id) {
             logd("Already in room ${invitation.roomId}. Skip inviting...")
             return
@@ -72,5 +71,5 @@ class RoomInvitationHandler(private val appContext: Context,
 
     private data class InviteInfo(val invitation: RoomInvitation,
                                   val currentRoom: RoomModel?,
-                                  val inviter : User?)
+                                  val inviter: User?)
 }

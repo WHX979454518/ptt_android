@@ -15,8 +15,8 @@ class SettingsActivity : BaseActivity() {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.settings_container, SettingsFragment())
-                .commit()
+                    .replace(R.id.settings_container, SettingsFragment())
+                    .commit()
         }
 
         val toolbar = findViewById(R.id.toolbar) as Toolbar

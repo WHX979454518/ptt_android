@@ -12,15 +12,15 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
 
-class UserItemHolder(rootView : View,
-                     val avatarView : ImageView? = rootView.findViewById(R.id.userItem_avatar) as? ImageView,
-                     val nameView : TextView? = rootView.findViewById(R.id.userItem_name) as? TextView) : RecyclerView.ViewHolder(rootView) {
+class UserItemHolder(rootView: View,
+                     val avatarView: ImageView? = rootView.findViewById(R.id.userItem_avatar) as? ImageView,
+                     val nameView: TextView? = rootView.findViewById(R.id.userItem_name) as? TextView) : RecyclerView.ViewHolder(rootView) {
 
-    constructor(parent : ViewGroup,
-                @LayoutRes layout : Int) : this(LayoutInflater.from(parent.context).inflate(layout, parent, false))
+    constructor(parent: ViewGroup,
+                @LayoutRes layout: Int) : this(LayoutInflater.from(parent.context).inflate(layout, parent, false))
 
-    private var user : User? = null
-    val userId : String?
+    private var user: User? = null
+    val userId: String?
         get() = user?.id
 
 

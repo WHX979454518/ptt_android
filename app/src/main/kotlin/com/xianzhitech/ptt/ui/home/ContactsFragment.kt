@@ -72,13 +72,22 @@ class ContactsFragment : BaseFragment() {
             contactItemSubject.combineWith(searchBox.fromTextChanged().debounce(500, TimeUnit.MILLISECONDS).startWith(searchBox.getString()))
                     .observeOn(Schedulers.computation())
                     .map {
-                        val (items, needle) = it
-                        if (needle.isNullOrBlank()) {
-                            items
+                        val needle = it.second
+                        val items = if (needle.isNullOrBlank()) {
+                            it.first
+                        } else {
+                            it.first.filter { it.name.contains(needle, ignoreCase = true) }
+                        }
+
+                        if (items is MutableList) {
+                            items.apply {
+                                sortWith(ContactComparator(Locale.CHINESE))
+                            }
                         }
                         else {
-                            items.filter { it.name.contains(needle, ignoreCase = true) }
+                            items.sortedWith(ContactComparator(Locale.CHINESE))
                         }
+
                     }
                     .observeOnMainThread()
                     .compose(bindToLifecycle())
@@ -92,13 +101,10 @@ class ContactsFragment : BaseFragment() {
     }
 
     private inner class Adapter : RecyclerView.Adapter<ContactHolder>() {
-        var contactItems = arrayListOf<Model>()
+        private var contactItems = emptyList<Model>()
 
-        fun setContactItems(newItems: Collection<Model>) {
-            contactItems.clear()
-            contactItems.addAll(newItems)
-            contactItems.sortWith(ContactComparator(Locale.CHINESE))
-
+        fun setContactItems(newItems: List<Model>) {
+            contactItems = newItems
             notifyDataSetChanged()
         }
 

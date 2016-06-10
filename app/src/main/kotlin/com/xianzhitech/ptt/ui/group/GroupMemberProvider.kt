@@ -11,17 +11,17 @@ import com.xianzhitech.ptt.ui.user.UserProvider
 import rx.Observable
 
 
-class GroupMemberProvider(private val groupId : String) : UserProvider, Parcelable {
+class GroupMemberProvider(private val groupId: String) : UserProvider, Parcelable {
     override fun getUsers(context: Context): Observable<List<User>> {
         val appComponent = context.applicationContext as AppComponent
         return appComponent.groupRepository.getGroups(listOf(groupId)).observe()
-            .switchMap {
-                val group = it.firstOrNull() ?: throw StaticUserException(R.string.error_group_not_exists)
-                appComponent.userRepository.getUsers(group.memberIds).observe()
-            }
+                .switchMap {
+                    val group = it.firstOrNull() ?: throw StaticUserException(R.string.error_group_not_exists)
+                    appComponent.userRepository.getUsers(group.memberIds).observe()
+                }
     }
 
-    constructor(source: Parcel): this(source.readString())
+    constructor(source: Parcel) : this(source.readString())
 
     override fun describeContents(): Int {
         return 0

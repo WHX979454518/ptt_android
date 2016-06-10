@@ -36,16 +36,14 @@ object DateConstants {
 }
 
 
-fun Date.formatInvite(context: Context) : CharSequence {
+fun Date.formatInvite(context: Context): CharSequence {
     if (DateUtils.isToday(time)) {
         return DateFormat.format("HH:mm", this)
-    }
-    else {
+    } else {
         val distance = time - System.currentTimeMillis()
         if (distance < DateConstants.ONE_DAY_MILLS) {
             return R.string.yesterday.toFormattedString(context)
-        }
-        else {
+        } else {
             val days = (distance / DateConstants.ONE_DAY_MILLS).toInt()
             return context.resources.getQuantityString(R.plurals.days_ago, days, days)
         }

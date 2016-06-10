@@ -10,8 +10,8 @@ import com.xianzhitech.ptt.ext.findView
 
 
 abstract class BaseToolbarActivity : BaseActivity() {
-    private lateinit var rootView : ViewGroup
-    protected lateinit var toolbar : Toolbar
+    private lateinit var rootView: ViewGroup
+    protected lateinit var toolbar: Toolbar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -6,7 +6,7 @@ import android.widget.FrameLayout
 import com.xianzhitech.ptt.R
 
 class MaxHeightFrameLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : FrameLayout(context, attrs, defStyleAttr) {
-    var maxHeight : Int = -1
+    var maxHeight: Int = -1
         set(value) {
             if (field != value) {
                 field = value

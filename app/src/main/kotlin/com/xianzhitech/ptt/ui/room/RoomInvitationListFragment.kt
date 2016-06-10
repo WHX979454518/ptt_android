@@ -62,7 +62,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val recyclerView : RecyclerView = view.findView(R.id.roomInviteList_recycler)
+        val recyclerView: RecyclerView = view.findView(R.id.roomInviteList_recycler)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = adapter
 
@@ -94,7 +94,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
             }
         }))
 
-        fun addInvitations(newList : List<RoomInvitationData>) {
+        fun addInvitations(newList: List<RoomInvitationData>) {
             invitationList.beginBatchedUpdates()
             invitationList.addAll(newList)
             invitationList.endBatchedUpdates()
@@ -127,24 +127,24 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private class ViewHolder(rootView : View,
-                             val inviterIconView : ImageView = rootView.findView(R.id.userItem_avatar),
-                             val inviterNameView : TextView = rootView.findView(R.id.userItem_name),
-                             val inviteTimeView : TextView = rootView.findView(R.id.inviteItem_time),
-                             val joinButton : View = rootView.findView(R.id.inviteItem_join)
+    private class ViewHolder(rootView: View,
+                             val inviterIconView: ImageView = rootView.findView(R.id.userItem_avatar),
+                             val inviterNameView: TextView = rootView.findView(R.id.userItem_name),
+                             val inviteTimeView: TextView = rootView.findView(R.id.inviteItem_time),
+                             val joinButton: View = rootView.findView(R.id.inviteItem_join)
     ) : RecyclerView.ViewHolder(rootView)
 
-    private data class RoomInvitationData(val invitation : RoomInvitation,
-                                          val inviter : User?)
+    private data class RoomInvitationData(val invitation: RoomInvitation,
+                                          val inviter: User?)
 
     interface Callbacks {
-        fun ignoreAllInvitations(from : Fragment?)
+        fun ignoreAllInvitations(from: Fragment?)
     }
 
     companion object {
         const val ARG_INVITATIONS = "arg_in"
 
-        fun build(invitations : List<RoomInvitation>) : RoomInvitationListFragment {
+        fun build(invitations: List<RoomInvitation>): RoomInvitationListFragment {
             return RoomInvitationListFragment().apply {
                 arguments = Bundle(1).apply {
                     putSerializable(ARG_INVITATIONS, invitations as Serializable)

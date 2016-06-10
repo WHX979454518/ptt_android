@@ -18,8 +18,8 @@ import rx.Subscriber
 import java.lang.ref.WeakReference
 
 private class ModelDrawable constructor(private val context: Context,
-                                        model : Model,
-                                        maxMemberDisplayCount : Int) : DrawableWrapper() {
+                                        model: Model,
+                                        maxMemberDisplayCount: Int) : DrawableWrapper() {
 
     init {
         val appComponent = (context.applicationContext as AppComponent)
@@ -42,18 +42,21 @@ private class ModelDrawable constructor(private val context: Context,
     }
 
     private class WeakUserListSubscriber(modelDrawable: ModelDrawable,
-                                         private val excludeCurrentUser : Boolean) : Subscriber<List<User>>() {
+                                         private val excludeCurrentUser: Boolean) : Subscriber<List<User>>() {
         private val modelDrawableRef = WeakReference(modelDrawable)
 
-        override fun onError(e: Throwable?) { }
-        override fun onCompleted() { }
+        override fun onError(e: Throwable?) {
+        }
+
+        override fun onCompleted() {
+        }
+
         override fun onNext(t: List<User>) {
             modelDrawableRef.get()?.apply {
-                val currentUserId = (context.applicationContext as AppComponent).signalService.peekLoginState().currentUserID
+                val currentUserId = (context.applicationContext as AppComponent).signalHandler.peekLoginState().currentUserID
                 if (t.size <= 2 && currentUserId != null && excludeCurrentUser) {
                     drawable = t.firstOrNull { it.id != currentUserId }?.createDrawable(context)
-                }
-                else {
+                } else {
                     drawable = MultiDrawable(context, t.map { it.createDrawable(context) })
                 }
             } ?: unsubscribe()
@@ -61,17 +64,16 @@ private class ModelDrawable constructor(private val context: Context,
     }
 }
 
-private fun User.createAvatarDrawable(context: Context) : Drawable {
+private fun User.createAvatarDrawable(context: Context): Drawable {
     if (avatar.isNullOrEmpty()) {
         return TextDrawable(name[0].toString(), context.resources.getIntArray(R.array.account_colors).let {
             it[Math.abs(name.hashCode()) % it.size]
         })
-    }
-    else {
+    } else {
         return UriDrawable(Glide.with(context), Uri.parse(avatar))
     }
 }
 
-fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT) : Drawable {
+fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT): Drawable {
     return ModelDrawable(context, this, maxMemberDisplayCount)
 }

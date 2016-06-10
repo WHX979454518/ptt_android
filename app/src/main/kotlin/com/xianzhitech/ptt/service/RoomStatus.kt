@@ -1,6 +1,6 @@
 package com.xianzhitech.ptt.service
 
-enum class RoomStatus(val inRoom : Boolean) {
+enum class RoomStatus(val inRoom: Boolean) {
     IDLE(false),
     JOINING(true),
     JOINED(true),

@@ -13,8 +13,8 @@ class ChangePasswordActivity : BaseToolbarActivity(), ChangePasswordFragment.Cal
         setContentView(R.layout.activity_change_password)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .add(R.id.content, ChangePasswordFragment(), TAG_FRAGMENT)
-                .commit()
+                    .add(R.id.content, ChangePasswordFragment(), TAG_FRAGMENT)
+                    .commit()
         }
     }
 

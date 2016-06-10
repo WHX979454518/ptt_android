@@ -13,9 +13,7 @@ import android.support.v7.app.AlertDialog
 import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.dismissImmediately
-import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -122,8 +120,7 @@ class MainActivity : BaseToolbarActivity(),
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CODE_CREATE_ROOM && resultCode == RESULT_OK && data != null) {
             pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(UserListActivity.RESULT_EXTRA_SELECTED_USER_IDS).toList())
-        }
-        else {
+        } else {
             super.onActivityResult(requestCode, resultCode, data)
         }
     }
@@ -197,7 +194,6 @@ class MainActivity : BaseToolbarActivity(),
     }
 
 
-
     private fun onPermissionDenied(permission: String) {
         AlertDialogFragment.Builder().apply {
             title = R.string.error_title.toFormattedString(this@MainActivity)
@@ -212,7 +208,7 @@ class MainActivity : BaseToolbarActivity(),
     }
 
     override fun onBackPressed() {
-        supportFragmentManager.findFragmentById(R.id.main_content) ?. let {
+        supportFragmentManager.findFragmentById(R.id.main_content)?.let {
             if (it is BackPressable) {
                 it.onBackPressed()
                 return
@@ -224,7 +220,7 @@ class MainActivity : BaseToolbarActivity(),
     override fun onStart() {
         super.onStart()
 
-        val signalService = (application as AppComponent).signalService
+        val signalService = (application as AppComponent).signalHandler
 
         signalService.loginState.distinctUntilChanged { it.status }
                 .observeOnMainThread()
@@ -232,8 +228,7 @@ class MainActivity : BaseToolbarActivity(),
                 .subscribeSimple {
                     if (it.status == LoginStatus.LOGIN_IN_PROGRESS && it.currentUserID == null) {
                         showProgressDialog(R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
-                    }
-                    else {
+                    } else {
                         (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()
                     }
                 }
@@ -244,7 +239,7 @@ class MainActivity : BaseToolbarActivity(),
                 .subscribe {
                     if (it.currentUserID == null) {
                         displayFragment(LoginFragment::class.java)
-                } else {
+                    } else {
                         displayFragment(HomeFragment::class.java)
                     }
                 }

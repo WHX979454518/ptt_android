@@ -5,6 +5,6 @@ import com.xianzhitech.ptt.model.User
 
 
 interface Contacts {
-    val users : Collection<User>
-    val groups : Collection<Group>
+    val users: Collection<User>
+    val groups: Collection<Group>
 }

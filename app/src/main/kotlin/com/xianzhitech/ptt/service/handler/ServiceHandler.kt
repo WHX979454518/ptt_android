@@ -14,7 +14,10 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
-import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.service.LoginState
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
@@ -25,14 +28,14 @@ import java.util.concurrent.TimeUnit
  * 用于保证前台服务的Android Service
  */
 class Service : android.app.Service() {
-    private var subscription : Subscription? = null
+    private var subscription: Subscription? = null
 
     override fun onBind(intent: Intent?) = null
 
     override fun onCreate() {
         super.onCreate()
         val appComponent = application as AppComponent
-        val signalService = appComponent.signalService
+        val signalService = appComponent.signalHandler
 
         subscription = Observable.combineLatest(
                 signalService.roomState,
@@ -58,13 +61,13 @@ class Service : android.app.Service() {
         return START_STICKY
     }
 
-    private fun onStateChanged(state : State) {
+    private fun onStateChanged(state: State) {
 //        logd("State changed to $state")
         val builder = NotificationCompat.Builder(this)
         builder.setOngoing(true)
         builder.setAutoCancel(false)
         builder.setContentTitle(R.string.app_name.toFormattedString(this))
-        val icon : Int
+        val icon: Int
 
         when (state.loginState.status) {
             LoginStatus.LOGGED_IN -> {
@@ -125,19 +128,18 @@ class Service : android.app.Service() {
                              val currRoom: Room?,
                              val currRoomName: RoomName?,
                              val loginState: LoginState,
-                             val currUser : User?,
-                             val connectivity : Boolean)
+                             val currUser: User?,
+                             val connectivity: Boolean)
 }
 
 class ServiceHandler(private val appContext: Context,
-                     private val signalService: SignalService) {
+                     private val signalService: SignalServiceHandler) {
     init {
         signalService.loginStatus
                 .subscribeSimple {
                     if (it != LoginStatus.IDLE) {
                         appContext.startService(Intent(appContext, Service::class.java))
-                    }
-                    else {
+                    } else {
                         appContext.stopService(Intent(appContext, Service::class.java))
                     }
                 }

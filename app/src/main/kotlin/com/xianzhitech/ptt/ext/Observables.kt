@@ -4,12 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import com.xianzhitech.ptt.service.describeInHumanMessage
-import rx.Completable
-import rx.Observable
-import rx.Observer
-import rx.Single
-import rx.Subscriber
-import rx.Subscription
+import rx.*
 import rx.android.schedulers.AndroidSchedulers
 
 
@@ -21,16 +16,18 @@ open class GlobalSubscriber<T>(private val context: Context? = null) : Subscribe
         globalHandleError(e, context)
     }
 
-    override fun onNext(t: T) { }
-    override fun onCompleted() { }
+    override fun onNext(t: T) {
+    }
+
+    override fun onCompleted() {
+    }
 }
 
 fun globalHandleError(e: Throwable, context: Context? = null) {
-    val message : CharSequence?
+    val message: CharSequence?
     if (context != null) {
         message = e.describeInHumanMessage(context)
-    }
-    else {
+    } else {
         message = e.message
     }
 
@@ -41,7 +38,7 @@ fun globalHandleError(e: Throwable, context: Context? = null) {
     Log.e("GlobalSubscriber", "Error: $message", e)
 }
 
-fun <T> Observable<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
+fun <T> Observable<T>.subscribeSimple(action: (T) -> Unit): Subscription {
     return subscribe(object : GlobalSubscriber<T>() {
         override fun onNext(t: T) {
             action(t)
@@ -49,25 +46,25 @@ fun <T> Observable<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
     })
 }
 
-fun <T> Observable<T>.subscribeSimple(context: Context? = null) : Subscription {
+fun <T> Observable<T>.subscribeSimple(context: Context? = null): Subscription {
     return subscribe(GlobalSubscriber(context))
 }
 
-fun Completable.subscribeSimple(action : () -> Unit) : Subscription {
+fun Completable.subscribeSimple(action: () -> Unit): Subscription {
     return subscribe({ err ->
         Log.e("GlobalSubscriber", err?.message, err)
     }, action)
 }
 
-fun Completable.subscribeSimple() : Subscription {
-    return subscribeSimple {  }
+fun Completable.subscribeSimple(): Subscription {
+    return subscribeSimple { }
 }
 
-fun <T> Single<T>.subscribeSimple() : Subscription {
-    return subscribeSimple{}
+fun <T> Single<T>.subscribeSimple(): Subscription {
+    return subscribeSimple {}
 }
 
-fun <T> Single<T>.subscribeSimple(action : (T) -> Unit) : Subscription {
+fun <T> Single<T>.subscribeSimple(action: (T) -> Unit): Subscription {
     return subscribe(object : GlobalSubscriber<T>() {
         override fun onNext(t: T) {
             action(t)
@@ -81,8 +78,8 @@ fun <T> Observable<T>.subscribeOnMainThread() = subscribeOn(AndroidSchedulers.ma
 
 fun <T> T?.toObservable(): Observable<T> = Observable.just(this)
 
-fun <T, R> Observable<T>.combineWith(other : Observable<R>) = Observable.combineLatest(
-        this, other, {first, second -> Pair(first, second)}
+fun <T, R> Observable<T>.combineWith(other: Observable<R>) = Observable.combineLatest(
+        this, other, { first, second -> Pair(first, second) }
 )
 
 fun <T> Subscriber<T>.onSingleValue(value: T) {
@@ -94,6 +91,6 @@ fun <T> Subscription.addToSubscriber(subscriber: Subscriber<T>) {
     subscriber.add(this)
 }
 
-operator fun <T> Observer<T>.plusAssign(obj : T?) {
+operator fun <T> Observer<T>.plusAssign(obj: T?) {
     onNext(obj)
 }

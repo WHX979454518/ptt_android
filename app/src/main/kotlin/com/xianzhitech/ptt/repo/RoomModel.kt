@@ -7,5 +7,5 @@ import java.util.*
 interface RoomModel : Room {
     val lastSpeakTime: Date?
     val lastSpeakMemberId: String?
-    val lastActiveTime : Date
+    val lastActiveTime: Date
 }
