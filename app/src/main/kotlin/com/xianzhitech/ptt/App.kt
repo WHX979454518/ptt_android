@@ -3,7 +3,6 @@ package com.xianzhitech.ptt
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import com.xianzhitech.ptt.engine.TalkEngineProvider
@@ -14,17 +13,18 @@ import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.repo.storage.*
+import com.xianzhitech.ptt.service.AppParams
+import com.xianzhitech.ptt.service.AppRequest
+import com.xianzhitech.ptt.service.AppService
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.handler.RoomInvitationHandler
 import com.xianzhitech.ptt.service.handler.RoomStatusHandler
 import com.xianzhitech.ptt.service.handler.ServiceHandler
 import com.xianzhitech.ptt.service.handler.StatisticCollector
-import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
-import com.xianzhitech.ptt.update.UpdateManager
-import com.xianzhitech.ptt.update.UpdateManagerImpl
 import okhttp3.OkHttpClient
+import rx.Single
 import rx.subjects.PublishSubject
 
 
@@ -42,13 +42,16 @@ open class App : Application(), AppComponent {
 
     override lateinit var preference: Preference
 
-    override val signalServerEndpoint: String
-        get() = BuildConfig.SIGNAL_SERVER_ENDPOINT
-
-    override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
+//    override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
     override lateinit var signalService : SignalService
     override lateinit var activityProvider : ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
+
+    override val appService: AppService = object : AppService {
+        override fun retrieveAppParams(request: AppRequest): Single<AppParams> {
+            return Single.just(AppParams(null, false, null, "http://netptt.cn:20000"))
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -68,14 +71,15 @@ open class App : Application(), AppComponent {
                 userStorage, roomNotification, userNotification, groupNotification)
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
-        signalService = IOSignalService(
-                context = this,
-                endpoint = BuildConfig.SIGNAL_SERVER_ENDPOINT,
-                preference = preference,
+        signalService = AppParamSignalServiceWrapper(
+                appContext = this,
                 userRepository = userRepository,
-                contactRepository = contactRepository,
                 groupRepository = groupRepository,
-                roomRepository = roomRepository)
+                roomRepository = roomRepository,
+                contactRepository = contactRepository,
+                preference = preference,
+                appService = appService
+        )
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

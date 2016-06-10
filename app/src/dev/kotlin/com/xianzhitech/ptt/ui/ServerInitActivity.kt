@@ -12,14 +12,10 @@ import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
-import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import okhttp3.Cookie
-import okhttp3.CookieJar
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -43,7 +39,7 @@ class ServerInitActivity : BaseToolbarActivity() {
         recyclerView.adapter = adapter
 
         val endpointView = findView<EditText>(R.id.serverInit_name)
-        endpointView.setText(BuildConfig.SIGNAL_SERVER_ENDPOINT)
+        endpointView.setText("")
         endpointView.selectAll()
 
         findViewById(R.id.serverInit_ok)?.setOnClickListener {

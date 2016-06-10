@@ -11,10 +11,11 @@ import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
 import android.view.View
-import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
@@ -63,35 +64,35 @@ class MainActivity : BaseToolbarActivity(),
         if (savedInstanceState == null) {
             handleIntent(intent)
 
-            (application as AppComponent).updateManager.retrieveUpdateInfo()
-                    .observeOnMainThread()
-                    .compose(bindUntil(ActivityEvent.STOP))
-                    .subscribeSimple {
-                        if (it != null) {
-                            AlertDialogFragment.Builder().apply {
-                                title = R.string.update_title.toFormattedString(this@MainActivity)
-                                message = it.updateMessage
-                                btnPositive = R.string.update.toFormattedString(this@MainActivity)
-                                if (it.forceUpdate) {
-                                    cancellabe = false
-                                }
-                                else {
-                                    cancellabe = true
-                                    btnNeutral = R.string.dialog_ok.toFormattedString(this@MainActivity)
-                                }
-                                autoDismiss = false
-                                attachment = it.updateUrl.toString()
-                            }.show(supportFragmentManager, TAG_UPDATE_DIALOG)
-
-                            supportFragmentManager.executePendingTransactions()
-                        }
-                        else {
-                            (supportFragmentManager.findFragmentByTag(TAG_UPDATE_DIALOG) as? DialogFragment)?.let {
-                                it.dismiss()
-                                supportFragmentManager.executePendingTransactions()
-                            }
-                        }
-                    }
+//            (application as AppComponent).updateManager.retrieveUpdateInfo()
+//                    .observeOnMainThread()
+//                    .compose(bindUntil(ActivityEvent.STOP))
+//                    .subscribeSimple {
+//                        if (it != null) {
+//                            AlertDialogFragment.Builder().apply {
+//                                title = R.string.update_title.toFormattedString(this@MainActivity)
+//                                message = it.updateMessage
+//                                btnPositive = R.string.update.toFormattedString(this@MainActivity)
+//                                if (it.forceUpdate) {
+//                                    cancellabe = false
+//                                }
+//                                else {
+//                                    cancellabe = true
+//                                    btnNeutral = R.string.dialog_ok.toFormattedString(this@MainActivity)
+//                                }
+//                                autoDismiss = false
+//                                attachment = it.updateUrl.toString()
+//                            }.show(supportFragmentManager, TAG_UPDATE_DIALOG)
+//
+//                            supportFragmentManager.executePendingTransactions()
+//                        }
+//                        else {
+//                            (supportFragmentManager.findFragmentByTag(TAG_UPDATE_DIALOG) as? DialogFragment)?.let {
+//                                it.dismiss()
+//                                supportFragmentManager.executePendingTransactions()
+//                            }
+//                        }
+//                    }
 
         }
     }

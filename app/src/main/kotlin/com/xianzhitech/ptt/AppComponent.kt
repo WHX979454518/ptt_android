@@ -5,10 +5,10 @@ import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
+import com.xianzhitech.ptt.service.AppService
 import com.xianzhitech.ptt.service.SignalService
 import com.xianzhitech.ptt.service.handler.StatisticCollector
 import com.xianzhitech.ptt.ui.ActivityProvider
-import com.xianzhitech.ptt.update.UpdateManager
 import okhttp3.OkHttpClient
 
 /**
@@ -21,10 +21,10 @@ interface AppComponent {
     val httpClient: OkHttpClient
     val talkEngineProvider: TalkEngineProvider
     val preference: Preference
-    val updateManager : UpdateManager
+//    val updateManager : UpdateManager
 
-    // Configuration
-    val signalServerEndpoint: String
+    val appService : AppService
+
 
     // Repositories
     val userRepository: UserRepository
