@@ -20,9 +20,9 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
+import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 import com.xianzhitech.ptt.ui.user.ContactUserProvider
-import com.xianzhitech.ptt.ui.user.UserListActivity
 import com.xianzhitech.ptt.update.installPackage
 
 class MainActivity : BaseToolbarActivity(),
@@ -112,14 +112,14 @@ class MainActivity : BaseToolbarActivity(),
 
     override fun requestCreateNewRoom() {
         startActivityForResultWithAnimation(
-                UserListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(), true, emptyList(), false),
+                ModelListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(true)),
                 REQUEST_CODE_CREATE_ROOM
         )
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CODE_CREATE_ROOM && resultCode == RESULT_OK && data != null) {
-            pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(UserListActivity.RESULT_EXTRA_SELECTED_USER_IDS).toList())
+            pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS).toList())
         } else {
             super.onActivityResult(requestCode, resultCode, data)
         }

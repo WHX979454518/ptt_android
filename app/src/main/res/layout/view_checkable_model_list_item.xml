@@ -7,7 +7,7 @@
                 android:layout_height="wrap_content">
 
     <ImageView
-        android:id="@+id/userItem_avatar"
+        android:id="@+id/modelItem_icon"
         android:layout_alignParentLeft="true"
         android:layout_centerVertical="true"
         android:layout_marginLeft="@dimen/unit_two"
@@ -17,7 +17,7 @@
         android:layout_height="@dimen/user_list_icon_size"/>
 
     <CheckedTextView
-        android:id="@+id/userItem_name"
+        android:id="@+id/modelItem_name"
         style="@style/Text.Body1"
         tools:text="用户2"
         android:layout_centerVertical="true"
@@ -25,14 +25,14 @@
         android:checkMark="?android:attr/listChoiceIndicatorMultiple"
         android:layout_marginLeft="@dimen/unit_one"
         android:gravity="left|center_vertical"
-        android:layout_marginRight="@dimen/unit_two"
+        android:layout_marginRight="@dimen/unit_three"
         android:layout_alignParentRight="true"
-        android:layout_toRightOf="@+id/userItem_avatar"
+        android:layout_toRightOf="@+id/modelItem_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <View
-        android:layout_below="@+id/userItem_avatar"
+        android:layout_below="@+id/modelItem_icon"
         style="@style/Divider.Lighter" />
 
 </RelativeLayout>

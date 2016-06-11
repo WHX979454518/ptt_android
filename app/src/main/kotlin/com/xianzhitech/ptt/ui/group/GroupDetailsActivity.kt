@@ -15,7 +15,7 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import com.xianzhitech.ptt.ui.user.UserListActivity
+import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 
 class GroupDetailsActivity : BaseToolbarActivity() {
@@ -45,8 +45,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
         }
 
         allMemberLabel.setOnClickListener {
-            startActivityWithAnimation(UserListActivity.build(this, R.string.group_members.toFormattedString(this),
-                    GroupMemberProvider(groupId), false, listOf(), false))
+            startActivityWithAnimation(ModelListActivity.build(this, R.string.group_members.toFormattedString(this), GroupMemberProvider(groupId)))
         }
     }
 

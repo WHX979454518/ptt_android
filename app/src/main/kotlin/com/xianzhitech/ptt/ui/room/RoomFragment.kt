@@ -23,8 +23,8 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
-import com.xianzhitech.ptt.ui.user.UserListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
@@ -121,8 +121,8 @@ class RoomFragment : BaseFragment()
             val currentRoomId = appComponent.signalHandler.currentRoomId
             if (currentRoomId != null) {
                 activity.startActivityWithAnimation(
-                        UserListActivity.build(context, R.string.room_members.toFormattedString(context),
-                                RoomMemberProvider(currentRoomId), false, emptyList(), false)
+                        ModelListActivity.build(context, R.string.room_members.toFormattedString(context),
+                                RoomMemberProvider(currentRoomId, false))
                 )
             }
         }

@@ -59,11 +59,6 @@
 
         <service android:name=".service.handler.Service"/>
 
-        <activity android:name=".ui.invite.RoomInvitationActivity"
-                  android:launchMode="singleInstance"
-                  android:noHistory="true"
-                  android:theme="@style/AppTheme.RoomInvitation" />
-
         <activity android:name=".ui.user.EditProfileActivity"
                   android:label="@string/edit_profile" />
 
@@ -73,7 +68,8 @@
         <activity android:name=".ui.room.RoomDetailsActivity"
                   android:label="@string/room_info" />
 
-        <activity android:name=".ui.user.UserListActivity"
+        <activity android:name=".ui.home.ModelListActivity"
+                  android:windowSoftInputMode="adjustPan"
                   android:label="@string/user_list" />
 
         <activity android:name=".ui.user.UserDetailsActivity"

@@ -19,7 +19,11 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import com.xianzhitech.ptt.ui.user.*
+import com.xianzhitech.ptt.ui.home.ModelListActivity
+import com.xianzhitech.ptt.ui.user.ContactUserProvider
+import com.xianzhitech.ptt.ui.user.UserDetailsActivity
+import com.xianzhitech.ptt.ui.user.UserItemHolder
+import com.xianzhitech.ptt.ui.user.UserListAdapter
 import rx.Completable
 import rx.Observable
 import rx.Subscription
@@ -101,8 +105,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         // Set up all member views
         allMemberLabelView.setOnClickListener {
             startActivityWithAnimation(
-                    UserListActivity.build(this, R.string.room_members.toFormattedString(this),
-                            RoomMemberProvider(room.id), false, emptyList(), false)
+                    ModelListActivity.build(this, R.string.room_members.toFormattedString(this), RoomMemberProvider(room.id, false))
             )
         }
 
@@ -128,7 +131,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
-            val selectedUserIds = data.getStringArrayExtra(UserListActivity.RESULT_EXTRA_SELECTED_USER_IDS)
+            val selectedUserIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS)
             (application as AppComponent).signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
                     .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -179,8 +182,8 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
                 holder.avatarView!!.setImageDrawable(holder.itemView.context.getTintedDrawable(R.drawable.ic_person_add_24dp, holder.nameView!!.currentTextColor))
                 holder.itemView.setOnClickListener {
                     startActivityForResultWithAnimation(
-                            UserListActivity.build(this@RoomDetailsActivity, R.string.add_members.toFormattedString(parent.context),
-                                    ContactUserProvider(), true, roomMembers.map { it.id }, false),
+                            ModelListActivity.build(this@RoomDetailsActivity, R.string.add_members.toFormattedString(parent.context),
+                                    ContactUserProvider(true, roomMembers.map { it.id }.toSet(), false)),
                             REQUEST_SELECT_USER
                     )
                 }

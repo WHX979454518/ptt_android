@@ -7,7 +7,7 @@
     android:layout_height="wrap_content">
 
     <ImageView
-        android:id="@+id/contactItem_icon"
+        android:id="@+id/modelItem_icon"
         android:layout_marginTop="@dimen/unit_one"
         android:layout_marginBottom="@dimen/unit_one"
         android:layout_marginLeft="@dimen/unit_two"
@@ -15,7 +15,7 @@
         android:layout_height="@dimen/contact_list_icon_size" />
 
     <TextView
-        android:id="@+id/contactItem_name"
+        android:id="@+id/modelItem_name"
         style="@style/Text.Subhead"
         android:layout_marginLeft="@dimen/unit_one"
         android:layout_marginRight="@dimen/unit_two"
