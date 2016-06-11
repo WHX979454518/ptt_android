@@ -1,27 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/contacts_searchBox"
-        android:hint="@string/contact_search_hint"
-        android:background="@android:color/transparent"
-        android:padding="@dimen/unit_two"
-        android:drawablePadding="@dimen/unit_one"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <View style="@style/Divider" />
-
     <android.support.v7.widget.RecyclerView
         android:id="@+id/contacts_list"
-        android:layout_weight="1"
         android:layout_width="match_parent"
-        android:layout_height="0dip"
+        android:layout_height="match_parent"
         tools:listitem="@layout/view_contact_item" />
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/contacts_currentChar"
+        style="@style/Text.Display3"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_char_display"
+        android:gravity="center"
+        android:lineSpacingExtra="0dp"
+        android:visibility="gone"
+        tools:text="C"
+        tools:visibility="visible" />
+
+    <com.xianzhitech.ptt.ui.widget.SideNavigationView
+        android:id="@+id/contacts_sidebar"
+        android:layout_width="25dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="right"
+        android:background="@drawable/bg_sidebar"
+        android:paddingBottom="@dimen/unit_one"
+        android:paddingTop="@dimen/unit_one" />
+
+</FrameLayout>

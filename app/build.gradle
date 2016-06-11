@@ -34,6 +34,7 @@ repositories {
     }
 
     maven { url "https://jitpack.io" }
+    jcenter()
 }
 
 android {
@@ -109,6 +110,8 @@ dependencies {
     compile 'com.squareup.retrofit2:adapter-rxjava:2.0.2'
 
     devCompile 'com.github.franmontiel:PersistentCookieJar:v0.9.3'
+
+    compile 'com.belerweb:pinyin4j:2.5.1'
 
     compile(name: 'webrtc-android-release', ext: 'aar')
 

@@ -14,6 +14,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.media.MediaButtonReceiver
 import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
@@ -148,6 +149,10 @@ abstract class BaseActivity : AppCompatActivity(),
     fun onLoginError(error: Throwable) {
         //TODO:
         Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
+    }
+
+    fun onForceUpdate(appParams: AppParams) {
+
     }
 
     protected fun showProgressDialog(message: Int, tag: String) {

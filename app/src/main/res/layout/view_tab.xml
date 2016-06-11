@@ -2,6 +2,7 @@
 <TextView
     xmlns:android="http://schemas.android.com/apk/res/android"
     style="@style/Text.MainTabButton"
+    android:background="?attr/selectableItemBackgroundBorderless"
     android:layout_weight="1"
     android:layout_width="0dip"
     android:layout_height="wrap_content" />

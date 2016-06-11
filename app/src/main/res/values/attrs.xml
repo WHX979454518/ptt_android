@@ -9,4 +9,8 @@
     <declare-styleable name="MaxHeightFrameLayout">
         <attr name="maxHeight" />
     </declare-styleable>
+
+    <declare-styleable name="SideNavigationView">
+        <attr name="android:textColor" />
+    </declare-styleable>
 </resources>

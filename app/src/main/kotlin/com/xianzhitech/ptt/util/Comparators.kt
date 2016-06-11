@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.util
 
 import com.xianzhitech.ptt.model.Group
+import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
@@ -32,6 +33,22 @@ object RoomComparator : Comparator<Room> {
     private fun Date?.timeOrZero() = this?.time ?: 0
 }
 
+object ModelComparator : Comparator<Model> {
+    override fun compare(lhs: Model, rhs: Model): Int {
+        val lhsIsGroup = lhs is Group
+        val rhsIsGroup = rhs is Group
+
+        if (lhsIsGroup && rhsIsGroup || (lhsIsGroup.not() && rhsIsGroup.not())) {
+            return PinyinComparator.compare(lhs.name, rhs.name)
+        }
+        else if (lhsIsGroup) {
+            return -1
+        }
+        else {
+            return 1
+        }
+    }
+}
 
 class ContactComparator : Comparator<Any> {
     private val collator: Collator
