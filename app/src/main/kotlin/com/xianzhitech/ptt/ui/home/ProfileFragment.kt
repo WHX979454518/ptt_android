@@ -1,9 +1,7 @@
 package com.xianzhitech.ptt.ui.home
 
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,12 +14,14 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.ui.app.FeedbackActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.EditProfileActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
-class ProfileFragment : BaseFragment(), View.OnClickListener {
+class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragment.OnPositiveButtonClickListener {
     private var views: Views? = null
     private lateinit var appComponent: AppComponent
 
@@ -77,6 +77,12 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
         }
     }
 
+    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
+        if (fragment.tag == TAG_LOGOUT_CONFIRMATION) {
+            appComponent.signalHandler.logout()
+        }
+    }
+
     override fun onDestroyView() {
         views = null
         super.onDestroyView()
@@ -85,30 +91,26 @@ class ProfileFragment : BaseFragment(), View.OnClickListener {
     override fun onClick(view: View) {
         when (view.id) {
             R.id.profile_logout -> {
-                AlertDialog.Builder(context)
-                        .setTitle(R.string.dialog_confirm_title)
-                        .setMessage(R.string.log_out_confirm_message)
-                        .setPositiveButton(R.string.logout, { dialogInterface: DialogInterface, i: Int ->
-                            appComponent.signalHandler.logout()
-                            dialogInterface.dismiss()
-                        })
-                        .setNegativeButton(R.string.dialog_cancel, { dialogInterface, id -> dialogInterface.dismiss() })
-                        .show()
+                AlertDialogFragment.Builder().apply {
+                    message = R.string.log_out_confirm_message.toFormattedString(context)
+                    btnPositive = R.string.logout.toFormattedString(context)
+                    btnNegative = R.string.dialog_cancel.toFormattedString(context)
+                }.show(childFragmentManager, TAG_LOGOUT_CONFIRMATION)
             }
-            R.id.profile_settings -> {
-                startActivity(Intent(context, SettingsActivity::class.java))
-            }
-            R.id.profile_edit -> {
-                activity.startActivityWithAnimation(Intent(context, EditProfileActivity::class.java),
-                        R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
-            }
-            R.id.profile_feedback,
-            R.id.profile_about ->
-                Toast.makeText(context, "TODO", Toast.LENGTH_LONG).show()
+
+            R.id.profile_settings -> startActivity(Intent(context, SettingsActivity::class.java))
+            R.id.profile_edit -> activity.startActivityWithAnimation(Intent(context, EditProfileActivity::class.java))
+            R.id.profile_feedback -> activity.startActivityWithAnimation(Intent(context, FeedbackActivity::class.java))
+            R.id.profile_about -> Toast.makeText(context, "TODO", Toast.LENGTH_LONG).show()
         }
     }
+
 
     private class Views(rootView: View,
                         val iconView: ImageView = rootView.findView(R.id.profile_icon),
                         val nameView: TextView = rootView.findView(R.id.profile_name))
+
+    companion object {
+        private const val TAG_LOGOUT_CONFIRMATION = "tag_logout_confirmation"
+    }
 }

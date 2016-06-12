@@ -95,7 +95,7 @@ abstract class ModelListFragment : BaseFragment() {
 
         allModels
                 .map { it.sortedWith(ModelComparator) }
-                .combineWith(searchTermSubject.debounce(500, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).startWith(searchTermSubject.value).distinctUntilChanged())
+                .combineWith(searchTermSubject.debounce(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).startWith(searchTermSubject.value).distinctUntilChanged())
                 .map {
                     if (it.second.isNullOrBlank()) {
                         it.first

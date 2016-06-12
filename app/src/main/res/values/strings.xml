@@ -69,6 +69,7 @@
     <string name="error_forced_logout">您的账号在其它设备上登陆, 本机登陆已被注销</string>
     <string name="error_has_unsaved_change">本页面有未保存的修改, 退出后将放弃保存. 确认退出吗?</string>
     <string name="error_group_not_exists">该群组不存在</string>
+    <string name="error_empty_content">请输入反馈的详细信息</string>
 
     <string name="room_loading">加载中...</string>
 
@@ -160,6 +161,12 @@
     <string name="invitation_list">邀请列表(%1$d)</string>
     <string name="just_now">刚刚</string>
     <string name="search_contacts">搜索联系人</string>
+    <string name="type_feedback_title">输入一个问题的简单描述 (可选)</string>
+    <string name="type_feedback_content">输入问题的详细描述</string>
+    <string name="submit">提交</string>
+    <string name="thanks_for_feedback">感谢您的反馈, 正在向服务器提交反馈</string>
+    <string name="feedback_complete">反馈提交成功</string>
+    <string name="give_up_and_exit">放弃并退出</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>

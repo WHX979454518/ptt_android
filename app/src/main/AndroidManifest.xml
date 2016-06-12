@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.xianzhitech.ptt">
+    package="com.xianzhitech.ptt">
 
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -60,23 +60,26 @@
         <service android:name=".service.handler.Service"/>
 
         <activity android:name=".ui.user.EditProfileActivity"
-                  android:label="@string/edit_profile" />
+            android:label="@string/edit_profile" />
 
         <activity android:name=".ui.user.ChangePasswordActivity"
-                  android:label="@string/change_password" />
+            android:label="@string/change_password" />
 
         <activity android:name=".ui.room.RoomDetailsActivity"
-                  android:label="@string/room_info" />
+            android:label="@string/room_info" />
 
         <activity android:name=".ui.home.ModelListActivity"
-                  android:windowSoftInputMode="adjustPan"
-                  android:label="@string/user_list" />
+            android:windowSoftInputMode="adjustPan"
+            android:label="@string/user_list" />
 
         <activity android:name=".ui.user.UserDetailsActivity"
-                  android:label="@string/user_info" />
-        
+            android:label="@string/user_info" />
+
         <activity android:name=".ui.group.GroupDetailsActivity"
-                  android:label="@string/group_info" />
+            android:label="@string/group_info" />
+
+        <activity android:name=".ui.app.FeedbackActivity"
+            android:label="@string/feedback" />
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>

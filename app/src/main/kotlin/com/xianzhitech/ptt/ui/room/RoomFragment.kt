@@ -64,10 +64,16 @@ class RoomFragment : BaseFragment()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val rootView = inflater.inflate(R.layout.fragment_room, container, false)
         val views = Views(rootView)
-        rootView.findViewById(R.id.room_leave)?.setOnClickListener {
-            appComponent.signalHandler.quitRoom()
-            activity.finish()
+
+        rootView.findView<ImageView>(R.id.room_leave).let {
+            it.setImageDrawable(context.getTintedDrawable(R.drawable.ic_power, ContextCompat.getColor(context, R.color.red)))
+
+            it.setOnClickListener {
+                appComponent.signalHandler.quitRoom()
+                activity.finish()
+            }
         }
+
 
         rootView.findViewById(R.id.room_info)?.setOnClickListener {
             val roomId = appComponent.signalHandler.currentRoomId

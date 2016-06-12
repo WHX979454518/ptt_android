@@ -1,13 +1,10 @@
 package com.xianzhitech.ptt.ui.settings
 
-import android.graphics.Color
 import android.os.Bundle
-import android.support.v7.widget.Toolbar
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 
-class SettingsActivity : BaseActivity() {
+class SettingsActivity : BaseToolbarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -17,14 +14,6 @@ class SettingsActivity : BaseActivity() {
             supportFragmentManager.beginTransaction()
                     .replace(R.id.settings_container, SettingsFragment())
                     .commit()
-        }
-
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
-        setSupportActionBar(toolbar)
-
-        toolbar.navigationIcon = getTintedDrawable(R.drawable.ic_arrow_back, Color.WHITE)
-        toolbar.setNavigationOnClickListener {
-            finish()
         }
     }
 }
