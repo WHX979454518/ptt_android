@@ -1,16 +1,13 @@
 package com.xianzhitech.ptt.ui
 
 import android.Manifest
-import android.app.DownloadManager
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
-import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -23,20 +20,17 @@ import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 import com.xianzhitech.ptt.ui.user.ContactUserProvider
-import com.xianzhitech.ptt.update.installPackage
 
 class MainActivity : BaseToolbarActivity(),
         LoginFragment.Callbacks,
         HomeFragment.Callbacks,
         AlertDialogFragment.OnNegativeButtonClickListener,
-        AlertDialogFragment.OnPositiveButtonClickListener,
-        AlertDialogFragment.OnNeutralButtonClickListener {
+        AlertDialogFragment.OnPositiveButtonClickListener {
 
     private var pendingCreateRoomRequest: CreateRoomRequest? = null
 
     companion object {
         val EXTRA_KICKED_OUT = "extra_kicked_out"
-        private const val TAG_UPDATE_DIALOG = "tag_update_dialog"
         private const val TAG_PERMISSION_DIALOG = "tag_permission"
         private const val TAG_LOGIN_IN_PROGRESS = "tag_logging_in"
 
@@ -61,37 +55,6 @@ class MainActivity : BaseToolbarActivity(),
 
         if (savedInstanceState == null) {
             handleIntent(intent)
-
-//            (application as AppComponent).updateManager.retrieveUpdateInfo()
-//                    .observeOnMainThread()
-//                    .compose(bindUntil(ActivityEvent.STOP))
-//                    .subscribeSimple {
-//                        if (it != null) {
-//                            AlertDialogFragment.Builder().apply {
-//                                title = R.string.update_title.toFormattedString(this@MainActivity)
-//                                message = it.updateMessage
-//                                btnPositive = R.string.update.toFormattedString(this@MainActivity)
-//                                if (it.forceUpdate) {
-//                                    cancellabe = false
-//                                }
-//                                else {
-//                                    cancellabe = true
-//                                    btnNeutral = R.string.dialog_ok.toFormattedString(this@MainActivity)
-//                                }
-//                                autoDismiss = false
-//                                attachment = it.updateUrl.toString()
-//                            }.show(supportFragmentManager, TAG_UPDATE_DIALOG)
-//
-//                            supportFragmentManager.executePendingTransactions()
-//                        }
-//                        else {
-//                            (supportFragmentManager.findFragmentByTag(TAG_UPDATE_DIALOG) as? DialogFragment)?.let {
-//                                it.dismiss()
-//                                supportFragmentManager.executePendingTransactions()
-//                            }
-//                        }
-//                    }
-
         }
     }
 
@@ -125,36 +88,8 @@ class MainActivity : BaseToolbarActivity(),
         }
     }
 
-    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
-        when (fragment.tag) {
-            TAG_UPDATE_DIALOG -> fragment.dismissImmediately()
-        }
-    }
-
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
-            TAG_UPDATE_DIALOG -> {
-                val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-                val downloadUri = Uri.parse(fragment.attachment as String)
-                val preference = (application as AppComponent).preference
-                val lastUpdateDownloadId = preference.updateDownloadId
-                if (lastUpdateDownloadId == null || lastUpdateDownloadId.first != downloadUri) {
-                    if (lastUpdateDownloadId != null) {
-                        downloadManager.remove(lastUpdateDownloadId.second)
-                    }
-
-                    val downloadRequest = DownloadManager.Request(downloadUri).apply {
-                        setMimeType("application/vnd.android.package-archive")
-                        setNotificationVisibility(View.VISIBLE)
-                        setVisibleInDownloadsUi(false)
-                        setTitle(R.string.app_updating.toFormattedString(this@MainActivity, R.string.app_name.toFormattedString(this@MainActivity)))
-                    }
-                    preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
-                } else if (lastUpdateDownloadId != null) {
-                    installPackage(this, lastUpdateDownloadId.second)
-                }
-            }
-
             TAG_PERMISSION_DIALOG -> ActivityCompat.requestPermissions(this, arrayOf(fragment.attachment as String), 0)
 
             else -> super.onPositiveButtonClicked(fragment)

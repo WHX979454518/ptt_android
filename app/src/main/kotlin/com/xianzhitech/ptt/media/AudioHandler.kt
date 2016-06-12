@@ -13,8 +13,6 @@ import android.support.annotation.RawRes
 import android.util.SparseIntArray
 import android.widget.Toast
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.engine.TalkEngine
-import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.LoginStatus
@@ -26,7 +24,6 @@ import rx.subjects.BehaviorSubject
 
 class AudioHandler(private val appContext: Context,
                    private val signalService: SignalServiceHandler,
-                   private val talkEngineProvider: TalkEngineProvider,
                    private val activityProvider: ActivityProvider) {
 
     companion object {
@@ -39,7 +36,7 @@ class AudioHandler(private val appContext: Context,
     private val audioManager: AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val currentBluetoothDevice = BehaviorSubject.create<BluetoothDevice>(null as BluetoothDevice?)
     //    private var mediaSession : MediaSessionCompat? = null
-    private var currentTalkEngine: TalkEngine? = null
+    private var currentTalkEngine: WebRtcTalkEngine? = null
     private val soundPool: Pair<SoundPool, SparseIntArray> by lazy {
         Pair(SoundPool(1, AudioManager.STREAM_VOICE_CALL, 0), SparseIntArray()).apply {
             second.put(R.raw.incoming, first.load(appContext, R.raw.incoming, 0))
@@ -128,7 +125,7 @@ class AudioHandler(private val appContext: Context,
                 .subscribeSimple {
                     if (it.voiceServer.isNotEmpty()) {
                         currentTalkEngine?.dispose()
-                        currentTalkEngine = talkEngineProvider.createEngine().apply {
+                        currentTalkEngine = WebRtcTalkEngine(appContext).apply {
                             connect(it.currentRoomId!!, mapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to signalService.currentUserId,
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to it.voiceServer["host"],
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to it.voiceServer["port"],

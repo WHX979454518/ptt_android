@@ -8,6 +8,12 @@ import com.xianzhitech.ptt.service.UserToken
 import java.util.*
 
 class AppPreference(private val pref: SharedPreferences) : Preference {
+    override var lastIgnoredUpdateUrl: String?
+        get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
+        set(value) {
+            pref.edit().putString(KEY_IGNORED_UPDATE_URL, value).apply()
+        }
+
     override var userSessionToken: UserToken?
         get() = pref.getString(KEY_USER_TOKEN, null)?.fromBase64ToSerializable() as? UserToken
         set(value) {
@@ -58,5 +64,6 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"
+        const val KEY_IGNORED_UPDATE_URL = "key_ignored_update_url"
     }
 }

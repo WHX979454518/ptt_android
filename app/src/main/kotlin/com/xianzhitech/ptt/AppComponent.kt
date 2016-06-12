@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt
 
-import com.xianzhitech.ptt.engine.TalkEngineProvider
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
@@ -19,12 +18,9 @@ import okhttp3.OkHttpClient
  */
 interface AppComponent {
     val httpClient: OkHttpClient
-    val talkEngineProvider: TalkEngineProvider
     val preference: Preference
-//    val updateManager : UpdateManager
 
     val appService: AppService
-
     val signalHandler: SignalServiceHandler
 
     // Repositories
@@ -33,8 +29,6 @@ interface AppComponent {
     val roomRepository: RoomRepository
     val contactRepository: ContactRepository
 
-    // Service
-//    val signalService: SignalService
     val statisticCollector: StatisticCollector
     val activityProvider: ActivityProvider
 }

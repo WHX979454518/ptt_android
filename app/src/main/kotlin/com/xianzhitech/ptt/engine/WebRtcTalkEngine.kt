@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
  * Created by fanchao on 13/12/15.
  */
-class WebRtcTalkEngine(context: Context) : TalkEngine {
+class WebRtcTalkEngine(context: Context)  {
 
     private val handler: Handler
     private val context: Context
@@ -33,7 +33,7 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         }
     }
 
-    override fun connect(roomId: String, property: Map<String, Any?>) {
+    fun connect(roomId: String, property: Map<String, Any?>) {
         if (this.extProtoData != null) {
             throw IllegalStateException("Engine already connected to a room before")
         }
@@ -65,15 +65,15 @@ class WebRtcTalkEngine(context: Context) : TalkEngine {
         }, HEARTBEAT_INTERVAL_MILLS)
     }
 
-    override fun startSend() {
+    fun startSend() {
         handler.post { mediaEngine.startSend() }
     }
 
-    override fun stopSend() {
+    fun stopSend() {
         handler.post { mediaEngine.stopSend() }
     }
 
-    override fun dispose() {
+    fun dispose() {
         handler.post {
             mediaEngine.sendExtPacket(RTP_EXT_PROTO_QUIT_ROOM, extProtoData)
             mediaEngine.stop()

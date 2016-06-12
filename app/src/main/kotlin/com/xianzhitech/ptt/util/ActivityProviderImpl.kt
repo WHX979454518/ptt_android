@@ -1,10 +1,9 @@
-package com.xianzhitech.ptt
+package com.xianzhitech.ptt.util
 
 import android.app.Activity
 import android.os.Bundle
 import com.trello.rxlifecycle.ActivityEvent
 import com.xianzhitech.ptt.ui.ActivityProvider
-import com.xianzhitech.ptt.util.SimpleActivityLifecycleCallbacks
 import rx.subjects.PublishSubject
 
 class ActivityProviderImpl : ActivityProvider, SimpleActivityLifecycleCallbacks() {

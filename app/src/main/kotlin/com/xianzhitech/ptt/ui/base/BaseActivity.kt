@@ -1,10 +1,13 @@
 package com.xianzhitech.ptt.ui.base
 
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
+import android.view.View
 import android.widget.Toast
 import com.trello.rxlifecycle.ActivityEvent
 import com.trello.rxlifecycle.RxLifecycle
@@ -17,18 +20,22 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.service.handler.ForceUpdateException
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.update.installPackage
 import rx.Observable
 import rx.SingleSubscriber
 import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
-        AlertDialogFragment.OnNegativeButtonClickListener {
+        AlertDialogFragment.OnNegativeButtonClickListener,
+        AlertDialogFragment.OnDismissListener{
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
 
@@ -74,6 +81,17 @@ abstract class BaseActivity : AppCompatActivity(),
         }
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
+
+
+        appComponent.appService.retrieveAppParams()
+                .subscribeOn(Schedulers.io())
+                .toObservable()
+                .compose(bindToLifecycle())
+                .subscribe(object : GlobalSubscriber<AppParams>() {
+                    override fun onNext(t: AppParams) {
+                        handleUpdate(t)
+                    }
+                })
     }
 
     override fun onStop() {
@@ -85,12 +103,47 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> joinRoomConfirmed(fragment.attachment as String)
+            TAG_UPDATE -> startDownload(fragment.attachmentAs<AppParams>().updateUrl!!)
         }
     }
 
     override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
+            TAG_UPDATE -> onDismiss(fragment)
+        }
+    }
+
+    override fun onDismiss(fragment: AlertDialogFragment) {
+        if (fragment.tag == TAG_UPDATE) {
+            if (fragment.attachmentAs<AppParams>().forceUpdate == true) {
+                finish()
+                return
+            }
+
+            appComponent.preference.lastIgnoredUpdateUrl = fragment.attachmentAs<AppParams>().updateUrl
+        }
+    }
+
+    private fun startDownload(updateUrl: String) {
+        val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        val downloadUri = Uri.parse(updateUrl)
+        val preference = (application as AppComponent).preference
+        val lastUpdateDownloadId = preference.updateDownloadId
+        if (lastUpdateDownloadId == null || lastUpdateDownloadId.first != downloadUri) {
+            if (lastUpdateDownloadId != null) {
+                downloadManager.remove(lastUpdateDownloadId.second)
+            }
+
+            val downloadRequest = DownloadManager.Request(downloadUri).apply {
+                setMimeType("application/vnd.android.package-archive")
+                setNotificationVisibility(View.VISIBLE)
+                setVisibleInDownloadsUi(false)
+                setTitle(R.string.app_updating.toFormattedString(this@BaseActivity, R.string.app_name.toFormattedString(this@BaseActivity)))
+            }
+            preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
+        } else {
+            installPackage(this, lastUpdateDownloadId.second)
         }
     }
 
@@ -147,12 +200,26 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     fun onLoginError(error: Throwable) {
-        //TODO:
-        Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
+        if (error is ForceUpdateException) {
+            handleUpdate(error.appParams)
+        }
+        else {
+            Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
+        }
     }
 
-    fun onForceUpdate(appParams: AppParams) {
-
+    fun handleUpdate(appParams: AppParams) {
+        if (appParams.updateUrl != null &&
+                (appParams.forceUpdate == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.updateUrl)) {
+            AlertDialogFragment.Builder().apply {
+                message = appParams.updateMessage
+                title = R.string.update_title.toFormattedString(this@BaseActivity)
+                btnPositive = R.string.update.toFormattedString(this@BaseActivity)
+                btnNegative = if (appParams.forceUpdate == true) null else R.string.ignore.toFormattedString(this@BaseActivity)
+                cancellabe = false
+                attachment = appParams
+            }.show(supportFragmentManager, TAG_UPDATE)
+        }
     }
 
     protected fun showProgressDialog(message: Int, tag: String) {
@@ -224,6 +291,7 @@ abstract class BaseActivity : AppCompatActivity(),
     companion object {
         private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
+        private const val TAG_UPDATE = "tag_update"
 
         const val EXTRA_FINISH_ENTER_ANIM = "extra_f_enter_ani"
         const val EXTRA_FINISH_EXIT_ANIM = "extra_f_exit_ani"

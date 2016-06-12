@@ -37,37 +37,37 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
                 .create()
     }
 
-    private inline fun <reified T> getParentAs(clazz: Class<T>): T? {
-        if (clazz.isInstance(parentFragment)) {
-            return parentFragment as T
-        } else if (clazz.isInstance(activity)) {
-            return activity as T
-        } else {
-            return null
-        }
+    inline fun <reified T> attachmentAs() : T {
+        return attachment as T
+    }
+
+    private inline fun <reified T> getParentAs(): T? {
+        return parentFragment as? T ?: activity as? T
     }
 
     override fun onClick(dialog: DialogInterface, which: Int) {
         when (which) {
             DialogInterface.BUTTON_POSITIVE -> {
-                val callback = getParentAs(OnPositiveButtonClickListener::class.java)
-                callback?.onPositiveButtonClicked(this)
+                getParentAs<OnPositiveButtonClickListener>()?.onPositiveButtonClicked(this)
             }
 
             DialogInterface.BUTTON_NEGATIVE -> {
-                val callback = getParentAs(OnNegativeButtonClickListener::class.java)
-                callback?.onNegativeButtonClicked(this)
+                getParentAs<OnNegativeButtonClickListener>()?.onNegativeButtonClicked(this)
             }
 
             DialogInterface.BUTTON_NEUTRAL -> {
-                val callback = getParentAs(OnNeutralButtonClickListener::class.java)
-                callback?.onNeutralButtonClicked(this)
+                getParentAs<OnNeutralButtonClickListener>()?.onNeutralButtonClicked(this)
             }
         }
 
         if (builder.autoDismiss) {
             dismiss()
         }
+    }
+
+    override fun onDismiss(dialog: DialogInterface?) {
+        super.onDismiss(dialog)
+        getParentAs<OnDismissListener>()?.onDismiss(this)
     }
 
     interface OnPositiveButtonClickListener {
@@ -80,6 +80,10 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
 
     interface OnNeutralButtonClickListener {
         fun onNeutralButtonClicked(fragment: AlertDialogFragment)
+    }
+
+    interface OnDismissListener {
+        fun onDismiss(fragment: AlertDialogFragment)
     }
 
     class Builder : Serializable {

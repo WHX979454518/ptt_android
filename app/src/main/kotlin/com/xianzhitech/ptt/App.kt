@@ -5,49 +5,45 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
-import com.xianzhitech.ptt.engine.TalkEngineProvider
-import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
 import com.xianzhitech.ptt.repo.storage.*
-import com.xianzhitech.ptt.service.AppParams
-import com.xianzhitech.ptt.service.AppRequest
 import com.xianzhitech.ptt.service.AppService
 import com.xianzhitech.ptt.service.handler.*
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
+import com.xianzhitech.ptt.util.ActivityProviderImpl
+import okhttp3.Cache
 import okhttp3.OkHttpClient
-import rx.Single
+import retrofit2.Retrofit
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
+import retrofit2.converter.gson.GsonConverterFactory
 import rx.subjects.PublishSubject
 
 
 open class App : Application(), AppComponent {
 
-    override val httpClient by lazy { OkHttpClient() }
-    override val talkEngineProvider = object : TalkEngineProvider {
-        override fun createEngine() = WebRtcTalkEngine(this@App)
-    }
-
+    override val httpClient by lazy { onBuildHttpClient().build() }
     override lateinit var userRepository: UserRepository
     override lateinit var groupRepository: GroupRepository
     override lateinit var roomRepository: RoomRepository
     override lateinit var contactRepository: ContactRepository
-
     override lateinit var preference: Preference
-
-    //    override val updateManager: UpdateManager = UpdateManagerImpl(this, Uri.parse(BuildConfig.UPDATE_SERVER_ENDPOINT))
-//    override lateinit var signalService : SignalService
     override lateinit var signalHandler: SignalServiceHandler
     override lateinit var activityProvider: ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
 
-    override val appService: AppService = object : AppService {
-        override fun retrieveAppParams(request: AppRequest): Single<AppParams> {
-            return Single.just(AppParams(null, false, null, "http://netptt.cn:20000"))
-        }
+    override val appService: AppService by lazy {
+        Retrofit.Builder()
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl(BuildConfig.APP_SERVER_ENDPOINT)
+                .client(httpClient)
+                .build()
+                .create(AppService::class.java)
     }
 
     override fun onCreate() {
@@ -80,10 +76,14 @@ open class App : Application(), AppComponent {
         }
 
         RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
-        AudioHandler(this, signalHandler, talkEngineProvider, activityProvider)
+        AudioHandler(this, signalHandler, activityProvider)
         ServiceHandler(this, signalHandler)
         RoomStatusHandler(roomRepository, signalHandler)
         statisticCollector = StatisticCollector(signalHandler)
+    }
+
+    open protected fun onBuildHttpClient(): OkHttpClient.Builder {
+        return OkHttpClient.Builder().cache(Cache(cacheDir, Constants.HTTP_MAX_CACHE_SIZE))
     }
 
 }

@@ -9,6 +9,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.GlobalSubscriber
 import com.xianzhitech.ptt.ext.plusAssign
 import com.xianzhitech.ptt.ext.sendLocalBroadcast
 import com.xianzhitech.ptt.ext.subscribeSimple
@@ -18,6 +19,7 @@ import com.xianzhitech.ptt.service.dto.JoinRoomResult
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.service.impl.IOSignalService
+import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import rx.*
 import rx.Observable
@@ -91,7 +93,7 @@ class SignalServiceHandler(private val appContext: Context,
         loginStateSubject += peekLoginState().copy(LoginStatus.LOGIN_IN_PROGRESS, currentUserID = tokenProvider.authToken?.userId)
 
         val subscription = CompositeSubscription()
-        subscription.add(appComponent.appService.retrieveAppParams(AppRequest.INSTANCE)
+        subscription.add(appComponent.appService.retrieveAppParams()
                 .subscribeOn(Schedulers.io())
                 .toObservable()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -114,7 +116,7 @@ class SignalServiceHandler(private val appContext: Context,
                     newSignalService.login(tokenProvider)
                 }
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : Subscriber<LoginResult>() {
+                .subscribe(object : GlobalSubscriber<LoginResult>() {
                     override fun onNext(t: LoginResult) {
                         if (t.status == LoginStatus.IDLE) {
                             throw IllegalStateException("Signal service returned error status")
@@ -165,6 +167,7 @@ class SignalServiceHandler(private val appContext: Context,
                     }
 
                     override fun onError(error: Throwable) {
+                        super.onError(error)
                         logout()
 
                         (appComponent.activityProvider.currentStartedActivity as? BaseActivity)?.let {
@@ -184,6 +187,9 @@ class SignalServiceHandler(private val appContext: Context,
                 signalServiceSubscription = null
                 signalService?.logout()?.subscribeSimple()
                 signalService = null
+                tokenProvider.authToken = null
+                tokenProvider.loginName = null
+                tokenProvider.loginPassword = null
                 appComponent.preference.lastSyncContactTime = null
 
                 loginStateSubject += LoginState.EMPTY
@@ -354,7 +360,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun onUserKickedOut() {
-        //TODO:
+        appContext.startActivity(Intent(appContext, KickOutActivity::class.java))
     }
 
     private fun onRoomSpeakerUpdate(update: RoomSpeakerUpdate) {
