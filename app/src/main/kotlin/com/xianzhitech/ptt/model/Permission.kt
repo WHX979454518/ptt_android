@@ -5,5 +5,7 @@ enum class Permission {
     MAKE_GROUP_CALL,
     CREATE_ROOM,
     RECEIVE_INDIVIDUAL_CALL,
-    RECEIVE_ROOM;
+    RECEIVE_ROOM,
+    CAN_SPEAK,
+    ;
 }

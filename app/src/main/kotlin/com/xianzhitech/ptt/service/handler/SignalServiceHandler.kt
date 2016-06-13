@@ -196,6 +196,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun createRoom(request: CreateRoomRequest): Single<Room> {
         return Single.defer {
+            // Check permission first
             ensureService().createRoom(request)
                     .flatMap { appComponent.roomRepository.saveRooms(listOf(it)).execAsync().toSingleDefault(it) }
         }.subscribeOn(AndroidSchedulers.mainThread())

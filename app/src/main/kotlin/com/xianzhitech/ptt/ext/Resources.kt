@@ -49,3 +49,12 @@ fun Date.formatInvite(context: Context): CharSequence {
         }
     }
 }
+
+fun Int.toLevelString(context: Context) : CharSequence {
+    val arr = context.resources.getStringArray(R.array.level_number)
+    if (this < 0 || this >= arr.size) {
+        return context.getString(R.string.level_with_number, this)
+    } else {
+        return arr[this]
+    }
+}

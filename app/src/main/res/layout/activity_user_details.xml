@@ -59,6 +59,33 @@
 
     </LinearLayout>
 
+    <View style="@style/Divider.Lighter" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:background="@android:color/white"
+        android:paddingLeft="@dimen/unit_two"
+        android:paddingRight="@dimen/unit_two"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            style="@style/Text.ProfileItem"
+            android:text="@string/level"
+            android:layout_weight="1"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/userDetails_priority"
+            style="@style/Text.ProfileItem.Value"
+            tools:text="七级"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+
 
     <Button
         android:id="@+id/userDetails_call"

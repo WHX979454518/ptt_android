@@ -9,10 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
@@ -23,6 +20,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
     private lateinit var iconView: ImageView
     private lateinit var nameView: TextView
     private lateinit var companyNameView: TextView
+    private lateinit var levelView: TextView
     private lateinit var callButton: View
 
     private var user: User? = null
@@ -35,6 +33,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
         iconView = findView(R.id.userDetails_icon)
         nameView = findView(R.id.userDetails_name)
         companyNameView = findView(R.id.userDetails_enterpriseName)
+        levelView = findView(R.id.userDetails_priority)
         callButton = findView(R.id.userDetails_call)
 
         callButton.isEnabled = false
@@ -62,6 +61,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                         iconView.setImageDrawable(user.createDrawable(this@UserDetailsActivity))
                         nameView.text = user.name
                         companyNameView.text = user.enterpriseName
+                        levelView.text = user.priority.toLevelString(this)
                         callButton.isEnabled = true
                     }
                 }

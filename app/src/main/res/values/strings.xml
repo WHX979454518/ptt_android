@@ -167,7 +167,30 @@
     <string name="thanks_for_feedback">感谢您的反馈, 正在向服务器提交反馈</string>
     <string name="feedback_complete">反馈提交成功</string>
     <string name="give_up_and_exit">放弃并退出</string>
+    <string name="level">等级</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>
+
+    <string name="level_with_number">%1$s级</string>
+    <string name="name_with_level">%1$s (%2$s)</string>
+
+    <string-array name="level_number">
+        <item>管理员</item>
+        <item>一级</item>
+        <item>二级</item>
+        <item>三级</item>
+        <item>四级</item>
+        <item>五级</item>
+        <item>六级</item>
+        <item>七级</item>
+        <item>八级</item>
+        <item>九级</item>
+        <item>十级</item>
+        <item>十一级</item>
+        <item>十二级</item>
+        <item>十三级</item>
+        <item>十四级</item>
+        <item>十五级</item>
+    </string-array>
 </resources>

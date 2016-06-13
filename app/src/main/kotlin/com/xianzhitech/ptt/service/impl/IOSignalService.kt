@@ -246,13 +246,33 @@ private fun Socket.sendEventIgnoringResult(eventName: String, vararg args: Any?)
     return Completable.fromSingle(sendEventRaw<Any>(eventName, null, args))
 }
 
-private fun String?.toPermissionSet(): Set<Permission> {
+private fun JSONObject?.toPermissionSet(): Set<Permission> {
     if (this == null) {
         return emptySet()
     }
 
-    //TODO:
-    return emptySet()
+    val set = EnumSet.noneOf(Permission::class.java)
+    if (has("callAble") && getBoolean("callAble")) {
+        set.add(Permission.MAKE_INDIVIDUAL_CALL)
+    }
+
+    if (has("groupAble") && getBoolean("groupAble")) {
+        set.add(Permission.MAKE_GROUP_CALL)
+    }
+
+    if (has("calledAble") && getBoolean("calledAble")) {
+        set.add(Permission.RECEIVE_INDIVIDUAL_CALL)
+    }
+
+    if (has("joinAble") && getBoolean("joinAble")) {
+        set.add(Permission.RECEIVE_ROOM)
+    }
+
+    if (!has("forbidSpeak") || !getBoolean("forbidSpeak")) {
+        set.add(Permission.CAN_SPEAK)
+    }
+
+    return set
 }
 
 private data class ExplicitUserToken(override val userId: String,
@@ -363,9 +383,9 @@ private class UserObject(private val obj: JSONObject) : User {
     override val avatar: String?
         get() = obj.nullOrString("avatar")
     override val permissions: Set<Permission>
-        get() = obj.getStringValue("privileges").toPermissionSet()
+        get() = obj.getJSONObject("privileges").toPermissionSet()
     override val priority: Int
-        get() = obj.optInt("priority", Constants.DEFAULT_USER_PRIORITY)
+        get() = obj.getJSONObject("privileges").optInt("priority", Constants.DEFAULT_USER_PRIORITY)
     override val phoneNumber: String?
         get() = obj.nullOrString("phoneNumber")
     override val enterpriseId: String
