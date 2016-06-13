@@ -65,6 +65,15 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
     }
 
+    override fun updateRoomName(roomId: String, name: String) {
+        return executeInTransaction {
+            val contentValue = ContentValues(2)
+            contentValue.put(Rooms.NAME, name)
+            contentValue.put(Rooms.LAST_ACTIVE_TIME, System.currentTimeMillis())
+            db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
+        }
+    }
+
     override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) {
         return executeInTransaction {
             val contentValue = ContentValues(3)
@@ -349,7 +358,7 @@ private data class RoomModelImpl(override val id: String,
 
 private fun Room.toContentValues(contentValues: ContentValues = ContentValues(6)): ContentValues {
     contentValues.put(Rooms.ID, id)
-    contentValues.put(Rooms.NAME, name)
+//    contentValues.put(Rooms.NAME, name)
     contentValues.put(Rooms.DESC, description)
     contentValues.put(Rooms.OWNER_ID, ownerId)
     contentValues.put(Rooms.EXTRA_MEMBER_IDS, extraMemberIds.joinToString(separator = ","))
@@ -377,7 +386,7 @@ private object Rooms {
     val MAPPER: (Cursor) -> RoomModel = { cursor ->
         RoomModelImpl(
                 id = cursor.getString(0),
-                name = cursor.getString(1),
+                name = cursor.getString(1) ?: "",
                 description = cursor.getString(2),
                 ownerId = cursor.getString(3),
                 lastSpeakMemberId = cursor.getString(4),

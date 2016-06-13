@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.ContactUserProvider
@@ -100,6 +101,17 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         this.roomMembers = roomMembers
         roomNameView.text = roomName.name
 
+        if (room.associatedGroupIds.isEmpty() && room.extraMemberIds.size > 2) {
+            // 如果这项为空, 意味着这个组是个临时组, 可以改名
+            (roomNameView.parent as View).setOnClickListener {
+                startActivityForResultWithAnimation(TextInputActivity.build(
+                        this, R.string.room_name.toFormattedString(this), R.string.type_room_name.toFormattedString(this),null, false), REQUEST_UPDATE_ROOM_NAME)
+            }
+        } else {
+            (roomNameView.parent as View).setOnClickListener(null)
+            roomNameView.setCompoundDrawables(null, null, null, null)
+        }
+
         // Setup label
         allMemberLabelView.text = R.string.all_member_with_number.toFormattedString(this, roomMembers.size)
         // Set up all member views
@@ -132,10 +144,18 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
             val selectedUserIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS)
-            (application as AppComponent).signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
+            appComponent.signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
                     .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
+        } else if (requestCode == REQUEST_UPDATE_ROOM_NAME && resultCode == RESULT_OK && data != null) {
+            val roomName = data.getStringExtra(TextInputActivity.RESULT_EXTRA_TEXT)
+            if (roomName.isNullOrBlank()) {
+                Toast.makeText(this, R.string.room_not_updated, Toast.LENGTH_LONG).show()
+            }
+            else {
+                appComponent.roomRepository.updateRoomName(roomId, roomName).execAsync().subscribeSimple()
+            }
         } else {
             super.onActivityResult(requestCode, resultCode, data)
         }
@@ -208,6 +228,8 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         const val EXTRA_ROOM_ID = "room_id"
 
         private const val REQUEST_SELECT_USER = 1
+        private const val REQUEST_UPDATE_ROOM_NAME = 2
+
         private const val MAX_MEMBER_DISPLAY_COUNT = 14
 
         private const val VIEW_TYPE_USER = 0

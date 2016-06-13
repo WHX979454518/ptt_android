@@ -100,6 +100,12 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, roomNotification)
     }
 
+    fun updateRoomName(roomId : String, name : String) : UpdateResult {
+        return RepoUpdateResult({
+            roomStorage.updateRoomName(roomId, name)
+        }, roomNotification)
+    }
+
     fun getRoom(roomId: String?): QueryResult<RoomModel?> {
         if (roomId == null) {
             return nullResult()

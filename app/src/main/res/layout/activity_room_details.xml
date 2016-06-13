@@ -23,9 +23,9 @@
                 android:paddingLeft="@dimen/unit_one"
                 android:paddingRight="@dimen/unit_one"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"/>
 
-            <View style="@style/Divider.Lighter" />
+            <View style="@style/Divider.Lighter"/>
 
             <TextView
                 android:id="@+id/roomDetails_allMemberLabel"

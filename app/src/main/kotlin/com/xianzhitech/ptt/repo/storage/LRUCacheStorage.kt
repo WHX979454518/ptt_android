@@ -68,6 +68,11 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
         return getOrFetch(roomIds, { roomStorage.getRooms(it) }, arrayListOf())
     }
 
+    override fun updateRoomName(roomId: String, name: String) {
+        invalidateIds(listOf(roomId))
+        roomStorage.updateRoomName(roomId, name)
+    }
+
     override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) {
         invalidateIds(listOf(roomId))
         roomStorage.updateLastRoomSpeaker(roomId, time, speakerId)

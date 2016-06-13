@@ -31,11 +31,13 @@ interface GroupStorage {
  */
 interface RoomStorage {
     fun getAllRooms(): List<RoomModel>
+    fun updateRoomName(roomId: String, name: String)
     fun getRooms(roomIds: Iterable<String>): List<RoomModel>
     fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String)
     fun updateLastActiveTime(roomId: String, time: Date)
     fun saveRooms(rooms: Iterable<Room>)
     fun clear()
+
 }
 
 /**

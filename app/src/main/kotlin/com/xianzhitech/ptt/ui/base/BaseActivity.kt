@@ -209,7 +209,7 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     fun handleUpdate(appParams: AppParams) {
-        if (appParams.updateUrl != null &&
+        if (appParams.updateUrl.isNullOrEmpty().not() &&
                 (appParams.forceUpdate == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.updateUrl)) {
             AlertDialogFragment.Builder().apply {
                 message = appParams.updateMessage

@@ -174,6 +174,9 @@
 
     <string name="level_with_number">%1$s级</string>
     <string name="name_with_level">%1$s (%2$s)</string>
+    <string name="field_required">该项目不能为空</string>
+    <string name="type_room_name">房间名称</string>
+    <string name="room_not_updated">房间未更新</string>
 
     <string-array name="level_number">
         <item>管理员</item>

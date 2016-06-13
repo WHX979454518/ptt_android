@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EditText xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
+          android:layout_margin="@dimen/unit_one"
+          android:id="@+id/textInput_text"
+          style="@style/Text.Subhead"
+          tools:text="在此输入文字"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"/>

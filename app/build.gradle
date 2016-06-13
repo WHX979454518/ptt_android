@@ -48,7 +48,7 @@ android {
         versionCode 1
         versionName System.getenv("BUILD_TAG") ?: "1.0-snapshot"
 
-        buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://192.168.11.143:8000"')
+        buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://netptt.cn:20002"')
         buildConfigField("String", "BUILD_NUMBER", "\"$buildNumber\"")
     }
 
