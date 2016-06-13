@@ -9,10 +9,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.GlobalSubscriber
-import com.xianzhitech.ptt.ext.plusAssign
-import com.xianzhitech.ptt.ext.sendLocalBroadcast
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
@@ -280,6 +277,8 @@ class SignalServiceHandler(private val appContext: Context,
                 throw IllegalStateException("Can't request mic in room state $roomState")
             }
 
+            logtagd("SignalHandler", "Requesting mic... %s", roomState)
+
             roomStateSubject += roomState.copy(status = RoomStatus.REQUESTING_MIC)
             ensureService().requestMic(roomState.currentRoomId)
                     .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
@@ -287,6 +286,7 @@ class SignalServiceHandler(private val appContext: Context,
                     .doOnSuccess {
                         if (it) {
                             val newRoomState = peekRoomState()
+                            logtagd("SignalHandler", "Successfully requested mic in %s", newRoomState)
                             if (newRoomState.status == RoomStatus.REQUESTING_MIC &&
                                     newRoomState.speakerId == null &&
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
@@ -315,10 +315,12 @@ class SignalServiceHandler(private val appContext: Context,
         mainThread {
             val service = signalService ?: return@mainThread
             val state = peekRoomState()
+            logtagd("SignalHandler", "Releasing mic in %s", state)
+
             if (state.currentRoomId != null &&
-                    state.speakerId == peekLoginState().currentUserID) {
+                    (state.speakerId == peekLoginState().currentUserID || state.status == RoomStatus.REQUESTING_MIC)) {
                 service.releaseMic(state.currentRoomId).subscribeSimple()
-                roomStateSubject += state.copy(speakerId = null, status = if (state.status == RoomStatus.ACTIVE) RoomStatus.JOINED else state.status)
+                roomStateSubject += state.copy(speakerId = null, status = RoomStatus.JOINED)
             }
         }
     }
