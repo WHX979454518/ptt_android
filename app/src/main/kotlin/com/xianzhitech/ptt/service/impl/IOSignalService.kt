@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.service.impl
 
 import android.os.Looper
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Permission
@@ -25,7 +24,8 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
 
-class IOSignalService(val endpoint: String) : SignalService {
+class IOSignalService(val endpoint: String,
+                      val deviceId: String) : SignalService {
     private val socket = IO.socket(endpoint, IO.Options().apply {
         transports = arrayOf("websocket")
     })
@@ -50,12 +50,10 @@ class IOSignalService(val endpoint: String) : SignalService {
             })
 
             socket.onMainThread(Socket.EVENT_CONNECT_ERROR, {
-                subscriber.onError(StaticUserException(R.string.error_unknown))
+                loginResultRef.set(loginResultRef.get().copy(status = LoginStatus.OFFLINE))
+                subscriber.onNext(loginResultRef.get())
             })
 
-            socket.onMainThread(Socket.EVENT_DISCONNECT, {
-                subscriber.onCompleted()
-            })
 
             // Set up server events
             socket.onMainThread("s_login_failed", { subscriber.onError((it as? JSONObject).toError()) })
@@ -71,8 +69,9 @@ class IOSignalService(val endpoint: String) : SignalService {
                         val savedToken = (tokenProvider.authToken as? ExplicitUserToken) ?: ExplicitUserToken(tokenProvider.loginName!!, tokenProvider.loginPassword!!)
                         loginResultRef.set(loginResultRef.get().copy(token = savedToken))
 
-                        (it[0] as MutableMap<String, List<String>>)["Authorization"] =
-                                listOf("Basic ${(savedToken.userId + ':' + savedToken.password.toMD5()).toBase64()}");
+                        val headers = it[0] as MutableMap<String, List<String>>
+                        headers["Authorization"] = listOf("Basic ${(savedToken.userId + ':' + savedToken.password.toMD5()).toBase64()}");
+                        headers["X-Device-Id"] = listOf(deviceId)
                     } catch(e: Exception) {
                         subscriber.onError(e)
                     }
@@ -91,9 +90,13 @@ class IOSignalService(val endpoint: String) : SignalService {
     }
 
     override fun retrieveUserKickedOutEvent(): Observable<UserKickedOutEvent> {
-        //TODO:
-        return socket.retrieveEvent<Unit>("s_kick_out")
-                .map { null }
+        return socket.retrieveEvent<Any?>("s_kick_out")
+                .map {
+                    object : UserKickedOutEvent {
+                        override val reason: String?
+                            get() = null
+                    }
+                }
     }
 
     override fun retrieveRoomOnlineMemberUpdate(): Observable<RoomOnlineMemberUpdate> {

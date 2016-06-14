@@ -14,4 +14,5 @@ interface Preference {
     var lastSyncContactTime : Date?
     var blockCalls: Boolean
     var lastIgnoredUpdateUrl : String?
+    var deviceId : String?
 }

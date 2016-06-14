@@ -57,6 +57,12 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
             }
         }
 
+    override var deviceId: String?
+        get() = pref.getString(KEY_DEVICE_ID, null)
+        set(value) {
+            pref.edit().putString(KEY_DEVICE_ID, value)
+        }
+
     companion object {
         const val KEY_USER_TOKEN = "user_token"
         const val KEY_BLOCK_CALLS = "block_calls"
@@ -65,5 +71,6 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"
         const val KEY_IGNORED_UPDATE_URL = "key_ignored_update_url"
+        const val KEY_DEVICE_ID = "key_device_id"
     }
 }

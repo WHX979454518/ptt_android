@@ -86,92 +86,105 @@ class SignalServiceHandler(private val appContext: Context,
         }
     }
 
+    private fun getDeviceId() : Single<String> {
+        return appComponent.preference.deviceId?.let { Single.just(it) } ?:
+                appComponent.appService.registerDevice(AppInfo(appContext)).subscribeOn(Schedulers.io())
+                        .doOnSuccess { appComponent.preference.deviceId = it }
+    }
+
     private fun doLogin() {
         loginStateSubject += peekLoginState().copy(LoginStatus.LOGIN_IN_PROGRESS, currentUserID = tokenProvider.authToken?.userId)
 
         val subscription = CompositeSubscription()
-        subscription.add(appComponent.appService.retrieveAppParams()
-                .subscribeOn(Schedulers.io())
-                .toObservable()
-                .observeOn(AndroidSchedulers.mainThread())
-                .flatMap {
-                    if (it.forceUpdate ?: false) {
-                        throw ForceUpdateException(it)
-                    }
+        subscription.add(
+                getDeviceId().toObservable()
+                        .combineWith(appComponent.appService.retrieveAppParams().subscribeOn(Schedulers.io()).toObservable())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .flatMap {
+                            if (it.second.forceUpdate ?: false) {
+                                throw ForceUpdateException(it.second)
+                            }
 
-                    if (subscription.isUnsubscribed) {
-                        throw IllegalStateException("Login is unsubscribed unexpectedly")
-                    }
+                            if (subscription.isUnsubscribed) {
+                                throw IllegalStateException("Login is unsubscribed unexpectedly")
+                            }
 
-                    val newSignalService = IOSignalService(it.signalServerEndpoint)
-                    subscription.add(newSignalService.retrieveInvitation().subscribeSimple { onReceiveInvitation(it) })
-                    subscription.add(newSignalService.retrieveRoomOnlineMemberUpdate().subscribeSimple { onRoomOnlineMemberUpdate(it) })
-                    subscription.add(newSignalService.retrieveRoomSpeakerUpdate().subscribeSimple { onRoomSpeakerUpdate(it) })
-                    subscription.add(newSignalService.retrieveUserKickedOutEvent().subscribeSimple { onUserKickedOut() })
+                            val newSignalService = IOSignalService(it.second.signalServerEndpoint, it.first)
+                            subscription.add(newSignalService.retrieveInvitation().subscribeSimple { onReceiveInvitation(it) })
+                            subscription.add(newSignalService.retrieveRoomOnlineMemberUpdate().subscribeSimple { onRoomOnlineMemberUpdate(it) })
+                            subscription.add(newSignalService.retrieveRoomSpeakerUpdate().subscribeSimple { onRoomSpeakerUpdate(it) })
+                            subscription.add(newSignalService.retrieveUserKickedOutEvent().subscribeSimple { onUserKickedOut() })
 
-                    signalService = newSignalService
-                    newSignalService.login(tokenProvider)
-                }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : GlobalSubscriber<LoginResult>() {
-                    override fun onNext(t: LoginResult) {
-                        if (t.status == LoginStatus.IDLE) {
-                            throw IllegalStateException("Signal service returned error status")
+                            signalService = newSignalService
+                            newSignalService.login(tokenProvider)
                         }
-
-                        val roomState = peekRoomState()
-
-                        when (t.status) {
-                            LoginStatus.LOGGED_IN -> {
-                                if (tokenProvider.authToken?.userId != t.user!!.id) {
-                                    // Auto clear database
-                                    appComponent.groupRepository.clear().execAsync().subscribeSimple()
-                                    appComponent.roomRepository.clear().execAsync().subscribeSimple()
-                                    appComponent.contactRepository.clear().execAsync().subscribeSimple()
-                                }
-
-                                val lastSyncDate = appComponent.preference.lastSyncContactTime
-                                if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
-                                    subscription.add(signalService!!.retrieveContacts()
-                                                .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
-                                                .subscribeSimple())
-                                    appComponent.preference.lastSyncContactTime = Date()
-                                }
-
-                                appComponent.userRepository.saveUsers(listOf(t.user!!)).execAsync().subscribeSimple()
-
-                                tokenProvider.authToken = t.token
-                                if (roomState.status == RoomStatus.OFFLINE && roomState.currentRoomId != null) {
-                                    // Auto reconnect to room
-                                    joinRoom(roomState.currentRoomId).subscribeSimple()
-                                }
-                            }
-
-                            LoginStatus.IDLE -> {
-                                if (roomState.currentRoomId != null) {
-                                    roomStateSubject += roomState.copy(status = RoomStatus.OFFLINE, speakerId = null, onlineMemberIds = emptySet())
-                                }
-                            }
-
-                            else -> {
+                        .timeout {
+                            if (it.status == LoginStatus.LOGIN_IN_PROGRESS && it.token == null) {
+                                Observable.timer(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                            } else {
+                                Observable.never()
                             }
                         }
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(object : GlobalSubscriber<LoginResult>() {
+                            override fun onNext(t: LoginResult) {
+                                if (t.status == LoginStatus.IDLE) {
+                                    throw IllegalStateException("Signal service returned error status")
+                                }
 
-                        loginStateSubject += peekLoginState().copy(status = t.status, currentUserID = t.token?.userId)
-                    }
+                                val roomState = peekRoomState()
 
-                    override fun onCompleted() {
-                    }
+                                when (t.status) {
+                                    LoginStatus.LOGGED_IN -> {
+                                        if (tokenProvider.authToken?.userId != t.user!!.id) {
+                                            // Auto clear database
+                                            appComponent.groupRepository.clear().execAsync().subscribeSimple()
+                                            appComponent.roomRepository.clear().execAsync().subscribeSimple()
+                                            appComponent.contactRepository.clear().execAsync().subscribeSimple()
+                                        }
 
-                    override fun onError(error: Throwable) {
-                        super.onError(error)
-                        logout()
+                                        val lastSyncDate = appComponent.preference.lastSyncContactTime
+                                        if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
+                                            subscription.add(signalService!!.retrieveContacts()
+                                                    .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
+                                                    .subscribeSimple())
+                                            appComponent.preference.lastSyncContactTime = Date()
+                                        }
 
-                        (appComponent.activityProvider.currentStartedActivity as? BaseActivity)?.let {
-                            it.onLoginError(error)
-                        } ?: showToast(error.describeInHumanMessage(appContext))
-                    }
-                })
+                                        appComponent.userRepository.saveUsers(listOf(t.user!!)).execAsync().subscribeSimple()
+
+                                        tokenProvider.authToken = t.token
+                                        if (roomState.status == RoomStatus.OFFLINE && roomState.currentRoomId != null) {
+                                            // Auto reconnect to room
+                                            joinRoom(roomState.currentRoomId).subscribeSimple()
+                                        }
+                                    }
+
+                                    LoginStatus.IDLE -> {
+                                        if (roomState.currentRoomId != null) {
+                                            roomStateSubject += roomState.copy(status = RoomStatus.OFFLINE, speakerId = null, onlineMemberIds = emptySet())
+                                        }
+                                    }
+
+                                    else -> {
+                                    }
+                                }
+
+                                loginStateSubject += peekLoginState().copy(status = t.status, currentUserID = t.token?.userId)
+                            }
+
+                            override fun onCompleted() {
+                            }
+
+                            override fun onError(error: Throwable) {
+                                super.onError(error)
+                                logout()
+
+                                (appComponent.activityProvider.currentStartedActivity as? BaseActivity)?.let {
+                                    it.onLoginError(error)
+                                } ?: showToast(error.describeInHumanMessage(appContext))
+                            }
+                        })
         )
 
         signalServiceSubscription = subscription
@@ -363,7 +376,10 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun onUserKickedOut() {
-        appContext.startActivity(Intent(appContext, KickOutActivity::class.java))
+        logout()
+        val intent = Intent(appContext, KickOutActivity::class.java)
+        appComponent.activityProvider.currentStartedActivity?.startActivity(intent)
+            ?: appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
     }
 
     private fun onRoomSpeakerUpdate(update: RoomSpeakerUpdate) {
@@ -390,10 +406,10 @@ class SignalServiceHandler(private val appContext: Context,
 
     private fun onReceiveInvitation(invite: RoomInvitation) {
         appComponent.roomRepository.saveRooms(listOf((invite as ExtraRoomInvitation).room)).execAsync()
-            .subscribeSimple {
-                appContext.sendLocalBroadcast(Intent(ACTION_ROOM_INVITATION)
-                        .putExtra(EXTRA_INVITATION, invite))
-            }
+                .subscribeSimple {
+                    appContext.sendLocalBroadcast(Intent(ACTION_ROOM_INVITATION)
+                            .putExtra(EXTRA_INVITATION, invite))
+                }
     }
 
     private fun showToast(message: CharSequence) {
