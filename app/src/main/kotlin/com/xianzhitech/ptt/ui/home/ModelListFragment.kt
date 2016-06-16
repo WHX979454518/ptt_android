@@ -112,7 +112,7 @@ abstract class ModelListFragment : BaseFragment() {
 
                             var matchedPosition : Int
 
-                            if (pinyinList.isEmpty()) {
+                            if (pinyinList.isEmpty() || needle.containsOnlyAsciiChars().not()) {
                                 // 没有拼音, 直接匹配字符串
                                 matchedPosition = model.name.indexOf(needle, ignoreCase = true)
                             }

@@ -54,3 +54,14 @@ fun String?.fromBase64ToSerializable(): Serializable? {
         }
     }
 }
+
+fun String.containsOnlyAsciiChars() : Boolean {
+    forEach {
+        if (!((it >= 'a' && it <= 'z') ||
+                (it >= 'A' && it <= 'Z'))) {
+            return false
+        }
+    }
+
+    return true
+}
