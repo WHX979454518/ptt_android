@@ -3,6 +3,11 @@
 
     <PreferenceCategory android:key="general" android:title="@string/general_settings">
 
+        <CheckBoxPreference android:title="@string/auto_exit"
+                            android:key="auto_exit"
+                            android:defaultValue="true"
+                            android:summary="@string/auto_exit_summary" />
+
         <CheckBoxPreference android:title="@string/block_call"
                             android:summary="@string/block_call_summary"
                             android:defaultValue="true"

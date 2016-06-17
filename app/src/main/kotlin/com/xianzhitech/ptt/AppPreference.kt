@@ -26,6 +26,12 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
             pref.edit().putBoolean(KEY_BLOCK_CALLS, value).apply()
         }
 
+    override var autoExit: Boolean
+        get() = pref.getBoolean(KEY_AUTO_EXIT, true)
+        set(value) {
+            pref.edit().putBoolean(KEY_AUTO_EXIT, value).apply()
+        }
+
     override var lastLoginUserId: String?
         get() = pref.getString(KEY_LAST_LOGIN_USER_ID, null)
         set(value) {
@@ -67,6 +73,7 @@ class AppPreference(private val pref: SharedPreferences) : Preference {
         const val KEY_USER_TOKEN = "user_token"
         const val KEY_BLOCK_CALLS = "block_calls"
         const val KEY_LAST_SYNC_TIME = "last_sync_contact_time"
+        const val KEY_AUTO_EXIT = "auto_exit"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"

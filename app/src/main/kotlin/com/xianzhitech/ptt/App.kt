@@ -79,6 +79,7 @@ open class App : Application(), AppComponent {
         AudioHandler(this, signalHandler, activityProvider)
         ServiceHandler(this, signalHandler)
         RoomStatusHandler(roomRepository, signalHandler)
+        RoomAutoQuitHandler(preference, activityProvider, roomRepository, signalHandler)
         statisticCollector = StatisticCollector(signalHandler)
     }
 

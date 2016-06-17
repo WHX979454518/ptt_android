@@ -65,7 +65,7 @@ class RoomInvitationHandler(private val appContext: Context,
         if (startedActivity != null) {
             startedActivity.startActivityWithAnimation(intent)
         } else {
-            appContext.startActivity(intent)
+            appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
         }
     }
 

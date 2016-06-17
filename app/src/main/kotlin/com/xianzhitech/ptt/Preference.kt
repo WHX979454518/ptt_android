@@ -15,4 +15,5 @@ interface Preference {
     var blockCalls: Boolean
     var lastIgnoredUpdateUrl : String?
     var deviceId : String?
+    val autoExit: Boolean
 }
