@@ -4,12 +4,13 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -17,22 +18,41 @@ import java.util.concurrent.TimeUnit
  */
 class RoomAutoQuitHandler(private val preference: Preference,
                           private val activityProvider: ActivityProvider,
-                          private val roomRepository: RoomRepository,
                           private val signalServiceHandler: SignalServiceHandler) {
 
-    private var lastRoomState : RoomState? = null
 
     init {
         signalServiceHandler.roomState
-                .distinctUntilChanged { it.onlineMemberIds }
-                .subscribe { onRoomStateChanged(it) }
+                .doOnNext { logd("Room state changed to $it") }
+                .scan(ArrayList<RoomState>(2), { result, newState ->
+                    if (newState.status.inRoom.not()) {
+                        result.clear()
+                    }
+                    else if (result.isEmpty() || result.last().onlineMemberIds != newState.onlineMemberIds) {
+                        if (result.size <= 1) {
+                            result.add(newState)
+                        } else {
+                            result[0] = result[1]
+                            result[1] = newState
+                        }
+                    }
+                    result
+                 })
+                .switchMap { states ->
+                    if (states.size == 2 && states[1].onlineMemberIds.size <= 1) {
+                        // 如果是只剩下一个成员了, 先等一等看还有没有人进来
+                        Observable.timer(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread()).map { states }
+                    } else if (states.size == 2) {
+                        Observable.just(states)
+                    } else {
+                        Observable.never()
+                    }
+                }
+                .subscribe { onRoomStateChanged(it[0], it[1]) }
 
-        signalServiceHandler.roomState.map { it.currentRoomId }
-                .distinctUntilChanged()
-                .switchMap { roomRepository.getRoom(it).observe() }
-                .map { it?.lastActiveTime }
+        signalServiceHandler.roomStatus
                 .switchMap {
-                    if (it != null) {
+                    if (it.inRoom && it != RoomStatus.ACTIVE) {
                         Observable.timer(Constants.ROOM_IDLE_TIME_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     } else {
                         Observable.never()
@@ -48,16 +68,16 @@ class RoomAutoQuitHandler(private val preference: Preference,
 
     }
 
-    private fun onRoomStateChanged(roomState: RoomState) {
-        if (lastRoomState?.let { it.currentRoomId == roomState.currentRoomId && it.onlineMemberIds.size > 1 } ?: false &&
-                roomState.status.inRoom &&
-                roomState.onlineMemberIds.size <= 1 &&
+    private fun onRoomStateChanged(lastRoomState: RoomState, currRoomState: RoomState) {
+        logd("Online member changed from ${lastRoomState.onlineMemberIds} to ${currRoomState.onlineMemberIds}")
+
+        if (lastRoomState.onlineMemberIds.size > 1 &&
+                currRoomState.status.inRoom &&
+                currRoomState.onlineMemberIds.size <= 1 &&
                 preference.autoExit) {
 
             signalServiceHandler.quitRoom()
             (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
         }
-
-        lastRoomState = roomState
     }
 }

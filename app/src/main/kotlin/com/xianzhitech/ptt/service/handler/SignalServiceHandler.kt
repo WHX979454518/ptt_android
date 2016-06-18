@@ -18,8 +18,10 @@ import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import rx.*
+import rx.Completable
 import rx.Observable
+import rx.Single
+import rx.SingleSubscriber
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
@@ -38,7 +40,7 @@ class SignalServiceHandler(private val appContext: Context,
     private val mainThreadHandler = Handler(Looper.getMainLooper())
 
     private var signalService: SignalService? = null
-    private var signalServiceSubscription: Subscription? = null
+    private var loginSubscription: CompositeSubscription? = null
 
     val loginState: Observable<LoginState> = loginStateSubject
     val roomState: Observable<RoomState> = roomStateSubject
@@ -195,14 +197,14 @@ class SignalServiceHandler(private val appContext: Context,
                         })
         )
 
-        signalServiceSubscription = subscription
+        loginSubscription = subscription
     }
 
     fun logout() {
         mainThread {
             if (peekLoginState().status != LoginStatus.IDLE) {
-                signalServiceSubscription?.unsubscribe()
-                signalServiceSubscription = null
+                loginSubscription?.unsubscribe()
+                loginSubscription = null
                 signalService?.logout()?.subscribeSimple()
                 signalService = null
                 tokenProvider.authToken = null
@@ -254,6 +256,8 @@ class SignalServiceHandler(private val appContext: Context,
                         }
 
                         override fun onSuccess(value: JoinRoomResult) {
+                            logtagd("SignalServiceHandler", "Join room result $value")
+
                             val state = peekRoomState()
                             if (state.currentRoomId == value.room.id && state.status == RoomStatus.JOINING) {
                                 val newStatus = if (value.speakerId == null) {
@@ -263,7 +267,7 @@ class SignalServiceHandler(private val appContext: Context,
                                 }
 
                                 roomStateSubject += state.copy(status = newStatus,
-                                        onlineMemberIds = value.onlineMemberIds.toSet(),
+                                        onlineMemberIds = state.onlineMemberIds + value.onlineMemberIds.toSet(),
                                         speakerId = value.speakerId,
                                         voiceServer = value.voiceServerConfiguration)
                             }
@@ -404,7 +408,8 @@ class SignalServiceHandler(private val appContext: Context,
     private fun onRoomOnlineMemberUpdate(update: RoomOnlineMemberUpdate) {
         mainThread {
             val state = peekRoomState()
-            if (state.status == RoomStatus.IDLE || state.currentRoomId != update.roomId) {
+            if (state.status == RoomStatus.IDLE ||
+                    state.currentRoomId != update.roomId) {
                 return@mainThread
             }
 
