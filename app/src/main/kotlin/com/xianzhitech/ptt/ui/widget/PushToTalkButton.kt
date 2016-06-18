@@ -26,7 +26,6 @@ class PushToTalkButton : ImageButton {
     private lateinit var signalService: SignalServiceHandler
     private var subscription: Subscription? = null
     private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var roomStatus: RoomStatus = RoomStatus.IDLE
     private val requestFocusRunnable = Runnable { signalService.requestMic().subscribeSimple() }
     private var vibrator: Vibrator? = null
     private var isPressingDown = false
@@ -85,15 +84,10 @@ class PushToTalkButton : ImageButton {
                             })
                 }
             }
-            subscription = signalService.roomStatus
-                    .observeOnMainThread()
-                    .subscribeSimple {
-                        if (roomStatus != it) {
-                            roomStatus = it
-                            applyRoomStatus()
-                            invalidate()
-                        }
-                    }
+            subscription = signalService.roomStatus.observeOnMainThread().subscribeSimple {
+                applyRoomStatus()
+                invalidate()
+            }
         }
     }
 
@@ -104,7 +98,7 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun applyRoomStatus() {
-        isEnabled = when (roomStatus) {
+        isEnabled = when (signalService.peekRoomState().status) {
             RoomStatus.IDLE, RoomStatus.OFFLINE -> false
             else -> true
         }
@@ -113,6 +107,7 @@ class PushToTalkButton : ImageButton {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        val roomStatus = signalService.peekRoomState().status
         logd("Paint ptt button roomStatus: $roomStatus")
 
         paint.color = when (roomStatus) {

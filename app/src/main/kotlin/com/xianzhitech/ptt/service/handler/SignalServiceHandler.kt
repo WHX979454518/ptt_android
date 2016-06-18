@@ -42,13 +42,21 @@ class SignalServiceHandler(private val appContext: Context,
 
     val loginState: Observable<LoginState> = loginStateSubject
     val roomState: Observable<RoomState> = roomStateSubject
-    val loginStatus: Observable<LoginStatus> = loginState.map { it.status }.distinctUntilChanged()
-    val roomStatus: Observable<RoomStatus> = roomState.map { it.status }.distinctUntilChanged()
+    val loginStatus: Observable<LoginStatus>
+            get() = loginState.map { peekLoginState().status }.distinctUntilChanged()
+    val roomStatus: Observable<RoomStatus>
+            get() = roomState.map { peekRoomState().status }.distinctUntilChanged()
 
     val currentUserId: String?
         get() = peekLoginState().currentUserID
     val currentRoomId: String?
         get() = peekRoomState().currentRoomId
+
+    val currentUserIdSubject : Observable<String?>
+        get() = loginState.map { currentUserId }.distinctUntilChanged()
+
+    val currentRoomIdSubject : Observable<String?>
+        get() = roomState.map { currentRoomId }.distinctUntilChanged()
 
     init {
         // Auto login if we have auth token
@@ -399,6 +407,8 @@ class SignalServiceHandler(private val appContext: Context,
             if (state.status == RoomStatus.IDLE || state.currentRoomId != update.roomId) {
                 return@mainThread
             }
+
+            logd("Online member IDs updated to ${update.memberIds}, curr state = $state")
 
             roomStateSubject += state.copy(onlineMemberIds = update.memberIds.toSet())
         }
