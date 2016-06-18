@@ -6,6 +6,7 @@ import android.widget.Toast
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import rx.*
 import rx.android.schedulers.AndroidSchedulers
+import rx.observers.SafeSubscriber
 
 
 /**
@@ -39,15 +40,15 @@ fun globalHandleError(e: Throwable, context: Context? = null) {
 }
 
 fun <T> Observable<T>.subscribeSimple(action: (T) -> Unit): Subscription {
-    return subscribe(object : GlobalSubscriber<T>() {
+    return subscribe(SafeSubscriber(object : GlobalSubscriber<T>() {
         override fun onNext(t: T) {
             action(t)
         }
-    })
+    }))
 }
 
 fun <T> Observable<T>.subscribeSimple(context: Context? = null): Subscription {
-    return subscribe(GlobalSubscriber(context))
+    return subscribe(SafeSubscriber(GlobalSubscriber(context)))
 }
 
 fun Completable.subscribeSimple(action: () -> Unit): Subscription {
@@ -65,11 +66,11 @@ fun <T> Single<T>.subscribeSimple(): Subscription {
 }
 
 fun <T> Single<T>.subscribeSimple(action: (T) -> Unit): Subscription {
-    return subscribe(object : GlobalSubscriber<T>() {
+    return subscribe(SafeSubscriber(object : GlobalSubscriber<T>() {
         override fun onNext(t: T) {
             action(t)
         }
-    })
+    }))
 }
 
 

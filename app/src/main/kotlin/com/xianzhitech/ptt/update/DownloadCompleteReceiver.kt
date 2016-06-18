@@ -5,15 +5,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.ext.appComponent
 import java.io.File
 
 class DownloadCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent != null) {
-            val lastUpdateDownloadId = (context.applicationContext as AppComponent).preference.updateDownloadId
+            val lastUpdateDownloadId = context.appComponent.preference.updateDownloadId
             if (lastUpdateDownloadId != null && lastUpdateDownloadId.second == intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)) {
                 installPackage(context, lastUpdateDownloadId.second)
+                context.appComponent.preference.updateDownloadId = null
             }
         }
     }

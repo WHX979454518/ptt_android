@@ -70,6 +70,11 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
         getParentAs<OnDismissListener>()?.onDismiss(this)
     }
 
+    override fun onCancel(dialog: DialogInterface?) {
+        super.onCancel(dialog)
+        getParentAs<OnCancelListener>()?.onCancelled(this)
+    }
+
     interface OnPositiveButtonClickListener {
         fun onPositiveButtonClicked(fragment: AlertDialogFragment)
     }
@@ -84,6 +89,10 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
 
     interface OnDismissListener {
         fun onDismiss(fragment: AlertDialogFragment)
+    }
+
+    interface OnCancelListener {
+        fun onCancelled(fragment: AlertDialogFragment)
     }
 
     class Builder : Serializable {

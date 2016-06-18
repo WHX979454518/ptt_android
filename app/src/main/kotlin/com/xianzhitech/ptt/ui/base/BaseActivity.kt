@@ -34,8 +34,7 @@ import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
-        AlertDialogFragment.OnNegativeButtonClickListener,
-        AlertDialogFragment.OnDismissListener{
+        AlertDialogFragment.OnNegativeButtonClickListener {
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
 
@@ -82,16 +81,15 @@ abstract class BaseActivity : AppCompatActivity(),
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
 
-
         appComponent.appService.retrieveAppParams()
                 .subscribeOn(Schedulers.io())
                 .toObservable()
+                .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<AppParams>() {
-                    override fun onNext(t: AppParams) {
-                        handleUpdate(t)
-                    }
-                })
+                .subscribeSimple {
+                    handleUpdate(it)
+                }
+
     }
 
     override fun onStop() {
@@ -110,18 +108,7 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
-            TAG_UPDATE -> onDismiss(fragment)
-        }
-    }
-
-    override fun onDismiss(fragment: AlertDialogFragment) {
-        if (fragment.tag == TAG_UPDATE) {
-            if (fragment.attachmentAs<AppParams>().forceUpdate == true) {
-                finish()
-                return
-            }
-
-            appComponent.preference.lastIgnoredUpdateUrl = fragment.attachmentAs<AppParams>().updateUrl
+            TAG_UPDATE -> appComponent.preference.lastIgnoredUpdateUrl = fragment.attachmentAs<AppParams>().updateUrl
         }
     }
 
@@ -210,7 +197,8 @@ abstract class BaseActivity : AppCompatActivity(),
 
     fun handleUpdate(appParams: AppParams) {
         if (appParams.updateUrl.isNullOrEmpty().not() &&
-                (appParams.forceUpdate == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.updateUrl)) {
+                (appParams.forceUpdate == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.updateUrl) &&
+                appComponent.preference.updateDownloadId == null) {
             AlertDialogFragment.Builder().apply {
                 message = appParams.updateMessage
                 title = R.string.update_title.toFormattedString(this@BaseActivity)
