@@ -64,27 +64,3 @@ interface SignalService {
     fun retrieveInvitation(): Observable<RoomInvitation>
     fun retrieveContacts(): Single<Contacts>
 }
-//
-//val SignalService.roomState : BehaviorSubject<RoomState>
-//    get() = BehaviorSubject.create()
-//val SignalService.loginState : BehaviorSubject<LoginState>
-//    get() = BehaviorSubject.create()
-//
-//fun SignalService.peekRoomState() : RoomState {
-//    return roomState.value
-//}
-//fun SignalService.peekLoginState() : LoginState {
-//    return loginState.value
-//}
-//
-//val SignalService.roomStatus : Observable<RoomStatus>
-//    get() = roomState.distinctUntilChanged { it.status }.map { it.status }
-//
-//val SignalService.loginStatus : Observable<LoginStatus>
-//    get() = loginState.distinctUntilChanged { it.status }.map { it.status }
-//
-//val SignalService.currentUserId : String?
-//    get() = peekLoginState().currentUserID
-//
-//val SignalService.currentRoomId : String?
-//    get() = peekRoomState().currentRoomId

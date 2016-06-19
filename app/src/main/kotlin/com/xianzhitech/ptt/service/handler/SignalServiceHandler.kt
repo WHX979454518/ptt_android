@@ -180,7 +180,7 @@ class SignalServiceHandler(private val appContext: Context,
                                     }
                                 }
 
-                                loginStateSubject += peekLoginState().copy(status = t.status, currentUserID = t.token?.userId)
+                                loginStateSubject += peekLoginState().copy(status = t.status, currentUserID = t.token?.userId, currentUser = t.user)
                             }
 
                             override fun onCompleted() {
@@ -269,6 +269,7 @@ class SignalServiceHandler(private val appContext: Context,
                                 roomStateSubject += state.copy(status = newStatus,
                                         onlineMemberIds = state.onlineMemberIds + value.onlineMemberIds.toSet(),
                                         speakerId = value.speakerId,
+                                        speakerPriority = value.speakerPriority,
                                         voiceServer = value.voiceServerConfiguration)
                             }
 
@@ -294,30 +295,33 @@ class SignalServiceHandler(private val appContext: Context,
     fun requestMic(): Single<Boolean> {
         return Single.defer<Boolean> {
             val roomState = peekRoomState()
-            val currUserId = peekLoginState().currentUserID
+            val loginState = peekLoginState()
+            val currUserId = loginState.currentUserID
             if (roomState.speakerId == currUserId) {
                 return@defer Single.just(true)
             }
 
-            if (roomState.status != RoomStatus.JOINED || roomState.currentRoomId == null || roomState.speakerId != null) {
+            if (roomState.canRequestMic(loginState.currentUser).not()) {
                 throw IllegalStateException("Can't request mic in room state $roomState")
             }
 
             logtagd("SignalHandler", "Requesting mic... %s", roomState)
 
             roomStateSubject += roomState.copy(status = RoomStatus.REQUESTING_MIC)
-            ensureService().requestMic(roomState.currentRoomId)
+            ensureService().requestMic(roomState.currentRoomId!!)
                     .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnSuccess {
                         if (it) {
                             val newRoomState = peekRoomState()
                             logtagd("SignalHandler", "Successfully requested mic in %s", newRoomState)
-                            if (newRoomState.status == RoomStatus.REQUESTING_MIC &&
-                                    newRoomState.speakerId == null &&
+                            if ((newRoomState.status == RoomStatus.REQUESTING_MIC || newRoomState.status == RoomStatus.ACTIVE) &&
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
                                     peekLoginState().currentUserID == currUserId) {
-                                roomStateSubject += newRoomState.copy(speakerId = currUserId, status = RoomStatus.ACTIVE)
+                                roomStateSubject += newRoomState.copy(
+                                        speakerId = currUserId,
+                                        speakerPriority = loginState.currentUser?.priority,
+                                        status = RoomStatus.ACTIVE)
                             }
                         }
                     }
@@ -346,7 +350,7 @@ class SignalServiceHandler(private val appContext: Context,
             if (state.currentRoomId != null &&
                     (state.speakerId == peekLoginState().currentUserID || state.status == RoomStatus.REQUESTING_MIC)) {
                 service.releaseMic(state.currentRoomId).subscribeSimple()
-                roomStateSubject += state.copy(speakerId = null, status = RoomStatus.JOINED)
+                roomStateSubject += state.copy(speakerId = null, speakerPriority = null, status = RoomStatus.JOINED)
             }
         }
     }
@@ -401,7 +405,10 @@ class SignalServiceHandler(private val appContext: Context,
                 return@mainThread
             }
 
-            roomStateSubject += state.copy(speakerId = update.speakerId, status = if (update.speakerId == null) RoomStatus.JOINED else RoomStatus.ACTIVE)
+            roomStateSubject += state.copy(
+                    speakerId = update.speakerId,
+                    speakerPriority = update.speakerPriority,
+                    status = if (update.speakerId == null) RoomStatus.JOINED else RoomStatus.ACTIVE)
         }
     }
 

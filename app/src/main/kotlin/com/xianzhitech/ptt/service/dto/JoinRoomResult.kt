@@ -6,5 +6,6 @@ interface JoinRoomResult {
     val room: Room
     val onlineMemberIds: Collection<String>
     val speakerId: String?
+    val speakerPriority: Int?
     val voiceServerConfiguration: Map<String, Any>
 }

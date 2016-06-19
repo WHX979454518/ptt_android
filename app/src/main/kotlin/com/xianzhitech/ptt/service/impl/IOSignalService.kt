@@ -303,6 +303,9 @@ private class JoinRoomResponse(private val obj: JSONObject) : JoinRoomResult {
     override val speakerId: String?
         get() = obj.nullOrString("speakerId")
 
+    override val speakerPriority: Int?
+        get() = obj.optInt("speakerPriority", -1).let { if (it < 0) null else it }
+
     override val voiceServerConfiguration: Map<String, Any>
         get() {
             val server = obj.getJSONObject("voiceServer")
@@ -324,6 +327,9 @@ private open class RoomSpeakerUpdateObject(protected val obj: JSONObject) : Room
 
     override val speakerId: String?
         get() = obj.nullOrString("speakerId")
+
+    override val speakerPriority: Int?
+        get() = obj.optInt("speakerPriority", -1).let { if (it < 0) null else it }
 }
 
 private class RoomActiveInfoUpdate(obj: JSONObject) : RoomSpeakerUpdateObject(obj), RoomOnlineMemberUpdate {

@@ -83,10 +83,11 @@ class PushToTalkButton : ImageButton {
                                 }
                             })
                 }
-            }
-            subscription = signalService.roomStatus.observeOnMainThread().subscribeSimple {
-                applyRoomStatus()
-                invalidate()
+
+                add(signalService.roomStatus.observeOnMainThread().subscribeSimple {
+                    applyRoomStatus()
+                    invalidate()
+                })
             }
         }
     }
@@ -107,13 +108,16 @@ class PushToTalkButton : ImageButton {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val roomStatus = signalService.peekRoomState().status
+        val roomState = signalService.peekRoomState()
+        val loginState = signalService.peekLoginState()
+        val roomStatus = roomState.status
         logd("Paint ptt button roomStatus: $roomStatus")
 
-        paint.color = when (roomStatus) {
-            RoomStatus.ACTIVE -> android.R.color.holo_red_dark
-            RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
-            RoomStatus.JOINED -> android.R.color.holo_green_dark
+        paint.color = when {
+            roomStatus == RoomStatus.JOINED ||
+                    (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(loginState.currentUser)) -> android.R.color.holo_green_dark
+            roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
+            roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
             else -> android.R.color.darker_gray
         }.toColorValue(context)
 
