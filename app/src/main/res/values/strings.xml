@@ -40,6 +40,7 @@
     <string name="room_prompt_important">当前房间不可退出</string>
     <string name="room_prompt_important_message">房间&quot;%1$s&quot;被管理员标记为重要房间, 当前不可退出</string>
     <string name="room_last_active_user_time">%1$s %2$s</string>
+    <string name="room_quited">房间已经被退出</string>
 
     <string name="error_title">出错啦</string>
     <string name="error_unknown">未知错误</string>

@@ -277,9 +277,9 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     companion object {
-        private const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
-        private const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
-        private const val TAG_UPDATE = "tag_update"
+        const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
+        const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
+        const val TAG_UPDATE = "tag_update"
 
         const val EXTRA_FINISH_ENTER_ANIM = "extra_f_enter_ani"
         const val EXTRA_FINISH_EXIT_ANIM = "extra_f_exit_ani"

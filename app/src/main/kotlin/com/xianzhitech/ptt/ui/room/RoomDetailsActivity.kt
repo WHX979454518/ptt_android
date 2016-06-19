@@ -101,12 +101,13 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         this.roomMembers = roomMembers
         roomNameView.text = roomName.name
 
-        if (room.associatedGroupIds.isEmpty() && room.extraMemberIds.size > 2) {
-            // 如果这项为空, 意味着这个组是个临时组, 可以改名
+        if (room.extraMemberIds.isNotEmpty()) {
+            // 如果有额外的用户, 意味着这个组是个临时组, 可以改名
             (roomNameView.parent as View).setOnClickListener {
                 startActivityForResultWithAnimation(TextInputActivity.build(
                         this, R.string.room_name.toFormattedString(this), R.string.type_room_name.toFormattedString(this),null, false), REQUEST_UPDATE_ROOM_NAME)
             }
+            roomNameView.setCompoundDrawablesWithIntrinsicBounds(null, null, getTintedDrawable(R.drawable.ic_arrow_right, roomNameView.currentTextColor), null)
         } else {
             (roomNameView.parent as View).setOnClickListener(null)
             roomNameView.setCompoundDrawables(null, null, null, null)

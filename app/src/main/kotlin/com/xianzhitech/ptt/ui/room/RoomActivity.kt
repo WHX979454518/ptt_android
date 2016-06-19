@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentTransaction
+import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit
  * Created by fanchao on 11/12/15.
  */
 class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragment.Callbacks, RoomInvitationListFragment.Callbacks {
+    private var isJoiningRoom: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,6 +118,22 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         showProgressDialog(R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
                     } else {
                         hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
+                    }
+                }
+
+        appComponent.signalHandler.roomStatus
+                .switchMap {
+                    if (it == RoomStatus.IDLE) {
+                        rx.Observable.timer(500, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                    } else {
+                        rx.Observable.never()
+                    }
+                }
+                .bindToLifecycle()
+                .subscribeSimple {
+                    if (appComponent.signalHandler.peekRoomState().status == RoomStatus.IDLE) {
+                        Toast.makeText(this, R.string.room_quited, Toast.LENGTH_LONG).show()
+                        finish()
                     }
                 }
     }
