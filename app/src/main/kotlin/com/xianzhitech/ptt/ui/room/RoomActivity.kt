@@ -131,7 +131,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 }
                 .bindToLifecycle()
                 .subscribeSimple {
-                    if (appComponent.signalHandler.peekRoomState().status == RoomStatus.IDLE) {
+                    if (appComponent.signalHandler.peekRoomState().status == RoomStatus.IDLE && !isFinishing) {
                         Toast.makeText(this, R.string.room_quited, Toast.LENGTH_LONG).show()
                         finish()
                     }
