@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt
 
 import android.net.Uri
+import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.UserToken
 import java.util.*
 
@@ -11,6 +12,7 @@ interface Preference {
     var updateDownloadId: Pair<Uri, Long>?
     var userSessionToken: UserToken?
     var lastLoginUserId: String?
+    var lastAppParams : AppParams?
     var lastSyncContactTime : Date?
     var blockCalls: Boolean
     var lastIgnoredUpdateUrl : String?

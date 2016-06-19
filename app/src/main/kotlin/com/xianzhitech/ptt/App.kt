@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
+import com.google.gson.Gson
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -49,7 +50,7 @@ open class App : Application(), AppComponent {
     override fun onCreate() {
         super.onCreate()
 
-        preference = AppPreference(PreferenceManager.getDefaultSharedPreferences(this))
+        preference = AppPreference(PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
         val helper = createSQLiteStorageHelper(this, "data")
         val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))

@@ -45,9 +45,9 @@ class SignalServiceHandler(private val appContext: Context,
     val loginState: Observable<LoginState> = loginStateSubject
     val roomState: Observable<RoomState> = roomStateSubject
     val loginStatus: Observable<LoginStatus>
-            get() = loginState.map { peekLoginState().status }.distinctUntilChanged()
+        get() = loginState.map { peekLoginState().status }.distinctUntilChanged()
     val roomStatus: Observable<RoomStatus>
-            get() = roomState.map { peekRoomState().status }.distinctUntilChanged()
+        get() = roomState.map { peekRoomState().status }.distinctUntilChanged()
 
     val currentUserId: String?
         get() = peekLoginState().currentUserID
@@ -96,10 +96,10 @@ class SignalServiceHandler(private val appContext: Context,
         }
     }
 
-    private fun getDeviceId() : Single<String> {
-        return appComponent.preference.deviceId?.let { Single.just(it) } ?:
-                appComponent.appService.registerDevice(AppInfo(appContext)).subscribeOn(Schedulers.io())
-                        .doOnSuccess { appComponent.preference.deviceId = it }
+    private fun getDeviceId() : Observable<String> {
+        return appComponent.preference.deviceId?.toObservable()
+                ?: appComponent.appService.registerDevice(AppInfo(appContext)).subscribeOn(Schedulers.io()).doOnSuccess { appComponent.preference.deviceId = it }.toObservable()
+
     }
 
     private fun doLogin() {
@@ -107,8 +107,7 @@ class SignalServiceHandler(private val appContext: Context,
 
         val subscription = CompositeSubscription()
         subscription.add(
-                getDeviceId().toObservable()
-                        .combineWith(appComponent.appService.retrieveAppParams().subscribeOn(Schedulers.io()).toObservable())
+                getDeviceId().combineWith(retrieveAppParams())
                         .observeOn(AndroidSchedulers.mainThread())
                         .flatMap {
                             if (it.second.forceUpdate ?: false) {
@@ -198,6 +197,20 @@ class SignalServiceHandler(private val appContext: Context,
         )
 
         loginSubscription = subscription
+    }
+
+    private fun retrieveAppParams(): Observable<AppParams> {
+        return appComponent.appService.retrieveAppParams()
+                .subscribeOn(Schedulers.io())
+                .toObservable()
+                .doOnNext {
+                    // 将结果缓存起来, 以便无网络时使用
+                    appComponent.preference.lastAppParams = it
+                }
+                .onErrorResumeNext {
+                    // 出错了: 如果我们之前存有AppParam, 则使用那个, 否则就继续返回错误
+                    appComponent.preference.lastAppParams?.toObservable() ?: Observable.error(it)
+                }
     }
 
     fun logout() {
@@ -395,7 +408,7 @@ class SignalServiceHandler(private val appContext: Context,
         logout()
         val intent = Intent(appContext, KickOutActivity::class.java)
         appComponent.activityProvider.currentStartedActivity?.startActivity(intent)
-            ?: appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                ?: appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
     }
 
     private fun onRoomSpeakerUpdate(update: RoomSpeakerUpdate) {
