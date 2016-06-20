@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt
 
+import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
@@ -22,6 +23,8 @@ interface AppComponent {
 
     val appService: AppService
     val signalHandler: SignalServiceHandler
+
+    val mediaButtonHandler: MediaButtonHandler
 
     // Repositories
     val userRepository: UserRepository

@@ -15,7 +15,6 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.media.MediaButtonReceiver
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.CreateRoomRequest
@@ -73,11 +72,6 @@ abstract class BaseActivity : AppCompatActivity(),
 
     override fun onStart() {
         super.onStart()
-
-        // 时刻重新注册媒体按键事件
-        if ((application as AppComponent).signalHandler.currentUserId != null) {
-            MediaButtonReceiver.registerMediaButtonEvent(this)
-        }
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
 

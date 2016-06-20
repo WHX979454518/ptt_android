@@ -7,6 +7,7 @@ import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import com.google.gson.Gson
 import com.xianzhitech.ptt.media.AudioHandler
+import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
@@ -36,6 +37,7 @@ open class App : Application(), AppComponent {
     override lateinit var signalHandler: SignalServiceHandler
     override lateinit var activityProvider: ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
+    override lateinit var mediaButtonHandler: MediaButtonHandler
 
     override val appService: AppService by lazy {
         Retrofit.Builder()
@@ -77,7 +79,8 @@ open class App : Application(), AppComponent {
         }
 
         RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
-        AudioHandler(this, signalHandler, activityProvider)
+        mediaButtonHandler = MediaButtonHandler(signalHandler)
+        AudioHandler(this, signalHandler, mediaButtonHandler, activityProvider)
         ServiceHandler(this, signalHandler)
         RoomStatusHandler(roomRepository, signalHandler)
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)

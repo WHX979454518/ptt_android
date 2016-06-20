@@ -1,15 +1,17 @@
 package com.xianzhitech.ptt.media
 
+import android.app.PendingIntent
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.SoundPool
-import android.os.Build
 import android.support.annotation.RawRes
+import android.support.v4.media.session.MediaSessionCompat
 import android.util.SparseIntArray
 import android.widget.Toast
 import com.xianzhitech.ptt.R
@@ -21,17 +23,13 @@ import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import com.xianzhitech.ptt.ui.ActivityProvider
 import rx.Observable
 import rx.subjects.BehaviorSubject
+import java.util.concurrent.atomic.AtomicReference
 
 class AudioHandler(private val appContext: Context,
                    private val signalService: SignalServiceHandler,
+                   private val mediaButtonHandler: MediaButtonHandler,
                    private val activityProvider: ActivityProvider) {
 
-    companion object {
-//        private val BT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-
-//        const val MESSAGE_PUSH_DOWN = "+PTT=P"
-//        const val MESSAGE_PUSH_RELEASE = "+PTT=R"
-    }
 
     private val audioManager: AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val currentBluetoothDevice = BehaviorSubject.create<BluetoothDevice>(null as BluetoothDevice?)
@@ -55,44 +53,65 @@ class AudioHandler(private val appContext: Context,
             logd("Bluetooth SCO not supported")
         }
 
-        signalService.loginStatus
-                .map { it != LoginStatus.IDLE }
+        // 在房间处于活动状态时, 请求系统的音频响应
+        signalService.roomStatus.map { it.inRoom }
                 .distinctUntilChanged()
                 .observeOnMainThread()
                 .subscribeSimple {
                     if (it) {
-                        MediaButtonReceiver.registerMediaButtonEvent(appContext)
-                    } else {
-                        MediaButtonReceiver.unregisterMediaButtonEvent(appContext)
-                    }
-                }
-
-        // 在房间处于活动状态时, 请求系统的音频响应
-        signalService.roomState
-                .distinctUntilChanged { it.speakerId }
-                .subscribeSimple {
-                    if (it.speakerId != null) {
-                        val hint = if (Build.VERSION.SDK_INT >= 19 && it.speakerId == signalService.peekLoginState().currentUserID) {
-                            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
-                        } else {
-                            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-                        }
-
-                        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, hint)
+                        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                     } else {
                         audioManager.abandonAudioFocus(null)
                     }
                 }
 
+        // 接管系统所有的Media事件
+        // 监听蓝牙、 耳机的变化, 一旦变化, 也发出通知
+        val sessionRef = AtomicReference<MediaSessionCompat>(null)
+        Observable.combineLatest(
+                signalService.loginState.map { it.status != LoginStatus.IDLE }.distinctUntilChanged(),
+                currentBluetoothDevice,
+                audioManager.headsetSubject,
+                { loggedIn, device, pluggedIn -> loggedIn })
+                .observeOnMainThread()
+                .subscribeSimple {
+                    if (it) {
+                        sessionRef.get()?.release()
+
+                        val session = MediaSessionCompat(appContext, "AudioHandler", ComponentName(appContext, MediaButtonReceiver::class.java), null)
+                        session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+                        session.setMediaButtonReceiver(PendingIntent.getBroadcast(appContext, 1, Intent(appContext, MediaButtonReceiver::class.java), 0))
+                        session.setCallback(object : MediaSessionCompat.Callback() {
+                            override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
+                                mediaButtonHandler.handleMediaButtonEvent(mediaButtonEvent)
+                                return true
+                            }
+                        })
+                        session.addOnActiveChangeListener {
+                            if (session.isActive.not() && signalService.peekLoginState().status != LoginStatus.IDLE) {
+                                session.isActive = true
+                            }
+                        }
+                        session.isActive = true
+                        sessionRef.set(session)
+                    } else if (!it && sessionRef.get() != null) {
+                        val session = sessionRef.get()
+                        session.release()
+                        sessionRef.set(null)
+                    }
+                }
+
+
         // 当进入房间时, 连接当前的蓝牙设备到SCO上, 退出时则关闭
         Observable.combineLatest(
                 signalService.roomStatus.distinctUntilChanged { it.inRoom },
                 signalService.loginState.distinctUntilChanged { it.currentUserID },
+                audioManager.headsetSubject,
                 currentBluetoothDevice,
-                { status, loginState, device -> Triple(status, loginState, device) })
+                { status, loginState, headsetPluggedIn, device -> Triple(status, headsetPluggedIn, device) })
                 .observeOnMainThread()
                 .subscribeSimple {
-                    val (status, loginState, device) = it
+                    val (status, headsetPluggedIn, device) = it
                     if (status.inRoom) {
                         if (device != null) {
                             audioManager.isSpeakerphoneOn = false
@@ -102,15 +121,15 @@ class AudioHandler(private val appContext: Context,
                             startSco()
                         } else {
                             stopSco()
-                            logd("SPEAKER: Turning on because bluetooth disconnected")
-                            audioManager.isSpeakerphoneOn = true
+                            logd("SPEAKER: Turning to ${headsetPluggedIn.not()}")
+                            audioManager.isSpeakerphoneOn = headsetPluggedIn.not()
                             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
                         }
                     } else {
-                        logd("SPEAKER: Turning off because not in room")
-                        audioManager.isSpeakerphoneOn = false
+                        logd("SPEAKER: Turning to ${headsetPluggedIn.not()}")
+                        audioManager.isSpeakerphoneOn = headsetPluggedIn.not()
 
-                        if (loginState.currentUserID == null || device == null) {
+                        if (signalService.currentUserId == null || device == null) {
                             logd("SCO: Turning off bluetooth sco")
                             stopSco()
                         }
@@ -163,6 +182,8 @@ class AudioHandler(private val appContext: Context,
                 }
     }
 
+
+
     private fun initializeBluetooth(bluetoothAdapter: BluetoothAdapter) {
         signalService.roomState
                 .distinctUntilChanged { it.status }
@@ -199,14 +220,6 @@ class AudioHandler(private val appContext: Context,
                         currentBluetoothDevice.onNext(connectedDevice)
                     }
                 }
-
-        // 蓝牙发生变化时重新绑定media session
-        currentBluetoothDevice.distinctUntilChanged()
-                .filter { it != null }
-                .observeOnMainThread()
-                .subscribeSimple {
-                    MediaButtonReceiver.registerMediaButtonEvent(activityProvider.currentStartedActivity ?: appContext)
-                }
     }
 
     private fun onMicActivated(isSelf: Boolean) {
@@ -224,11 +237,6 @@ class AudioHandler(private val appContext: Context,
             currentTalkEngine?.stopSend()
         } else {
             playSound(R.raw.over)
-        }
-    }
-
-    class RemoteControlClientReceiver : BroadcastReceiver() {
-        override fun onReceive(content: Context, intent: Intent) {
         }
     }
 
@@ -284,5 +292,17 @@ class AudioHandler(private val appContext: Context,
                 }
             }, profileRequested)
         }
+    }
+
+    private val AudioManager.headsetSubject : Observable<Boolean>
+        get() = appContext.receiveBroadcasts(false, AudioManager.ACTION_HEADSET_PLUG)
+                .map { it.extras.getInt("state", 0) == 1 }
+                .startWith(isWiredHeadsetOn)
+                .distinctUntilChanged()
+}
+
+class MediaButtonReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent?) {
+        context.appComponent.mediaButtonHandler.handleMediaButtonEvent(intent)
     }
 }
