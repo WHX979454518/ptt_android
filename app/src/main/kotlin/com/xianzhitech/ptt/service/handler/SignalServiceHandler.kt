@@ -134,7 +134,19 @@ class SignalServiceHandler(private val appContext: Context,
                                 Observable.never()
                             }
                         }
-                        .observeOn(AndroidSchedulers.mainThread())
+                        .switchMap { result ->
+                            if (result.status == LoginStatus.LOGGED_IN && tokenProvider.authToken?.userId != result.user!!.id) {
+                                // Auto clear database
+                                Completable.concat(
+                                        appComponent.groupRepository.clear().execAsync(),
+                                        appComponent.roomRepository.clear().execAsync(),
+                                        appComponent.contactRepository.clear().execAsync())
+                                        .andThen(result.toObservable())
+                            } else {
+                                result.toObservable()
+                            }
+                        }
+                        .observeOnMainThread()
                         .subscribe(object : GlobalSubscriber<LoginResult>() {
                             override fun onNext(t: LoginResult) {
                                 if (t.status == LoginStatus.IDLE) {
@@ -145,13 +157,6 @@ class SignalServiceHandler(private val appContext: Context,
 
                                 when (t.status) {
                                     LoginStatus.LOGGED_IN -> {
-                                        if (tokenProvider.authToken?.userId != t.user!!.id) {
-                                            // Auto clear database
-                                            appComponent.groupRepository.clear().execAsync().subscribeSimple()
-                                            appComponent.roomRepository.clear().execAsync().subscribeSimple()
-                                            appComponent.contactRepository.clear().execAsync().subscribeSimple()
-                                        }
-
                                         val lastSyncDate = appComponent.preference.lastSyncContactTime
                                         if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
                                             subscription.add(signalService!!.retrieveContacts()

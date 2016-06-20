@@ -98,6 +98,7 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
     }
 
     override fun clear() {
+        roomStorage.clear()
         cacheLock.write { cache.evictAll() }
         synchronized(allRoomIdsLock, { allRoomIds?.clear() })
     }
