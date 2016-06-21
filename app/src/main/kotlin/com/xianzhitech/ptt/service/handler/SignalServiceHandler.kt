@@ -220,7 +220,14 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun logout() {
         mainThread {
-            if (peekLoginState().status != LoginStatus.IDLE) {
+            val loginState = peekLoginState()
+            val roomState = peekRoomState()
+            if (roomState.speakerId == loginState.currentUserID && roomState.currentRoomId != null) {
+                // 如果当前持有麦克风, 则需要先释放
+                quitRoom()
+            }
+
+            if (loginState.status != LoginStatus.IDLE) {
                 loginSubscription?.unsubscribe()
                 loginSubscription = null
                 signalService?.logout()?.subscribeSimple()
