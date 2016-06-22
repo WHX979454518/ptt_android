@@ -1,16 +1,23 @@
 package com.xianzhitech.ptt
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.fromBase64ToSerializable
 import com.xianzhitech.ptt.ext.serializeToBase64
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.UserToken
 import java.util.*
 
-class AppPreference(private val pref: SharedPreferences,
+class AppPreference(appContext : Context,
+                    private val pref: SharedPreferences,
                     private val gson : Gson) : Preference {
+
+    private val blockCallsKey = R.string.key_block_calls.toFormattedString(appContext)
+    private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
+
     override var lastIgnoredUpdateUrl: String?
         get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
         set(value) {
@@ -24,15 +31,15 @@ class AppPreference(private val pref: SharedPreferences,
         }
 
     override var blockCalls: Boolean
-        get() = pref.getBoolean(KEY_BLOCK_CALLS, true)
+        get() = pref.getBoolean(blockCallsKey, true)
         set(value) {
-            pref.edit().putBoolean(KEY_BLOCK_CALLS, value).apply()
+            pref.edit().putBoolean(blockCallsKey, value).apply()
         }
 
     override var autoExit: Boolean
-        get() = pref.getBoolean(KEY_AUTO_EXIT, true)
+        get() = pref.getBoolean(autoExitKey, true)
         set(value) {
-            pref.edit().putBoolean(KEY_AUTO_EXIT, value).apply()
+            pref.edit().putBoolean(autoExitKey, value).apply()
         }
 
     override var lastLoginUserId: String?
@@ -78,16 +85,21 @@ class AppPreference(private val pref: SharedPreferences,
             pref.edit().putString(KEY_DEVICE_ID, value).apply()
         }
 
+    override var shortcut: Shortcut
+        get() = pref.getString(KEY_SHORTCUT, null)?.let { gson.fromJson(it, Shortcut::class.java) } ?: Shortcut()
+        set(value) {
+            pref.edit().putString(KEY_SHORTCUT, value?.let { gson.toJson(it) } ?: null).apply()
+        }
+
     companion object {
         const val KEY_USER_TOKEN = "user_token"
-        const val KEY_BLOCK_CALLS = "block_calls"
         const val KEY_LAST_SYNC_TIME = "last_sync_contact_time"
-        const val KEY_AUTO_EXIT = "auto_exit"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"
         const val KEY_LAST_APP_PARAMS = "key_last_app_params"
         const val KEY_IGNORED_UPDATE_URL = "key_ignored_update_url"
         const val KEY_DEVICE_ID = "key_device_id"
+        const val KEY_SHORTCUT = "key_shortcut"
     }
 }

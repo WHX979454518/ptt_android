@@ -52,6 +52,7 @@
 
         <activity
             android:name=".ui.settings.SettingsActivity"
+            android:launchMode="singleTask"
             android:label="@string/settings" />
 
         <activity android:name=".ui.KickOutActivity" />

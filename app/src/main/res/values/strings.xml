@@ -179,6 +179,11 @@
     <string name="type_room_name">房间名称</string>
     <string name="room_not_updated">房间未更新</string>
 
+    <string name="shortcut_mode_no_op">无操作</string>
+    <string name="shortcut_mode_contact">呼叫通讯录中的联系人/群组</string>
+    <string name="shortcut_mode_room">呼叫对讲历史记录中条目</string>
+    <string name="shortcut_with_callee">呼叫 %1$s</string>
+
     <string-array name="level_number">
         <item>管理员</item>
         <item>一级</item>

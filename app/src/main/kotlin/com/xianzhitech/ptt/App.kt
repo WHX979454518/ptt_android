@@ -52,7 +52,7 @@ open class App : Application(), AppComponent {
     override fun onCreate() {
         super.onCreate()
 
-        preference = AppPreference(PreferenceManager.getDefaultSharedPreferences(this), Gson())
+        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
         val helper = createSQLiteStorageHelper(this, "data")
         val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
