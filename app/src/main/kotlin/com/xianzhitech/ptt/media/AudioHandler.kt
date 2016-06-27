@@ -21,6 +21,7 @@ import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import com.xianzhitech.ptt.ui.ActivityProvider
+import okhttp3.OkHttpClient
 import rx.Observable
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.atomic.AtomicReference
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference
 class AudioHandler(private val appContext: Context,
                    private val signalService: SignalServiceHandler,
                    private val mediaButtonHandler: MediaButtonHandler,
+                   private val httpClient: OkHttpClient,
                    private val activityProvider: ActivityProvider) {
 
 
@@ -144,10 +146,11 @@ class AudioHandler(private val appContext: Context,
                 .subscribeSimple {
                     if (it.voiceServer.isNotEmpty()) {
                         currentTalkEngine?.dispose()
-                        currentTalkEngine = WebRtcTalkEngine(appContext).apply {
+                        currentTalkEngine = WebRtcTalkEngine(appContext, httpClient).apply {
                             connect(it.currentRoomId!!, mapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to signalService.currentUserId,
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to it.voiceServer["host"],
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to it.voiceServer["port"],
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_TCP_PORT to it.voiceServer["tcpPort"],
                                     WebRtcTalkEngine.PROPERTY_PROTOCOL to it.voiceServer["protocol"]))
                         }
                     } else {

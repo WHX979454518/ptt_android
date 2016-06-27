@@ -312,7 +312,8 @@ private class JoinRoomResponse(private val obj: JSONObject) : JoinRoomResult {
             return mapOf(
                     "host" to server.getString("host"),
                     "port" to server.getInt("port"),
-                    "protocol" to server.getString("protocol")
+                    "protocol" to server.getString("protocol"),
+                    "tcpPort" to server.getString("tcpPort")
             )
         }
 

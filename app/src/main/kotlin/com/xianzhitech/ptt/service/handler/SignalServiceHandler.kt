@@ -98,7 +98,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     private fun getDeviceId() : Observable<String> {
         return appComponent.preference.deviceId?.toObservable()
-                ?: appComponent.appService.registerDevice(AppInfo(appContext)).subscribeOn(Schedulers.io()).doOnSuccess { appComponent.preference.deviceId = it }.toObservable()
+                ?: appComponent.appService.registerDevice(AppInfo(appContext)).doOnSuccess { appComponent.preference.deviceId = it }.toObservable()
 
     }
 

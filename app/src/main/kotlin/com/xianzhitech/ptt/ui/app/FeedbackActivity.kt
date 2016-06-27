@@ -19,7 +19,6 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import rx.Completable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 
 
 class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveButtonClickListener {
@@ -85,7 +84,6 @@ class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveBu
                     title = titleView.text.toString(),
                     message = messageView.text.toString(),
                     userId = appComponent.signalHandler.currentUserId))
-                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(FeedbackSubscriber(applicationContext))
 

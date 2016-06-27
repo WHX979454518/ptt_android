@@ -23,6 +23,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 
 
@@ -41,7 +42,7 @@ open class App : Application(), AppComponent {
 
     override val appService: AppService by lazy {
         Retrofit.Builder()
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
                 .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(BuildConfig.APP_SERVER_ENDPOINT)
                 .client(httpClient)
@@ -80,7 +81,7 @@ open class App : Application(), AppComponent {
 
         RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
         mediaButtonHandler = MediaButtonHandler(signalHandler)
-        AudioHandler(this, signalHandler, mediaButtonHandler, activityProvider)
+        AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, activityProvider)
         ServiceHandler(this, signalHandler)
         RoomStatusHandler(roomRepository, signalHandler)
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)

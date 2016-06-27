@@ -27,7 +27,6 @@ import com.xianzhitech.ptt.update.installPackage
 import rx.Observable
 import rx.SingleSubscriber
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 
@@ -76,7 +75,6 @@ abstract class BaseActivity : AppCompatActivity(),
         lifecycleEventSubject.onNext(ActivityEvent.START)
 
         appComponent.appService.retrieveAppParams()
-                .subscribeOn(Schedulers.io())
                 .toObservable()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
