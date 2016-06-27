@@ -161,8 +161,10 @@ class SignalServiceHandler(private val appContext: Context,
                                         if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
                                             subscription.add(signalService!!.retrieveContacts()
                                                     .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
-                                                    .subscribeSimple())
-                                            appComponent.preference.lastSyncContactTime = Date()
+                                                    .subscribeSimple {
+                                                        appComponent.preference.lastSyncContactTime = Date()
+                                                    })
+
                                         }
 
                                         appComponent.userRepository.saveUsers(listOf(t.user!!)).execAsync().subscribeSimple()
