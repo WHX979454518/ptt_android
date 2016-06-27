@@ -264,7 +264,13 @@ class SignalServiceHandler(private val appContext: Context,
                 return@create
             }
 
-            val service = ensureService()
+            val service: SignalService
+            try {
+                service = ensureService()
+            } catch(e: Exception) {
+                subscriber.onError(e)
+                return@create
+            }
 
             if (currentRoomId != null) {
                 service.leaveRoom(currentRoomId).subscribeSimple()
