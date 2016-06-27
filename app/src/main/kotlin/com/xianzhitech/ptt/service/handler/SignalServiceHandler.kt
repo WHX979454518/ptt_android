@@ -187,6 +187,9 @@ class SignalServiceHandler(private val appContext: Context,
                                 }
 
                                 loginStateSubject += peekLoginState().copy(status = t.status, currentUserID = t.token?.userId, currentUser = t.user)
+                                if (roomState.status.inRoom && t.status == LoginStatus.OFFLINE) {
+                                    roomStateSubject += roomState.copy(status = RoomStatus.OFFLINE)
+                                }
                             }
 
                             override fun onCompleted() {
@@ -254,8 +257,9 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun joinRoom(roomId: String): Completable {
         return Completable.create { subscriber ->
-            val currentRoomId = peekRoomState().currentRoomId
-            if (currentRoomId == roomId) {
+            val currRoomState = peekRoomState()
+            val currentRoomId = currRoomState.currentRoomId
+            if (currentRoomId == roomId && currRoomState.status != RoomStatus.OFFLINE) {
                 subscriber.onCompleted()
                 return@create
             }
