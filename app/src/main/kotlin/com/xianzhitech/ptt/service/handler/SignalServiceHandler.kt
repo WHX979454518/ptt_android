@@ -188,7 +188,7 @@ class SignalServiceHandler(private val appContext: Context,
 
                                 loginStateSubject += peekLoginState().copy(status = t.status, currentUserID = t.token?.userId, currentUser = t.user)
                                 if (roomState.status.inRoom && t.status == LoginStatus.OFFLINE) {
-                                    roomStateSubject += roomState.copy(status = RoomStatus.OFFLINE)
+                                    roomStateSubject += roomState.copy(status = RoomStatus.OFFLINE, onlineMemberIds = emptySet())
                                 }
                             }
 
