@@ -107,7 +107,7 @@ class SignalServiceHandler(private val appContext: Context,
 
         val subscription = CompositeSubscription()
         subscription.add(
-                getDeviceId().combineWith(retrieveAppParams())
+                getDeviceId().combineWith(retrieveAppParams(tokenProvider.loginName ?: Constants.EMPTY_USER_ID))
                         .observeOn(AndroidSchedulers.mainThread())
                         .flatMap {
                             if (it.second.forceUpdate ?: false) {
@@ -206,8 +206,8 @@ class SignalServiceHandler(private val appContext: Context,
         loginSubscription = subscription
     }
 
-    private fun retrieveAppParams(): Observable<AppParams> {
-        return appComponent.appService.retrieveAppParams()
+    private fun retrieveAppParams(loginName: String): Observable<AppParams> {
+        return appComponent.appService.retrieveAppParams(loginName)
                 .subscribeOn(Schedulers.io())
                 .toObservable()
                 .doOnNext {

@@ -16,4 +16,5 @@ object Constants {
     const val DEFAULT_USER_PRIORITY = 100
     @JvmStatic val SYNC_CONTACT_INTERVAL_MILLS = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES)
     const val HTTP_MAX_CACHE_SIZE: Long = 10 * 1024 * 1024 // 10MB
+    const val EMPTY_USER_ID: String = "-1"
 }

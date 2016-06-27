@@ -74,7 +74,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
 
-        appComponent.appService.retrieveAppParams()
+        appComponent.appService.retrieveAppParams(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
                 .toObservable()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())

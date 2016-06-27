@@ -8,7 +8,7 @@ import com.xianzhitech.ptt.BuildConfig
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PUT
-import retrofit2.http.Query
+import retrofit2.http.Path
 import rx.Completable
 import rx.Single
 import java.io.Serializable
@@ -31,8 +31,9 @@ class Feedback(@SerializedName("title") val title : String,
 
 
 interface AppService {
-    @GET("/app_params")
-    fun retrieveAppParams(@Query("version") appVersion : Int = BuildConfig.VERSION_CODE): Single<AppParams>
+    @GET("/app_params/{userId}/{version}")
+    fun retrieveAppParams(@Path("userId") userId : String,
+                          @Path("version") appVersion : Int = BuildConfig.VERSION_CODE): Single<AppParams>
 
     /**
      * Register a device and get a device id
