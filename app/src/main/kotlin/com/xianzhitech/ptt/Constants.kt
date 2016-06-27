@@ -8,7 +8,7 @@ object Constants {
     @JvmStatic val JOIN_ROOM_TIMEOUT_SECONDS: Long = if (BuildConfig.DEBUG && false) 3600 else 10
     @JvmStatic val UPDATE_ROOM_TIMEOUT_SECONDS: Long = if (BuildConfig.DEBUG && false) 3600 else 10
 
-    @JvmStatic val ROOM_IDLE_TIME_SECONDS: Long = if (BuildConfig.DEBUG) 3600L else 30L
+    @JvmStatic val ROOM_IDLE_TIME_SECONDS: Long = if (BuildConfig.DEBUG && false) 3600L else 30L
 
     const val MAX_MEMBER_NAME_DISPLAY_COUNT: Int = 3
     const val MAX_MEMBER_ICON_DISPLAY_COUNT: Int = 9
