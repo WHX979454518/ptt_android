@@ -20,7 +20,6 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
-import com.xianzhitech.ptt.ui.ActivityProvider
 import okhttp3.OkHttpClient
 import rx.Observable
 import rx.subjects.BehaviorSubject
@@ -29,8 +28,7 @@ import java.util.concurrent.atomic.AtomicReference
 class AudioHandler(private val appContext: Context,
                    private val signalService: SignalServiceHandler,
                    private val mediaButtonHandler: MediaButtonHandler,
-                   private val httpClient: OkHttpClient,
-                   private val activityProvider: ActivityProvider) {
+                   private val httpClient: OkHttpClient) {
 
 
     private val audioManager: AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -162,16 +160,15 @@ class AudioHandler(private val appContext: Context,
 
         // 监听当前的发言人, 如果是自己, 则打开引擎, 否则关闭
         signalService.roomState
-            .map { it.speakerId }
-            .distinctUntilChanged()
-            .subscribeSimple {
-                if (it != null && it == signalService.currentUserId) {
-                    currentTalkEngine?.startSend()
+                .map { it.speakerId }
+                .distinctUntilChanged()
+                .subscribeSimple {
+                    if (it != null && it == signalService.currentUserId) {
+                        currentTalkEngine?.startSend()
+                    } else {
+                        currentTalkEngine?.stopSend()
+                    }
                 }
-                else {
-                    currentTalkEngine?.stopSend()
-                }
-            }
 
 
         var lastRoomState = signalService.peekRoomState()
@@ -199,7 +196,6 @@ class AudioHandler(private val appContext: Context,
                     lastRoomState = it
                 }
     }
-
 
 
     private fun initializeBluetooth(bluetoothAdapter: BluetoothAdapter) {
@@ -310,7 +306,7 @@ class AudioHandler(private val appContext: Context,
         }
     }
 
-    private val AudioManager.headsetSubject : Observable<Boolean>
+    private val AudioManager.headsetSubject: Observable<Boolean>
         get() = appContext.receiveBroadcasts(false, AudioManager.ACTION_HEADSET_PLUG)
                 .map { it.extras.getInt("state", 0) == 1 }
                 .startWith(isWiredHeadsetOn)

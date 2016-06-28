@@ -33,7 +33,7 @@ class Feedback(@SerializedName("title") val title : String,
 interface AppService {
     @GET("/app_params/{userId}/{version}")
     fun retrieveAppParams(@Path("userId") userId : String,
-                          @Path("version") appVersion : Int = BuildConfig.VERSION_CODE): Single<AppParams>
+                          @Path("version") appVersion : String = BuildConfig.BUILD_NUMBER): Single<AppParams>
 
     /**
      * Register a device and get a device id
