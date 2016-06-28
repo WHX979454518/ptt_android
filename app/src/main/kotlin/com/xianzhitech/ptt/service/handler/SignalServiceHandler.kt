@@ -227,8 +227,7 @@ class SignalServiceHandler(private val appContext: Context,
         mainThread {
             val loginState = peekLoginState()
             val roomState = peekRoomState()
-            if (roomState.speakerId == loginState.currentUserID && roomState.currentRoomId != null) {
-                // 如果当前持有麦克风, 则需要先释放
+            if (roomState.currentRoomId != null) {
                 quitRoom()
             }
 
