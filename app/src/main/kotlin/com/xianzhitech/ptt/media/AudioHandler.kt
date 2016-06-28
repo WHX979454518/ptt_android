@@ -159,6 +159,21 @@ class AudioHandler(private val appContext: Context,
                     }
                 }
 
+
+        // 监听当前的发言人, 如果是自己, 则打开引擎, 否则关闭
+        signalService.roomState
+            .map { it.speakerId }
+            .distinctUntilChanged()
+            .subscribeSimple {
+                if (it != null && it == signalService.currentUserId) {
+                    currentTalkEngine?.startSend()
+                }
+                else {
+                    currentTalkEngine?.stopSend()
+                }
+            }
+
+
         var lastRoomState = signalService.peekRoomState()
 
         signalService.roomState
@@ -228,7 +243,6 @@ class AudioHandler(private val appContext: Context,
     private fun onMicActivated(isSelf: Boolean) {
         if (isSelf) {
             playSound(R.raw.outgoing)
-            currentTalkEngine?.startSend()
         } else {
             playSound(R.raw.incoming)
         }
@@ -237,7 +251,6 @@ class AudioHandler(private val appContext: Context,
     private fun onMicReleased(isSelf: Boolean) {
         if (isSelf) {
             playSound(R.raw.pttup)
-            currentTalkEngine?.stopSend()
         } else {
             playSound(R.raw.over)
         }
