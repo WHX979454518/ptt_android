@@ -14,6 +14,7 @@ import android.support.annotation.RawRes
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.SparseIntArray
 import android.widget.Toast
+import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
@@ -28,7 +29,8 @@ import java.util.concurrent.atomic.AtomicReference
 class AudioHandler(private val appContext: Context,
                    private val signalService: SignalServiceHandler,
                    private val mediaButtonHandler: MediaButtonHandler,
-                   private val httpClient: OkHttpClient) {
+                   private val httpClient: OkHttpClient,
+                   private val preference : Preference) {
 
 
     private val audioManager: AudioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -253,7 +255,9 @@ class AudioHandler(private val appContext: Context,
     }
 
     private fun playSound(@RawRes res: Int) {
-        soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
+        if (preference.playIndicatorSound) {
+            soundPool.first.play(soundPool.second[res], 1f, 1f, 1, 0, 1f)
+        }
     }
 
     private fun startSco() {

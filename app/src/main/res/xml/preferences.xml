@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-                  xmlns:tools="http://schemas.android.com/tools">
+                  xmlns:tools="http://schemas.android.com/tools"
+    >
 
     <PreferenceCategory
         android:key="general"
@@ -17,6 +18,12 @@
             android:summary="@string/block_call_summary"
             android:defaultValue="true"
             android:key="@string/key_block_calls"/>
+
+        <CheckBoxPreference
+            android:title="@string/play_indicator_sounds"
+            android:summary="@string/play_indicator_sounds_explained"
+            android:defaultValue="true"
+            android:key="@string/key_play_indicator_sound" />
 
     </PreferenceCategory>
 

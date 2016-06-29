@@ -17,6 +17,7 @@ class AppPreference(appContext : Context,
 
     private val blockCallsKey = R.string.key_block_calls.toFormattedString(appContext)
     private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
+    private val playIndicatorSoundKey = R.string.key_play_indicator_sound.toFormattedString(appContext)
 
     override var lastIgnoredUpdateUrl: String?
         get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
@@ -84,6 +85,13 @@ class AppPreference(appContext : Context,
         set(value) {
             pref.edit().putString(KEY_DEVICE_ID, value).apply()
         }
+
+    override var playIndicatorSound: Boolean
+        get() = pref.getBoolean(playIndicatorSoundKey, true)
+        set(value) {
+            pref.edit().putBoolean(playIndicatorSoundKey, value).apply()
+        }
+
 
     override var shortcut: Shortcut
         get() = pref.getString(KEY_SHORTCUT, null)?.let { gson.fromJson(it, Shortcut::class.java) } ?: Shortcut()

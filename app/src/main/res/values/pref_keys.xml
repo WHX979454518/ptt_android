@@ -2,5 +2,6 @@
 <resources>
     <string name="key_auto_exit" translatable="false">auto_exit</string>
     <string name="key_block_calls" translatable="false">block_calls</string>
+    <string name="key_play_indicator_sound" translatable="false">play_indicator_sound</string>
     <string name="key_shortcut_mode" translatable="false">shortcut_mode</string>
 </resources>

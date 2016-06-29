@@ -81,7 +81,7 @@ open class App : Application(), AppComponent {
 
         RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
         mediaButtonHandler = MediaButtonHandler(signalHandler)
-        AudioHandler(this, signalHandler, mediaButtonHandler, httpClient)
+        AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
         ServiceHandler(this, signalHandler)
         RoomStatusHandler(roomRepository, signalHandler)
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)

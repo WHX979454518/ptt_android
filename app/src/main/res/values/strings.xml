@@ -104,6 +104,8 @@
     <string name="general_settings">常规设置</string>
     <string name="shortcut_settings">快捷拨号设置</string>
     <string name="select_shortcuts">选择快捷拨号键</string>
+    <string name="play_indicator_sounds">开启房间提示音</string>
+    <string name="play_indicator_sounds_explained">关闭后, 发言、抢麦将被静音</string>
     <string name="update_title">可用更新</string>
     <string name="update">更新</string>
     <string name="app_updating">%1$s的更新包</string>

@@ -19,6 +19,7 @@ interface Preference {
     var deviceId : String?
     val autoExit: Boolean
     var blockCalls: Boolean
+    var playIndicatorSound : Boolean
     var shortcut : Shortcut
 }
 

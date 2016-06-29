@@ -2,7 +2,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
-project.ext.buildNumber = System.getenv("BUILD_NUMBER") ?: "dev"
+project.ext.buildNumber = System.getenv("BUILD_NUMBER") ?: "1000000"
 project.ext.hockeyAppId = System.getenv("HOCKEYAPP_ID") ?: "4af1b9ae5acc44629ae26de41a61baa4"
 
 
