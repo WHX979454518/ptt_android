@@ -8,6 +8,7 @@
 
         <activity
             android:name="com.xianzhitech.ptt.ui.ServerInitActivity"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:label="初始化信号服务器"
             android:theme="@style/AppTheme.NoActionBar" />

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-                  xmlns:tools="http://schemas.android.com/tools"
     >
 
     <PreferenceCategory
@@ -27,16 +26,16 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-        android:key="shortcuts"
-        android:title="@string/shortcut_settings">
+    <!--<PreferenceCategory-->
+        <!--android:key="shortcuts"-->
+        <!--android:title="@string/shortcut_settings">-->
 
-        <ListPreference
-            android:key="@string/key_shortcut_mode"
-            tools:summary="呼叫 xxx"
-            android:persistent="false"
-            android:title="不在对讲时长按" />
+        <!--<ListPreference-->
+            <!--android:key="@string/key_shortcut_mode"-->
+            <!--tools:summary="呼叫 xxx"-->
+            <!--android:persistent="false"-->
+            <!--android:title="不在对讲时长按" />-->
 
-    </PreferenceCategory>
+    <!--</PreferenceCategory>-->
 
 </PreferenceScreen>
