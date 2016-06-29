@@ -289,6 +289,11 @@ class SignalServiceHandler(private val appContext: Context,
                             if (peekRoomState().currentRoomId == roomId) {
                                 quitRoom()
                             }
+
+                            if (error is KnownServerException &&
+                                    error.errorName == "room_not_exists") {
+                                appComponent.roomRepository.removeRooms(listOf(roomId)).execAsync().subscribeSimple()
+                            }
                         }
 
                         override fun onSuccess(value: JoinRoomResult) {
