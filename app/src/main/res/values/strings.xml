@@ -71,6 +71,7 @@
     <string name="error_has_unsaved_change">本页面有未保存的修改, 退出后将放弃保存. 确认退出吗?</string>
     <string name="error_group_not_exists">该群组不存在</string>
     <string name="error_empty_content">请输入反馈的详细信息</string>
+    <string name="error_delete_fail_in_room">无法删除正在对讲的房间, 请退出房间后再试</string>
 
     <string name="room_loading">加载中...</string>
 
@@ -140,7 +141,7 @@
 
     <string name="yesterday">昨天</string>
     <string name="room_name">房间名称</string>
-    <string name="delete_room">解散房间</string>
+    <string name="delete_room">删除房间记录</string>
     <string name="all_member_with_number">所有成员(%1$d)</string>
     <string name="room_members">房间成员</string>
     <string name="room_info">房间信息</string>

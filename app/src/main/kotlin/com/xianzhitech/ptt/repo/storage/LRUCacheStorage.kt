@@ -64,6 +64,11 @@ class RoomLRUCacheStorage(private val roomStorage: RoomStorage) : RoomStorage by
         })
     }
 
+    override fun removeRooms(roomIds: Iterable<String>) {
+        invalidateIds(roomIds)
+        roomStorage.removeRooms(roomIds)
+    }
+
     override fun getRooms(roomIds: Iterable<String>): List<RoomModel> {
         return getOrFetch(roomIds, { roomStorage.getRooms(it) }, arrayListOf())
     }

@@ -36,6 +36,7 @@ interface RoomStorage {
     fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String)
     fun updateLastActiveTime(roomId: String, time: Date)
     fun saveRooms(rooms: Iterable<Room>)
+    fun removeRooms(roomIds: Iterable<String>)
     fun clear()
 
 }

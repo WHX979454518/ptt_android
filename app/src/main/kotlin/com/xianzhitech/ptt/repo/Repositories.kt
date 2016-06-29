@@ -219,6 +219,12 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, roomNotification)
     }
 
+    fun removeRooms(roomIds : Iterable<String>) : UpdateResult {
+        return RepoUpdateResult({
+            roomStorage.removeRooms(roomIds);
+        }, roomNotification)
+    }
+
     fun clear(): UpdateResult {
         return RepoUpdateResult({
             roomStorage.clear()
@@ -261,8 +267,9 @@ interface QueryResult<T> : Callable<T> {
 }
 
 interface UpdateResult {
-    fun exec()
-    fun execAsync(scheduler: Scheduler = Schedulers.computation()): Completable
+    fun exec(notifyChanges : Boolean = true)
+    fun execAsync(scheduler: Scheduler = Schedulers.computation(),
+                  notifyChanges : Boolean = true): Completable
 }
 
 data class RoomName(val name: String,
@@ -290,13 +297,15 @@ fun RoomName?.getInvitationDescription(context: Context, inviterId: String, invi
 
 private class RepoUpdateResult(private val func: () -> Unit,
                                vararg private val notifications: Observer<Unit>) : UpdateResult {
-    override fun exec() {
+    override fun exec(notifyChanges: Boolean) {
         func()
-        notifications.forEach { it.onNext(Unit) }
+        if (notifyChanges) {
+            notifications.forEach { it.onNext(Unit) }
+        }
     }
 
-    override fun execAsync(scheduler: Scheduler): Completable {
-        return Completable.fromCallable { exec() }.subscribeOn(scheduler)
+    override fun execAsync(scheduler: Scheduler, notifyChanges: Boolean): Completable {
+        return Completable.fromCallable { exec(notifyChanges) }.subscribeOn(scheduler)
     }
 }
 

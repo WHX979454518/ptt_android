@@ -9,7 +9,9 @@ import android.text.format.DateUtils
 import android.text.style.ForegroundColorSpan
 import android.view.*
 import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -113,6 +115,12 @@ class RoomListFragment : BaseFragment() {
                     activity.startActivityWithAnimation(intent)
                 }
             }
+
+            holder.itemView.setOnLongClickListener {
+                holder.room?.let { room ->
+                    onLongClickOnRoom(holder.itemView, room)
+                } ?: false
+            }
             return holder
         }
 
@@ -131,6 +139,26 @@ class RoomListFragment : BaseFragment() {
         override fun getItemCount(): Int {
             return roomList.size
         }
+    }
+
+    private fun onLongClickOnRoom(anchorView: View, room: Room): Boolean {
+        PopupMenu(context, anchorView).apply {
+            inflate(R.menu.room_operation)
+            setOnMenuItemClickListener {
+                if (room.id == appComponent.signalHandler.currentRoomId) {
+                    Toast.makeText(context, R.string.error_delete_fail_in_room, Toast.LENGTH_LONG).show()
+                    return@setOnMenuItemClickListener true
+                }
+
+                val oldPosition = roomList.indexOfFirst { it.id == room.id }
+                roomList.removeAt(oldPosition)
+                adapter.notifyItemRemoved(oldPosition)
+                appComponent.roomRepository.removeRooms(listOf(room.id)).execAsync(notifyChanges = false).subscribeSimple()
+                true
+            }
+        }.show()
+
+        return true
     }
 
     private class RoomItemHolder(container: ViewGroup,

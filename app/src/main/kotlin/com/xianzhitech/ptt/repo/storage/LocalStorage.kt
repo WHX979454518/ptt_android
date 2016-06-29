@@ -65,6 +65,12 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStora
         return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
     }
 
+    override fun removeRooms(roomIds: Iterable<String>) {
+        return executeInTransaction {
+            db.delete(Rooms.TABLE_NAME, "${Rooms.ID} IN ${roomIds.toSqlSet()}", emptyArray())
+        }
+    }
+
     override fun updateRoomName(roomId: String, name: String) {
         return executeInTransaction {
             val contentValue = ContentValues(2)
