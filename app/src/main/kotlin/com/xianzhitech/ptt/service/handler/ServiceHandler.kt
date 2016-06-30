@@ -40,6 +40,14 @@ class Service : android.app.Service() {
                 getConnectivity(),
                 { roomStatus, currRoom, roomName, loginStatus, currUser, connectivity -> State(roomStatus, currRoom, roomName, loginStatus, currUser, connectivity) })
                 .subscribeSimple { onStateChanged(it) }
+
+        receiveBroadcasts(false, Intent.ACTION_SCREEN_ON)
+            .subscribe {
+                val roomState = signalService.peekRoomState()
+                if (roomState.currentRoomId != null && roomState.status != RoomStatus.IDLE) {
+                    startActivity(Intent(this, RoomActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+            }
     }
 
     override fun onDestroy() {
@@ -60,24 +68,27 @@ class Service : android.app.Service() {
         builder.setContentTitle(R.string.app_name.toFormattedString(this))
         val icon: Int
 
+        if (state.roomStatus.inRoom) {
+            builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, RoomActivity::class.java), 0))
+        } else {
+            builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), 0))
+        }
+
         when (state.loginStatus) {
             LoginStatus.LOGGED_IN -> {
                 when (state.roomStatus) {
                     RoomStatus.IDLE -> {
                         builder.setContentText(R.string.notification_user_online.toFormattedString(this, state.currUser?.name ?: ""))
-                        builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), 0))
                         icon = R.drawable.ic_notification_logged_on
                     }
 
                     RoomStatus.JOINING -> {
                         builder.setContentText(R.string.notification_joining_room.toFormattedString(this))
-                        builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, RoomActivity::class.java), 0))
                         icon = R.drawable.ic_notification_joined_room
                     }
 
                     else -> {
                         builder.setContentText(state.currRoomName.getInRoomDescription(this))
-                        builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, RoomActivity::class.java), 0))
                         icon = R.drawable.ic_notification_joined_room
                     }
                 }
@@ -97,7 +108,6 @@ class Service : android.app.Service() {
 
             LoginStatus.OFFLINE -> {
                 builder.setContentText(R.string.notification_user_offline.toFormattedString(this, state.currUser?.name ?: ""))
-                builder.setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), 0))
                 icon = R.drawable.ic_notification_offline
             }
 

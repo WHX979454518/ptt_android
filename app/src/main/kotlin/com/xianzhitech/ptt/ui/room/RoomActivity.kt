@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentTransaction
+import android.view.WindowManager
 import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
@@ -27,10 +28,13 @@ import java.util.concurrent.TimeUnit
  * Created by fanchao on 11/12/15.
  */
 class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragment.Callbacks, RoomInvitationListFragment.Callbacks {
-    private var isJoiningRoom: Boolean = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
 
         setContentView(R.layout.activity_room)
         if (savedInstanceState == null) {

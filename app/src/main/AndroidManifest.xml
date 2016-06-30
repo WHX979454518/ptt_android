@@ -47,6 +47,8 @@
         <activity
             android:theme="@style/AppTheme.Room"
             android:launchMode="singleTask"
+            android:showForAllUsers="true"
+            android:showOnLockScreen="true"
             android:screenOrientation="portrait"
             android:name=".ui.room.RoomActivity" />
 
