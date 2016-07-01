@@ -54,6 +54,10 @@ class IOSignalService(val endpoint: String,
                 subscriber.onNext(loginResultRef.get())
             })
 
+            socket.on(Socket.EVENT_DISCONNECT, {
+                logd("Disconnected because of ${it?.joinToString(",")}")
+            })
+
 
             // Set up server events
             socket.onMainThread("s_login_failed", { subscriber.onError((it as? JSONObject).toError()) })

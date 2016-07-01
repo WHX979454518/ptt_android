@@ -26,7 +26,6 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -157,15 +156,15 @@ class SignalServiceHandler(private val appContext: Context,
 
                                 when (t.status) {
                                     LoginStatus.LOGGED_IN -> {
-                                        val lastSyncDate = appComponent.preference.lastSyncContactTime
-                                        if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
-                                            subscription.add(signalService!!.retrieveContacts()
-                                                    .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
-                                                    .subscribeSimple {
-                                                        appComponent.preference.lastSyncContactTime = Date()
-                                                    })
-
-                                        }
+//                                        val lastSyncDate = appComponent.preference.lastSyncContactTime
+//                                        if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
+//                                            subscription.add(signalService!!.retrieveContacts()
+//                                                    .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
+//                                                    .subscribeSimple {
+//                                                        appComponent.preference.lastSyncContactTime = Date()
+//                                                    })
+//
+//                                        }
 
                                         appComponent.userRepository.saveUsers(listOf(t.user!!)).execAsync().subscribeSimple()
 
