@@ -310,6 +310,7 @@ class SignalServiceHandler(private val appContext: Context,
 
                                 roomStateSubject += state.copy(status = newStatus,
                                         onlineMemberIds = state.onlineMemberIds + value.onlineMemberIds.toSet(),
+                                        currentRoomInitiatorUserId = value.initiatorUserId,
                                         speakerId = value.speakerId,
                                         speakerPriority = value.speakerPriority,
                                         voiceServer = value.voiceServerConfiguration)
