@@ -306,7 +306,7 @@ private class JoinRoomResponse(private val obj: JSONObject) : JoinRoomResult {
     override val room: Room = RoomObject(obj.getJSONObject("room"))
 
     override val initiatorUserId: String
-        get() = obj.getString("initiatorUserId")
+        get() = obj.nullOrString("initiatorUserId") ?: ""
 
     override val onlineMemberIds: Collection<String>
         get() = obj.getJSONArray("onlineMemberIds").toStringList()

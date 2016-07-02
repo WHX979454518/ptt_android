@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.service.handler
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -16,12 +17,14 @@ import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Observable
 import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 
 /**
  * 用于保证前台服务的Android Service
  */
 class Service : android.app.Service() {
     private var subscription: Subscription? = null
+    private var wakeLock : PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?) = null
 
@@ -29,7 +32,9 @@ class Service : android.app.Service() {
         super.onCreate()
         val signalService = appComponent.signalHandler
 
-        subscription = Observable.combineLatest(
+        val subscription = CompositeSubscription()
+
+        subscription.add(Observable.combineLatest(
                 signalService.roomStatus.doOnNext {
                     logd("Room status changed to $it")
                 },
@@ -40,17 +45,26 @@ class Service : android.app.Service() {
                 getConnectivity(),
                 { roomStatus, currRoom, roomName, loginStatus, currUser, connectivity -> State(roomStatus, currRoom, roomName, loginStatus, currUser, connectivity) })
                 .subscribeSimple { onStateChanged(it) }
+        )
 
-        receiveBroadcasts(false, Intent.ACTION_SCREEN_ON)
+        subscription.add(receiveBroadcasts(false, Intent.ACTION_SCREEN_ON)
             .subscribe {
                 val roomState = signalService.peekRoomState()
                 if (roomState.currentRoomId != null && roomState.status != RoomStatus.IDLE) {
                     startActivity(Intent(this, RoomActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
             }
+        )
+
+        this.subscription = subscription
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PTT Service")
+        wakeLock!!.acquire()
     }
 
     override fun onDestroy() {
+        wakeLock?.release()
         subscription?.unsubscribe()
 
         super.onDestroy()
