@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.ui.room.RoomActivity
 import rx.Completable
 import rx.Observable
 import rx.Single
@@ -122,6 +123,7 @@ class SignalServiceHandler(private val appContext: Context,
                             subscription.add(newSignalService.retrieveRoomOnlineMemberUpdate().subscribeSimple { onRoomOnlineMemberUpdate(it) })
                             subscription.add(newSignalService.retrieveRoomSpeakerUpdate().subscribeSimple { onRoomSpeakerUpdate(it) })
                             subscription.add(newSignalService.retrieveUserKickedOutEvent().subscribeSimple { onUserKickedOut() })
+                            subscription.add(newSignalService.retrieveRoomKickedOutEvent().subscribeSimple { onRoomKickedOut(it) })
 
                             signalService = newSignalService
                             newSignalService.login(tokenProvider)
@@ -156,15 +158,15 @@ class SignalServiceHandler(private val appContext: Context,
 
                                 when (t.status) {
                                     LoginStatus.LOGGED_IN -> {
-//                                        val lastSyncDate = appComponent.preference.lastSyncContactTime
-//                                        if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate.time >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
-//                                            subscription.add(signalService!!.retrieveContacts()
-//                                                    .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
-//                                                    .subscribeSimple {
-//                                                        appComponent.preference.lastSyncContactTime = Date()
-//                                                    })
-//
-//                                        }
+                                        val lastSyncDate = appComponent.preference.lastSyncContactTime
+                                        if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
+                                            subscription.add(signalService!!.retrieveContacts()
+                                                    .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
+                                                    .subscribeSimple {
+                                                        appComponent.preference.lastSyncContactTime = System.currentTimeMillis()
+                                                    })
+
+                                        }
 
                                         appComponent.userRepository.saveUsers(listOf(t.user!!)).execAsync().subscribeSimple()
 
@@ -271,7 +273,7 @@ class SignalServiceHandler(private val appContext: Context,
             }
 
             if (currentRoomId != null) {
-                service.leaveRoom(currentRoomId).subscribeSimple()
+                service.leaveRoom(currentRoomId, appComponent.preference.keepSession.not()).subscribeSimple()
             }
 
             roomStateSubject += RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId)
@@ -325,7 +327,7 @@ class SignalServiceHandler(private val appContext: Context,
             val signalService = signalService ?: return@mainThread
             val roomId = peekRoomState().currentRoomId
             if (roomId != null) {
-                signalService.leaveRoom(roomId).subscribeSimple()
+                signalService.leaveRoom(roomId, appComponent.preference.keepSession.not()).subscribeSimple()
 
                 roomStateSubject += RoomState.EMPTY
             }
@@ -432,10 +434,22 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun onUserKickedOut() {
-        logout()
-        val intent = Intent(appContext, KickOutActivity::class.java)
-        appComponent.activityProvider.currentStartedActivity?.startActivity(intent)
-                ?: appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+        mainThread {
+            logout()
+            val intent = Intent(appContext, KickOutActivity::class.java)
+            appComponent.activityProvider.currentStartedActivity?.startActivity(intent)
+                    ?: appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+        }
+    }
+
+    private fun onRoomKickedOut(roomId : String) {
+        mainThread {
+            if (roomId == currentRoomId) {
+                quitRoom()
+                Toast.makeText(appContext, R.string.room_kicked_out, Toast.LENGTH_LONG).show()
+                (appComponent.activityProvider.currentStartedActivity as? RoomActivity)?.finish()
+            }
+        }
     }
 
     private fun onRoomSpeakerUpdate(update: RoomSpeakerUpdate) {

@@ -105,8 +105,8 @@
     <string name="general_settings">常规设置</string>
     <string name="shortcut_settings">快捷拨号设置</string>
     <string name="select_shortcuts">选择快捷拨号键</string>
-    <string name="play_indicator_sounds">开启房间提示音</string>
-    <string name="play_indicator_sounds_explained">关闭后, 发言、抢麦将被静音</string>
+    <string name="play_indicator_sounds">开启对讲提示音</string>
+    <string name="play_indicator_sounds_explained">关闭后, 发言、抢麦等对讲操作将被静音</string>
     <string name="update_title">可用更新</string>
     <string name="update">更新</string>
     <string name="app_updating">%1$s的更新包</string>
@@ -123,6 +123,9 @@
     <string name="bluetooth_device_connected">蓝牙对讲设备已连接</string>
     <string name="bluetooth_device_disconnected">蓝牙对讲设备已断开</string>
 
+    <string name="keep_session">保持会话</string>
+    <string name="keep_session_explained">作为对讲发起人, 退出房间后依然允许其它成员继续留在房间里。关闭此选项, 退出房间将通知其他人也退出</string>
+    <string name="room_kicked_out">对讲发起人已经关闭会话, 当前对讲房间已被退出</string>
 
     <string name="edit_profile">修改个人资料</string>
     <string name="avatar">头像</string>

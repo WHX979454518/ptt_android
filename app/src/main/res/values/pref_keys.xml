@@ -4,4 +4,5 @@
     <string name="key_block_calls" translatable="false">block_calls</string>
     <string name="key_play_indicator_sound" translatable="false">play_indicator_sound</string>
     <string name="key_shortcut_mode" translatable="false">shortcut_mode</string>
+    <string name="key_keep_session" translatable="false">keep_session</string>
 </resources>

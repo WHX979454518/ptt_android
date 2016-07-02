@@ -24,6 +24,12 @@
             android:defaultValue="true"
             android:key="@string/key_play_indicator_sound" />
 
+        <CheckBoxPreference
+            android:title="@string/keep_session"
+            android:summary="@string/keep_session_explained"
+            android:defaultValue="true"
+            android:key="@string/key_keep_session" />
+
     </PreferenceCategory>
 
     <!--<PreferenceCategory-->

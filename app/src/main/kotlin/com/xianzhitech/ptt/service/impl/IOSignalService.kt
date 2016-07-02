@@ -86,6 +86,10 @@ class IOSignalService(val endpoint: String,
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
+    override fun retrieveRoomKickedOutEvent(): Observable<String> {
+        return socket.retrieveEvent<Any>("s_kick_out_room").map { it.toString() }
+    }
+
     override fun retrieveInvitation(): Observable<RoomInvitation> {
         return socket.retrieveEvent<JSONObject>("s_invite_to_join")
                 .map {
@@ -141,8 +145,8 @@ class IOSignalService(val endpoint: String,
         return socket.sendEventIgnoringResult("c_release_mic", roomId)
     }
 
-    override fun leaveRoom(roomId: String): Completable {
-        return socket.sendEventIgnoringResult("c_leave_room", roomId)
+    override fun leaveRoom(roomId: String, askOthersToLeave : Boolean): Completable {
+        return socket.sendEventIgnoringResult("c_leave_room", roomId, askOthersToLeave)
     }
 
     override fun updateRoomMembers(roomId: String, userIds: Iterable<String>): Single<Room> {
@@ -197,7 +201,7 @@ private fun JSONObject?.toError(): Throwable {
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T> Socket.retrieveEvent(eventName: String): Observable<T?> {
+private fun <T> Socket.retrieveEvent(eventName: String): Observable<T> {
     return Observable.create<T> { subscriber ->
         val listener: (Array<Any>) -> Unit = {
             logtagd("IOSignalService", "Received $eventName with args ${it.joinToString(",")}")

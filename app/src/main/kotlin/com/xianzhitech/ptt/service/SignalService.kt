@@ -54,8 +54,9 @@ interface SignalService {
     fun joinRoom(roomId: String): Single<JoinRoomResult>
     fun requestMic(roomId: String): Single<Boolean>
     fun releaseMic(roomId: String): Completable
-    fun leaveRoom(roomId: String): Completable
+    fun leaveRoom(roomId: String, askOthersToLeave : Boolean): Completable
 
+    fun retrieveRoomKickedOutEvent() : Observable<String>
     fun retrieveUserKickedOutEvent(): Observable<UserKickedOutEvent>
     fun retrieveRoomOnlineMemberUpdate(): Observable<RoomOnlineMemberUpdate>
     fun retrieveRoomSpeakerUpdate(): Observable<RoomSpeakerUpdate>

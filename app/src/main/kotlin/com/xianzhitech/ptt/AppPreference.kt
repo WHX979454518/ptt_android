@@ -9,7 +9,6 @@ import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.UserToken
-import java.util.*
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
@@ -18,6 +17,7 @@ class AppPreference(appContext : Context,
     private val blockCallsKey = R.string.key_block_calls.toFormattedString(appContext)
     private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
     private val playIndicatorSoundKey = R.string.key_play_indicator_sound.toFormattedString(appContext)
+    private val keepSessionKey = R.string.key_keep_session.toFormattedString(appContext)
 
     override var lastIgnoredUpdateUrl: String?
         get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
@@ -70,13 +70,13 @@ class AppPreference(appContext : Context,
             }
         }
 
-    override var lastSyncContactTime: Date?
-        get() = pref.getLong(KEY_LAST_SYNC_TIME, -1).let { if (it  < 0) null else Date(it) }
+    override var lastSyncContactTime: Long?
+        get() = pref.getLong(KEY_LAST_SYNC_TIME, -1).let { if (it  < 0) null else null }
         set(value) {
             if (value == null) {
                 pref.edit().remove(KEY_LAST_SYNC_TIME).apply()
             } else {
-                pref.edit().putLong(KEY_LAST_SYNC_TIME, value.time).apply()
+                pref.edit().putLong(KEY_LAST_SYNC_TIME, value).apply()
             }
         }
 
@@ -96,7 +96,13 @@ class AppPreference(appContext : Context,
     override var shortcut: Shortcut
         get() = pref.getString(KEY_SHORTCUT, null)?.let { gson.fromJson(it, Shortcut::class.java) } ?: Shortcut()
         set(value) {
-            pref.edit().putString(KEY_SHORTCUT, value?.let { gson.toJson(it) } ?: null).apply()
+            pref.edit().putString(KEY_SHORTCUT, value.let { gson.toJson(it) } ?: null).apply()
+        }
+
+    override var keepSession: Boolean
+        get() = pref.getBoolean(keepSessionKey, true)
+        set(value) {
+            pref.edit().putBoolean(keepSessionKey, value).apply()
         }
 
     companion object {

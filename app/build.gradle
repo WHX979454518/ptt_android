@@ -7,7 +7,7 @@ project.ext.hockeyAppId = System.getenv("HOCKEYAPP_ID") ?: "4af1b9ae5acc44629ae2
 
 
 buildscript {
-    ext.kotlin_version = '1.0.2-1'
+    ext.kotlin_version = '1.0.3'
     ext.support_library_version = '24.0.0'
 
     repositories {
@@ -86,9 +86,9 @@ android {
     productFlavors {
         dev {
             applicationId 'com.xianzhitech.ptt.dev'
-            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://netptt.cn:20002"')
+//            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://netptt.cn:20002"')
 //            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://cdjiahotx.eicp.net:20002"')
-//            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://192.168.11.2:8000"')
+            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://192.168.2.2:8000"')
         }
 
         uat {
