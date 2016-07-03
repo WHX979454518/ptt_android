@@ -19,10 +19,7 @@ import com.xianzhitech.ptt.service.impl.IOSignalService
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
-import rx.Completable
-import rx.Observable
-import rx.Single
-import rx.SingleSubscriber
+import rx.*
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
@@ -41,6 +38,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     private var signalService: SignalService? = null
     private var loginSubscription: CompositeSubscription? = null
+    private var syncContactSubscription : Subscription? = null // Part of login subscription
 
     val loginState: Observable<LoginState> = loginStateSubject
     val roomState: Observable<RoomState> = roomStateSubject
@@ -118,7 +116,7 @@ class SignalServiceHandler(private val appContext: Context,
                                 throw IllegalStateException("Login is unsubscribed unexpectedly")
                             }
 
-                            val newSignalService = IOSignalService(it.second.signalServerEndpoint, it.first)
+                            val newSignalService = IOSignalService(it.second.signalServerEndpoint, it.first, appComponent.httpClient)
                             subscription.add(newSignalService.retrieveInvitation().subscribeSimple { onReceiveInvitation(it) })
                             subscription.add(newSignalService.retrieveRoomOnlineMemberUpdate().subscribeSimple { onRoomOnlineMemberUpdate(it) })
                             subscription.add(newSignalService.retrieveRoomSpeakerUpdate().subscribeSimple { onRoomSpeakerUpdate(it) })
@@ -137,6 +135,8 @@ class SignalServiceHandler(private val appContext: Context,
                         }
                         .switchMap { result ->
                             if (result.status == LoginStatus.LOGGED_IN && tokenProvider.authToken?.userId != result.user!!.id) {
+                                appComponent.preference.contactVersion = Constants.INVALID_CONTACT_VERSION
+
                                 // Auto clear database
                                 Completable.concat(
                                         appComponent.groupRepository.clear().execAsync(),
@@ -158,14 +158,19 @@ class SignalServiceHandler(private val appContext: Context,
 
                                 when (t.status) {
                                     LoginStatus.LOGGED_IN -> {
-                                        val lastSyncDate = appComponent.preference.lastSyncContactTime
-                                        if (lastSyncDate == null || System.currentTimeMillis() - lastSyncDate >= Constants.SYNC_CONTACT_INTERVAL_MILLS) {
-                                            subscription.add(signalService!!.retrieveContacts()
-                                                    .flatMap { appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(Unit) }
+                                        if (syncContactSubscription == null || syncContactSubscription!!.isUnsubscribed) {
+                                            syncContactSubscription = Observable.interval(0L, Constants.SYNC_CONTACT_INTERVAL_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                                                    .switchMap { signalService!!.syncContacts(appComponent.preference.contactVersion, t.user!!.id).toObservable() }
+                                                    .retry(5) // 重试5次
+                                                    .onErrorResumeNext(Observable.just(null))
+                                                    .observeOnMainThread()
                                                     .subscribeSimple {
-                                                        appComponent.preference.lastSyncContactTime = System.currentTimeMillis()
-                                                    })
-
+                                                        if (it != null) {
+                                                            appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().subscribeSimple()
+                                                            appComponent.preference.contactVersion = it.version
+                                                        }
+                                                    }
+                                            subscription.add(syncContactSubscription)
                                         }
 
                                         appComponent.userRepository.saveUsers(listOf(t.user!!)).execAsync().subscribeSimple()
@@ -240,7 +245,6 @@ class SignalServiceHandler(private val appContext: Context,
                 tokenProvider.authToken = null
                 tokenProvider.loginName = null
                 tokenProvider.loginPassword = null
-                appComponent.preference.lastSyncContactTime = null
 
                 loginStateSubject += LoginState.EMPTY
             }
@@ -505,7 +509,6 @@ class SignalServiceHandler(private val appContext: Context,
         const val ACTION_ROOM_INVITATION = "action_room_invitation"
 
         const val EXTRA_INVITATION = "extra_ri"
-
     }
 }
 

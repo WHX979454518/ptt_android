@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ext
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.support.annotation.ColorInt
 import android.support.annotation.ColorRes
 import android.support.annotation.DrawableRes
@@ -24,7 +25,7 @@ fun Context.getTintedDrawable(@DrawableRes drawableRes: Int, @ColorInt tintColor
         }
 
 fun Context.getColorCompat(@ColorRes colorRes: Int) = ContextCompat.getColor(this, colorRes)
-fun Context.getDrawableCompat(@DrawableRes drawableRes: Int) = ContextCompat.getDrawable(this, drawableRes)
+fun Context.getDrawableCompat(@DrawableRes drawableRes: Int): Drawable = ContextCompat.getDrawable(this, drawableRes)
 
 fun Int.toColorValue(context: Context) = context.getColorCompat(this)
 fun Int.toDimen(context: Context) = context.resources.getDimension(this)

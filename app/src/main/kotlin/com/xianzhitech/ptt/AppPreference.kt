@@ -49,6 +49,12 @@ class AppPreference(appContext : Context,
             pref.edit().putString(KEY_LAST_LOGIN_USER_ID, value).apply()
         }
 
+    override var contactVersion: Long
+        get() = pref.getLong(KEY_CONTACT_SYNC_VERSION, Constants.INVALID_CONTACT_VERSION)
+        set(value) {
+            pref.edit().putLong(KEY_CONTACT_SYNC_VERSION, value).apply()
+        }
+
     override var lastAppParams: AppParams?
         get() = pref.getString(KEY_LAST_APP_PARAMS, null)?.let { gson.fromJson(it, AppParams::class.java) }
         set(value) {
@@ -67,16 +73,6 @@ class AppPreference(appContext : Context,
                     putLong(KEY_LAST_UPDATE_DOWNLOAD_ID, value.second)
                 }
                 apply()
-            }
-        }
-
-    override var lastSyncContactTime: Long?
-        get() = pref.getLong(KEY_LAST_SYNC_TIME, -1).let { if (it  < 0) null else null }
-        set(value) {
-            if (value == null) {
-                pref.edit().remove(KEY_LAST_SYNC_TIME).apply()
-            } else {
-                pref.edit().putLong(KEY_LAST_SYNC_TIME, value).apply()
             }
         }
 
@@ -110,6 +106,7 @@ class AppPreference(appContext : Context,
         const val KEY_LAST_SYNC_TIME = "last_sync_contact_time"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
+        const val KEY_CONTACT_SYNC_VERSION = "contact_sync_version"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"
         const val KEY_LAST_APP_PARAMS = "key_last_app_params"
         const val KEY_IGNORED_UPDATE_URL = "key_ignored_update_url"

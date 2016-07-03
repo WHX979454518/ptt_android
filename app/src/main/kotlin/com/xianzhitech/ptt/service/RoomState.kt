@@ -15,9 +15,9 @@ data class RoomState(val status: RoomStatus,
 
     init {
         if ((status.inRoom && currentRoomId == null) ||
-//                (currentRoomId != null && currentRoomInitiatorUserId == null) ||
+                (currentRoomId != null && currentRoomInitiatorUserId == null) ||
                 (status == RoomStatus.ACTIVE && speakerId == null) ||
-//                (currentRoomId == null && currentRoomInitiatorUserId != null) ||
+                (currentRoomId == null && currentRoomInitiatorUserId != null) ||
                 (currentRoomId == null && speakerId != null)) {
             throw IllegalStateException("RoomState is not valid")
         }

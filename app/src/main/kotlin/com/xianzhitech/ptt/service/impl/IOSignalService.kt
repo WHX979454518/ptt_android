@@ -14,18 +14,22 @@ import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.Transport
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 import rx.Completable
 import rx.Observable
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import rx.subscriptions.Subscriptions
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
 
 class IOSignalService(val endpoint: String,
-                      val deviceId: String) : SignalService {
+                      val deviceId: String,
+                      val okHttpClient: OkHttpClient) : SignalService {
     private val socket = IO.socket(endpoint, IO.Options().apply {
         transports = arrayOf("websocket")
     })
@@ -115,8 +119,33 @@ class IOSignalService(val endpoint: String,
         return socket.retrieveEvent<JSONObject>("s_speaker_changed").map { RoomSpeakerUpdateObject(it!!) }
     }
 
-    override fun retrieveContacts(): Single<Contacts> {
-        return socket.sendEvent<JSONObject>("c_sync_contact").map { ContactSyncObject(it!!) }
+    override fun syncContacts(version: Long, userId: String): Single<Contacts> {
+        return Single.fromCallable<Contacts> {
+            val request = Request.Builder()
+                    .get()
+                    .url("$endpoint/api/contact/sync/$userId/$version")
+                    .build()
+
+            logd("Sync contact old version = $version")
+
+            val result = okHttpClient.newCall(request).execute()
+                .use {
+                    if (it.code() == 304) {
+                        logd("Contact not changed")
+                        null
+                    }
+                    else if (it.code() == 200) {
+                        ContactSyncObject(JSONObject(it.body().string()))
+                    }
+                    else {
+                        throw KnownServerException("sync_contact", it.body().string())
+                    }
+                }
+
+            logd("Sync contact result version = ${result?.version}, groupSize = ${result?.groups?.size}, userSize = ${result?.users?.size}")
+
+            result
+        }.subscribeOn(Schedulers.io())
     }
 
     override fun logout(): Completable {
@@ -145,7 +174,7 @@ class IOSignalService(val endpoint: String,
         return socket.sendEventIgnoringResult("c_release_mic", roomId)
     }
 
-    override fun leaveRoom(roomId: String, askOthersToLeave : Boolean): Completable {
+    override fun leaveRoom(roomId: String, askOthersToLeave: Boolean): Completable {
         return socket.sendEventIgnoringResult("c_leave_room", roomId, askOthersToLeave)
     }
 
@@ -287,14 +316,21 @@ private fun JSONObject?.toPermissionSet(): Set<Permission> {
 }
 
 private data class ExplicitUserToken(override val userId: String,
-                                     val password: String) : UserToken
+                                     val password: String) : UserToken {
+    companion object {
+        @JvmStatic val serialVersionUID = 0L
+    }
+}
 
 private class ContactSyncObject(private val obj: JSONObject) : Contacts {
+    override val version: Long
+        get() = obj.getLong("version")
+
     override val groups: Collection<Group>
-        get() = obj.optJSONObject("enterpriseGroups")?.optJSONArray("add")?.transform { GroupObject(it as JSONObject) } ?: emptyList()
+        get() = obj.optJSONArray("enterpriseGroups")?.transform { GroupObject(it as JSONObject) } ?: emptyList()
 
     override val users: Collection<User>
-        get() = obj.optJSONObject("enterpriseMembers")?.optJSONArray("add")?.transform { UserObject(it as JSONObject) } ?: emptyList()
+        get() = obj.optJSONArray("enterpriseMembers")?.transform { UserObject(it as JSONObject) } ?: emptyList()
 
     operator fun component1() = users
     operator fun component2() = groups
@@ -306,7 +342,7 @@ private class JoinRoomResponse(private val obj: JSONObject) : JoinRoomResult {
     override val room: Room = RoomObject(obj.getJSONObject("room"))
 
     override val initiatorUserId: String
-        get() = obj.nullOrString("initiatorUserId") ?: ""
+        get() = obj.getString("initiatorUserId")
 
     override val onlineMemberIds: Collection<String>
         get() = obj.getJSONArray("onlineMemberIds").toStringList()
@@ -412,7 +448,7 @@ private class UserObject(private val obj: JSONObject) : User {
     override val enterpriseId: String
         get() = obj.getStringValue("enterpriseId", "") // TODO:
     override val enterpriseName: String
-        get() = obj.getStringValue("enterpriseName", "TODO: 企业名称")
+        get() = obj.getStringValue("enterpriseName", "") // TODO: 企业名称
 
     override fun toString(): String {
         return obj.toString()

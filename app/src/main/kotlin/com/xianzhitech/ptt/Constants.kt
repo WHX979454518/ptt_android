@@ -10,11 +10,16 @@ object Constants {
 
     @JvmStatic val ROOM_IDLE_TIME_SECONDS: Long = if (BuildConfig.DEBUG && false) 3600L else 30L
 
+    const val INVALID_CONTACT_VERSION = -1L
+
     const val MAX_MEMBER_NAME_DISPLAY_COUNT: Int = 3
     const val MAX_MEMBER_ICON_DISPLAY_COUNT: Int = 9
 
     const val DEFAULT_USER_PRIORITY = 100
+
     @JvmStatic val SYNC_CONTACT_INTERVAL_MILLS = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES)
+//    @JvmStatic val SYNC_CONTACT_INTERVAL_MILLS = TimeUnit.MILLISECONDS.convert(15, TimeUnit.SECONDS)
+
     const val HTTP_MAX_CACHE_SIZE: Long = 10 * 1024 * 1024 // 10MB
     const val EMPTY_USER_ID: String = "-1"
 }

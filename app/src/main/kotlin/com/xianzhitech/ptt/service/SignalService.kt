@@ -63,5 +63,5 @@ interface SignalService {
     fun retrieveRoomInfo(roomId: String): Single<Room>
     fun retrieveUserInfo(userId: String): Single<User>
     fun retrieveInvitation(): Observable<RoomInvitation>
-    fun retrieveContacts(): Single<Contacts>
+    fun syncContacts(version: Long, userId: String): Single<Contacts>
 }

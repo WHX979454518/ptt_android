@@ -13,10 +13,10 @@ interface Preference {
     var userSessionToken: UserToken?
     var lastLoginUserId: String?
     var lastAppParams : AppParams?
-    var lastSyncContactTime : Long?
     var lastIgnoredUpdateUrl : String?
+    var contactVersion : Long
     var deviceId : String?
-    val autoExit: Boolean
+    var autoExit: Boolean
     var blockCalls: Boolean
     var playIndicatorSound : Boolean
     var shortcut : Shortcut
