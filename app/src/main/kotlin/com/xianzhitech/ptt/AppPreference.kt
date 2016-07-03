@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
-import com.xianzhitech.ptt.ext.fromBase64ToSerializable
-import com.xianzhitech.ptt.ext.serializeToBase64
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.AppParams
 import com.xianzhitech.ptt.service.UserToken
@@ -26,9 +24,13 @@ class AppPreference(appContext : Context,
         }
 
     override var userSessionToken: UserToken?
-        get() = pref.getString(KEY_USER_TOKEN, null)?.fromBase64ToSerializable() as? UserToken
+        get() = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
         set(value) {
-            pref.edit().putString(KEY_USER_TOKEN, value?.serializeToBase64()).apply()
+            if (value == null) {
+                pref.edit().remove(KEY_USER_TOKEN).apply()
+            } else {
+                pref.edit().putString(KEY_USER_TOKEN, gson.toJson(value)).apply()
+            }
         }
 
     override var blockCalls: Boolean
@@ -102,8 +104,7 @@ class AppPreference(appContext : Context,
         }
 
     companion object {
-        const val KEY_USER_TOKEN = "user_token"
-        const val KEY_LAST_SYNC_TIME = "last_sync_contact_time"
+        const val KEY_USER_TOKEN = "current_user_token"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_CONTACT_SYNC_VERSION = "contact_sync_version"

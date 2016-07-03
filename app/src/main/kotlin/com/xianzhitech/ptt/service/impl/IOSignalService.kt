@@ -74,7 +74,7 @@ class IOSignalService(val endpoint: String,
             socket.io().on(Manager.EVENT_TRANSPORT, {
                 (it[0] as Transport).on(Transport.EVENT_REQUEST_HEADERS, {
                     try {
-                        val savedToken = (tokenProvider.authToken as? ExplicitUserToken) ?: ExplicitUserToken(tokenProvider.loginName!!, tokenProvider.loginPassword!!)
+                        val savedToken = tokenProvider.authToken ?: UserToken(tokenProvider.loginName!!, tokenProvider.loginPassword!!)
                         loginResultRef.set(loginResultRef.get().copy(token = savedToken))
 
                         val headers = it[0] as MutableMap<String, List<String>>
@@ -194,7 +194,7 @@ class IOSignalService(val endpoint: String,
     override fun changePassword(tokenProvider: TokenProvider, oldPassword: String, newPassword: String): Single<UserToken> {
         return socket.sendEventIgnoringResult("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5()).toSingleDefault(Unit)
                 .map {
-                    ExplicitUserToken(userId = tokenProvider.authToken?.userId ?: tokenProvider.loginName!!, password = newPassword)
+                    UserToken(userId = tokenProvider.authToken?.userId ?: tokenProvider.loginName!!, password = newPassword)
                 }
     }
 
@@ -315,12 +315,6 @@ private fun JSONObject?.toPermissionSet(): Set<Permission> {
     return set
 }
 
-private data class ExplicitUserToken(override val userId: String,
-                                     val password: String) : UserToken {
-    companion object {
-        @JvmStatic val serialVersionUID = 0L
-    }
-}
 
 private class ContactSyncObject(private val obj: JSONObject) : Contacts {
     override val version: Long

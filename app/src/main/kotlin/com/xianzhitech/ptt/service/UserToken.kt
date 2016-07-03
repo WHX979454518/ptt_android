@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt.service
 
-import java.io.Serializable
+import com.google.gson.annotations.SerializedName
 
-interface UserToken : Serializable {
-    val userId: String
-}
+data class UserToken(@SerializedName("user_id") val userId: String,
+                     @SerializedName("password") val password: String)
