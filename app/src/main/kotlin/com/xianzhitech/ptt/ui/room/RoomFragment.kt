@@ -25,6 +25,7 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
+import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
@@ -53,7 +54,12 @@ class RoomFragment : BaseFragment()
     }
 
     private var views: Views? = null
-    private val onlineUserAdapter = UserListAdapter(R.layout.view_room_member_list_item)
+    private val onlineUserAdapter = object : UserListAdapter(R.layout.view_room_online_member_list_item) {
+        override fun onBindViewHolder(holder: UserItemHolder, position: Int) {
+            super.onBindViewHolder(holder, position)
+            holder.itemView.findViewById(R.id.userItem_initiatorLabel)?.setVisible(holder.userId == appComponent.signalHandler.peekRoomState().currentRoomInitiatorUserId)
+        }
+    }
     private var popupWindow: PopupWindow? = null
     private var invitationSubscription: Subscription? = null
     private var updateDurationSubscription: Subscription? = null
@@ -167,6 +173,10 @@ class RoomFragment : BaseFragment()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
                     onlineUserAdapter.setUsers(it.first)
+                    val roomInitiatorUserId = signalService.peekRoomState().currentRoomInitiatorUserId
+                    if (roomInitiatorUserId != null) {
+                        onlineUserAdapter.setUserToPosition(roomInitiatorUserId, 0)
+                    }
                 }
 
         signalService.roomState.distinctUntilChanged { it.speakerId }

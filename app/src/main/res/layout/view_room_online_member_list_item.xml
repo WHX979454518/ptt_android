@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/unit_one">
+
+    <ImageView
+        android:id="@+id/userItem_avatar"
+        android:layout_alignParentTop="true"
+        tools:src="@color/blue_grey"
+        android:layout_width="@dimen/room_details_member_icon_size"
+        android:layout_height="@dimen/room_details_member_icon_size"/>
+
+    <TextView
+        android:id="@+id/userItem_initiatorLabel"
+        android:layout_alignRight="@+id/userItem_avatar"
+        android:layout_alignBottom="@+id/userItem_avatar"
+        android:background="@color/black_30a"
+        android:padding="@dimen/divider_normal"
+        android:textColor="@android:color/white"
+        style="@style/Text.Caption"
+        android:text="@string/room_initiator"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/userItem_name"
+        tools:text="用户1"
+        android:layout_below="@+id/userItem_avatar"
+        android:layout_alignLeft="@+id/userItem_avatar"
+        android:layout_alignRight="@+id/userItem_avatar"
+        android:gravity="center"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</RelativeLayout>

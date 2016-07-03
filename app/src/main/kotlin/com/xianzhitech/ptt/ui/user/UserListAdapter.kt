@@ -26,6 +26,16 @@ open class UserListAdapter(@LayoutRes private val itemLayoutId: Int) : RecyclerV
         notifyDataSetChanged()
     }
 
+    fun setUserToPosition(userId : String, position : Int) {
+        val oldPosition = users.indexOfFirst { it.id == userId }
+        if (oldPosition >= 0 && oldPosition != position && position >= 0 && position < users.size) {
+            val tmpUser = users[position]
+            users[position] = users[oldPosition]
+            users[oldPosition] = tmpUser
+            notifyDataSetChanged()
+        }
+    }
+
     fun getUser(position: Int) = users[position]
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserItemHolder? {
