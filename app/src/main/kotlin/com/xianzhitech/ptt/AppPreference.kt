@@ -98,7 +98,7 @@ class AppPreference(appContext : Context,
         }
 
     override var keepSession: Boolean
-        get() = pref.getBoolean(keepSessionKey, true)
+        get() = pref.getBoolean(keepSessionKey, false)
         set(value) {
             pref.edit().putBoolean(keepSessionKey, value).apply()
         }

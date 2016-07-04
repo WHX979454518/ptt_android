@@ -27,7 +27,7 @@
         <CheckBoxPreference
             android:title="@string/keep_session"
             android:summary="@string/keep_session_explained"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="@string/key_keep_session" />
 
     </PreferenceCategory>
