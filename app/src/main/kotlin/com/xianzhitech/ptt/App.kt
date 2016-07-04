@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
+import com.crashlytics.android.Crashlytics
 import com.google.gson.Gson
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
@@ -18,6 +19,7 @@ import com.xianzhitech.ptt.service.handler.*
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.util.ActivityProviderImpl
+import io.fabric.sdk.android.Fabric
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -53,6 +55,8 @@ open class App : Application(), AppComponent {
     override fun onCreate() {
         super.onCreate()
 
+        Fabric.with(this, Crashlytics())
+
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
         val helper = createSQLiteStorageHelper(this, "data")
@@ -69,6 +73,7 @@ open class App : Application(), AppComponent {
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
         signalHandler = SignalServiceHandler(this, this)
+
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

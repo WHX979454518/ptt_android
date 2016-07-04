@@ -29,6 +29,11 @@
         android:theme="@style/AppTheme">
 
         <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="3562376117e656a0ce17f29b2e524d6bb0116630"
+            />
+
+        <meta-data
             android:name="com.xianzhitech.ptt.AppGlideModule"
             android:value="GlideModule" />
 
