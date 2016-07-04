@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="?attr/selectableItemBackground"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
@@ -47,7 +47,7 @@
 
     <ImageView
         android:id="@+id/roomItem_arrow"
-        android:src="@drawable/ic_arrow_right"
+        app:srcCompat="@drawable/ic_arrow_right"
         android:layout_centerVertical="true"
         android:tint="@color/secondary_text"
         android:layout_alignParentRight="true"

@@ -8,12 +8,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
@@ -98,10 +98,10 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                 }.show(childFragmentManager, TAG_LOGOUT_CONFIRMATION)
             }
 
-            R.id.profile_settings -> startActivity(Intent(context, SettingsActivity::class.java))
+            R.id.profile_settings -> activity.startActivityWithAnimation(Intent(context, SettingsActivity::class.java))
             R.id.profile_edit -> activity.startActivityWithAnimation(Intent(context, EditProfileActivity::class.java))
             R.id.profile_feedback -> activity.startActivityWithAnimation(Intent(context, FeedbackActivity::class.java))
-            R.id.profile_about -> Toast.makeText(context, "TODO", Toast.LENGTH_LONG).show()
+            R.id.profile_about -> activity.startActivityWithAnimation(Intent(context, AboutActivity::class.java))
         }
     }
 

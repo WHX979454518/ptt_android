@@ -92,6 +92,9 @@
         <activity android:name=".ui.app.FeedbackActivity"
             android:label="@string/feedback" />
 
+        <activity android:name=".ui.app.AboutActivity"
+            android:label="@string/about" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
