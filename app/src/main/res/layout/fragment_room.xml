@@ -34,7 +34,7 @@
         android:layout_marginBottom="-100dp"
         android:background="@drawable/bg_push_button"
         android:scaleType="center"
-        app:srcCompat="@drawable/ic_voice_large"
+        android:src="@drawable/ic_voice_large"
         android:tint="?attr/colorPrimary" />
 
     <ImageView
@@ -58,7 +58,7 @@
         android:layout_alignParentTop="true"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:padding="@dimen/unit_two"
-        app:srcCompat="@drawable/ic_people_filled" />
+        android:src="@drawable/ic_people_filled" />
 
     <TextView
         android:id="@+id/room_title"
