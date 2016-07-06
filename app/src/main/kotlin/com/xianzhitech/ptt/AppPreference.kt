@@ -34,7 +34,7 @@ class AppPreference(appContext : Context,
         }
 
     override var blockCalls: Boolean
-        get() = pref.getBoolean(blockCallsKey, true)
+        get() = pref.getBoolean(blockCallsKey, false)
         set(value) {
             pref.edit().putBoolean(blockCallsKey, value).apply()
         }

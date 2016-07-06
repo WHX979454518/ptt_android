@@ -15,7 +15,7 @@
         <CheckBoxPreference
             android:title="@string/block_call"
             android:summary="@string/block_call_summary"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="@string/key_block_calls"/>
 
         <CheckBoxPreference
