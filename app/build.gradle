@@ -1,11 +1,10 @@
-//apply plugin: 'android-sdk-manager'
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'io.fabric'
 
-project.ext.buildNumber = System.getenv("BUILD_NUMBER") ?: "1000000"
-project.ext.hockeyAppId = System.getenv("HOCKEYAPP_ID") ?: "4af1b9ae5acc44629ae26de41a61baa4"
-
+project.ext.buildNumber = System.properties['BUILD_NUMBER'] ?: 'dev'
+project.ext.buildName = System.properties['BUILD_NAME'] ?: '2.0-snapshot'
+project.ext.appServerUrl = System.properties['APP_SERVER_URL']
 
 buildscript {
     ext.kotlin_version = '1.0.3'
@@ -42,7 +41,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 24
         versionCode 2
-        versionName "1.0"
+        versionName buildName
 
         buildConfigField("String", "BUILD_NUMBER", "\"$buildNumber\"")
     }
@@ -81,15 +80,17 @@ android {
 
     productFlavors {
         dev {
+            def appServerUrl = project.appServerUrl ?: "http://netptt.cn:20002"
             applicationId 'com.xianzhitech.ptt.dev'
-            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://netptt.cn:20002"')
-//            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://cdjiahotx.eicp.net:20002"')
-//            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://192.168.2.2:8000"')
+            buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
+            println("Using $appServerUrl as app server for dev build")
         }
 
         prod {
+            def appServerUrl = project.appServerUrl ?: "http://netptt.cn:10005"
             applicationId 'com.xianzhitech.ptt'
-            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://netptt.cn:10005"')
+            buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
+            println("Using $appServerUrl as app server for production build")
         }
     }
 
