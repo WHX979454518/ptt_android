@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
+import android.support.v4.view.MenuItemCompat
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.SearchView
 import android.view.LayoutInflater
@@ -23,7 +24,7 @@ class ContactsFragment : ModelListFragment() {
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.contacts, menu)
-        val searchView = menu.findItem(R.id.contacts_search).actionView as SearchView
+        val searchView = MenuItemCompat.getActionView(menu.findItem(R.id.contacts_search)) as SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 return true

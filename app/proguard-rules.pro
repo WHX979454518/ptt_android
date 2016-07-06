@@ -30,6 +30,22 @@
 -keep class org.webrtc.** { *; }
 -keepnames class org.webrtc.** { *; }
 
+# Retrofit
+-dontwarn retrofit2.**
+
+# Gson
+-keepattributes Signature
+
+# For using GSON @Expose annotation
+-keepattributes *Annotation*
+
+# Gson specific classes
+-keep class sun.misc.Unsafe { *; }
+
+-keepnames class rx.**
+-keepnames class android.**
+-keep class android.support.v7.widget.SearchView { *; }
+
 -dontwarn okio.**
 -dontwarn rx.**
 -dontwarn com.xianzhitech.ptt.**
