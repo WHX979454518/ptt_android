@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">手咪</string>
     <string name="tab_conversation">会话</string>
     <string name="tab_contacts">联系人</string>
     <string name="tab_me">我</string>
