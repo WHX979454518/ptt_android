@@ -2,9 +2,7 @@ image: ubuntu:16.04
 
 variables:
   TEST_APP_SERVER: "http://netptt.cn:20002"
-  TEST_APP_APK_NAME: "ctalk-test-ci-$CI_BUILD_NUMBER.apk"
   PROD_APP_SERVER: "http://netptt.cn:10005"
-  PROD_APP_APK_NAME: "ctalk-prod-ci-$CI_BUILD_NUMBER.apk"
   APK_SERVER_URI: "netptt.cn:/serverDisk/apks"
   APK_OUTPUT_DIR: "app/build/outputs"
 
@@ -35,16 +33,19 @@ stages:
   - build
 
 build test:
+  variables:
+    APK_NAME: "ctalk-app-test-$CI_BUILD_NUMBER.apk"
+    APK_PATH: "$APK_OUTPUT_DIR/apk/$APK_NAME"
   stage: build
   only:
     - develop
   script:
     - ./gradlew -DBUILD_NUMBER="$CI_BUILD_NUMBER" -DBUILD_NAME="internal testing" -DAPP_SERVER_URL="$TEST_APP_SERVER" assembleDevDebug
-    - mv $APK_OUTPUT_DIR/apk/app-dev-debug.apk $APK_OUTPUT_DIR/apk/$TEST_APP_APK_NAME
-    - scp "$APK_OUTPUT_DIR/apk/$TEST_APP_APK_NAME" "$APK_SERVER_URI/test/"
+    - mv $APK_OUTPUT_DIR/apk/app-dev-debug.apk $APK_PATH
+    - scp "$APK_PATH" "$APK_SERVER_URI/test/"
   artifacts:
     paths:
-    - $APK_OUTPUT_DIR/apk/$TEST_APP_APK_NAME
+    - $APK_PATH
   environment: testing
 
 
