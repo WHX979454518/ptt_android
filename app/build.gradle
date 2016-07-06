@@ -87,8 +87,8 @@ android {
 //            buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://192.168.2.2:8000"')
         }
 
-        uat {
-            applicationId 'com.xianzhitech.ptt.test'
+        prod {
+            applicationId 'com.xianzhitech.ptt'
             buildConfigField("String", "APP_SERVER_ENDPOINT", '"http://netptt.cn:10005"')
         }
     }
