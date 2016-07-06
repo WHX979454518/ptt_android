@@ -33,22 +33,18 @@ before_script:
 
 stages:
   - build
-  - deploy
 
-test:
+build test:
   stage: build
   only:
     - develop
   script:
-    - ./gradlew -DBUILD_NUMBER="$CI_BUILD_NUMBER" -DBUILD_NAME="$CI_BUILD_NAME" -DAPP_SERVER_URL="$TEST_APP_SERVER" assembleDevDebug
-    - mv $APK_OUTPUT_DIR/apk/app-dev-debug.apk $APK_OUTPUT_DIR/apk/TEST_APP_APK_NAME
+    - ./gradlew -DBUILD_NUMBER="$CI_BUILD_NUMBER" -DBUILD_NAME="internal testing" -DAPP_SERVER_URL="$TEST_APP_SERVER" assembleDevDebug
+    - mv $APK_OUTPUT_DIR/apk/app-dev-debug.apk $APK_OUTPUT_DIR/apk/$TEST_APP_APK_NAME
+    - scp "$APK_OUTPUT_DIR/apk/$TEST_APP_APK_NAME" "$APK_SERVER_URI/test/"
   artifacts:
     paths:
-    - $APK_OUTPUT_DIR/apk/TEST_APP_APK_NAME
+    - $APK_OUTPUT_DIR/apk/$TEST_APP_APK_NAME
   environment: testing
 
-staging:
-  stage: deploy
-  script:
-    - scp $APK_OUTPUT_DIR/apk/TEST_APP_APK_NAME $APK_SERVER_URI/$CI_BUILD_NAME
 
