@@ -1,6 +1,6 @@
 image: ubuntu:16.04
 
-variaibles:
+variables:
   TEST_APP_SERVER: "http://netptt.cn:20002"
   TEST_APP_APK_NAME: "ctalk-test-ci-$CI_BUILD_NUMBER.apk"
   PROD_APP_SERVER: "http://netptt.cn:10005"
