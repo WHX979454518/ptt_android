@@ -190,6 +190,9 @@
     <string name="shortcut_with_callee">呼叫 %1$s</string>
     <string name="room_initiator">发起者</string>
     <string name="copy_right">Copyright @ 2015-2016 成都贤智科技\n保留所有权利</string>
+    <string name="or">或</string>
+    <string name="click_to_share">分享下载连接</string>
+    <string name="scan_barcode">扫描二维码获取下载链接</string>
 
     <string-array name="level_number">
         <item>管理员</item>
