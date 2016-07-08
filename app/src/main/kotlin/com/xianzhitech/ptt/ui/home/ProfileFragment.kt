@@ -15,6 +15,7 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
+import com.xianzhitech.ptt.ui.app.ShareActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
@@ -56,6 +57,12 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                 setOnClickListener(this@ProfileFragment)
                 setCompoundDrawablesWithIntrinsicBounds(
                         context.getTintedDrawable(R.drawable.ic_info_black, tintColor),
+                        null, null, null)
+            }
+            findView<Button>(R.id.profile_share).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_share, tintColor),
                         null, null, null)
             }
             findView<View>(R.id.profile_logout).setOnClickListener(this@ProfileFragment)
@@ -102,6 +109,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             R.id.profile_edit -> activity.startActivityWithAnimation(Intent(context, EditProfileActivity::class.java))
             R.id.profile_feedback -> activity.startActivityWithAnimation(Intent(context, FeedbackActivity::class.java))
             R.id.profile_about -> activity.startActivityWithAnimation(Intent(context, AboutActivity::class.java))
+            R.id.profile_share -> activity.startActivityWithAnimation(Intent(context, ShareActivity::class.java))
         }
     }
 

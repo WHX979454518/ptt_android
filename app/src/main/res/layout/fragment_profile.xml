@@ -84,6 +84,14 @@
             style="@style/Divider.Lighter" />
 
         <Button
+            android:id="@+id/profile_share"
+            style="@style/ProfileButton"
+            android:text="@string/share" />
+
+        <View
+            style="@style/Divider.Lighter" />
+
+        <Button
             android:id="@+id/profile_about"
             style="@style/ProfileButton"
             android:text="@string/about" />

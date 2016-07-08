@@ -71,6 +71,9 @@
         <activity android:name=".ui.user.EditProfileActivity"
             android:label="@string/edit_profile" />
 
+        <activity android:name=".ui.app.ShareActivity"
+                  android:label="@string/share" />
+
         <activity android:name=".ui.user.ChangePasswordActivity"
             android:label="@string/change_password" />
 

@@ -1,16 +1,20 @@
 package com.xianzhitech.ptt.ui.home.login
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.TextInputLayout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.ui.app.AboutActivity
+import com.xianzhitech.ptt.ui.app.ShareActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 
@@ -56,6 +60,14 @@ class LoginFragment : BaseFragment()
                         signalService.login(nameEditText.getString().trim(), passwordEditText.getString().trim())
                     }
                 }
+
+                shareButton.setOnClickListener {
+                    activity.startActivityWithAnimation(Intent(context, ShareActivity::class.java))
+                }
+
+                aboutButton.setOnClickListener {
+                    activity.startActivityWithAnimation(Intent(context, AboutActivity::class.java))
+                }
             }
         }
     }
@@ -73,7 +85,9 @@ class LoginFragment : BaseFragment()
             rootView: View,
             val nameEditText: EditText = (rootView.findView<TextInputLayout>(R.id.login_nameField)).editText!!,
             val passwordEditText: EditText = (rootView.findView<TextInputLayout>(R.id.login_passwordField)).editText!!,
-            val loginButton: View = rootView.findView(R.id.login_loginBtn)
+            val loginButton: View = rootView.findView(R.id.login_loginBtn),
+            val shareButton : TextView = rootView.findView(R.id.login_share),
+            val aboutButton : TextView = rootView.findView(R.id.login_about)
     )
 
     interface Callbacks {
