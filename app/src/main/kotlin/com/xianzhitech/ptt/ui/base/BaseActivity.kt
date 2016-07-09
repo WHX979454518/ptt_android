@@ -118,8 +118,7 @@ abstract class BaseActivity : AppCompatActivity(),
             downloadRequest.setMimeType("application/vnd.android.package-archive")
             downloadRequest.setNotificationVisibility(View.VISIBLE)
             downloadRequest.setVisibleInDownloadsUi(true)
-            downloadRequest.setTitle(R.string.app_updating.toFormattedString(
-                    this, R.string.app_name.toFormattedString(this), appConfig.latestVersion))
+            downloadRequest.setTitle("${appConfig.getAppFullName(this)}.apk")
 
             preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
         } else {
@@ -195,7 +194,8 @@ abstract class BaseActivity : AppCompatActivity(),
                 appComponent.preference.updateDownloadId == null) {
             AlertDialogFragment.Builder().apply {
                 message = appParams.updateMessage
-                title = R.string.update_title.toFormattedString(this@BaseActivity, appParams.latestVersion)
+                messageIsHtml = true
+                title = R.string.update_title.toFormattedString(this@BaseActivity, appParams.getAppFullVersionName())
                 btnPositive = R.string.update.toFormattedString(this@BaseActivity)
                 btnNegative = if (appParams.mandatory) null else R.string.ignore.toFormattedString(this@BaseActivity)
                 cancellabe = false

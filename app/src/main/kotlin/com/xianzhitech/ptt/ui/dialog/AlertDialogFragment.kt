@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.app.FragmentManager
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatDialogFragment
+import android.text.Html
 import java.io.Serializable
 
 /**
@@ -30,7 +31,7 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return AlertDialog.Builder(context)
                 .setTitle(builder.title)
-                .setMessage(builder.message)
+                .setMessage(if (builder.messageIsHtml) Html.fromHtml(builder.message?.toString()) else builder.message)
                 .setPositiveButton(builder.btnPositive, this)
                 .setNegativeButton(builder.btnNegative, this)
                 .setNeutralButton(builder.btnNeutral, this)
@@ -104,6 +105,7 @@ class AlertDialogFragment : AppCompatDialogFragment(), DialogInterface.OnClickLi
         var autoDismiss: Boolean = true
         var cancellabe: Boolean = true
         var attachment: Serializable? = null
+        var messageIsHtml : Boolean = false
 
         fun create(): AlertDialogFragment {
             return AlertDialogFragment().apply {

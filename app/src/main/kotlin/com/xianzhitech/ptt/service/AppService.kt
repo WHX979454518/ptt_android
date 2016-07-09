@@ -5,6 +5,7 @@ import android.os.Build
 import android.provider.Settings
 import com.google.gson.annotations.SerializedName
 import com.xianzhitech.ptt.BuildConfig
+import com.xianzhitech.ptt.Constants
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PUT
@@ -13,7 +14,7 @@ import rx.Completable
 import rx.Single
 import java.io.Serializable
 
-class AppConfig(@SerializedName("latest_version_code") val latestVersion : Long,
+class AppConfig(@SerializedName("latest_version_code") val latestVersionCode: Long,
                 @SerializedName("latest_version_name") val latestVersionName : String,
                 @SerializedName("update_message") val updateMessage: String?,
                 @SerializedName("mandatory") val mandatory : Boolean,
@@ -22,10 +23,18 @@ class AppConfig(@SerializedName("latest_version_code") val latestVersion : Long,
     val hasUpdate : Boolean
     get() {
         try {
-            return BuildConfig.BUILD_NUMBER.toLong() < latestVersion
+            return BuildConfig.BUILD_NUMBER.toLong() < latestVersionCode
         } catch(e: NumberFormatException) {
-            return false
+            return BuildConfig.DEBUG
         }
+    }
+
+    fun getAppFullName(context: Context) : String {
+        return Constants.getAppFullName(context, latestVersionName, latestVersionCode.toString())
+    }
+
+    fun getAppFullVersionName() : String {
+        return Constants.getAppFullVersionName(latestVersionName, latestVersionCode.toString())
     }
 }
 

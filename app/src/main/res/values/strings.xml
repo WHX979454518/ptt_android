@@ -22,8 +22,6 @@
     <string name="in_room_postfix">" (对讲中)"</string>
     <string name="in_room">正在该房间中对讲</string>
 
-    <string name="publish_version_name">%1$s %2$s (内部版本 %3$s)</string>
-
     <string name="dialog_confirm">确定</string>
     <string name="dialog_cancel">取消</string>
     <string name="dialog_ok">知道了</string>
@@ -109,9 +107,9 @@
     <string name="select_shortcuts">选择快捷拨号键</string>
     <string name="play_indicator_sounds">开启对讲提示音</string>
     <string name="play_indicator_sounds_explained">关闭后, 发言、抢麦等对讲操作将被静音</string>
-    <string name="update_title">新版本%1$s可供下载</string>
+    <string name="update_title">新版本%1$s发布</string>
     <string name="update">更新</string>
-    <string name="app_updating">正在下载更新%1$s-%2$s</string>
+    <string name="app_updating">%1$sv%2$s.apk</string>
     <string name="invite_you_to_join">邀请你加入对讲</string>
     <string name="invite_you_to_join_by_whom">%1$s 邀请你加入对讲</string>
     <string name="invite_you_to_join_group_by_whom">%1$s 邀请你加入房间 %2$s</string>

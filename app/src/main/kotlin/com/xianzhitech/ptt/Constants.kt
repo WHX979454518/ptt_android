@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt
 
+import android.content.Context
+import com.xianzhitech.ptt.ext.toFormattedString
 import java.util.concurrent.TimeUnit
 
 object Constants {
@@ -22,4 +24,17 @@ object Constants {
 
     const val HTTP_MAX_CACHE_SIZE: Long = 10 * 1024 * 1024 // 10MB
     const val EMPTY_USER_ID: String = "-1"
+
+    fun getAppFullName(context: Context, versionName : String, versionCode : String) : String {
+        return "${R.string.app_name.toFormattedString(context)}${getAppFullVersionName(versionName, versionCode)}"
+    }
+
+    fun getAppFullVersionName(versionName : String, versionCode : String) : String {
+        if (BuildConfig.IS_PRODUCTION) {
+            return "v$versionName"
+        }
+        else {
+            return "v$versionName($versionCode)"
+        }
+    }
 }
