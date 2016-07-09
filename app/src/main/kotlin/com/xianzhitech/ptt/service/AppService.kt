@@ -25,7 +25,7 @@ class AppConfig(@SerializedName("latest_version_code") val latestVersionCode: Lo
         try {
             return BuildConfig.BUILD_NUMBER.toLong() < latestVersionCode
         } catch(e: NumberFormatException) {
-            return BuildConfig.DEBUG
+            return false
         }
     }
 
