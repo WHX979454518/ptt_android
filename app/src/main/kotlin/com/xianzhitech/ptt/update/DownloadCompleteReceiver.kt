@@ -5,6 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import java.io.File
 
@@ -13,6 +15,7 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
         if (intent != null) {
             val lastUpdateDownloadId = context.appComponent.preference.updateDownloadId
             if (lastUpdateDownloadId != null && lastUpdateDownloadId.second == intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)) {
+                Toast.makeText(context, R.string.download_complete_toast, Toast.LENGTH_LONG).show()
                 installPackage(context, lastUpdateDownloadId.second)
                 context.appComponent.preference.updateDownloadId = null
             }

@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.service.AppParams
+import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
 
 class AppPreference(appContext : Context,
@@ -57,10 +57,10 @@ class AppPreference(appContext : Context,
             pref.edit().putLong(KEY_CONTACT_SYNC_VERSION, value).apply()
         }
 
-    override var lastAppParams: AppParams?
-        get() = pref.getString(KEY_LAST_APP_PARAMS, null)?.let { gson.fromJson(it, AppParams::class.java) }
+    override var lastAppParams: AppConfig?
+        get() = pref.getString(KEY_LAST_APP_CONFIG, null)?.let { gson.fromJson(it, AppConfig::class.java) }
         set(value) {
-            pref.edit().putString(KEY_LAST_APP_PARAMS, value?.let { gson.toJson(it) }).apply()
+            pref.edit().putString(KEY_LAST_APP_CONFIG, value?.let { gson.toJson(it) }).apply()
         }
 
     override var updateDownloadId: Pair<Uri, Long>?
@@ -109,7 +109,7 @@ class AppPreference(appContext : Context,
         const val KEY_LAST_UPDATE_DOWNLOAD_ID = "last_update_download_id"
         const val KEY_CONTACT_SYNC_VERSION = "contact_sync_version"
         const val KEY_LAST_LOGIN_USER_ID = "key_last_login_user"
-        const val KEY_LAST_APP_PARAMS = "key_last_app_params"
+        const val KEY_LAST_APP_CONFIG = "key_last_app_config"
         const val KEY_IGNORED_UPDATE_URL = "key_ignored_update_url"
         const val KEY_DEVICE_ID = "key_device_id"
         const val KEY_SHORTCUT = "key_shortcut"

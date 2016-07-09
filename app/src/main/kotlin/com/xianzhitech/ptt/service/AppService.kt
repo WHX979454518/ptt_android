@@ -13,10 +13,21 @@ import rx.Completable
 import rx.Single
 import java.io.Serializable
 
-class AppParams(@SerializedName("update_message") val updateMessage: String?,
-                @SerializedName("force_update") val forceUpdate: Boolean?,
-                @SerializedName("update_url") val updateUrl: String?,
-                @SerializedName("signal_server_endpoint") val signalServerEndpoint: String) : Serializable
+class AppConfig(@SerializedName("latest_version_code") val latestVersion : Long,
+                @SerializedName("latest_version_name") val latestVersionName : String,
+                @SerializedName("update_message") val updateMessage: String?,
+                @SerializedName("mandatory") val mandatory : Boolean,
+                @SerializedName("signal_server_endpoint") val signalServerEndpoint: String,
+                @SerializedName("download_url") val downloadUrl : String?) : Serializable {
+    val hasUpdate : Boolean
+    get() {
+        try {
+            return BuildConfig.BUILD_NUMBER.toLong() < latestVersion
+        } catch(e: NumberFormatException) {
+            return false
+        }
+    }
+}
 
 class AppInfo(context : Context,
               @SerializedName("version") val appVersion: Int = BuildConfig.VERSION_CODE,
@@ -31,9 +42,9 @@ class Feedback(@SerializedName("title") val title : String,
 
 
 interface AppService {
-    @GET("/app_params/{userId}/{version}")
-    fun retrieveAppParams(@Path("userId") userId : String,
-                          @Path("version") appVersion : String = BuildConfig.BUILD_NUMBER): Single<AppParams>
+    @GET("/app_config/{userId}/{version}")
+    fun retrieveAppConfig(@Path("userId") userId : String,
+                          @Path("version") appVersion : String = BuildConfig.BUILD_NUMBER): Single<AppConfig>
 
     /**
      * Register a device and get a device id

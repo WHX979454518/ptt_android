@@ -108,7 +108,7 @@ class SignalServiceHandler(private val appContext: Context,
                 getDeviceId().combineWith(retrieveAppParams(tokenProvider.loginName ?: Constants.EMPTY_USER_ID))
                         .observeOn(AndroidSchedulers.mainThread())
                         .flatMap {
-                            if (it.second.forceUpdate ?: false) {
+                            if (it.second.hasUpdate && it.second.mandatory) {
                                 throw ForceUpdateException(it.second)
                             }
 
@@ -215,8 +215,8 @@ class SignalServiceHandler(private val appContext: Context,
         loginSubscription = subscription
     }
 
-    private fun retrieveAppParams(loginName: String): Observable<AppParams> {
-        return appComponent.appService.retrieveAppParams(loginName)
+    private fun retrieveAppParams(loginName: String): Observable<AppConfig> {
+        return appComponent.appService.retrieveAppConfig(loginName)
                 .subscribeOn(Schedulers.io())
                 .toObservable()
                 .doOnNext {
@@ -512,7 +512,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 }
 
-class ForceUpdateException(val appParams: AppParams) : RuntimeException()
+class ForceUpdateException(val appParams: AppConfig) : RuntimeException()
 
 private class TokenProviderImpl(val preference: Preference) : TokenProvider {
     override var authToken: UserToken?

@@ -30,7 +30,7 @@ class LoginFragment : BaseFragment()
     override fun onStart() {
         super.onStart()
 
-        callbacks<Callbacks>()?.setTitle(R.string.login.toFormattedString(context))
+        callbacks<Callbacks>()?.setTitle(R.string.login_app.toFormattedString(context))
 
         (context.applicationContext as AppComponent).signalHandler.loginState
                 .observeOnMainThread()

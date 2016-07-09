@@ -16,6 +16,9 @@ class AboutActivity : BaseToolbarActivity() {
 
         setContentView(R.layout.activity_about)
 
-        findView<TextView>(R.id.about_version).text = "${R.string.app_name.toFormattedString(this)} ${BuildConfig.VERSION_NAME} (Build ${BuildConfig.BUILD_NUMBER})"
+        findView<TextView>(R.id.about_version).text = R.string.publish_version_name.toFormattedString(this,
+                R.string.app_name.toFormattedString(this),
+                BuildConfig.VERSION_NAME,
+                BuildConfig.BUILD_NUMBER)
     }
 }

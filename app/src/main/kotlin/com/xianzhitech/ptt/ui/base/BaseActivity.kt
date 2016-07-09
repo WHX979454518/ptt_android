@@ -16,7 +16,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.service.AppParams
+import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.handler.ForceUpdateException
@@ -74,7 +74,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
 
-        appComponent.appService.retrieveAppParams(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
+        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
                 .toObservable()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
@@ -93,20 +93,20 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> joinRoomConfirmed(fragment.attachment as String)
-            TAG_UPDATE -> startDownload(fragment.attachmentAs<AppParams>().updateUrl!!)
+            TAG_UPDATE -> startDownload(fragment.attachmentAs<AppConfig>())
         }
     }
 
     override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
-            TAG_UPDATE -> appComponent.preference.lastIgnoredUpdateUrl = fragment.attachmentAs<AppParams>().updateUrl
+            TAG_UPDATE -> appComponent.preference.lastIgnoredUpdateUrl = fragment.attachmentAs<AppConfig>().downloadUrl
         }
     }
 
-    private fun startDownload(updateUrl: String) {
+    private fun startDownload(appConfig: AppConfig) {
         val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-        val downloadUri = Uri.parse(updateUrl)
+        val downloadUri = Uri.parse(appConfig.downloadUrl)
         val preference = (application as AppComponent).preference
         val lastUpdateDownloadId = preference.updateDownloadId
         if (lastUpdateDownloadId == null || lastUpdateDownloadId.first != downloadUri) {
@@ -114,12 +114,13 @@ abstract class BaseActivity : AppCompatActivity(),
                 downloadManager.remove(lastUpdateDownloadId.second)
             }
 
-            val downloadRequest = DownloadManager.Request(downloadUri).apply {
-                setMimeType("application/vnd.android.package-archive")
-                setNotificationVisibility(View.VISIBLE)
-                setVisibleInDownloadsUi(false)
-                setTitle(R.string.app_updating.toFormattedString(this@BaseActivity, R.string.app_name.toFormattedString(this@BaseActivity)))
-            }
+            val downloadRequest = DownloadManager.Request(downloadUri)
+            downloadRequest.setMimeType("application/vnd.android.package-archive")
+            downloadRequest.setNotificationVisibility(View.VISIBLE)
+            downloadRequest.setVisibleInDownloadsUi(true)
+            downloadRequest.setTitle(R.string.app_updating.toFormattedString(
+                    this, R.string.app_name.toFormattedString(this), appConfig.latestVersion))
+
             preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
         } else {
             installPackage(this, lastUpdateDownloadId.second)
@@ -187,15 +188,16 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    fun handleUpdate(appParams: AppParams) {
-        if (appParams.updateUrl.isNullOrEmpty().not() &&
-                (appParams.forceUpdate == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.updateUrl) &&
+    fun handleUpdate(appParams: AppConfig) {
+        if (appParams.hasUpdate &&
+                appParams.downloadUrl.isNullOrBlank().not() &&
+                (appParams.mandatory == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.downloadUrl) &&
                 appComponent.preference.updateDownloadId == null) {
             AlertDialogFragment.Builder().apply {
                 message = appParams.updateMessage
-                title = R.string.update_title.toFormattedString(this@BaseActivity)
+                title = R.string.update_title.toFormattedString(this@BaseActivity, appParams.latestVersion)
                 btnPositive = R.string.update.toFormattedString(this@BaseActivity)
-                btnNegative = if (appParams.forceUpdate == true) null else R.string.ignore.toFormattedString(this@BaseActivity)
+                btnNegative = if (appParams.mandatory) null else R.string.ignore.toFormattedString(this@BaseActivity)
                 cancellabe = false
                 attachment = appParams
             }.show(supportFragmentManager, TAG_UPDATE)

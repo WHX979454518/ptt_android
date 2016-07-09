@@ -2,7 +2,7 @@ package com.xianzhitech.ptt
 
 import android.net.Uri
 import com.google.gson.annotations.SerializedName
-import com.xianzhitech.ptt.service.AppParams
+import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
 
 /**
@@ -12,7 +12,7 @@ interface Preference {
     var updateDownloadId: Pair<Uri, Long>?
     var userSessionToken: UserToken?
     var lastLoginUserId: String?
-    var lastAppParams : AppParams?
+    var lastAppParams : AppConfig?
     var lastIgnoredUpdateUrl : String?
     var contactVersion : Long
     var deviceId : String?

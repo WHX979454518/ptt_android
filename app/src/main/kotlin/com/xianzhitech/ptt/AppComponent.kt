@@ -21,6 +21,7 @@ interface AppComponent {
     val httpClient: OkHttpClient
     val preference: Preference
 
+    val appServerEndpoint : String
     val appService: AppService
     val signalHandler: SignalServiceHandler
 

@@ -6,4 +6,6 @@
 
     <item name="modelItem_name" type="id" />
     <item name="modelItem_icon" type="id" />
+
+    <item name="logo" type="id" />
 </resources>
