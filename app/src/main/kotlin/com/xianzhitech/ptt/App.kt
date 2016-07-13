@@ -56,7 +56,9 @@ open class App : Application(), AppComponent {
     override fun onCreate() {
         super.onCreate()
 
-        Fabric.with(this, Crashlytics())
+        if (BuildConfig.DEBUG.not()) {
+            Fabric.with(this, Crashlytics())
+        }
 
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 

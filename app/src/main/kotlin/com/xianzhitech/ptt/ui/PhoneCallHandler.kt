@@ -9,14 +9,19 @@ import com.xianzhitech.ptt.service.RoomStatus
 import rx.Observable
 import java.lang.reflect.Method
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 处理电话和对讲交互的模块
  */
 class PhoneCallHandler private constructor(private val appContext: Context) {
     companion object {
+        private var registered = AtomicBoolean(false)
+
         fun register(context: Context) {
-            PhoneCallHandler(context.applicationContext)
+            if (registered.compareAndSet(false, true)) {
+                PhoneCallHandler(context.applicationContext)
+            }
         }
     }
 

@@ -1,10 +1,14 @@
 package com.xianzhitech.ptt.ui.base
 
+import android.Manifest
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
 import android.view.View
@@ -20,6 +24,7 @@ import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.handler.ForceUpdateException
+import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -28,6 +33,7 @@ import rx.Observable
 import rx.SingleSubscriber
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
+import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
@@ -35,6 +41,7 @@ abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnNegativeButtonClickListener {
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
+    private var pendingDeniedPermissions: List<String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +50,8 @@ abstract class BaseActivity : AppCompatActivity(),
 
         if (savedInstanceState == null) {
             handleIntent(intent)
+        } else {
+            pendingDeniedPermissions = savedInstanceState.getSerializable(STATE_PENDING_DENIED_PERMISSIONS) as? List<String>
         }
     }
 
@@ -73,15 +82,12 @@ abstract class BaseActivity : AppCompatActivity(),
         super.onStart()
 
         lifecycleEventSubject.onNext(ActivityEvent.START)
+    }
 
-        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
-                .toObservable()
-                .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribeSimple {
-                    handleUpdate(it)
-                }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
 
+        outState.putSerializable(STATE_PENDING_DENIED_PERMISSIONS, pendingDeniedPermissions as? Serializable)
     }
 
     override fun onStop() {
@@ -90,8 +96,17 @@ abstract class BaseActivity : AppCompatActivity(),
         super.onStop()
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        pendingDeniedPermissions = permissions.filterIndexed { i, permission -> grantResults[i] == PackageManager.PERMISSION_DENIED }
+
+        if (pendingDeniedPermissions!!.contains(Manifest.permission.READ_PHONE_STATE).not()) {
+            PhoneCallHandler.register(this)
+        }
+    }
+
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
+            TAG_PERMISSION_DIALOG -> ActivityCompat.requestPermissions(this, fragment.attachmentAs<List<String>>().toTypedArray(), 0)
             TAG_SWITCH_ROOM_CONFIRMATION -> joinRoomConfirmed(fragment.attachment as String)
             TAG_UPDATE -> startDownload(fragment.attachmentAs<AppConfig>())
         }
@@ -99,6 +114,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
+            TAG_PERMISSION_DIALOG -> finish()
             TAG_SWITCH_ROOM_CONFIRMATION -> fragment.dismissImmediately()
             TAG_UPDATE -> appComponent.preference.lastIgnoredUpdateUrl = fragment.attachmentAs<AppConfig>().downloadUrl
         }
@@ -114,11 +130,13 @@ abstract class BaseActivity : AppCompatActivity(),
                 downloadManager.remove(lastUpdateDownloadId.second)
             }
 
+            val fileName = "${appConfig.getAppFullName(this)}.apk"
             val downloadRequest = DownloadManager.Request(downloadUri)
             downloadRequest.setMimeType("application/vnd.android.package-archive")
+            downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
             downloadRequest.setNotificationVisibility(View.VISIBLE)
             downloadRequest.setVisibleInDownloadsUi(true)
-            downloadRequest.setTitle("${appConfig.getAppFullName(this)}.apk")
+            downloadRequest.setTitle(fileName)
 
             preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
         } else {
@@ -181,8 +199,7 @@ abstract class BaseActivity : AppCompatActivity(),
     fun onLoginError(error: Throwable) {
         if (error is ForceUpdateException) {
             handleUpdate(error.appParams)
-        }
-        else {
+        } else {
             Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
         }
     }
@@ -227,6 +244,35 @@ abstract class BaseActivity : AppCompatActivity(),
         super.onResume()
 
         lifecycleEventSubject.onNext(ActivityEvent.RESUME)
+
+
+        if (pendingDeniedPermissions?.isNotEmpty() ?: false) {
+            AlertDialogFragment.Builder().apply {
+                message = R.string.error_no_android_permissions.toFormattedString(this@BaseActivity)
+                btnPositive = R.string.dialog_confirm.toFormattedString(this@BaseActivity)
+                btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
+                attachment = pendingDeniedPermissions as Serializable
+            }.show(supportFragmentManager, TAG_PERMISSION_DIALOG)
+
+            pendingDeniedPermissions = null
+        } else {
+            val permissionsToRequest = ALL_PERMISSIONS.filter { ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+            if (permissionsToRequest.isNotEmpty()) {
+                ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 0)
+            }
+
+            if (permissionsToRequest.contains(Manifest.permission.READ_PHONE_STATE).not()) {
+                PhoneCallHandler.register(this)
+            }
+        }
+
+        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
+                .toObservable()
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                    handleUpdate(it)
+                }
     }
 
     override fun onPause() {
@@ -274,12 +320,22 @@ abstract class BaseActivity : AppCompatActivity(),
         const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
         const val TAG_UPDATE = "tag_update"
+        private const val TAG_PERMISSION_DIALOG = "tag_permission"
 
         const val EXTRA_FINISH_ENTER_ANIM = "extra_f_enter_ani"
         const val EXTRA_FINISH_EXIT_ANIM = "extra_f_exit_ani"
 
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
+
+        private const val STATE_PENDING_DENIED_PERMISSIONS = "state_pending_denied_permissions"
+
+        private val ALL_PERMISSIONS = arrayOf(
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.CALL_PHONE,
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
 
         fun startActivityJoiningRoom(context: Context, activity: Class<*>, roomId: String) {
             context.startActivity(Intent(context, activity)

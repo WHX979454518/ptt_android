@@ -72,6 +72,7 @@
     <string name="error_group_not_exists">该群组不存在</string>
     <string name="error_empty_content">请输入反馈的详细信息</string>
     <string name="error_delete_fail_in_room">无法删除正在对讲的房间, 请退出房间后再试</string>
+    <string name="error_no_android_permissions">对不起, 您必须同意请求的所有协议以便程序正常工作</string>
 
     <string name="room_loading">加载中...</string>
 
