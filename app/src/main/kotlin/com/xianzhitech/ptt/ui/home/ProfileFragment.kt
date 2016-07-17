@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
@@ -78,6 +79,9 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                             override fun onNext(t: User?) {
                                 iconView.setImageDrawable(t?.createDrawable(context))
                                 nameView.text = t?.name
+                                if (BuildConfig.DEBUG) {
+                                    nameView.text = "[${t?.id}]${t?.name}"
+                                }
                             }
                         })
             }

@@ -13,6 +13,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
@@ -190,16 +191,17 @@ class RoomListFragment : BaseFragment() {
                         val (roomName: RoomName?, lastActiveUser: User?) = it
                         val lastActiveTime = room.lastSpeakTime
                         val currentRoomId = appComponent.signalHandler.peekRoomState().currentRoomId
+                        val prefix = if (BuildConfig.DEBUG) "[${room.id}]" else ""
                         if (currentRoomId == room.id) {
                             val postfix = R.string.in_room_postfix.toFormattedString(itemView.context)
-                            val fullRoomName = roomName?.name + postfix
+                            val fullRoomName = prefix + roomName?.name + postfix
                             primaryView.text = SpannableStringBuilder(fullRoomName).apply {
                                 setSpan(ForegroundColorSpan(itemView.context.getColorCompat(R.color.red)),
                                         0, fullRoomName.length, SpannableStringBuilder.SPAN_INCLUSIVE_EXCLUSIVE)
                             }
 
                         } else {
-                            primaryView.text = roomName?.name
+                            primaryView.text = prefix + roomName?.name
                         }
 
                         secondaryView.setVisible(lastActiveUser != null && lastActiveTime != null)
