@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:fillViewport="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -27,7 +28,18 @@
             android:layout_gravity="center"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            tools:text="刘某人"
             android:id="@+id/profile_name"/>
+
+        <TextView
+            android:id="@+id/profile_number"
+            tools:text="500003"
+            style="@style/Text.Caption"
+            android:layout_marginTop="@dimen/unit_half"
+            android:layout_gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
 
         <TextView
             style="@style/Text.Caption"
