@@ -101,6 +101,10 @@ class IOSignalService(val endpoint: String,
                 }
     }
 
+    override fun retrieveRoomInfoUpdate(): Observable<Room> {
+        return socket.retrieveEvent<JSONObject>("s_member_update").map { RoomObject(it) }
+    }
+
     override fun retrieveUserKickedOutEvent(): Observable<UserKickedOutEvent> {
         return socket.retrieveEvent<Any?>("s_kick_out")
                 .map {
