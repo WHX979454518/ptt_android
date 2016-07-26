@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.model
 
+import java.util.*
+
 interface Model {
     val id: String
     val name: String
@@ -25,4 +27,5 @@ interface User : Model {
     val phoneNumber: String?
     val enterpriseId: String
     val enterpriseName: String
+    val enterpriseExpireDate : Date?
 }

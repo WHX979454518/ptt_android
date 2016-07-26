@@ -69,6 +69,7 @@ class IOSignalService(val endpoint: String,
                 loginResultRef.set(loginResultRef.get().copy(user = UserObject(it as JSONObject), status = LoginStatus.LOGGED_IN))
                 subscriber.onNext(loginResultRef.get())
             })
+            
 
             // Process headers
             socket.io().on(Manager.EVENT_TRANSPORT, {
@@ -444,9 +445,11 @@ private class UserObject(private val obj: JSONObject) : User {
     override val phoneNumber: String?
         get() = obj.nullOrString("phoneNumber")
     override val enterpriseId: String
-        get() = obj.getStringValue("enterpriseId", "") // TODO:
+        get() = obj.getStringValue("enterId", "")
     override val enterpriseName: String
-        get() = obj.getStringValue("enterpriseName", "") // TODO: 企业名称
+        get() = obj.getStringValue("enterName", "")
+    override val enterpriseExpireDate: Date?
+        get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
 
     override fun toString(): String {
         return obj.toString()

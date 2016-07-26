@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.lazySplit
+import com.xianzhitech.ptt.ext.logd
 import com.xianzhitech.ptt.ext.logtagd
 import com.xianzhitech.ptt.ext.toSqlSet
 import com.xianzhitech.ptt.model.*
@@ -241,7 +242,7 @@ open class BaseSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) {
 
 
 fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelper {
-    return object : SQLiteOpenHelper(context, dbName, null, 1) {
+    return object : SQLiteOpenHelper(context, dbName, null, 2) {
         override fun onCreate(db: SQLiteDatabase) {
             db.beginTransaction()
             try {
@@ -255,8 +256,20 @@ fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelpe
             }
         }
 
-        override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-            // Nothing to do now
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            for (v in oldVersion+1..newVersion) {
+                logd("Migrating database from v${v-1} to v$v")
+                if (v == 2) {
+                    db.beginTransaction()
+                    try {
+                        db.execSQL(Users.MIGRATE_SQL_V1_V2)
+                        db.setTransactionSuccessful()
+                    }
+                    finally {
+                        db.endTransaction()
+                    }
+                }
+            }
         }
     }
 }
@@ -269,7 +282,8 @@ private data class UserModel(override val id: String,
                              override val avatar: String?,
                              override val phoneNumber: String?,
                              override val enterpriseId: String,
-                             override val enterpriseName: String) : User
+                             override val enterpriseName: String,
+                             override val enterpriseExpireDate: Date?) : User
 
 private fun User.toContentValues(contentValues: ContentValues = ContentValues(8)): ContentValues {
     contentValues.put(Users.ID, id)
@@ -280,6 +294,7 @@ private fun User.toContentValues(contentValues: ContentValues = ContentValues(8)
     contentValues.put(Users.PHONE_NUMBER, phoneNumber)
     contentValues.put(Users.ENTERPRISE_ID, enterpriseId)
     contentValues.put(Users.ENTERPRISE_NAME, enterpriseName)
+    contentValues.put(Users.ENTERPRISE_EXP_DATE, enterpriseExpireDate?.time)
     return contentValues
 }
 
@@ -294,10 +309,13 @@ private object Users {
     const val PHONE_NUMBER = "person_phone_number"
     const val ENTERPRISE_ID = "person_enterprise_id"
     const val ENTERPRISE_NAME = "person_enterprise_name"
+    const val ENTERPRISE_EXP_DATE = "person_enterprise_exp_date"
 
-    const val ALL = "$ID,$NAME,$AVATAR,$PRIORITY,$PERMISSIONS,$PHONE_NUMBER,$ENTERPRISE_ID,$ENTERPRISE_NAME"
+    const val ALL = "$ID,$NAME,$AVATAR,$PRIORITY,$PERMISSIONS,$PHONE_NUMBER,$ENTERPRISE_ID,$ENTERPRISE_NAME,$ENTERPRISE_EXP_DATE"
 
-    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY NOT NULL, $NAME TEXT NOT NULL, $AVATAR TEXT, $PRIORITY INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, $PERMISSIONS TEXT NOT NULL, $PHONE_NUMBER TEXT, $ENTERPRISE_ID TEXT NOT NULL, $ENTERPRISE_NAME TEXT NOT NULL)"
+    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME ($ID TEXT PRIMARY KEY NOT NULL, $NAME TEXT NOT NULL, $AVATAR TEXT, $PRIORITY INTEGER NOT NULL DEFAULT ${Constants.DEFAULT_USER_PRIORITY}, $PERMISSIONS TEXT NOT NULL, $PHONE_NUMBER TEXT, $ENTERPRISE_ID TEXT NOT NULL, $ENTERPRISE_NAME TEXT NOT NULL, $ENTERPRISE_EXP_DATE INTEGER)"
+
+    const val MIGRATE_SQL_V1_V2 = "ALTER TABLE $TABLE_NAME ADD COLUMN $ENTERPRISE_EXP_DATE INTEGER"
 
     val MAPPER: (Cursor) -> User = { cursor ->
         UserModel(
@@ -308,7 +326,8 @@ private object Users {
                 permissions = cursor.getString(4).toPermissionSet(),
                 phoneNumber = cursor.getString(5),
                 enterpriseId = cursor.getString(6),
-                enterpriseName = cursor.getString(7)
+                enterpriseName = cursor.getString(7),
+                enterpriseExpireDate = cursor.getLong(8).let{ if (it <= 0) null else Date(it) }
         )
     }
 }
