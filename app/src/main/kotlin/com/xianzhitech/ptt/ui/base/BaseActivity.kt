@@ -37,6 +37,7 @@ import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
+        AlertDialogFragment.OnNeutralButtonClickListener,
         AlertDialogFragment.OnPositiveButtonClickListener,
         AlertDialogFragment.OnNegativeButtonClickListener {
 
@@ -101,6 +102,12 @@ abstract class BaseActivity : AppCompatActivity(),
 
         if (pendingDeniedPermissions!!.contains(Manifest.permission.READ_PHONE_STATE).not()) {
             PhoneCallHandler.register(this)
+        }
+    }
+
+    override fun onNeutralButtonClicked(fragment: AlertDialogFragment) {
+        when (fragment.tag) {
+            TAG_EXP_NOTIFICATION -> appComponent.preference.lastExpPromptTime = System.currentTimeMillis()
         }
     }
 
@@ -273,6 +280,26 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribeSimple {
                     handleUpdate(it)
                 }
+
+        appComponent.signalHandler.currentUserIdSubject
+            .switchMap { appComponent.userRepository.getUser(it).getAsync().toObservable() }
+            .observeOnMainThread()
+            .compose(bindToLifecycle())
+            .subscribeSimple {
+                val now = System.currentTimeMillis()
+                if (it != null && it.enterpriseExpireDate != null &&
+                        it.enterpriseExpireDate!!.time >= now &&
+                        it.enterpriseExpireDate!!.time - now < Constants.EXP_TIME_PROMPT_ADVANCE_MILLSECONDS &&
+                        (appComponent.preference.lastExpPromptTime == null || now - appComponent.preference.lastExpPromptTime!! >= Constants.PROMPT_EXP_TIME_INTERVAL_MILLSECONDS)) {
+                    AlertDialogFragment.Builder().apply {
+                        val expDays = Math.ceil((it.enterpriseExpireDate!!.time - now).toDouble() / TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)).toInt()
+                        message = R.string.trial_exp_in_days.toFormattedString(this@BaseActivity, expDays)
+                        btnNeutral = R.string.dialog_ok.toFormattedString(this@BaseActivity)
+                    }.show(supportFragmentManager, TAG_EXP_NOTIFICATION)
+
+                    supportFragmentManager.executePendingTransactions()
+                }
+            }
     }
 
     override fun onPause() {
@@ -319,6 +346,7 @@ abstract class BaseActivity : AppCompatActivity(),
     companion object {
         const val TAG_CREATE_ROOM_PROGRESS = "tag_create_room_progress"
         const val TAG_SWITCH_ROOM_CONFIRMATION = "tag_switch_room_confirmation"
+        const val TAG_EXP_NOTIFICATION = "tag_exp_notification"
         const val TAG_UPDATE = "tag_update"
         private const val TAG_PERMISSION_DIALOG = "tag_permission"
 

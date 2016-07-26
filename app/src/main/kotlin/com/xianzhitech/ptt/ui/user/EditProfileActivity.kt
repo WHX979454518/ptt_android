@@ -77,6 +77,8 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
         if (fragment.tag == TAG_ERROR_USER_NOT_LOGON) {
             fragment.dismissImmediately()
             finish()
+        } else {
+            super.onNeutralButtonClicked(fragment)
         }
     }
 

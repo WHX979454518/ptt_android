@@ -250,6 +250,7 @@ class SignalServiceHandler(private val appContext: Context,
                 tokenProvider.authToken = null
                 tokenProvider.loginName = null
                 tokenProvider.loginPassword = null
+                appComponent.preference.lastExpPromptTime = null
 
                 loginStateSubject += LoginState.EMPTY
             }
