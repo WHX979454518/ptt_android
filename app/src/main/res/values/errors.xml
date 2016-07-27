@@ -2,4 +2,5 @@
 <resources>
     <string name="error_room_not_exists">请求的房间不存在</string>
     <string name="error_invalid_password">用户名密码不匹配</string>
+    <string name="error_enterprise_exp">该用户已经过期</string>
 </resources>
