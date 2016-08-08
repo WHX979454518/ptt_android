@@ -3,8 +3,10 @@ package com.xianzhitech.ptt.service.handler
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.PowerManager
 import android.support.v4.app.NotificationCompat
+import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
@@ -12,6 +14,7 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -136,7 +139,7 @@ class Service : android.app.Service() {
         }
 
         builder.setSmallIcon(icon)
-        startForeground(R.id.notification_main, builder.build())
+        PushService.update(this, builder.build())
     }
 
     private data class State(val roomStatus: RoomStatus,
@@ -147,15 +150,18 @@ class Service : android.app.Service() {
                              val connectivity: Boolean)
 }
 
-class ServiceHandler(private val appContext: Context,
-                     private val signalService: SignalServiceHandler) {
+class ServiceHandler(appContext: Context,
+                     appPreference: Preference,
+                     signalService: SignalServiceHandler) {
     init {
         signalService.loginStatus
                 .subscribeSimple {
                     if (it != LoginStatus.IDLE) {
+                        appPreference.lastAppParams?.pushServerEndpoint?.let { server -> PushService.start(appContext, Uri.parse(server)) }
                         appContext.startService(Intent(appContext, Service::class.java))
                     } else {
                         appContext.stopService(Intent(appContext, Service::class.java))
+                        PushService.stop(appContext)
                     }
                 }
     }

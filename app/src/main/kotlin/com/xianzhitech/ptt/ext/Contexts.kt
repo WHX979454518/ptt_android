@@ -93,11 +93,17 @@ fun Context.getActiveNetwork(): Observable<NetworkInfoData?> {
             .startWith(connectivityManager.activeNetworkInfo?.let { NetworkInfoData(it) })
 }
 
-fun Context.getConnectivity(): Observable<Boolean> {
+fun Context.hasActiveConnection() : Boolean {
+    return (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).hasActiveConnection()
+}
+
+fun Context.getConnectivity(immediateResult : Boolean = true): Observable<Boolean> {
     val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     return Observable.create<Boolean> { subscriber ->
-        subscriber.onNext(connectivityManager.hasActiveConnection())
+        if (immediateResult) {
+            subscriber.onNext(connectivityManager.hasActiveConnection())
+        }
 
         if (!subscriber.isUnsubscribed) {
             subscriber.add(receiveBroadcasts(false, ConnectivityManager.CONNECTIVITY_ACTION)

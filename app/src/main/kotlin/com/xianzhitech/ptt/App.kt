@@ -1,8 +1,11 @@
 package com.xianzhitech.ptt
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Process
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import com.crashlytics.android.Crashlytics
@@ -60,40 +63,44 @@ open class App : Application(), AppComponent {
             Fabric.with(this, Crashlytics())
         }
 
-        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
+        val am = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+        val pid = Process.myPid()
+        val currentProcessName = am.runningAppProcesses.first { it.pid == pid }.processName
+        if (currentProcessName.contains("push").not()) {
+            preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
-        val helper = createSQLiteStorageHelper(this, "data")
-        val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
-        val groupStorage = GroupLRUCacheStorage(GroupSQLiteStorage(helper))
-        val userNotification = PublishSubject.create<Unit>()
-        val groupNotification = PublishSubject.create<Unit>()
-        val roomNotification = PublishSubject.create<Unit>()
+            val helper = createSQLiteStorageHelper(this, "data")
+            val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
+            val groupStorage = GroupLRUCacheStorage(GroupSQLiteStorage(helper))
+            val userNotification = PublishSubject.create<Unit>()
+            val groupNotification = PublishSubject.create<Unit>()
+            val roomNotification = PublishSubject.create<Unit>()
 
-        userRepository = UserRepository(userStorage, userNotification)
-        groupRepository = GroupRepository(groupStorage, groupNotification)
-        roomRepository = RoomRepository(RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage,
-                userStorage, roomNotification, userNotification, groupNotification)
-        contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
+            userRepository = UserRepository(userStorage, userNotification)
+            groupRepository = GroupRepository(groupStorage, groupNotification)
+            roomRepository = RoomRepository(RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage,
+                    userStorage, roomNotification, userNotification, groupNotification)
+            contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
-        signalHandler = SignalServiceHandler(this, this)
+            signalHandler = SignalServiceHandler(this, this)
 
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-            PhoneCallHandler.register(this)
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                PhoneCallHandler.register(this)
+            }
+
+            activityProvider = ActivityProviderImpl().apply {
+                registerActivityLifecycleCallbacks(this)
+            }
+
+            mediaButtonHandler = MediaButtonHandler(signalHandler)
+            AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
+            ServiceHandler(this, preference, signalHandler)
+            RoomStatusHandler(roomRepository, signalHandler)
+            RoomAutoQuitHandler(preference, activityProvider, signalHandler)
+            statisticCollector = StatisticCollector(signalHandler)
         }
-
-        activityProvider = ActivityProviderImpl().apply {
-            registerActivityLifecycleCallbacks(this)
-        }
-
-        RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
-        mediaButtonHandler = MediaButtonHandler(signalHandler)
-        AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
-        ServiceHandler(this, signalHandler)
-        RoomStatusHandler(roomRepository, signalHandler)
-        RoomAutoQuitHandler(preference, activityProvider, signalHandler)
-        statisticCollector = StatisticCollector(signalHandler)
     }
 
     open protected fun onBuildHttpClient(): OkHttpClient.Builder {

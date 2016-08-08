@@ -19,6 +19,7 @@ class AppConfig(@SerializedName("latest_version_code") val latestVersionCode: Lo
                 @SerializedName("update_message") val updateMessage: String?,
                 @SerializedName("mandatory") val mandatory : Boolean,
                 @SerializedName("signal_server_endpoint") val signalServerEndpoint: String,
+                @SerializedName("push_server_endpoint") val pushServerEndpoint : String,
                 @SerializedName("download_url") val downloadUrl : String?) : Serializable {
     val hasUpdate : Boolean
     get() {

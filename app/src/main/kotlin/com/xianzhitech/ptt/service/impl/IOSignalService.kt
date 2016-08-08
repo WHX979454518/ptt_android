@@ -404,7 +404,7 @@ private data class LoginResultObject(override val user: User? = null,
                                      override val token: UserToken? = null,
                                      override val status: LoginStatus = LoginStatus.IDLE) : LoginResult
 
-private class RoomInvitationObject(private @Transient val obj: JSONObject) : RoomInvitation, ExtraRoomInvitation {
+class RoomInvitationObject(private @Transient val obj: JSONObject) : RoomInvitation, ExtraRoomInvitation {
     @Transient override val room: Room = RoomObject(obj.getJSONObject("room"))
     override val roomId: String = room.id
     override val inviterId: String = obj.getString("inviterId")

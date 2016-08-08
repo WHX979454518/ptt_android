@@ -3,49 +3,47 @@ package com.xianzhitech.ptt.service.handler
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
-import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.repo.UserRepository
+import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomInvitation
-import com.xianzhitech.ptt.ui.ActivityProvider
+import com.xianzhitech.ptt.service.impl.RoomInvitationObject
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
-import rx.Observable
+import org.json.JSONObject
+import rx.Single
+import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
 
-class RoomInvitationHandler(private val appContext: Context,
-                            private val signalService: SignalServiceHandler,
-                            private val userRepository: UserRepository,
-                            private val roomRepository: RoomRepository,
-                            private val activityProvider: ActivityProvider) : BroadcastReceiver() {
-    init {
-        appContext.registerLocalBroadcastReceiver(this, IntentFilter(SignalServiceHandler.ACTION_ROOM_INVITATION))
-    }
+class RoomInvitationHandler() : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action == SignalServiceHandler.ACTION_ROOM_INVITATION) {
-            val invite: RoomInvitation = intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
-            Observable.combineLatest(
-                    userRepository.getUser(invite.inviterId).getAsync().toObservable(),
-                    roomRepository.getRoom(signalService.currentRoomId).getAsync().toObservable(),
-                    { user, room -> InviteInfo(invite, room, user) }
-            )
-                    .observeOnMainThread()
-                    .subscribeSimple { onReceive(it.invitation, it.currentRoom, it.inviter) }
+        val invite : RoomInvitation = when (intent?.action) {
+            SignalServiceHandler.ACTION_ROOM_INVITATION -> intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
+            PushService.ACTION_MESSAGE -> RoomInvitationObject(JSONObject(intent!!.getStringExtra(PushService.EXTRA_MSG)))
+            else -> return
         }
+
+        Single.zip(
+                context.appComponent.userRepository.getUser(invite.inviterId).getAsync(),
+                context.appComponent.roomRepository.getRoom(context.appComponent.signalHandler.currentRoomId).getAsync(),
+                { user, room -> InviteInfo(invite, room, user) })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeSimple { onReceive(context, it.invitation, it.currentRoom, it.inviter) }
     }
 
-    private fun onReceive(invitation: RoomInvitation, currentRoom: RoomModel?, inviter: User?) {
+    private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?, inviter: User?) {
         if (invitation.roomId == currentRoom?.id) {
             logd("Already in room ${invitation.roomId}. Skip inviting...")
             return
         }
 
-        val intent = Intent(appContext, RoomActivity::class.java)
+        val intent = Intent(context, RoomActivity::class.java)
 
         if (currentRoom == null ||
                 System.currentTimeMillis() - currentRoom.lastActiveTime.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
@@ -60,12 +58,12 @@ class RoomInvitationHandler(private val appContext: Context,
             intent.putExtra(RoomActivity.EXTRA_INVITATIONS, listOf(invitation) as Serializable)
         }
 
-        val startedActivity = activityProvider.currentStartedActivity
+        val startedActivity = context.appComponent.activityProvider.currentStartedActivity
 
         if (startedActivity != null) {
             startedActivity.startActivityWithAnimation(intent)
         } else {
-            appContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
         }
     }
 

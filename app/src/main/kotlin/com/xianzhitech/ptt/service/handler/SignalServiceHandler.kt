@@ -494,8 +494,7 @@ class SignalServiceHandler(private val appContext: Context,
     private fun onReceiveInvitation(invite: RoomInvitation) {
         appComponent.roomRepository.saveRooms(listOf((invite as ExtraRoomInvitation).room)).execAsync()
                 .subscribeSimple {
-                    appContext.sendLocalBroadcast(Intent(ACTION_ROOM_INVITATION)
-                            .putExtra(EXTRA_INVITATION, invite))
+                    appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(EXTRA_INVITATION, invite))
                 }
     }
 
@@ -512,7 +511,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     companion object {
-        const val ACTION_ROOM_INVITATION = "action_room_invitation"
+        const val ACTION_ROOM_INVITATION = "SignalService.Room"
 
         const val EXTRA_INVITATION = "extra_ri"
     }

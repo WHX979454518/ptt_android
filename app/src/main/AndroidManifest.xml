@@ -99,6 +99,8 @@
         <activity android:name=".ui.app.AboutActivity"
                   android:label="@string/about" />
 
+        <service android:name=".service.PushService" android:process=":push" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
@@ -108,6 +110,13 @@
         <receiver android:name=".media.MediaButtonReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".service.handler.RoomInvitationHandler" android:exported="false">
+            <intent-filter>
+                <action android:name="SignalService.Room" />
+                <action android:name="PushService.Message" />
             </intent-filter>
         </receiver>
 
