@@ -5,27 +5,26 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import com.xianzhitech.ptt.ext.getConnectivity
-import com.xianzhitech.ptt.ext.hasActiveConnection
-import com.xianzhitech.ptt.ext.logtagd
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody
+import com.xianzhitech.ptt.ext.*
+import okhttp3.*
 import okhttp3.ws.WebSocket
 import okhttp3.ws.WebSocketCall
 import okhttp3.ws.WebSocketListener
 import okio.Buffer
+import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import rx.functions.Func0
 import rx.functions.Func1
+import rx.lang.kotlin.add
+import rx.lang.kotlin.observable
 import rx.schedulers.Schedulers
-import rx.subscriptions.Subscriptions
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
+
+private val logger = LoggerFactory.getLogger("PushService")
 
 class PushService : Service() {
     companion object {
@@ -63,18 +62,19 @@ class PushService : Service() {
 
     private fun doConnect(uri : Uri) {
         if (uri == currUri) {
-            logtagd("PushService", "Uri hasn't changed. Skip new connection")
+            logger.i { "Uri hasn't changed. Skip new connection" }
             return
         }
 
         currUri = uri
-        messageSubscription = receiveWebSocketMessage(this,
+        messageSubscription = receivePushService(
                 OkHttpClient.Builder().readTimeout(0, TimeUnit.SECONDS).build(),
-                uri,
+                Func0 { Request.Builder().url(uri.toString()).build() },
+                null,
                 ReconnectPolicy(applicationContext))
             .observeOnMainThread()
             .subscribe {
-                logtagd("PushService", "Received message $it")
+                logger.i { "Received message $it" }
                 sendBroadcast(Intent(ACTION_MESSAGE).putExtra(EXTRA_MSG, it))
             }
     }
@@ -133,44 +133,43 @@ private class ReconnectPolicy(private val context: Context) : Func1<Throwable?, 
     }
 }
 
-private fun receiveWebSocketMessage(context: Context,
-                                    httpClient: OkHttpClient,
-                                    uri: Uri,
-                                    retryPolicy : Func1<Throwable?, Observable<*>>) : Observable<String> {
-    return Observable.create<String> { subscriber ->
-        subscriber.logtagd("PushService", "Connecting to $uri")
-        val client = WebSocketCall.create(httpClient, Request.Builder().url(uri.toString()).build())
+
+
+private fun receivePushService(httpClient: OkHttpClient,
+                               requestProvider : Func0<Request>,
+                               sendMessageProvider : Observable<String>? = null,
+                               retryPolicy : Func1<Throwable?, Observable<*>>) : Observable<String> {
+
+    return observable<String> { subscriber ->
+        val request = requestProvider.call()
+        val uri = request.url()
+        logger.i {"Connecting to $uri" }
+        val client = WebSocketCall.create(httpClient, request)
         client.enqueue(object : WebSocketListener {
-            override fun onOpen(webSocket: WebSocket?, response: Response?) {
-                logtagd("PushService", "Connected to $uri")
+            override fun onOpen(webSocket: WebSocket, response: Response?) {
+                logger.i {"Connected to $uri" }
+                if (sendMessageProvider != null && subscriber.isUnsubscribed.not()) {
+                    subscriber.add(sendMessageProvider.subscribe {  webSocket.sendMessage(RequestBody.create(WebSocket.TEXT, it))  })
+                }
             }
 
             override fun onPong(payload: Buffer?) { }
 
             override fun onClose(code: Int, reason: String?) {
-                logtagd("PushService", "Communication to $uri closed: code = $code, reason = $reason")
+                logger.i {"Communication to $uri closed: code = $code, reason = $reason" }
             }
 
             override fun onFailure(e: IOException?, response: Response?) {
-                logtagd("PushService", "Error when communicating with $uri: $e")
+                logger.i {"Error when communicating with $uri: $e" }
                 subscriber.onError(e)
             }
 
             override fun onMessage(message: ResponseBody) {
+                logger.d { "Received message ${message.string()}" }
                 subscriber.onNext(message.string())
             }
         })
 
-        subscriber.add(context.getConnectivity(false).subscribe {
-            if (it.not()) {
-                subscriber.onError(RuntimeException("No internet connection"))
-            }
-        })
-
-        subscriber.add(Subscriptions.create {
-            client.cancel()
-        })
-
-    }.subscribeOn(Schedulers.io())
-    .retryWhen { it.switchMap(retryPolicy) }
+        subscriber.add { client.cancel() }
+    }.subscribeOn(Schedulers.io()).retryWhen { it.switchMap(retryPolicy) }
 }

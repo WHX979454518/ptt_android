@@ -327,7 +327,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
         override fun onError(error: Throwable) {
-            globalHandleError(error, appContext)
+            defaultOnErrorAction.call(error)
 
             ((appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity)?.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
         }

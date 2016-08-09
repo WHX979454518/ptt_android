@@ -13,8 +13,12 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
+import org.slf4j.LoggerFactory
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
+
+
+private val logger = LoggerFactory.getLogger("PushToTalkButton")
 
 /**
 
@@ -75,7 +79,7 @@ class PushToTalkButton : ImageButton {
         if (isInEditMode.not()) {
             subscription = CompositeSubscription().apply {
                 if (vibrator != null) {
-                    this.add(signalService.roomState.distinctUntilChanged { it.status }
+                    this.add(signalService.roomState.distinctUntilChanged { it -> it.status }
                             .observeOnMainThread()
                             .subscribeSimple {
                                 if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.currentUserId) {
@@ -111,7 +115,7 @@ class PushToTalkButton : ImageButton {
         val roomState = signalService.peekRoomState()
         val loginState = signalService.peekLoginState()
         val roomStatus = roomState.status
-        logd("Paint ptt button roomStatus: $roomStatus")
+        logger.d { "Paint ptt button roomStatus: $roomStatus" }
 
         paint.color = when {
             roomStatus == RoomStatus.JOINED ||

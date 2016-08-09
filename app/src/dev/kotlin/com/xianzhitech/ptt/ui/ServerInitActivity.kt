@@ -13,13 +13,17 @@ import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getString
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.plusAssign
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import rx.Observable
+import rx.Subscriber
 import rx.schedulers.Schedulers
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -132,13 +136,14 @@ class ServerInitActivity : BaseToolbarActivity() {
                     String(os.toByteArray(), Charsets.UTF_8)
                 }
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<String>() {
+                .subscribe(object : Subscriber<String>() {
                     override fun onNext(t: String) {
                         adapter.add(t)
                     }
 
+                    override fun onError(e: Throwable?) { }
+
                     override fun onCompleted() {
-                        super.onCompleted()
                         button.isEnabled = true
                     }
                 })

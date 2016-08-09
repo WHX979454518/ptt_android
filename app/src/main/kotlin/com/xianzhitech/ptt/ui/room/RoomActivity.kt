@@ -167,7 +167,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         }
 
         override fun onError(e: Throwable) {
-            globalHandleError(e, appContext)
+            defaultOnErrorAction.call(e)
 
             val activity = appContext.appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {

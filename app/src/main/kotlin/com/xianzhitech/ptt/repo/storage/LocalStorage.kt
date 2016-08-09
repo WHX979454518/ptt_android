@@ -6,13 +6,16 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.ext.d
+import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.lazySplit
-import com.xianzhitech.ptt.ext.logd
-import com.xianzhitech.ptt.ext.logtagd
 import com.xianzhitech.ptt.ext.toSqlSet
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.RoomModel
+import org.slf4j.LoggerFactory
 import java.util.*
+
+private val logger = LoggerFactory.getLogger("LocalStorage")
 
 
 class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStorage {
@@ -234,7 +237,7 @@ open class BaseSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) {
                     } while (cursor.moveToNext())
                 }
 
-                logtagd("LocalStorage", "Query and map costs %dms: ${sql.substring(0, Math.min(sql.length, 200))}", System.currentTimeMillis() - startTime)
+                logger.d {"Query and map costs ${System.currentTimeMillis() - startTime}ms: ${sql.substring(0, Math.min(sql.length, 200))}" }
             }
         } ?: emptyList<T>()
     }
@@ -258,7 +261,7 @@ fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelpe
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             for (v in oldVersion+1..newVersion) {
-                logd("Migrating database from v${v-1} to v$v")
+                logger.i { "Migrating database from v${v-1} to v$v" }
                 if (v == 2) {
                     db.beginTransaction()
                     try {

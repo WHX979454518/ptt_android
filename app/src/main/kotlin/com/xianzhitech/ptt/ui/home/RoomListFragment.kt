@@ -179,11 +179,13 @@ class RoomListFragment : BaseFragment() {
             this.room = room
             this.subscription?.unsubscribe()
             val appComponent = itemView.context.applicationContext as AppComponent
-            this.subscription = appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe()
-                    .combineWith(appComponent.userRepository.getUser(room.lastSpeakMemberId).observe())
+            this.subscription = Observable.combineLatest(
+                    appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe(),
+                    appComponent.userRepository.getUser(room.lastSpeakMemberId).observe(),
+                    { first, second -> first to second })
                     .switchMap { result ->
                         (Observable.interval(0, 1, TimeUnit.MINUTES, AndroidSchedulers.mainThread()) as Observable<*>)
-                                .mergeWith(appComponent.signalHandler.roomState.distinctUntilChanged { it.currentRoomId } as Observable<out Nothing>)
+                                .mergeWith(appComponent.signalHandler.roomState.distinctUntilChanged { it -> it.currentRoomId } as Observable<out Nothing>)
                                 .map { result }
                     }
                     .observeOnMainThread()

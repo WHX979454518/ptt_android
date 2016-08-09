@@ -22,7 +22,7 @@ class StatisticCollector(private val signalService: SignalServiceHandler) {
         }
 
     init {
-        signalService.roomState.distinctUntilChanged { it.speakerId }
+        signalService.roomState.distinctUntilChanged { it -> it.speakerId }
                 .observeOnMainThread()
                 .subscribeSimple {
                     val currentSpeakerId = it.speakerId

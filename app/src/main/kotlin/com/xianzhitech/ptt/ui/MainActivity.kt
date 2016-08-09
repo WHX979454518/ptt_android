@@ -102,7 +102,7 @@ class MainActivity : BaseToolbarActivity(),
 
         val signalService = (application as AppComponent).signalHandler
 
-        signalService.loginState.distinctUntilChanged { it.status }
+        signalService.loginState.distinctUntilChanged { it -> it.status }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
@@ -113,7 +113,7 @@ class MainActivity : BaseToolbarActivity(),
                     }
                 }
 
-        signalService.loginState.distinctUntilChanged { it.currentUserID }
+        signalService.loginState.distinctUntilChanged { it -> it.currentUserID }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {

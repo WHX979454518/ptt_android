@@ -19,10 +19,16 @@ import com.xianzhitech.ptt.ui.widget.RecyclerAdapter
 import com.xianzhitech.ptt.ui.widget.SideNavigationView
 import com.xianzhitech.ptt.util.ModelComparator
 import com.xianzhitech.ptt.util.toPinyin
+import org.slf4j.LoggerFactory
+import rx.Observable
+import rx.Subscriber
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.BehaviorSubject
 import java.util.*
 import java.util.concurrent.TimeUnit
+
+
+private val logger = LoggerFactory.getLogger("ModelListFragment")
 
 abstract class ModelListFragment : BaseFragment() {
     private class Views(rootView: View,
@@ -84,7 +90,7 @@ abstract class ModelListFragment : BaseFragment() {
             }
 
             adapter.headerPositions.floorEntry(c.first().toLowerCase())?.let {
-                logtagd("ContactsFragment", "scroll to position ${it.value}")
+                logger.d { "scroll to position ${it.value}" }
                 (recyclerView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(it.value, 0)
             }
         }
@@ -93,9 +99,10 @@ abstract class ModelListFragment : BaseFragment() {
     override fun onStart() {
         super.onStart()
 
-        allModels
-                .map { it.sortedWith(ModelComparator) }
-                .combineWith(searchTermSubject.debounce(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).startWith(searchTermSubject.value).distinctUntilChanged())
+        Observable.combineLatest(
+                allModels.map { it.sortedWith(ModelComparator) },
+                searchTermSubject.debounce(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).startWith(searchTermSubject.value).distinctUntilChanged(),
+                { first, second -> first to second })
                 .map {
                     if (it.second.isNullOrBlank()) {
                         it.first
@@ -181,14 +188,15 @@ abstract class ModelListFragment : BaseFragment() {
                     resultList to headerPositions
                 }
                 .observeOnMainThread()
-                .subscribe(object : GlobalSubscriber<Pair<List<Model>, Map<Char, Int>>>() {
+                .subscribe(object : Subscriber<Pair<List<Model>, Map<Char, Int>>>() {
                     override fun onNext(t: Pair<List<Model>, Map<Char, Int>>) {
                         setData(t.first, t.second)
                         onDataLoadFinished()
                     }
 
+                    override fun onCompleted() { }
+
                     override fun onError(e: Throwable) {
-                        super.onError(e)
                         onDataLoadFinished()
                     }
                 })

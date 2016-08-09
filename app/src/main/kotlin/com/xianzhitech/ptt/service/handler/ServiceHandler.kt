@@ -18,9 +18,13 @@ import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
+
+
+private val logger = LoggerFactory.getLogger("Service")
 
 /**
  * 用于保证前台服务的Android Service
@@ -39,7 +43,7 @@ class Service : android.app.Service() {
 
         subscription.add(Observable.combineLatest(
                 signalService.roomStatus.doOnNext {
-                    logd("Room status changed to $it")
+                    logger.d { "Room status changed to $it" }
                 },
                 signalService.currentRoomIdSubject.switchMap { appComponent.roomRepository.getRoom(it).observe() },
                 signalService.currentRoomIdSubject.switchMap { appComponent.roomRepository.getRoomName(it, excludeUserIds = arrayOf(signalService.currentUserId)).observe() },
@@ -78,7 +82,7 @@ class Service : android.app.Service() {
     }
 
     private fun onStateChanged(state: State) {
-        logd("State changed to $state")
+        logger.d { "State changed to $state" }
         val builder = NotificationCompat.Builder(this)
         builder.setOngoing(true)
         builder.setAutoCancel(false)

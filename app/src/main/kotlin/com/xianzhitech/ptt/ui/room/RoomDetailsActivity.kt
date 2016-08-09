@@ -27,6 +27,7 @@ import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import rx.Completable
 import rx.Observable
+import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
@@ -85,11 +86,13 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         )
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<RoomData>(this) {
+                .subscribe(object : Subscriber<RoomData>() {
                     override fun onError(e: Throwable) {
-                        super.onError(e)
+                        defaultOnErrorAction.call(e)
                         finish()
                     }
+
+                    override fun onCompleted() { }
 
                     override fun onNext(t: RoomData) {
                         onRoomLoaded(t.room, t.name, t.members)
@@ -169,7 +172,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         }
 
         override fun onError(e: Throwable) {
-            globalHandleError(e, context)
+            defaultOnErrorAction.call(e)
         }
 
         override fun onCompleted() {

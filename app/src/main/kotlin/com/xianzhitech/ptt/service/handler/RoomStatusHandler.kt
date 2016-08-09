@@ -10,7 +10,7 @@ import java.util.*
 class RoomStatusHandler(private val roomRepository: RoomRepository,
                         private val signalService: SignalServiceHandler) {
     init {
-        signalService.roomState.distinctUntilChanged { it.speakerId }
+        signalService.roomState.distinctUntilChanged { it -> it.speakerId }
                 .filter { it.speakerId != null && it.currentRoomId != null }
                 .subscribeSimple {
                     roomRepository.updateLastRoomSpeaker(it.currentRoomId!!, Date(), it.speakerId!!).execAsync().subscribeSimple()

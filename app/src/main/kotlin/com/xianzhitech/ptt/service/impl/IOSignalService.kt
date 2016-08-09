@@ -17,6 +17,7 @@ import io.socket.engineio.client.Transport
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import org.slf4j.LoggerFactory
 import rx.Completable
 import rx.Observable
 import rx.Single
@@ -25,6 +26,8 @@ import rx.schedulers.Schedulers
 import rx.subscriptions.Subscriptions
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
+
+private val logger = LoggerFactory.getLogger("SignalService")
 
 
 class IOSignalService(val endpoint: String,
@@ -36,7 +39,7 @@ class IOSignalService(val endpoint: String,
 
     override fun login(tokenProvider: TokenProvider): Observable<LoginResult> {
         return Observable.create<LoginResult> { subscriber ->
-            logd("Logging using $tokenProvider")
+            logger.d { "Logging using $tokenProvider" }
 
             val loginResultRef = AtomicReference<LoginResultObject>(LoginResultObject(status = LoginStatus.LOGIN_IN_PROGRESS, token = tokenProvider.authToken, user = null))
 
@@ -59,7 +62,7 @@ class IOSignalService(val endpoint: String,
             })
 
             socket.on(Socket.EVENT_DISCONNECT, {
-                logd("Disconnected because of ${it?.joinToString(",")}")
+                logger.d { "Disconnected because of ${it?.joinToString(",")}" }
             })
 
 
@@ -82,7 +85,7 @@ class IOSignalService(val endpoint: String,
                             loginResultRef.set(loginResultRef.get().copy(token = savedToken))
                         }
 
-                        logd("Logging in as ${savedToken.userId}, type: $loginType")
+                        logger.d { "Logging in as ${savedToken.userId}, type: $loginType" }
 
                         val headers = it[0] as MutableMap<String, List<String>>
                         headers["Authorization"] = listOf("Basic ${(savedToken.userId + ':' + savedToken.password.toMD5() + loginType).toBase64()}");
@@ -137,12 +140,12 @@ class IOSignalService(val endpoint: String,
                     .url("$endpoint/api/contact/sync/$userId/$version")
                     .build()
 
-            logd("Sync contact old version = $version")
+            logger.d { "Sync contact old version = $version" }
 
             val result = okHttpClient.newCall(request).execute()
                 .use {
                     if (it.code() == 304) {
-                        logd("Contact not changed")
+                        logger.d { "Contact not changed" }
                         null
                     }
                     else if (it.code() == 200) {
@@ -153,7 +156,7 @@ class IOSignalService(val endpoint: String,
                     }
                 }
 
-            logd("Sync contact result version = ${result?.version}, groupSize = ${result?.groups?.size}, userSize = ${result?.users?.size}")
+            logger.d { "Sync contact result version = ${result?.version}, groupSize = ${result?.groups?.size}, userSize = ${result?.users?.size}" }
 
             result
         }.subscribeOn(Schedulers.io())
@@ -254,7 +257,7 @@ private fun JSONObject?.toError(): Throwable {
 private fun <T> Socket.retrieveEvent(eventName: String): Observable<T> {
     return Observable.create<T> { subscriber ->
         val listener: (Array<Any>) -> Unit = {
-            logtagd("IOSignalService", "Received $eventName with args ${it.joinToString(",")}")
+            logger.d { "Received $eventName with args ${it.joinToString(",")}" }
             subscriber.onNext(it.firstOrNull() as T?)
         }
 
@@ -266,7 +269,7 @@ private fun <T> Socket.retrieveEvent(eventName: String): Observable<T> {
 private fun Socket.onMainThread(eventName: String, callback: (Any?) -> Unit) {
     on(eventName, { args ->
         mainThread {
-            logtagd("IOSignalService", "Received $eventName with args ${args.joinToString(",")}")
+            logger.d { "Received $eventName with args ${args.joinToString(",")}" }
             callback(args.firstOrNull())
         }
     })
@@ -275,7 +278,7 @@ private fun Socket.onMainThread(eventName: String, callback: (Any?) -> Unit) {
 private fun <T> Socket.sendEventRaw(eventName: String, clazz: Class<T>?, args: Array<out Any?>): Single<T> {
     return Single.create { subscriber ->
         val ack = Ack {
-            logtagd("IOSignalService", "$eventName received ${it.joinToString(",")}")
+            logger.d { "$eventName received ${it.joinToString(",")}" }
 
             if (subscriber.isUnsubscribed) {
                 return@Ack
@@ -294,7 +297,7 @@ private fun <T> Socket.sendEventRaw(eventName: String, clazz: Class<T>?, args: A
             }
         }
 
-        logtagd("IOSignalService", "Sending $eventName(${args.joinToString(",")})")
+        logger.d { "Sending $eventName(${args.joinToString(",")})" }
         emit(eventName, args, ack)
     }
 }

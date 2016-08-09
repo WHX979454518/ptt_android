@@ -22,9 +22,15 @@ import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import okhttp3.OkHttpClient
+import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Single
+import rx.lang.kotlin.single
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.atomic.AtomicReference
+
+
+private val logger = LoggerFactory.getLogger("AudioHandler")
 
 class AudioHandler(private val appContext: Context,
                    private val signalService: SignalServiceHandler,
@@ -52,7 +58,7 @@ class AudioHandler(private val appContext: Context,
         if (audioManager.isBluetoothScoAvailableOffCall && bluetoothAdapter != null) {
             initializeBluetooth(bluetoothAdapter)
         } else {
-            logd("Bluetooth SCO not supported")
+            logger.w { "Bluetooth SCO not supported" }
         }
 
         // 在房间处于活动状态时, 请求系统的音频响应
@@ -106,8 +112,8 @@ class AudioHandler(private val appContext: Context,
 
         // 当进入房间时, 连接当前的蓝牙设备到SCO上, 退出时则关闭
         Observable.combineLatest(
-                signalService.roomStatus.distinctUntilChanged { it.inRoom },
-                signalService.loginState.distinctUntilChanged { it.currentUserID },
+                signalService.roomStatus.distinctUntilChanged { it -> it.inRoom },
+                signalService.loginState.distinctUntilChanged { it -> it.currentUserID },
                 audioManager.headsetSubject,
                 currentBluetoothDevice,
                 { status, loginState, headsetPluggedIn, device -> Triple(status, headsetPluggedIn, device) })
@@ -117,22 +123,22 @@ class AudioHandler(private val appContext: Context,
                     if (status.inRoom) {
                         if (device != null) {
                             audioManager.isSpeakerphoneOn = false
-                            logd("SPEAKER: Turning off to enable bluetooth")
+                            logger.d { "SPEAKER: Turning off to enable bluetooth" }
                             audioManager.mode = AudioManager.MODE_NORMAL
-                            logd("SCO: Turning on bluetooth sco")
+                            logger.d { "SCO: Turning on bluetooth sco" }
                             startSco()
                         } else {
                             stopSco()
-                            logd("SPEAKER: Turning to ${headsetPluggedIn.not()}")
+                            logger.d { "SPEAKER: Turning to ${headsetPluggedIn.not()}" }
                             audioManager.isSpeakerphoneOn = headsetPluggedIn.not()
                             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
                         }
                     } else {
-                        logd("SPEAKER: Turning to ${headsetPluggedIn.not()}")
+                        logger.d { "SPEAKER: Turning to ${headsetPluggedIn.not()}" }
                         audioManager.isSpeakerphoneOn = headsetPluggedIn.not()
 
                         if (signalService.currentUserId == null || device == null) {
-                            logd("SCO: Turning off bluetooth sco")
+                            logger.d { "SCO: Turning off bluetooth sco" }
                             stopSco()
                         }
                         audioManager.mode = AudioManager.MODE_NORMAL
@@ -142,7 +148,7 @@ class AudioHandler(private val appContext: Context,
 
         // 绑定talk engine震动和提示音
         signalService.roomState
-                .distinctUntilChanged { it.voiceServer }
+                .distinctUntilChanged( { it -> it.voiceServer })
                 .subscribeSimple {
                     if (it.voiceServer.isNotEmpty()) {
                         currentTalkEngine?.dispose()
@@ -176,7 +182,7 @@ class AudioHandler(private val appContext: Context,
         var lastRoomState = signalService.peekRoomState()
 
         signalService.roomState
-                .distinctUntilChanged { it.status }
+                .distinctUntilChanged { it -> it.status }
                 .subscribeSimple {
                     when (it.status) {
                         RoomStatus.ACTIVE -> onMicActivated(it.speakerId == signalService.currentUserId)
@@ -202,7 +208,7 @@ class AudioHandler(private val appContext: Context,
 
     private fun initializeBluetooth(bluetoothAdapter: BluetoothAdapter) {
         signalService.roomState
-                .distinctUntilChanged { it.status }
+                .distinctUntilChanged { it -> it.status }
                 .subscribeSimple {
                     if (it.status == RoomStatus.ACTIVE && signalService.peekLoginState().currentUserID == it.speakerId) {
                         audioManager.startBluetoothSco()
@@ -224,7 +230,7 @@ class AudioHandler(private val appContext: Context,
                 .subscribeSimple {
                     val connectedDevice = it.firstOrNull()
                     val oldDevice = currentBluetoothDevice.value
-                    logd("QUERY: Old device $oldDevice, newDevice $connectedDevice")
+                    logger.d { "QUERY: Old device $oldDevice, newDevice $connectedDevice" }
                     if (oldDevice?.address != connectedDevice?.address) {
                         if (oldDevice != null && connectedDevice == null) {
                             Toast.makeText(appContext, R.string.bluetooth_device_disconnected.toFormattedString(appContext), Toast.LENGTH_LONG).show()
@@ -232,7 +238,7 @@ class AudioHandler(private val appContext: Context,
                             Toast.makeText(appContext, R.string.bluetooth_device_connected.toFormattedString(appContext), Toast.LENGTH_LONG).show()
                         }
 
-                        logd("QUERY: Confirmed new connected device $connectedDevice")
+                        logger.d { "QUERY: Confirmed new connected device $connectedDevice" }
                         currentBluetoothDevice.onNext(connectedDevice)
                     }
                 }
@@ -275,7 +281,7 @@ class AudioHandler(private val appContext: Context,
      */
     private fun queryBluetoothDevice(btAdapter: BluetoothAdapter): Observable<Collection<BluetoothDevice>> {
         return getBluetoothProfileConnectedDevices(btAdapter, BluetoothProfile.HEADSET)
-                .switchMap { allConnectedDevices ->
+                .flatMapObservable { allConnectedDevices ->
                     appContext.receiveBroadcasts(false, BluetoothDevice.ACTION_ACL_CONNECTED)
                             .map {
                                 val connectedDevice = it.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
@@ -292,18 +298,18 @@ class AudioHandler(private val appContext: Context,
                             })
                             .startWith(allConnectedDevices.toList())
                 }
-                .doOnNext { logd("QUERY: Got connected bluetooth devices: ${it.joinToString(",", transform = { it.name })}") }
+                .doOnNext { logger.d { "QUERY: Got connected bluetooth devices: ${it.joinToString(",", transform = { it.name })}" } }
                 .map { it.filter { it.name.contains("PTT") } }
     }
 
-    private fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int): Observable<MutableSet<BluetoothDevice>> {
-        return Observable.create { subscriber ->
+    private fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int): Single<MutableSet<BluetoothDevice>> {
+        return single { subscriber ->
             btAdapter.getProfileProxy(appContext, object : BluetoothProfile.ServiceListener {
                 override fun onServiceDisconnected(profile: Int) {
                 }
 
                 override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
-                    subscriber.onSingleValue(proxy?.connectedDevices?.toMutableSet() ?: hashSetOf())
+                    subscriber.onSuccess(proxy?.connectedDevices?.toMutableSet() ?: hashSetOf())
                     btAdapter.closeProfileProxy(profile, proxy)
                 }
             }, profileRequested)

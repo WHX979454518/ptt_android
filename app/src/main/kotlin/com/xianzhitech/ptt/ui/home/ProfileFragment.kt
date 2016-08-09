@@ -12,7 +12,6 @@ import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
 import com.xianzhitech.ptt.ui.app.ShareActivity
@@ -74,13 +73,11 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                         .switchMap { appComponent.userRepository.getUser(it.currentUserID!!).observe() }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
                         .observeOnMainThread()
-                        .subscribe(object : GlobalSubscriber<User?>(context) {
-                            override fun onNext(t: User?) {
-                                iconView.setImageDrawable(t?.createDrawable(context))
-                                nameView.text = t?.name
-                                numberView.text = t?.id
-                            }
-                        })
+                        .subscribeSimple {
+                            iconView.setImageDrawable(it?.createDrawable(context))
+                            nameView.text = it?.name
+                            numberView.text = it?.id
+                        }
             }
         }
     }

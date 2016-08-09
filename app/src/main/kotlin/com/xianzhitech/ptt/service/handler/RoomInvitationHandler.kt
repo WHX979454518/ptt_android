@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.User
@@ -16,9 +16,12 @@ import com.xianzhitech.ptt.service.impl.RoomInvitationObject
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.json.JSONObject
+import org.slf4j.LoggerFactory
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
+
+private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
 class RoomInvitationHandler() : BroadcastReceiver() {
 
@@ -39,7 +42,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
 
     private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?, inviter: User?) {
         if (invitation.roomId == currentRoom?.id) {
-            logd("Already in room ${invitation.roomId}. Skip inviting...")
+            logger.i { "Already in room ${invitation.roomId}. Skip inviting..." }
             return
         }
 

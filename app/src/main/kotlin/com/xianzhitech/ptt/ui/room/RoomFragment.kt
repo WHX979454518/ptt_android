@@ -145,11 +145,11 @@ class RoomFragment : BaseFragment()
         super.onStart()
 
         val signalService = appComponent.signalHandler
-        val stateByRoomId = signalService.roomState.distinctUntilChanged { it.currentRoomId }
+        val stateByRoomId = signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
 
         Observable.combineLatest(
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.currentUserId)).observe() },
-                signalService.roomState.distinctUntilChanged { it.onlineMemberIds }.map { it.onlineMemberIds },
+                signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.map { it.onlineMemberIds },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoomMembers(it.currentRoomId, maxMemberCount = Int.MAX_VALUE).observe() },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },
                 { roomName, onlineMemberIds, roomMembers, room -> RoomInfo(roomName, room, roomMembers, onlineMemberIds) }
@@ -166,9 +166,10 @@ class RoomFragment : BaseFragment()
                     }
                 }
 
-        signalService.roomState.distinctUntilChanged { it.onlineMemberIds }
-                .switchMap { appComponent.userRepository.getUsers(it.onlineMemberIds).observe() }
-                .combineWith(stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() })
+        Observable.combineLatest(
+                signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.switchMap { appComponent.userRepository.getUsers(it.onlineMemberIds).observe() },
+                stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },
+                { first, second -> first to second })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
@@ -179,7 +180,7 @@ class RoomFragment : BaseFragment()
                     }
                 }
 
-        signalService.roomState.distinctUntilChanged { it.speakerId }
+        signalService.roomState.distinctUntilChanged { it -> it.speakerId }
                 .switchMap { appComponent.userRepository.getUser(it.speakerId).observe() }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())

@@ -17,6 +17,7 @@ import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
+import rx.Subscriber
 
 class GroupDetailsActivity : BaseToolbarActivity() {
 
@@ -62,12 +63,13 @@ class GroupDetailsActivity : BaseToolbarActivity() {
                 }
                 .observeOnMainThread()
                 .bindToLifecycle()
-                .subscribe(object : GlobalSubscriber<Pair<Group, List<User>>>(this) {
+                .subscribe(object : Subscriber<Pair<Group, List<User>>>() {
                     override fun onError(e: Throwable) {
-                        super.onError(e)
-
+                        defaultOnErrorAction.call(e)
                         finish()
                     }
+
+                    override fun onCompleted() { }
 
                     override fun onNext(t: Pair<Group, List<User>>) {
                         onGroupLoaded(t.first, t.second)
