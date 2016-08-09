@@ -103,6 +103,17 @@ class AppPreference(appContext : Context,
             pref.edit().putBoolean(keepSessionKey, value).apply()
         }
 
+    override var lastExpPromptTime: Long?
+        get() = pref.getLong(KEY_LAST_EXP_PROMPT_TIME, 0).let { if (it > 0) it else null }
+        set(value) {
+            if (value != null) {
+                pref.edit().putLong(KEY_LAST_EXP_PROMPT_TIME, value).apply()
+            }
+            else {
+                pref.edit().remove(KEY_LAST_EXP_PROMPT_TIME).apply()
+            }
+        }
+
     companion object {
         const val KEY_USER_TOKEN = "current_user_token"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
@@ -113,5 +124,6 @@ class AppPreference(appContext : Context,
         const val KEY_IGNORED_UPDATE_URL = "key_ignored_update_url"
         const val KEY_DEVICE_ID = "key_device_id"
         const val KEY_SHORTCUT = "key_shortcut"
+        const val KEY_LAST_EXP_PROMPT_TIME = "key_last_exp_prompt_time"
     }
 }

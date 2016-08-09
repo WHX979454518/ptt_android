@@ -66,19 +66,26 @@ class IOSignalService(val endpoint: String,
             // Set up server events
             socket.onMainThread("s_login_failed", { subscriber.onError((it as? JSONObject).toError()) })
             socket.onMainThread("s_logon", {
-                loginResultRef.set(loginResultRef.get().copy(user = UserObject(it as JSONObject), status = LoginStatus.LOGGED_IN))
+                val userObject = UserObject(it as JSONObject)
+                val oldResult = loginResultRef.get()
+                loginResultRef.set(oldResult.copy(user = userObject, status = LoginStatus.LOGGED_IN, token = oldResult.token ?: UserToken(userObject.id, tokenProvider.loginPassword!!)))
                 subscriber.onNext(loginResultRef.get())
             })
+            
 
             // Process headers
             socket.io().on(Manager.EVENT_TRANSPORT, {
                 (it[0] as Transport).on(Transport.EVENT_REQUEST_HEADERS, {
                     try {
-                        val savedToken = tokenProvider.authToken ?: UserToken(tokenProvider.loginName!!, tokenProvider.loginPassword!!)
-                        loginResultRef.set(loginResultRef.get().copy(token = savedToken))
+                        val (savedToken, loginType) = tokenProvider.authToken?.to("") ?: UserToken(tokenProvider.loginName!!, tokenProvider.loginPassword!!).to(tokenProvider.loginName!!.guessLoginType())
+                        if (loginType.isNullOrBlank()) {
+                            loginResultRef.set(loginResultRef.get().copy(token = savedToken))
+                        }
+
+                        logd("Logging in as ${savedToken.userId}, type: $loginType")
 
                         val headers = it[0] as MutableMap<String, List<String>>
-                        headers["Authorization"] = listOf("Basic ${(savedToken.userId + ':' + savedToken.password.toMD5()).toBase64()}");
+                        headers["Authorization"] = listOf("Basic ${(savedToken.userId + ':' + savedToken.password.toMD5() + loginType).toBase64()}");
                         headers["X-Device-Id"] = listOf(deviceId)
                     } catch(e: Exception) {
                         subscriber.onError(e)
@@ -99,6 +106,10 @@ class IOSignalService(val endpoint: String,
                 .map {
                     RoomInvitationObject(it!!)
                 }
+    }
+
+    override fun retrieveRoomInfoUpdate(): Observable<Room> {
+        return socket.retrieveEvent<JSONObject>("s_member_update").map { RoomObject(it) }
     }
 
     override fun retrieveUserKickedOutEvent(): Observable<UserKickedOutEvent> {
@@ -204,6 +215,16 @@ private fun isMainThread(): Boolean {
     return Looper.getMainLooper() == Looper.myLooper()
 }
 
+
+private val phoneMatcher = Regex("^1\\d{10}$")
+
+private fun String.guessLoginType() : String {
+    return when {
+        contains('@')-> ":MAIL"
+        matches(phoneMatcher) -> ":PHONE"
+        else -> ""
+    }
+}
 
 private fun deferComplete(func: () -> Unit): Completable {
     val ret = Completable.defer {
@@ -440,9 +461,11 @@ private class UserObject(private val obj: JSONObject) : User {
     override val phoneNumber: String?
         get() = obj.nullOrString("phoneNumber")
     override val enterpriseId: String
-        get() = obj.getStringValue("enterpriseId", "") // TODO:
+        get() = obj.getStringValue("enterId", "")
     override val enterpriseName: String
-        get() = obj.getStringValue("enterpriseName", "") // TODO: 企业名称
+        get() = obj.getStringValue("enterName", "")
+    override val enterpriseExpireDate: Date?
+        get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
 
     override fun toString(): String {
         return obj.toString()

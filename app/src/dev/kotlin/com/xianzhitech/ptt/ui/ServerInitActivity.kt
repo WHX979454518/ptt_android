@@ -71,11 +71,9 @@ class ServerInitActivity : BaseToolbarActivity() {
                 service.login(LoginRequest("0", "000000")).execute()
 
                 subscriber += "Creating enterprise..."
-                val enterpriseNumber = service.createEnterpriseNumber().execute().body().number
-                subscriber += "Created enterprise number $enterpriseNumber"
 
-                val request = EnterpriseCreateRequest("测试企业", enterpriseNumber, "000000", EnterpriseQuota(10000, 10000))
-                service.createEnterprise(request).execute()
+                val request = EnterpriseCreateRequest("测试企业", "000000", EnterpriseQuota(10000, 10000))
+                val enterpriseNumber = service.createEnterprise(request).execute().body().idNumber
                 subscriber += "Created enterprise $request"
 
                 cookieJar.clear()

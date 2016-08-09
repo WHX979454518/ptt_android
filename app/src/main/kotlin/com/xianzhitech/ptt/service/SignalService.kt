@@ -60,6 +60,7 @@ interface SignalService {
     fun retrieveUserKickedOutEvent(): Observable<UserKickedOutEvent>
     fun retrieveRoomOnlineMemberUpdate(): Observable<RoomOnlineMemberUpdate>
     fun retrieveRoomSpeakerUpdate(): Observable<RoomSpeakerUpdate>
+    fun retrieveRoomInfoUpdate() : Observable<Room>
     fun retrieveRoomInfo(roomId: String): Single<Room>
     fun retrieveUserInfo(userId: String): Single<User>
     fun retrieveInvitation(): Observable<RoomInvitation>

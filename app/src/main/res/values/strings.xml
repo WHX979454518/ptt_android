@@ -10,8 +10,8 @@
     <string name="room_title">%1$s (%2$d/%3$d)</string>
     <string name="user_logon">用户已登录</string>
     <string name="login_title">用户登录</string>
-    <string name="user_name_hint">输入用户名</string>
-    <string name="user_password_hint">输入密码</string>
+    <string name="user_name_hint">用户号码/手机号码/邮箱地址</string>
+    <string name="user_password_hint">密码</string>
     <string name="login">登录</string>
     <string name="login_app">登录贤智通</string>
     <string name="login_failed">登录失败</string>
@@ -177,6 +177,7 @@
     <string name="feedback_complete">反馈提交成功</string>
     <string name="give_up_and_exit">放弃并退出</string>
     <string name="level">等级</string>
+    <string name="trial_exp_in_days">您的试用将在%1$d天内结束</string>
     <plurals name="days_ago">
         <item quantity="other">%1$s天以前</item>
     </plurals>

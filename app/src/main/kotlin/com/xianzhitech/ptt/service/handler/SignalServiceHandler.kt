@@ -119,6 +119,7 @@ class SignalServiceHandler(private val appContext: Context,
                             val newSignalService = IOSignalService(it.second.signalServerEndpoint, it.first, appComponent.httpClient)
                             subscription.add(newSignalService.retrieveInvitation().subscribeSimple { onReceiveInvitation(it) })
                             subscription.add(newSignalService.retrieveRoomOnlineMemberUpdate().subscribeSimple { onRoomOnlineMemberUpdate(it) })
+                            subscription.add(newSignalService.retrieveRoomInfoUpdate().subscribeSimple { onRoomUpdate(it) })
                             subscription.add(newSignalService.retrieveRoomSpeakerUpdate().subscribeSimple { onRoomSpeakerUpdate(it) })
                             subscription.add(newSignalService.retrieveUserKickedOutEvent().subscribeSimple { onUserKickedOut() })
                             subscription.add(newSignalService.retrieveRoomKickedOutEvent().subscribeSimple { onRoomKickedOut(it) })
@@ -215,6 +216,10 @@ class SignalServiceHandler(private val appContext: Context,
         loginSubscription = subscription
     }
 
+    private fun onRoomUpdate(newRoom: Room) {
+        appComponent.roomRepository.saveRooms(listOf(newRoom)).execAsync().subscribeSimple()
+    }
+
     private fun retrieveAppParams(loginName: String): Observable<AppConfig> {
         return appComponent.appService.retrieveAppConfig(loginName)
                 .subscribeOn(Schedulers.io())
@@ -245,6 +250,7 @@ class SignalServiceHandler(private val appContext: Context,
                 tokenProvider.authToken = null
                 tokenProvider.loginName = null
                 tokenProvider.loginPassword = null
+                appComponent.preference.lastExpPromptTime = null
 
                 loginStateSubject += LoginState.EMPTY
             }

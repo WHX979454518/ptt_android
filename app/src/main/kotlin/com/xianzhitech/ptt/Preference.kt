@@ -14,6 +14,7 @@ interface Preference {
     var lastLoginUserId: String?
     var lastAppParams : AppConfig?
     var lastIgnoredUpdateUrl : String?
+    var lastExpPromptTime : Long?
     var contactVersion : Long
     var deviceId : String?
     var autoExit: Boolean
