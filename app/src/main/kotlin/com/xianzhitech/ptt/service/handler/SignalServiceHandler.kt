@@ -303,7 +303,8 @@ class SignalServiceHandler(private val appContext: Context,
             logger.d { "Requesting mic... $roomState" }
 
             roomStateSubject += roomState.copy(status = RoomStatus.REQUESTING_MIC)
-            RequestMicCommand(roomState.currentRoomId!!).send()
+            RequestMicCommand(roomState.currentRoomId!!)
+                    .send()
                     .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnSuccess {
@@ -483,7 +484,7 @@ private class AuthTokenFactoryImpl() : AuthTokenFactory {
     override val authToken: String
         get() {
             val (name, pass) = auth.get() ?: throw NullPointerException()
-            val token = "$name:$pass"
+            val token = "$name:$pass${name.guessLoginPostfix()}"
             return "Basic ${token.toBase64()}"
         }
 
@@ -500,5 +501,18 @@ private class AuthTokenFactoryImpl() : AuthTokenFactory {
 
     fun clear() {
         auth.set(null)
+    }
+
+    private fun String.guessLoginPostfix() : String {
+        return when {
+            matches(PHONE_MATCHER) -> ":PHONE"
+            matches(EMAIL_MATCHER) -> ":MAIL"
+            else -> ""
+        }
+    }
+
+    companion object {
+        private val PHONE_MATCHER = Regex("^1[2-9]\\d{9}$")
+        private val EMAIL_MATCHER = Regex(".+@.+\\..+$")
     }
 }

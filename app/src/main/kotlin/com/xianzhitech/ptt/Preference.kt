@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.gson.annotations.SerializedName
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
+import rx.Observable
 
 /**
  * 提供程序选项数据的永久存储
@@ -22,6 +23,8 @@ interface Preference {
     var playIndicatorSound : Boolean
     var shortcut : Shortcut
     var keepSession : Boolean
+
+    val userSessionTokenSubject : Observable<UserToken>
 }
 
 

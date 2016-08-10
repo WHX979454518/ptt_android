@@ -7,6 +7,9 @@ import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
+import rx.Observable
+import rx.lang.kotlin.add
+import rx.lang.kotlin.observable
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
@@ -32,6 +35,25 @@ class AppPreference(appContext : Context,
                 pref.edit().putString(KEY_USER_TOKEN, gson.toJson(value)).apply()
             }
         }
+
+    override val userSessionTokenSubject: Observable<UserToken>
+        get() {
+            return observable { subscriber ->
+                subscriber.onNext(userSessionToken)
+
+                if (subscriber.isUnsubscribed.not()) {
+                    val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+                        if (key == KEY_USER_TOKEN) {
+                            subscriber.onNext(userSessionToken)
+                        }
+                    }
+
+                    pref.registerOnSharedPreferenceChangeListener(listener)
+                    subscriber.add { pref.unregisterOnSharedPreferenceChangeListener(listener) }
+                }
+            }
+        }
+
 
     override var blockCalls: Boolean
         get() = pref.getBoolean(blockCallsKey, false)

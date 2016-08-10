@@ -48,7 +48,7 @@ class Service : android.app.Service() {
                 signalService.currentRoomIdSubject.switchMap { appComponent.roomRepository.getRoom(it).observe() },
                 signalService.currentRoomIdSubject.switchMap { appComponent.roomRepository.getRoomName(it, excludeUserIds = arrayOf(signalService.currentUserId)).observe() },
                 signalService.loginStatus,
-                signalService.currentUserIdSubject.switchMap { appComponent.userRepository.getUser(it).observe() },
+                appComponent.preference.userSessionTokenSubject.switchMap { appComponent.userRepository.getUser(it?.userId).observe() },
                 getConnectivity(),
                 { roomStatus, currRoom, roomName, loginStatus, currUser, connectivity -> State(roomStatus, currRoom, roomName, loginStatus, currUser, connectivity) })
                 .subscribeSimple { onStateChanged(it) }
