@@ -35,3 +35,7 @@ fun <T> Observable<T>.s(onNext: Action1<T>, onError : Action1<Throwable> = defau
 infix operator fun <T> Observer<T>.plusAssign(obj: T) {
     onNext(obj)
 }
+
+fun <T> Single<T>.toCompletable() : Completable {
+    return Completable.fromSingle(this)
+}

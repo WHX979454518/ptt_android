@@ -34,7 +34,8 @@ fun receiveSignal(uri: Uri,
                   signalFactory: SignalFactory,
                   retryPolicy : Func1<Throwable?, Observable<*>>,
                   loginStateNotification : (state : LoginState) -> Unit,
-                  commandEmitter: Observable<Command<*, *>>,
+                  connectivityProvider : ConnectivityProvider,
+                  commandEmitter: Observable<Command<*, in Any>>,
                   deviceIdProvider : DeviceIdFactory,
                   authTokenFactory: AuthTokenFactory) : Observable<Signal> {
     val userCache = AtomicReference<User>(null)
@@ -97,11 +98,16 @@ fun receiveSignal(uri: Uri,
             subscriber.add(commandEmitter.subscribe { cmd ->
                 logger.d { "Sending command $cmd" }
                 s.emit(cmd.cmd, *cmd.args, Ack {
-                    logger.d { "Received $cmd result: ${it.print()}" }
+                    logger.d { "Received ${cmd.javaClass.simpleName} result: ${it.print()}" }
                     try {
                         val resultObj = it.first() as JSONObject
                         if (resultObj.optBoolean("success", false)) {
-                            cmd.resultSubject.onNext(resultObj.get("data") as Nothing)
+                            if (resultObj.has("data")) {
+                                cmd.resultSubject.onNext(resultObj.get("data"))
+                            }
+                            else {
+                                cmd.resultSubject.onNext(Unit)
+                            }
                         } else {
                             cmd.resultSubject.onError(resultObj.getJSONObject("error").toError())
                         }
@@ -122,6 +128,15 @@ fun receiveSignal(uri: Uri,
                     }
                 })
             }
+
+            subscriber.add(connectivityProvider.connected.subscribe {
+                if (it.not()) {
+                    if (userCache.get() != null) {
+                        loginStateNotification(LoginState(LoginStatus.OFFLINE, userCache.get()))
+                    }
+                    subscriber.onError(RuntimeException("No internet"))
+                }
+            })
         })
 
         subscriber.add {
@@ -140,6 +155,10 @@ interface DeviceIdFactory {
 
 interface AuthTokenFactory {
     val authToken : String
+}
+
+interface ConnectivityProvider {
+    val connected : Observable<Boolean>
 }
 
 interface Signal
@@ -184,14 +203,10 @@ class DefaultSignalFactory : SignalFactory {
 
 open class Command<R, V>(val cmd : String,
                          vararg val args: Any?)  {
-    val resultSubject : BehaviorSubject<V> by lazy { BehaviorSubject.create<V>() }
-
-    fun get() : R {
-        return convert(resultSubject.toBlocking().first())
-    }
+    val resultSubject : BehaviorSubject<V> = BehaviorSubject.create()
 
     fun getAsync() : Single<R> {
-        return resultSubject.toSingle().map { convert(it) }
+        return resultSubject.map { convert(it) }.first().toSingle()
     }
 
     open fun convert(value : V) : R {
@@ -253,7 +268,7 @@ class AddRoomMembersCommand(roomId: String, userIds : Iterable<String>) : Comman
     }
 }
 
-class ChangePasswordCommand(userId : String, oldPassword : String, newPassword : String) : Command<Unit, Any?>("c_change_pwd", oldPassword.toMD5(), newPassword.toMD5()) {
+class ChangePasswordCommand(userId : String, oldPassword : String, newPassword : String) : Command<Unit, Any?>("c_change_pwd", oldPassword, newPassword) {
     override fun convert(value: Any?) = Unit
 }
 

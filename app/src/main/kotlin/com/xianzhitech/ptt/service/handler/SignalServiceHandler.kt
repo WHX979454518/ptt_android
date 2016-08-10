@@ -116,14 +116,19 @@ class SignalServiceHandler(private val appContext: Context,
                             loginStateNotification = {
                                 if (it.status == LoginStatus.LOGGED_IN) {
                                     appComponent.preference.userSessionToken = UserToken(it.currentUserID!!, authTokenFactory.password)
+                                    appComponent.userRepository.saveUsers(listOf(it.currentUser!!)).execAsync().subscribeSimple()
                                 }
 
                                 loginStateSubject.onNext(it)
                             },
-                            commandEmitter = sendCommandSubject,
+                            commandEmitter = sendCommandSubject as Observable<Command<*, in Any>>,
                             deviceIdProvider = object : DeviceIdFactory {
                                 override val deviceId: String
                                     get() = deviceId
+                            },
+                            connectivityProvider = object : ConnectivityProvider {
+                                override val connected: Observable<Boolean>
+                                    get() = appContext.getConnectivity(true)
                             },
                             authTokenFactory = authTokenFactory)
                 }
@@ -354,9 +359,10 @@ class SignalServiceHandler(private val appContext: Context,
         return Completable.defer {
             ensureLoggedIn()
 
-            Completable.fromSingle(AddRoomMembersCommand(roomId, roomMemberIds).send()
-                    .doOnSuccess { appComponent.roomRepository.saveRooms(listOf(it)).execAsync().subscribeSimple() }
-            )
+            AddRoomMembersCommand(roomId, roomMemberIds)
+                    .send()
+                    .flatMap { appComponent.roomRepository.saveRooms(listOf(it)).execAsync().toSingleDefault(it) }
+                    .toCompletable()
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
@@ -364,14 +370,19 @@ class SignalServiceHandler(private val appContext: Context,
         return Completable.defer {
             ensureLoggedIn()
             val currUserId = peekLoginState().currentUserID!!
-            Completable.fromSingle(ChangePasswordCommand(currUserId, oldPassword, newPassword).send()
-                    .observeOn(AndroidSchedulers.mainThread())
+            val oldPassword = oldPassword.toMD5()
+            val newPassword = newPassword.toMD5()
+            ChangePasswordCommand(currUserId, oldPassword, newPassword)
+                    .send()
                     .doOnSuccess {
-                        if (peekLoginState().currentUserID == currUserId) {
-                            authTokenFactory.setPassword(newPassword)
-                            appComponent.preference.userSessionToken = UserToken(currUserId, newPassword)
+                        mainThread {
+                            if (peekLoginState().currentUserID == currUserId) {
+                                authTokenFactory.setPassword(newPassword)
+                                appComponent.preference.userSessionToken = UserToken(currUserId, newPassword)
+                            }
                         }
-                    })
+                    }
+                    .toCompletable()
         }
     }
 
@@ -467,7 +478,7 @@ class ForceUpdateException(val appParams: AppConfig) : RuntimeException()
 private class AuthTokenFactoryImpl() : AuthTokenFactory {
     private val auth = AtomicReference<Pair<String, String>>()
     val password : String
-    get() = auth.get().second
+        get() = auth.get().second
 
     override val authToken: String
         get() {
