@@ -197,7 +197,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
         showProgressDialog(R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
 
-        signalService.createRoom(createRoomRequest)
+        signalService.createRoom(createRoomRequest.groupIds, createRoomRequest.extraMemberIds)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(CreateRoomSubscriber(applicationContext))

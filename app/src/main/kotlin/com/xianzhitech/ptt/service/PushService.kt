@@ -71,7 +71,7 @@ class PushService : Service() {
                 OkHttpClient.Builder().readTimeout(0, TimeUnit.SECONDS).build(),
                 Func0 { Request.Builder().url(uri.toString()).build() },
                 null,
-                ReconnectPolicy(applicationContext))
+                AndroidReconnectPolicy(applicationContext))
             .observeOnMainThread()
             .subscribe {
                 logger.i { "Received message $it" }
@@ -109,7 +109,7 @@ private val MAX_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(2, TimeUnit
 private val MIN_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(2, TimeUnit.SECONDS)
 private val RECONNECT_INCREASE_FACTOR = 1.5f
 
-private class ReconnectPolicy(private val context: Context) : Func1<Throwable?, Observable<*>> {
+class AndroidReconnectPolicy(private val context: Context) : Func1<Throwable?, Observable<*>> {
     private var currentReconnectInterval = 0L
 
     private fun retryInterval() : Long {
@@ -120,11 +120,13 @@ private class ReconnectPolicy(private val context: Context) : Func1<Throwable?, 
     }
 
     override fun call(t: Throwable?): Observable<*> {
-        return if (context.hasActiveConnection()) {
-            Observable.timer(retryInterval(), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-        } else {
-            resetRetryInterval()
-            context.getConnectivity(false).filter { it }.first()
+        return when {
+            t is KnownServerException -> Observable.error<Any>(t)
+            context.hasActiveConnection() -> Observable.timer(retryInterval(), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+            else -> {
+                resetRetryInterval()
+                context.getConnectivity(false).filter { it }.first()
+            }
         }
     }
 

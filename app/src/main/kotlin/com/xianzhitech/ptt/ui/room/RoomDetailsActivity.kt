@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity

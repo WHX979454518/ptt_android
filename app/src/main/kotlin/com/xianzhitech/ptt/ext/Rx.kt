@@ -1,10 +1,7 @@
 package com.xianzhitech.ptt.ext
 
 import org.slf4j.LoggerFactory
-import rx.Completable
-import rx.Observable
-import rx.Observer
-import rx.Single
+import rx.*
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Action0
 import rx.functions.Action1
@@ -30,6 +27,10 @@ inline fun <T> Observable<T>.subscribeSimple(crossinline onNext : (T) -> Unit) =
 fun Completable.subscribeSimple() = subscribe(defaultOnCompleteAction, defaultOnErrorAction)
 fun Completable.subscribeSimple(onCompleted : Action0) = subscribe(onCompleted, defaultOnErrorAction)
 inline fun Completable.subscribeSimple(crossinline onCompleted : () -> Unit) = subscribe(Action0 { onCompleted() }, defaultOnErrorAction)
+
+fun <T> Observable<T>.s(onNext: Action1<T>, onError : Action1<Throwable> = defaultOnErrorAction, onCompleted: Action0 = defaultOnCompleteAction) : Subscription {
+    return subscribe(onNext, onError, onCompleted)
+}
 
 infix operator fun <T> Observer<T>.plusAssign(obj: T) {
     onNext(obj)

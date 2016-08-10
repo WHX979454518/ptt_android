@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomInvitation
-import com.xianzhitech.ptt.service.impl.RoomInvitationObject
+import com.xianzhitech.ptt.service.RoomInvitationObject
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.json.JSONObject

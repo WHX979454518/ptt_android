@@ -13,6 +13,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Model
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.widget.DrawableWrapper
 import rx.Subscriber
 import java.lang.ref.WeakReference

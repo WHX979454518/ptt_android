@@ -12,6 +12,7 @@ import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
 import com.xianzhitech.ptt.ui.app.ShareActivity

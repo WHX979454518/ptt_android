@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
+import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomDetailsActivity

@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory

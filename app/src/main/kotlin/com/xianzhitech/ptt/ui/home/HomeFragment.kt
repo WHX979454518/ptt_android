@@ -19,6 +19,7 @@ import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import rx.Observable
