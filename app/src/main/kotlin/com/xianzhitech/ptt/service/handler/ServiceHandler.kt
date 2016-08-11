@@ -133,11 +133,6 @@ class Service : android.app.Service() {
             }
 
             LoginStatus.IDLE -> {
-                if (state.currUser == null) {
-                    stopForeground(true)
-                } else if (state.connectivity.not()) {
-                    builder.setContentText(R.string.notification_user_offline.toFormattedString(this, state.currUser.name))
-                }
                 return
             }
         }

@@ -246,6 +246,10 @@ class CreateRoomCommand(name : String? = null,
             throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time");
         }
     }
+
+    override fun convert(value: JSONObject): Room {
+        return RoomObject(value)
+    }
 }
 
 class JoinRoomCommand(roomId : String) : Command<JoinRoomResponse, JSONObject>("c_join_room", roomId) {
@@ -281,7 +285,7 @@ class RoomInvitationObject(private @Transient val obj: JSONObject) : RoomInvitat
     override val inviteTime: Date = Date()
 }
 
-private class GroupObject(private val obj: JSONObject) : Group {
+class GroupObject(private val obj: JSONObject) : Group {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String
@@ -317,7 +321,7 @@ private class RoomObject(private val obj: JSONObject) : Room {
     }
 }
 
-private class UserObject(private val obj: JSONObject) : User {
+class UserObject(private val obj: JSONObject) : User {
     override val id: String
         get() = obj.getString("idNumber")
     override val name: String

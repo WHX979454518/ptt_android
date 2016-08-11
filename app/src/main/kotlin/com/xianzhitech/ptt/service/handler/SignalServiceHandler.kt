@@ -110,16 +110,49 @@ class SignalServiceHandler(private val appContext: Context,
                         throw ForceUpdateException(appConfig)
                     }
 
+                    val coreService = CoreServiceImpl(appComponent.httpClient, appConfig.signalServerEndpoint)
+
                     receiveSignal(uri = Uri.parse(appConfig.signalServerEndpoint),
                             retryPolicy = AndroidReconnectPolicy(appContext),
                             signalFactory = DefaultSignalFactory(),
-                            loginStateNotification = {
-                                if (it.status == LoginStatus.LOGGED_IN) {
-                                    appComponent.preference.userSessionToken = UserToken(it.currentUserID!!, authTokenFactory.password)
-                                    appComponent.userRepository.saveUsers(listOf(it.currentUser!!)).execAsync().subscribeSimple()
+                            loginStateNotification = { u ->
+                                if (u.status == LoginStatus.LOGGED_IN) {
+                                    appComponent.preference.userSessionToken = UserToken(u.currentUserID!!, authTokenFactory.password)
+                                    appComponent.userRepository.saveUsers(listOf(u.currentUser!!)).execAsync().subscribeSimple()
+
+                                    if (u.currentUserID != appComponent.preference.lastLoginUserId) {
+                                        logger.i { "Clearing room data for new user" }
+                                        appComponent.roomRepository.clear().exec()
+                                        appComponent.preference.lastLoginUserId = u.currentUserID
+                                    }
+
+                                    if (syncContactSubscription == null) {
+                                        syncContactSubscription = loginStateSubject
+                                                .map { it.status }
+                                                .distinctUntilChanged()
+                                                .filter { it == LoginStatus.LOGIN_IN_PROGRESS }
+                                                .switchMap { Observable.interval(0, Constants.SYNC_CONTACT_INTERVAL_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()) }
+                                                .switchMap {
+                                                    val version = appComponent.preference.contactVersion
+                                                    logger.i { "Syncing contact version with localVersion=$version" }
+                                                    coreService.syncContact(u.currentUserID!!, version).toObservable()
+                                                }
+                                                .switchMap {
+                                                    logger.i { "Got contact $it" }
+                                                    if (it != null) {
+                                                        appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(it).toObservable()
+                                                    } else {
+                                                        Observable.never<SyncContactResult>()
+                                                    }
+                                                }
+                                                .onErrorResumeNext(Observable.never())
+                                                .subscribeSimple {
+                                                    appComponent.preference.contactVersion = it.version
+                                                }
+                                    }
                                 }
 
-                                loginStateSubject.onNext(it)
+                                loginStateSubject.onNext(u)
                             },
                             commandEmitter = sendCommandSubject as Observable<Command<*, in Any>>,
                             deviceIdProvider = object : DeviceIdFactory {
@@ -181,21 +214,23 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun logout() {
         mainThread {
-            val loginState = peekLoginState()
             val roomState = peekRoomState()
             if (roomState.currentRoomId != null) {
                 quitRoom()
             }
 
-            if (loginState.status != LoginStatus.IDLE) {
-                loginSubscription?.unsubscribe()
-                loginSubscription = null
-                authTokenFactory.clear()
-                appComponent.preference.userSessionToken = null
-                appComponent.preference.lastExpPromptTime = null
-
-                loginStateSubject += LoginState.EMPTY
+            loginSubscription?.unsubscribe()
+            loginSubscription = null
+            syncContactSubscription?.unsubscribe()
+            syncContactSubscription = null
+            authTokenFactory.clear()
+            appComponent.preference.apply {
+                userSessionToken = null
+                lastExpPromptTime = null
+                contactVersion = -1
             }
+
+            loginStateSubject += LoginState.EMPTY
         }
     }
 
