@@ -10,7 +10,6 @@ import com.xianzhitech.ptt.service.UserToken
 import rx.Observable
 import rx.lang.kotlin.add
 import rx.lang.kotlin.observable
-import java.util.concurrent.atomic.AtomicReference
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
@@ -21,7 +20,7 @@ class AppPreference(appContext : Context,
     private val playIndicatorSoundKey = R.string.key_play_indicator_sound.toFormattedString(appContext)
     private val keepSessionKey = R.string.key_keep_session.toFormattedString(appContext)
 
-    private var userTokenCache : AtomicReference<UserToken?>? = null
+    private var userTokenCache = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
 
     override var lastIgnoredUpdateUrl: String?
         get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
@@ -30,21 +29,14 @@ class AppPreference(appContext : Context,
         }
 
     override var userSessionToken: UserToken?
-        get() {
-            userTokenCache?.let { return it.get() }
-
-            val token = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
-            userTokenCache = AtomicReference(token)
-            return token
-        }
+        get() = userTokenCache
         set(value) {
+            userTokenCache = value
             if (value == null) {
                 pref.edit().remove(KEY_USER_TOKEN).apply()
             } else {
                 pref.edit().putString(KEY_USER_TOKEN, gson.toJson(value)).apply()
             }
-
-            userTokenCache?.set(value)
         }
 
     override val userSessionTokenSubject: Observable<UserToken>

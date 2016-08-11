@@ -22,7 +22,7 @@ inline fun <T> Single<T>.subscribeSimple(crossinline onSuccess : (T) -> Unit) = 
 
 fun <T> Observable<T>.subscribeSimple() = subscribe()
 fun <T> Observable<T>.subscribeSimple(onNext : Action1<T>) = subscribe(onNext, defaultOnErrorAction, defaultOnCompleteAction)
-inline fun <T> Observable<T>.subscribeSimple(crossinline onNext : (T) -> Unit) = subscribe(Action1 { onNext(it) }, defaultOnErrorAction, defaultOnCompleteAction)
+fun <T> Observable<T>.subscribeSimple(onNext : (T) -> Unit) = subscribe(Action1 { onNext(it) }, defaultOnErrorAction, defaultOnCompleteAction)
 
 fun Completable.subscribeSimple() = subscribe(defaultOnCompleteAction, defaultOnErrorAction)
 fun Completable.subscribeSimple(onCompleted : Action0) = subscribe(onCompleted, defaultOnErrorAction)

@@ -110,10 +110,11 @@ class MainActivity : BaseToolbarActivity(),
                     }
                 }
 
-        appComponent.preference.userSessionTokenSubject.distinctUntilChanged()
+        appComponent.preference.userSessionTokenSubject
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribe {
+                .subscribeSimple {
+                    logger.d { "User session token changed to $it" }
                     if (it == null) {
                         displayFragment(LoginFragment::class.java)
                     } else {

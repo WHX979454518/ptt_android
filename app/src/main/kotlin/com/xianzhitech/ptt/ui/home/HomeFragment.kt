@@ -125,9 +125,11 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                 signalService.roomStatus,
                 signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
                         .switchMap {
+                            val currUserId = signalService.peekLoginState().currentUserID ?: return@switchMap Observable.never<Pair<Room, RoomName>>()
+
                             Observable.combineLatest(
                                     roomRepository.getRoom(it.currentRoomId).observe(),
-                                    roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID!!)).observe(),
+                                    roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(currUserId)).observe(),
                                     { first, second -> first to second }
                             )
                         },

@@ -29,6 +29,8 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.update.installPackage
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.SingleSubscriber
 import rx.android.schedulers.AndroidSchedulers
@@ -43,6 +45,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
     private var pendingDeniedPermissions: List<String>? = null
+    protected val logger : Logger by lazy { LoggerFactory.getLogger(javaClass.simpleName) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

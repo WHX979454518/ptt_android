@@ -12,7 +12,11 @@ import rx.schedulers.Schedulers
 
 data class SyncContactResult(val version : Long,
                              val users : List<User>,
-                             val groups : List<Group>)
+                             val groups : List<Group>) {
+    override fun toString(): String {
+        return "SyncContactResult{version=$version, userCount=${users.size}, groupCount=${groups.size}}"
+    }
+}
 
 interface CoreService {
     fun syncContact(userId: String, version : Long) : Single<SyncContactResult?>
