@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.PowerManager
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
@@ -31,7 +30,6 @@ private val logger = LoggerFactory.getLogger("Service")
  */
 class Service : android.app.Service() {
     private var subscription: Subscription? = null
-    private var wakeLock : PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?) = null
 
@@ -64,14 +62,9 @@ class Service : android.app.Service() {
         )
 
         this.subscription = subscription
-
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PTT Service")
-        wakeLock!!.acquire()
     }
 
     override fun onDestroy() {
-        wakeLock?.release()
         subscription?.unsubscribe()
 
         super.onDestroy()
@@ -83,6 +76,13 @@ class Service : android.app.Service() {
 
     private fun onStateChanged(state: State) {
         logger.d { "State changed to $state" }
+
+        if (appComponent.preference.userSessionToken == null) {
+            stopSelf()
+            logger.w { "User session has ended. Stopping service" }
+            return
+        }
+
         val builder = NotificationCompat.Builder(this)
         builder.setOngoing(true)
         builder.setAutoCancel(false)
