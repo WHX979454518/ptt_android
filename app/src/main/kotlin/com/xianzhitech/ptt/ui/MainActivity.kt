@@ -5,12 +5,10 @@ import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
@@ -101,24 +99,22 @@ class MainActivity : BaseToolbarActivity(),
     override fun onStart() {
         super.onStart()
 
-        val signalService = (application as AppComponent).signalHandler
-
-        signalService.loginState.distinctUntilChanged { it -> it.status }
+        appComponent.signalHandler.loginState.distinctUntilChanged { it -> it.status }
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
-                    if (it.status == LoginStatus.LOGIN_IN_PROGRESS && it.currentUserID == null) {
+                    if (it.status == LoginStatus.LOGIN_IN_PROGRESS && appComponent.preference.userSessionToken == null) {
                         showProgressDialog(R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
                     } else {
                         (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()
                     }
                 }
 
-        signalService.loginState.distinctUntilChanged { it -> it.currentUserID }
+        appComponent.preference.userSessionTokenSubject.distinctUntilChanged()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {
-                    if (it.currentUserID == null) {
+                    if (it == null) {
                         displayFragment(LoginFragment::class.java)
                     } else {
                         displayFragment(HomeFragment::class.java)

@@ -145,6 +145,7 @@ fun receiveSignal(uri: Uri,
             s.disconnect()
         }
 
+        loginStateNotification(LoginState(LoginStatus.LOGIN_IN_PROGRESS, userCache.get()))
         s.connect()
     }.retryWhen { it.switchMap(retryPolicy) }
 }

@@ -143,6 +143,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                 setVisible(true)
                                 setText(R.string.connecting_to_server)
                             }
+                            LoginStatus.IDLE,
                             LoginStatus.OFFLINE -> {
                                 setVisible(true)
                                 setText(R.string.error_unable_to_connect)
