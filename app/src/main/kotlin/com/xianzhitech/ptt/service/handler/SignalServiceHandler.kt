@@ -163,6 +163,7 @@ class SignalServiceHandler(private val appContext: Context,
                                 override val connected: Observable<Boolean>
                                     get() = appContext.getConnectivity(true)
                             },
+                            loginTimeoutMills = TimeUnit.MILLISECONDS.convert(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS),
                             authTokenFactory = authTokenFactory)
                 }
                 .observeOnMainThread()

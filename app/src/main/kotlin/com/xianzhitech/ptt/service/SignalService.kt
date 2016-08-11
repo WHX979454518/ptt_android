@@ -37,6 +37,7 @@ fun receiveSignal(uri: Uri,
                   connectivityProvider : ConnectivityProvider,
                   commandEmitter: Observable<Command<*, in Any>>,
                   deviceIdProvider : DeviceIdFactory,
+                  loginTimeoutMills: Long,
                   authTokenFactory: AuthTokenFactory) : Observable<Signal> {
     val userCache = AtomicReference<User>(null)
 
@@ -45,6 +46,7 @@ fun receiveSignal(uri: Uri,
             multiplex = false
             reconnection = false
             transports = arrayOf("websocket")
+            timeout = loginTimeoutMills
         })
 
         s.on(Socket.EVENT_CONNECT, {
@@ -344,8 +346,8 @@ class UserObject(private val obj: JSONObject) : User {
     val serviceToken : String
         get() = obj.getString("serviceToken")
 
-    val pushServerUri : Uri
-        get() = Uri.parse(obj.getString("pushServerUri"))
+    val pushServerUri : String
+        get() = obj.getString("pushServerUri")
 
     override fun toString(): String {
         return obj.toString()

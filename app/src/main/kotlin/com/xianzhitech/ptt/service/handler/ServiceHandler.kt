@@ -3,7 +3,6 @@ package com.xianzhitech.ptt.service.handler
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
@@ -15,6 +14,7 @@ import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.UserObject
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
@@ -153,14 +153,23 @@ class ServiceHandler(appContext: Context,
                      appPreference: Preference,
                      signalService: SignalServiceHandler) {
     init {
-        signalService.loginStatus
+        signalService.loginState
                 .subscribeSimple {
-                    if (it != LoginStatus.IDLE) {
-                        appPreference.lastAppParams?.pushServerEndpoint?.let { server -> PushService.start(appContext, Uri.parse(server)) }
-                        appContext.startService(Intent(appContext, Service::class.java))
-                    } else {
-                        appContext.stopService(Intent(appContext, Service::class.java))
-                        PushService.stop(appContext)
+                    when (it.status) {
+                        LoginStatus.LOGGED_IN -> {
+                            val currUser = it.currentUser as UserObject
+                            PushService.start(appContext, currUser.pushServerUri, currUser.id, currUser.serviceToken)
+                            appContext.startService(Intent(appContext, Service::class.java))
+                        }
+
+                        LoginStatus.IDLE -> {
+                            appContext.stopService(Intent(appContext, Service::class.java))
+                            PushService.stop(appContext)
+                        }
+
+                        else -> {
+
+                        }
                     }
                 }
     }
