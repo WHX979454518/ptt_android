@@ -104,7 +104,7 @@ class RoomFragment : BaseFragment()
             }
         }
 
-        this.views = views;
+        this.views = views
         return rootView
     }
 

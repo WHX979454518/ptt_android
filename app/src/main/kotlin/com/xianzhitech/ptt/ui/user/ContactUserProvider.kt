@@ -23,7 +23,7 @@ class ContactUserProvider : BaseModelProvider {
     }
 
     companion object {
-        @JvmField final val CREATOR: Parcelable.Creator<ContactUserProvider> = object : Parcelable.Creator<ContactUserProvider> {
+        @JvmField val CREATOR: Parcelable.Creator<ContactUserProvider> = object : Parcelable.Creator<ContactUserProvider> {
             override fun createFromParcel(source: Parcel): ContactUserProvider {
                 return ContactUserProvider(source)
             }

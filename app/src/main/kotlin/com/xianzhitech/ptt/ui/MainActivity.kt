@@ -127,7 +127,7 @@ class MainActivity : BaseToolbarActivity(),
             supportFragmentManager.beginTransaction()
                     .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
                     .replace(R.id.main_content, Fragment.instantiate(this, fragmentClazz.name))
-                    .commit();
+                    .commit()
         }
     }
 

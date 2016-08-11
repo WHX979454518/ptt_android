@@ -233,7 +233,7 @@ data class CreateRoomRequest(val name: String? = null,
                              val extraMemberIds: Iterable<String> = emptyList()) {
     init {
         if (groupIds.sizeAtLeast(1).not() && extraMemberIds.sizeAtLeast(1).not()) {
-            throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time");
+            throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time")
         }
     }
 }
@@ -243,7 +243,7 @@ class CreateRoomCommand(name : String? = null,
                         extraMemberIds: Iterable<String> = emptyList()) : Command<Room, JSONObject>("c_create_room", name, groupIds.toJSONArray(), extraMemberIds.toJSONArray()) {
     init {
         if (groupIds.sizeAtLeast(1).not() && extraMemberIds.sizeAtLeast(1).not()) {
-            throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time");
+            throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time")
         }
     }
 

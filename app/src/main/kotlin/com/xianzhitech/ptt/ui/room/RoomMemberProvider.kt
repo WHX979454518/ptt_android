@@ -46,7 +46,7 @@ class RoomMemberProvider : BaseModelProvider {
     }
 
     companion object {
-        @JvmField final val CREATOR: Parcelable.Creator<RoomMemberProvider> = object : Parcelable.Creator<RoomMemberProvider> {
+        @JvmField val CREATOR: Parcelable.Creator<RoomMemberProvider> = object : Parcelable.Creator<RoomMemberProvider> {
             override fun createFromParcel(source: Parcel): RoomMemberProvider {
                 return RoomMemberProvider(source)
             }

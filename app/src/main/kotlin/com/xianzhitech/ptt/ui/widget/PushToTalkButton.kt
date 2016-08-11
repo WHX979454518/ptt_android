@@ -146,6 +146,6 @@ class PushToTalkButton : ImageButton {
             }
         }
 
-        return true;
+        return true
     }
 }

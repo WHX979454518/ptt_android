@@ -93,6 +93,6 @@ abstract class BaseFragment : Fragment() {
     }
 
     companion object {
-        public const val TAG_GENERIC_ERROR_DIALOG = "tag_generic_error_dialog"
+        const val TAG_GENERIC_ERROR_DIALOG = "tag_generic_error_dialog"
     }
 }

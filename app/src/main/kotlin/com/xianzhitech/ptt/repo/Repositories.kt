@@ -221,7 +221,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
 
     fun removeRooms(roomIds : Iterable<String>) : UpdateResult {
         return RepoUpdateResult({
-            roomStorage.removeRooms(roomIds);
+            roomStorage.removeRooms(roomIds)
         }, roomNotification)
     }
 

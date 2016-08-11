@@ -33,7 +33,7 @@ import java.util.*
  */
 class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
 
-    private enum class Tab private constructor(@StringRes
+    private enum class Tab constructor(@StringRes
                                                val labelRes: Int, @DrawableRes
                                                val drawableRes: Int, val fragmentClazz: Class<out Fragment>) {
         Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, RoomListFragment::class.java),

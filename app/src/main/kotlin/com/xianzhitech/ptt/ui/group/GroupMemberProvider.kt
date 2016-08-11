@@ -39,7 +39,7 @@ class GroupMemberProvider(private val groupId: String) : ModelProvider, Parcelab
     }
 
     companion object {
-        @JvmField final val CREATOR: Parcelable.Creator<GroupMemberProvider> = object : Parcelable.Creator<GroupMemberProvider> {
+        @JvmField val CREATOR: Parcelable.Creator<GroupMemberProvider> = object : Parcelable.Creator<GroupMemberProvider> {
             override fun createFromParcel(source: Parcel): GroupMemberProvider {
                 return GroupMemberProvider(source)
             }

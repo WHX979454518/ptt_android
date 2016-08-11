@@ -63,7 +63,7 @@ class KnownServerException(val errorName: String, val errorMessage: String? = nu
             if (BuildConfig.DEBUG && errorName.isNotBlank()) {
                 return errorName
             } else {
-                return context.getString(R.string.error_unknown);
+                return context.getString(R.string.error_unknown)
             }
         }
 

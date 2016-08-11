@@ -427,7 +427,7 @@ private object Rooms {
 }
 
 private object Contacts {
-    const val TABLE_NAME = "contacts";
+    const val TABLE_NAME = "contacts"
 
     const val GROUP_ID = "contact_group_id"
     const val USER_ID = "contact_person_id"

@@ -54,7 +54,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                 .bindToLifecycle()
                 .subscribeSimple { user ->
                     if (user == null) {
-                        Toast.makeText(this@UserDetailsActivity, R.string.error_getting_user_info, Toast.LENGTH_LONG).show();
+                        Toast.makeText(this@UserDetailsActivity, R.string.error_getting_user_info, Toast.LENGTH_LONG).show()
                         finish()
                     } else {
                         this@UserDetailsActivity.user = user
