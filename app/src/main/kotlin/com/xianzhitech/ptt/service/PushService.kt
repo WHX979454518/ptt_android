@@ -73,6 +73,7 @@ class PushService : Service() {
         }
 
         this.connectParams = connectParams
+        messageSubscription?.unsubscribe()
         messageSubscription = receivePushService(
                 OkHttpClient.Builder().readTimeout(0, TimeUnit.SECONDS).build(),
                 Func0 {
