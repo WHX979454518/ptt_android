@@ -35,7 +35,14 @@ class RoomInvitationHandler() : BroadcastReceiver() {
         Single.zip(
                 context.appComponent.userRepository.getUser(invite.inviterId).getAsync(),
                 context.appComponent.roomRepository.getRoom(context.appComponent.signalHandler.currentRoomId).getAsync(),
-                { user, room -> InviteInfo(invite, room, user) })
+                if (invite is RoomInvitationObject) {
+                    context.appComponent.roomRepository.saveRooms(listOf(invite.room))
+                            .execAsync()
+                            .toSingleDefault(Unit)
+                } else {
+                    Single.just(Unit)
+                },
+                { user, room, ignored -> InviteInfo(invite, room, user) })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeSimple { onReceive(context, it.invitation, it.currentRoom, it.inviter) }
     }

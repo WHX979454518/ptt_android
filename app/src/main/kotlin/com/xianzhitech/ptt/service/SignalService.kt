@@ -121,7 +121,7 @@ fun receiveSignal(uri: Uri,
 
             signalFactory.signalNames.forEach { name ->
                 s.on(name, {
-                    val signal = signalFactory.createSignal(name)
+                    val signal = signalFactory.createSignal(name, *it)
                     if (signal == null) {
                         logger.e { "Unrecognized signal $name" }
                     }
