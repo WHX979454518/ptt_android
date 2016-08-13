@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ui.RoomInvitationHelperActivity
 import io.socket.client.SocketIOException
 import okhttp3.*
 import okhttp3.ws.WebSocket
@@ -86,8 +87,9 @@ class PushService : Service() {
                 AndroidReconnectPolicy(applicationContext))
                 .observeOnMainThread()
                 .subscribe {
-                    logger.i { "Received message $it" }
-                    sendBroadcast(Intent(ACTION_MESSAGE).putExtra(EXTRA_MSG, it))
+                    startActivity(Intent(this, RoomInvitationHelperActivity::class.java)
+                            .putExtra(RoomInvitationHelperActivity.EXTRA_MSG, it)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
                 }
     }
 
@@ -191,8 +193,14 @@ private fun receivePushService(httpClient: OkHttpClient,
             }
 
             override fun onMessage(message: ResponseBody) {
-                logger.d { "Received message ${message.string()}" }
-                subscriber.onNext(message.string())
+                try {
+                    val msg = message.string()
+                    logger.d { "Received message $msg" }
+                    subscriber.onNext(msg)
+                } catch(e: Exception) {
+                    logger.e(e) { "Error reading message" }
+                    subscriber.onError(e)
+                }
             }
         })
 

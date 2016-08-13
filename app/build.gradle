@@ -135,11 +135,15 @@ dependencies {
         exclude group: 'glide-parent'
     }
 
+
     compile ('io.socket:socket.io-client:0.7.0') {
 //    compile (project(':socket.io-client-java')) {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'
     }
+
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-ws
+    compile group: 'com.squareup.okhttp3', name: 'okhttp-ws', version: '3.4.1'
 
     compile 'io.reactivex:rxandroid:1.2.1'
     compile 'io.reactivex:rxjava:1.1.8'

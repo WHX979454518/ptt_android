@@ -477,10 +477,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun onReceiveInvitation(invite: RoomInvitation) {
-        appComponent.roomRepository.saveRooms(listOf((invite as ExtraRoomInvitation).room)).execAsync()
-                .subscribeSimple {
-                    appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(EXTRA_INVITATION, invite))
-                }
+     //   appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(EXTRA_INVITATION, invite))
     }
 
     private fun showToast(message: CharSequence) {

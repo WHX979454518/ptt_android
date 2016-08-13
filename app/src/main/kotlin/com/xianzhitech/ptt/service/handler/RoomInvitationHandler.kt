@@ -4,12 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.i
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
+import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomInvitationObject
@@ -20,6 +18,7 @@ import org.slf4j.LoggerFactory
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
+import java.util.concurrent.TimeUnit
 
 private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
@@ -32,17 +31,32 @@ class RoomInvitationHandler() : BroadcastReceiver() {
             else -> return
         }
 
+        val appComponent = context.appComponent
         Single.zip(
-                context.appComponent.userRepository.getUser(invite.inviterId).getAsync(),
-                context.appComponent.roomRepository.getRoom(context.appComponent.signalHandler.currentRoomId).getAsync(),
+                appComponent.userRepository.getUser(invite.inviterId).getAsync(),
+                appComponent.roomRepository.getRoom(appComponent.signalHandler.currentRoomId).getAsync(),
                 if (invite is RoomInvitationObject) {
-                    context.appComponent.roomRepository.saveRooms(listOf(invite.room))
+                    appComponent.roomRepository.saveRooms(listOf(invite.room))
                             .execAsync()
                             .toSingleDefault(Unit)
                 } else {
                     Single.just(Unit)
                 },
                 { user, room, ignored -> InviteInfo(invite, room, user) })
+                .flatMap { info ->
+                    // 看看用户是否在登陆，如果是，则需要等待登陆完成
+                    when (appComponent.signalHandler.peekLoginState().status) {
+                        LoginStatus.LOGGED_IN -> Single.just(info)
+                        else -> {
+                            logger.i { "Waiting for user to log in..." }
+                            appComponent.signalHandler.loginStatus
+                                    .first { it == LoginStatus.LOGGED_IN }
+                                    .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                                    .toSingle()
+                                    .map { info }
+                        }
+                    }
+                }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeSimple { onReceive(context, it.invitation, it.currentRoom, it.inviter) }
     }
@@ -53,11 +67,14 @@ class RoomInvitationHandler() : BroadcastReceiver() {
             return
         }
 
+        logger.d { "Receive room invitation $invitation, currRoom: $currentRoom, inviter: $inviter" }
+
         val intent = Intent(context, RoomActivity::class.java)
 
         if (currentRoom == null ||
                 System.currentTimeMillis() - currentRoom.lastActiveTime.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
                 (inviter != null && inviter.priority == 0)) {
+            logger.i { "Join room ${invitation.roomId} directly" }
             // 如果满足下列条件之一, 则直接接受邀请并进入对讲房间
             //  1. 当前没有对讲房间
             //  2. 上一次房间有动作的时刻已经很久远
@@ -65,6 +82,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
             intent.putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.roomId)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
         } else {
+            logger.i { "Sending out invitation" }
             intent.putExtra(RoomActivity.EXTRA_INVITATIONS, listOf(invitation) as Serializable)
         }
 

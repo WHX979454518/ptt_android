@@ -50,6 +50,12 @@
 -dontwarn rx.**
 -dontwarn com.xianzhitech.ptt.**
 
+-keep class ch.qos.** { *; }
+-keep class org.slf4j.** { *; }
+-keepattributes *Annotation*
+
+-dontwarn ch.qos.logback.core.net.*
+
 -keepclassmembers class rx.internal.util.unsafe.*ArrayQueue*Field* {
     long producerIndex;
     long consumerIndex;
