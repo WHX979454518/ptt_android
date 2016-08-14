@@ -113,13 +113,13 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
     private fun handleLogUpload() {
         val app = activity.application
+        val srcDir = File(app.filesDir, "log")
         Completable.defer {
             // Moving log files to cache
             val dst = File(app.cacheDir, "log")
             dst.mkdirs()
             dst.deleteRecursively()
-            val src = File(app.filesDir, "log")
-            src.copyRecursively(dst, true)
+            srcDir.copyRecursively(dst, true)
 
             val plainText = MediaType.parse("text/plain")
             val appComponent = app as AppComponent
@@ -135,6 +135,11 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
             appComponent.appService.submitLogs(map)
         }.subscribeOn(Schedulers.io())
+                .doOnCompleted {
+                    srcDir.listFiles()?.forEach {
+                        it.writeBytes(byteArrayOf())
+                    }
+                }
                 .observeOnMainThread()
                 .subscribe(LogUploadSubscriber(activity.applicationContext))
     }

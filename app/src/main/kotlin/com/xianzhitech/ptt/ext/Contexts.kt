@@ -31,6 +31,7 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
     return Observable.create<Intent> { subscriber ->
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
+                logger.d { "Receive $intent for broadcast ${actions.print()}" }
                 //logd("Received $intent for broadcast actions: ${actions.toSqlSet()}")
                 subscriber.onNext(intent)
             }
@@ -56,6 +57,10 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
 }
 
 fun ConnectivityManager.hasActiveConnection(): Boolean {
+//    if (Build.VERSION.SDK_INT >= 21) {
+//        return isDefaultNetworkActive
+//    }
+
     return activeNetworkInfo?.isConnected ?: false
 }
 
@@ -76,7 +81,9 @@ fun Context.getConnectivity(immediateResult : Boolean = true): Observable<Boolea
             subscriber.add(receiveBroadcasts(false, ConnectivityManager.CONNECTIVITY_ACTION)
                     .subscribe(object : Subscriber<Intent>() {
                         override fun onNext(t: Intent?) {
-                            subscriber.onNext(connectivityManager.hasActiveConnection())
+                            val hasActiveConnection = connectivityManager.hasActiveConnection()
+                            logger.d { "Received connectivity action. Active connection = $hasActiveConnection" }
+                            subscriber.onNext(hasActiveConnection)
                         }
 
                         override fun onError(e: Throwable?) {

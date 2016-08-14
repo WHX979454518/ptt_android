@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.CompositeSubscription
 
 
@@ -154,23 +155,22 @@ class ServiceHandler(appContext: Context,
                      signalService: SignalServiceHandler) {
     init {
         signalService.loginState
+                .filter { it.status == LoginStatus.LOGGED_IN }
                 .subscribeSimple {
-                    when (it.status) {
-                        LoginStatus.LOGGED_IN -> {
-                            val currUser = it.currentUser as UserObject
-                            PushService.start(appContext, currUser.pushServerUri, currUser.id, currUser.serviceToken)
-                            appContext.startService(Intent(appContext, Service::class.java))
-                        }
-
-                        LoginStatus.IDLE -> {
-                            appContext.stopService(Intent(appContext, Service::class.java))
-                            PushService.stop(appContext)
-                        }
-
-                        else -> {
-
-                        }
-                    }
+                    val currUser = it.currentUser as UserObject
+                    PushService.start(appContext, currUser.pushServerUri, currUser.id, currUser.serviceToken)
                 }
+
+        appPreference.userSessionTokenSubject
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe {
+                if (it == null) {
+                    appContext.stopService(Intent(appContext, Service::class.java))
+                    PushService.stop(appContext)
+                }
+                else {
+                    appContext.startService(Intent(appContext, Service::class.java))
+                }
+            }
     }
 }

@@ -38,6 +38,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                 if (invite is RoomInvitationObject) {
                     appComponent.roomRepository.saveRooms(listOf(invite.room))
                             .execAsync()
+                            .onErrorComplete()
                             .toSingleDefault(Unit)
                 } else {
                     Single.just(Unit)

@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.service
 
 import android.net.Uri
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Permission
@@ -15,24 +16,25 @@ import io.socket.client.IO.Options
 import io.socket.client.IO.socket
 import io.socket.client.Manager
 import io.socket.client.Socket
+import io.socket.client.SocketIOException
 import io.socket.emitter.Emitter
 import io.socket.engineio.client.Transport
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Single
-import rx.functions.Func1
 import rx.lang.kotlin.add
 import rx.subjects.BehaviorSubject
 import java.io.Serializable
 import java.util.*
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 private val logger = LoggerFactory.getLogger("SignalService")
 
 fun receiveSignal(uri: Uri,
                   signalFactory: SignalFactory,
-                  retryPolicy : Func1<Throwable?, Observable<*>>,
+                  retryPolicy : ReconnectPolicy,
                   loginStateNotification : (state : LoginState) -> Unit,
                   connectivityProvider : ConnectivityProvider,
                   commandEmitter: Observable<Command<*, in Any>>,
@@ -78,7 +80,10 @@ fun receiveSignal(uri: Uri,
         s.on(Socket.EVENT_ERROR, errorListener)
 
         s.on(Socket.EVENT_DISCONNECT, {
-            loginStateNotification(LoginState(LoginStatus.OFFLINE, userCache.get()))
+            if (subscriber.isUnsubscribed.not()) {
+                loginStateNotification(LoginState(LoginStatus.OFFLINE, userCache.get()))
+                subscriber.onError(InterruptedException())
+            }
         })
 
         s.on("s_login_failed", {
@@ -95,6 +100,7 @@ fun receiveSignal(uri: Uri,
             val user = UserObject(it[0] as JSONObject)
             logger.i { "User logon as $user" }
             userCache.set(user)
+            retryPolicy.notifyConnected()
             loginStateNotification(LoginState(LoginStatus.LOGGED_IN, user))
 
             subscriber.add(commandEmitter.subscribe { cmd ->
@@ -149,7 +155,18 @@ fun receiveSignal(uri: Uri,
 
         loginStateNotification(LoginState(LoginStatus.LOGIN_IN_PROGRESS, userCache.get()))
         s.connect()
-    }.retryWhen { it.switchMap(retryPolicy) }
+    }.retryWhen { it.switchMap { err ->
+        when {
+            err is TimeoutException || (err is SocketIOException && err.message == "timeout") -> {
+                Observable.error<Any>(StaticUserException(R.string.error_timeout))
+            }
+            err is KnownServerException -> Observable.error<Any>(err)
+            else -> {
+                loginStateNotification(LoginState(LoginStatus.OFFLINE, userCache.get() ))
+                retryPolicy.scheduleNextConnect().toObservable()
+            }
+        }
+    } }
 }
 
 interface DeviceIdFactory {

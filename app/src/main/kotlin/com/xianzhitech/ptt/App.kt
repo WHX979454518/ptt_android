@@ -25,6 +25,7 @@ import com.xianzhitech.ptt.util.ActivityProviderImpl
 import io.fabric.sdk.android.Fabric
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import org.slf4j.MDC
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -62,6 +63,8 @@ open class App : Application(), AppComponent {
         if (BuildConfig.DEBUG.not()) {
             Fabric.with(this, Crashlytics())
         }
+
+        MDC.put("pid", Process.myPid().toString())
 
         val am = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
         val pid = Process.myPid()

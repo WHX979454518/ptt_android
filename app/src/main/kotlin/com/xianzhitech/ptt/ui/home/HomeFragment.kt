@@ -19,7 +19,6 @@ import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import rx.Observable
@@ -125,7 +124,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                 signalService.roomStatus,
                 signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
                         .switchMap {
-                            val currUserId = signalService.peekLoginState().currentUserID ?: return@switchMap Observable.never<Pair<Room, RoomName>>()
+                            val currUserId = appComponent.preference.userSessionToken?.userId ?: return@switchMap Observable.never<Pair<Room, RoomName>>()
 
                             Observable.combineLatest(
                                     roomRepository.getRoom(it.currentRoomId).observe(),

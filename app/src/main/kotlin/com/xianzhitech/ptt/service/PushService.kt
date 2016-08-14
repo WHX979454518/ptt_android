@@ -1,13 +1,12 @@
 package com.xianzhitech.ptt.service
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.ui.RoomInvitationHelperActivity
-import io.socket.client.SocketIOException
 import okhttp3.*
 import okhttp3.ws.WebSocket
 import okhttp3.ws.WebSocketCall
@@ -15,16 +14,16 @@ import okhttp3.ws.WebSocketListener
 import okio.Buffer
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Single
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Func0
-import rx.functions.Func1
 import rx.lang.kotlin.add
 import rx.lang.kotlin.observable
 import rx.schedulers.Schedulers
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicLong
 
 
 private val logger = LoggerFactory.getLogger("PushService")
@@ -73,6 +72,8 @@ class PushService : Service() {
             return
         }
 
+        val am = (applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
+
         this.connectParams = connectParams
         messageSubscription?.unsubscribe()
         messageSubscription = receivePushService(
@@ -87,9 +88,17 @@ class PushService : Service() {
                 AndroidReconnectPolicy(applicationContext))
                 .observeOnMainThread()
                 .subscribe {
-                    startActivity(Intent(this, RoomInvitationHelperActivity::class.java)
-                            .putExtra(RoomInvitationHelperActivity.EXTRA_MSG, it)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    // 检查主进程是否存在，如果存在，则不需要调用help activity
+                    if (am.runningAppProcesses.indexOfFirst { it.processName == applicationContext.packageName } >= 0) {
+                        logger.d { "Sending message broadcast" }
+                        sendBroadcast(Intent(PushService.ACTION_MESSAGE).putExtra(EXTRA_MSG, it))
+                    }
+                    else {
+                        logger.d { "Starting helper activity to deliver broadcast msg" }
+                        startActivity(Intent(this, RoomInvitationHelperActivity::class.java)
+                                .putExtra(RoomInvitationHelperActivity.EXTRA_MSG, it)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    }
                 }
     }
 
@@ -125,41 +134,40 @@ private data class ConnectParams(val uri : String,
                                  val userId : String,
                                  val userToken : String)
 
-class AndroidReconnectPolicy(private val context: Context) : Func1<Throwable?, Observable<*>> {
-    private var currentReconnectInterval = 0L
 
-    private fun retryInterval() : Long {
-        return synchronized(this, {
-            currentReconnectInterval = Math.min(MAX_RECONNECT_WAIT_MILLS, Math.max(MIN_RECONNECT_WAIT_MILLS, (currentReconnectInterval * RECONNECT_INCREASE_FACTOR).toLong()))
-            currentReconnectInterval
-        })
+interface ReconnectPolicy {
+    fun scheduleNextConnect() : Single<*>
+    fun notifyConnected()
+}
+
+class AndroidReconnectPolicy(private val context: Context) : ReconnectPolicy {
+    private val currentReconnectInterval = AtomicLong(MIN_RECONNECT_WAIT_MILLS)
+
+    override fun scheduleNextConnect(): Single<*> {
+        val interval = currentReconnectInterval.getAndSet(Math.min(MAX_RECONNECT_WAIT_MILLS, (currentReconnectInterval.get() * RECONNECT_INCREASE_FACTOR).toLong()))
+        logger.i { "Trying to reconnect $interval ms later" }
+
+        return Observable.amb<Any?>(
+                if (context.hasActiveConnection()) {
+                    Observable.timer(interval, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                } else {
+                    context.getConnectivity(false).first { it }
+                },
+                context.receiveBroadcasts(false, Intent.ACTION_SCREEN_ON).first()
+        ).toSingle()
     }
 
-    override fun call(t: Throwable?): Observable<*> {
-        val err : Throwable? = when {
-            (t is SocketIOException && t.message == "timeout") || t is TimeoutException -> StaticUserException(R.string.error_timeout)
-            t is KnownServerException || t is UnknownServerException -> t
-            else -> null
-        }
-
-        return when {
-            err is KnownServerException || err is StaticUserException -> Observable.error<Any>(err)
-            context.hasActiveConnection() -> Observable.timer(retryInterval(), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-            else -> {
-                resetRetryInterval()
-                context.getConnectivity(false).filter { it }.first()
-            }
-        }
-    }
-
-    private fun resetRetryInterval() {
-        synchronized(this, { currentReconnectInterval = 0L })
+    override fun notifyConnected() {
+        logger.i { "Resetting next reconnect timer to $MIN_RECONNECT_WAIT_MILLS ms" }
+        currentReconnectInterval.set(MIN_RECONNECT_WAIT_MILLS)
     }
 
     companion object {
-        private val MAX_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES)
-        private val MIN_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(2, TimeUnit.SECONDS)
+        private val MAX_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(30, TimeUnit.SECONDS)
+        private val MIN_RECONNECT_WAIT_MILLS = 500L
         private val RECONNECT_INCREASE_FACTOR = 1.5f
+
+        private val logger = LoggerFactory.getLogger("AndroidReconnectPolicy")
     }
 }
 
@@ -167,7 +175,7 @@ class AndroidReconnectPolicy(private val context: Context) : Func1<Throwable?, O
 private fun receivePushService(httpClient: OkHttpClient,
                                requestProvider : Func0<Request>,
                                sendMessageProvider : Observable<String>? = null,
-                               retryPolicy : Func1<Throwable?, Observable<*>>) : Observable<String> {
+                               retryPolicy : ReconnectPolicy) : Observable<String> {
 
     return observable<String> { subscriber ->
         val request = requestProvider.call()
@@ -179,6 +187,7 @@ private fun receivePushService(httpClient: OkHttpClient,
                 if (sendMessageProvider != null && subscriber.isUnsubscribed.not()) {
                     subscriber.add(sendMessageProvider.subscribe {  webSocket.sendMessage(RequestBody.create(WebSocket.TEXT, it))  })
                 }
+                retryPolicy.notifyConnected()
             }
 
             override fun onPong(payload: Buffer?) {
@@ -207,5 +216,9 @@ private fun receivePushService(httpClient: OkHttpClient,
         })
 
         subscriber.add { client.cancel() }
-    }.subscribeOn(Schedulers.io()).retryWhen { it.switchMap(retryPolicy) }
+    }.subscribeOn(Schedulers.io()).retryWhen {
+        it.switchMap {
+            retryPolicy.scheduleNextConnect().toObservable()
+        }
+    }
 }
