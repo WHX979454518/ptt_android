@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
-import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
@@ -61,7 +60,7 @@ class ServerInitActivity : BaseToolbarActivity() {
 
                 val cookieCache = SetCookieCache()
                 val cookieJar = PersistentCookieJar(cookieCache, SharedPrefsCookiePersistor(applicationContext))
-                val okHttp = OkHttpClient.Builder().cookieJar(cookieJar).addNetworkInterceptor(StethoInterceptor()).build()
+                val okHttp = OkHttpClient.Builder().cookieJar(cookieJar).build()
                 val service = Retrofit.Builder()
                         .client(okHttp)
                         .baseUrl(endpoint)

@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,11 +10,13 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.currentUserID
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
 import com.xianzhitech.ptt.ui.app.ShareActivity
@@ -21,6 +25,17 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.EditProfileActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import org.slf4j.LoggerFactory
+import rx.Completable
+import rx.Single
+import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
+import java.io.File
+
+private val logger = LoggerFactory.getLogger("ProfileFragment")
 
 class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragment.OnPositiveButtonClickListener {
     private var views: Views? = null
@@ -65,6 +80,12 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                         context.getTintedDrawable(R.drawable.ic_share, tintColor),
                         null, null, null)
             }
+            findView<Button>(R.id.profile_logUpload).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_file_upload_black, tintColor),
+                        null, null, null)
+            }
             findView<View>(R.id.profile_logout).setOnClickListener(this@ProfileFragment)
 
             views = Views(this).apply {
@@ -84,8 +105,50 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
     }
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
-        if (fragment.tag == TAG_LOGOUT_CONFIRMATION) {
-            appComponent.signalHandler.logout()
+        when (fragment.tag) {
+            TAG_LOGOUT_CONFIRMATION -> appComponent.signalHandler.logout()
+            TAG_UPLOAD_LOG_CONFIRMATION -> handleLogUpload()
+        }
+    }
+
+    private fun handleLogUpload() {
+        val app = activity.application
+        Completable.defer {
+            // Moving log files to cache
+            val dst = File(app.cacheDir, "log")
+            dst.mkdirs()
+            dst.deleteRecursively()
+            val src = File(app.filesDir, "log")
+            src.copyRecursively(dst, true)
+
+            val plainText = MediaType.parse("text/plain")
+            val appComponent = app as AppComponent
+
+            val map = hashMapOf<String, RequestBody>()
+
+            map["userId"] = RequestBody.create(plainText, appComponent.signalHandler.currentUserId ?: "unknown")
+            map["model"] = RequestBody.create(plainText, "${Build.MANUFACTURER} - ${Build.MODEL}")
+
+            dst.listFiles()?.forEachIndexed { i, file ->
+                map["log_file\"; filename=\"file_$i.log"] = RequestBody.create(plainText, file)
+            }
+
+            appComponent.appService.submitLogs(map)
+        }.subscribeOn(Schedulers.io())
+                .observeOnMainThread()
+                .subscribe(LogUploadSubscriber(activity.applicationContext))
+    }
+
+    private class LogUploadSubscriber(private val appContext: Context) : Completable.CompletableSubscriber {
+        override fun onSubscribe(d: Subscription?) { }
+
+        override fun onError(e: Throwable?) {
+            Toast.makeText(appContext, e.describeInHumanMessage(appContext), Toast.LENGTH_LONG).show()
+            logger.e(e) { "Error uploading logs" }
+        }
+
+        override fun onCompleted() {
+            Toast.makeText(appContext, R.string.log_upload_success, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -109,7 +172,36 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             R.id.profile_feedback -> activity.startActivityWithAnimation(Intent(context, FeedbackActivity::class.java))
             R.id.profile_about -> activity.startActivityWithAnimation(Intent(context, AboutActivity::class.java))
             R.id.profile_share -> activity.startActivityWithAnimation(Intent(context, ShareActivity::class.java))
+            R.id.profile_logUpload -> confirmLogUpload()
         }
+    }
+
+    private fun confirmLogUpload() {
+        val app = activity.application
+        Single.fromCallable<Pair<Int, Long>> {
+            val initialValue = 0 to 0L
+            // Counting log files
+            File(app.filesDir, "log").listFiles()
+                    ?.fold(initialValue, { result, file -> result.first + 1 to result.second + file.length() }) ?: initialValue
+        }.subscribeOn(Schedulers.io())
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .toObservable()
+                .observeOnMainThread()
+                .compose(bindToLifecycle())
+                .subscribeSimple {
+                    val (count, totalFileSize) = it
+                    if (count == 0 || totalFileSize == 0L) {
+                        Toast.makeText(context, R.string.no_upload, Toast.LENGTH_LONG).show()
+                    }
+                    else {
+                        AlertDialogFragment.Builder().apply {
+                            val sizeKB = Math.round(totalFileSize / 1024f)
+                            message = getString(R.string.total_log_files, count, "$sizeKB KB")
+                            btnPositive = getString(R.string.upload)
+                            btnNegative = getString(R.string.dialog_cancel)
+                        }.show(childFragmentManager, TAG_UPLOAD_LOG_CONFIRMATION)
+                    }
+                }
     }
 
 
@@ -120,5 +212,6 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
     companion object {
         private const val TAG_LOGOUT_CONFIRMATION = "tag_logout_confirmation"
+        private const val TAG_UPLOAD_LOG_CONFIRMATION = "tag_log_confirmation"
     }
 }

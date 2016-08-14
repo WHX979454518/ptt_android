@@ -24,22 +24,6 @@ abstract class BaseFragment : Fragment() {
         lifecycleEventSubject.onNext(FragmentEvent.RESUME)
     }
 
-    //    override fun showError(err: Throwable) {
-    //        if (err is UserDescribableException) {
-    //            AlertDialogFragment.Builder()
-    //                    .setTitle(R.string.error_title.toFormattedString(context))
-    //                    .setMessage(err.describe(context))
-    //                    .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
-    //                    .show(childFragmentManager, TAG_GENERIC_ERROR_DIALOG)
-    //        } else {
-    //            AlertDialogFragment.Builder()
-    //                    .setTitle(R.string.error_title.toFormattedString(context))
-    //                    .setMessage("Class: ${err.javaClass}, msg: ${err.message}")
-    //                    .setBtnNeutral(R.string.dialog_ok.toFormattedString(context))
-    //                    .show(childFragmentManager, TAG_GENERIC_ERROR_DIALOG)
-    //        }
-    //    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 

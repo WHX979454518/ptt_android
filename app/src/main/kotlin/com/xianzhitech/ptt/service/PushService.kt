@@ -181,7 +181,9 @@ private fun receivePushService(httpClient: OkHttpClient,
                 }
             }
 
-            override fun onPong(payload: Buffer?) { }
+            override fun onPong(payload: Buffer?) {
+                logger.d { "Received pong" }
+            }
 
             override fun onClose(code: Int, reason: String?) {
                 logger.i {"Communication to $request closed: code = $code, reason = $reason" }
