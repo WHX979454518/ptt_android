@@ -47,6 +47,9 @@ open class App : Application(), AppComponent {
     override lateinit var mediaButtonHandler: MediaButtonHandler
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
 
+    var isPushProcess : Boolean = false
+    private set
+
     override val appService: AppService by lazy {
         Retrofit.Builder()
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
@@ -58,6 +61,7 @@ open class App : Application(), AppComponent {
     }
 
     override fun onCreate() {
+        instance = this
         super.onCreate()
 
         if (BuildConfig.DEBUG.not()) {
@@ -70,6 +74,7 @@ open class App : Application(), AppComponent {
         val pid = Process.myPid()
         val currentProcessName = am.runningAppProcesses.first { it.pid == pid }.processName
         if (currentProcessName.contains("push").not()) {
+            isPushProcess = false
             preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
             val helper = createSQLiteStorageHelper(this, "data")
@@ -103,11 +108,18 @@ open class App : Application(), AppComponent {
             RoomStatusHandler(roomRepository, signalHandler)
             RoomAutoQuitHandler(preference, activityProvider, signalHandler)
             statisticCollector = StatisticCollector(signalHandler)
+        } else {
+            isPushProcess = true
         }
     }
 
     open protected fun onBuildHttpClient(): OkHttpClient.Builder {
         return OkHttpClient.Builder().cache(Cache(cacheDir, Constants.HTTP_MAX_CACHE_SIZE))
+    }
+
+    companion object {
+        lateinit var instance : App
+        private set
     }
 
 }

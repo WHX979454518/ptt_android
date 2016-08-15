@@ -130,7 +130,7 @@ class SignalServiceHandler(private val appContext: Context,
                                         syncContactSubscription = loginStateSubject
                                                 .map { it.status }
                                                 .distinctUntilChanged()
-                                                .filter { it == LoginStatus.LOGIN_IN_PROGRESS }
+                                                .filter { it == LoginStatus.LOGGED_IN }
                                                 .switchMap { Observable.interval(0, Constants.SYNC_CONTACT_INTERVAL_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()) }
                                                 .switchMap {
                                                     val version = appComponent.preference.contactVersion
@@ -150,9 +150,21 @@ class SignalServiceHandler(private val appContext: Context,
                                                     appComponent.preference.contactVersion = it.version
                                                 }
                                     }
+
+                                    loginStateSubject.onNext(u)
+                                }
+                                else if ((u.status == LoginStatus.LOGIN_IN_PROGRESS || u.status == LoginStatus.OFFLINE) && u.currentUser == null) {
+                                    val userId = authTokenFactory.userId
+                                    if (userId != null) {
+                                        // Fill current user value from database
+                                        loginStateSubject.onNext(u.copy(currentUser = appComponent.userRepository.getUser(userId).call()))
+                                    }
+                                }
+                                else {
+                                    loginStateSubject.onNext(u)
                                 }
 
-                                loginStateSubject.onNext(u)
+
                             },
                             commandEmitter = sendCommandSubject as Observable<Command<*, in Any>>,
                             deviceIdProvider = object : DeviceIdFactory {
@@ -248,16 +260,17 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun waitForUserLogin() : Completable {
         return Completable.defer {
-            val state = appComponent.signalHandler.peekLoginState()
-            if (state.status == LoginStatus.LOGGED_IN) {
-                return@defer Completable.complete()
+            when (appComponent.signalHandler.peekLoginState().status) {
+                LoginStatus.LOGGED_IN -> return@defer Completable.complete()
+                LoginStatus.OFFLINE -> return@defer Completable.error(StaticUserException(R.string.error_unable_to_connect))
+                else -> {}
             }
 
             logger.i { "Waiting for user to log in..." }
             appComponent.signalHandler.loginStatus
                     .first { it == LoginStatus.LOGGED_IN }
                     .toCompletable()
-        }
+        }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
     fun joinRoom(roomId: String): Completable {
@@ -325,13 +338,14 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun quitRoom() {
         mainThread {
-            ensureLoggedIn()
-
-            val roomId = peekRoomState().currentRoomId
-            if (roomId != null) {
-                LeaveRoomCommand(roomId, appComponent.preference.keepSession.not()).send()
-                roomStateSubject += RoomState.EMPTY
+            if (peekLoginState().status == LoginStatus.LOGGED_IN) {
+                val roomId = peekRoomState().currentRoomId
+                if (roomId != null) {
+                    LeaveRoomCommand(roomId, appComponent.preference.keepSession.not()).send()
+                }
             }
+
+            roomStateSubject += RoomState.EMPTY
         }
     }
 
@@ -549,6 +563,9 @@ private class AuthTokenFactoryImpl() : AuthTokenFactory {
     fun clear() {
         auth.set(null)
     }
+
+    val userId : String?
+        get() = auth.get()?.first?.let { if (it.guessLoginPostfix().isEmpty()) it else null }
 
     private fun String.guessLoginPostfix() : String {
         return when {

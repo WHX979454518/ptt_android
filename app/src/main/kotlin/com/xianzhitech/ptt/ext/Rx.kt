@@ -1,5 +1,8 @@
 package com.xianzhitech.ptt.ext
 
+import android.widget.Toast
+import com.xianzhitech.ptt.App
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import org.slf4j.LoggerFactory
 import rx.*
 import rx.android.schedulers.AndroidSchedulers
@@ -8,9 +11,15 @@ import rx.functions.Action1
 
 private val logger = LoggerFactory.getLogger("RxUtil")
 
-val defaultOnErrorAction: Action1<Throwable> = Action1 { logger.e(it) { "Error occurred: ${it?.message}" } }
-val defaultOnValueAction: Action1<Any?> = Action1 { logger.d { "Got unhandled success value: $it" } }
-val defaultOnCompleteAction: Action0 = Action0 { logger.d { "Got ignored complete signal" } }
+val defaultOnErrorAction: Action1<Throwable> = Action1 {
+    logger.e(it) { "Error occurred: ${it?.message}" }
+    if (App.instance.isPushProcess.not()) {
+        Toast.makeText(App.instance, it.describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
+    }
+}
+
+val defaultOnValueAction: Action1<Any?> = Action1 {  }
+val defaultOnCompleteAction: Action0 = Action0 {  }
 
 fun <T> Single<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
 fun <T> Observable<T>.observeOnMainThread() = observeOn(AndroidSchedulers.mainThread())
