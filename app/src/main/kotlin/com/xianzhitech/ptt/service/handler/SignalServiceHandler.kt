@@ -154,7 +154,7 @@ class SignalServiceHandler(private val appContext: Context,
                                     loginStateSubject.onNext(u)
                                 }
                                 else if ((u.status == LoginStatus.LOGIN_IN_PROGRESS || u.status == LoginStatus.OFFLINE) && u.currentUser == null) {
-                                    val userId = authTokenFactory.userId
+                                    val userId = appComponent.preference.userSessionToken?.userId
                                     if (userId != null) {
                                         // Fill current user value from database
                                         loginStateSubject.onNext(u.copy(currentUser = appComponent.userRepository.getUser(userId).call()))
@@ -563,9 +563,6 @@ private class AuthTokenFactoryImpl() : AuthTokenFactory {
     fun clear() {
         auth.set(null)
     }
-
-    val userId : String?
-        get() = auth.get()?.first?.let { if (it.guessLoginPostfix().isEmpty()) it else null }
 
     private fun String.guessLoginPostfix() : String {
         return when {

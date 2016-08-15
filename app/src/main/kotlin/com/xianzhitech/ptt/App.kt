@@ -104,7 +104,7 @@ open class App : Application(), AppComponent {
 
             mediaButtonHandler = MediaButtonHandler(signalHandler)
             AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
-            ServiceHandler(this, preference, signalHandler)
+            ServiceHandler(this, this)
             RoomStatusHandler(roomRepository, signalHandler)
             RoomAutoQuitHandler(preference, activityProvider, signalHandler)
             statisticCollector = StatisticCollector(signalHandler)
