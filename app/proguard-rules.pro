@@ -55,6 +55,7 @@
 -keepattributes *Annotation*
 
 -dontwarn ch.qos.logback.core.net.*
+-dontwarn org.slf4j.*
 
 -keepclassmembers class rx.internal.util.unsafe.*ArrayQueue*Field* {
     long producerIndex;
