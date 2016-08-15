@@ -106,7 +106,7 @@ fun receiveSignal(uri: Uri,
             subscriber.add(commandEmitter.subscribe { cmd ->
                 logger.d { "Sending command $cmd" }
                 s.emit(cmd.cmd, *cmd.args, Ack {
-                    logger.d { "Received ${cmd.javaClass.simpleName} result: ${it.print()}" }
+                    logger.d { "Received ${cmd.cmd} result: ${it.print()}" }
                     try {
                         val resultObj = it.first() as JSONObject
                         if (resultObj.optBoolean("success", false)) {

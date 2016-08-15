@@ -11,6 +11,7 @@ import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
@@ -19,7 +20,6 @@ import com.xianzhitech.ptt.ui.base.BaseActivity
 import rx.Completable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -83,10 +83,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.ignoreAllInvitations()
     }
 
-    private class RoomInvitationImpl(override val inviterId: String,
-                                     override val roomId: String = "123",
-                                     override val inviteTime: Date = Date()) : RoomInvitation
-
     override fun dismissInvitations() {
         supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG)?.let {
             supportFragmentManager.beginTransaction()
@@ -135,7 +131,9 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 }
                 .bindToLifecycle()
                 .subscribeSimple {
-                    if (appComponent.signalHandler.peekRoomState().status == RoomStatus.IDLE && !isFinishing) {
+                    val loginStatus = appComponent.signalHandler.peekLoginState().status
+                    val peekRoomState = appComponent.signalHandler.peekRoomState()
+                    if (loginStatus == LoginStatus.LOGGED_IN && peekRoomState.status == RoomStatus.IDLE && !isFinishing) {
                         Toast.makeText(this, R.string.room_quited, Toast.LENGTH_LONG).show()
                         finish()
                     }

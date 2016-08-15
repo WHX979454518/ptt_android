@@ -23,7 +23,9 @@ import rx.lang.kotlin.observable
 import rx.schedulers.Schedulers
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 
 private val logger = LoggerFactory.getLogger("PushService")
@@ -181,17 +183,51 @@ private fun receivePushService(httpClient: OkHttpClient,
         val request = requestProvider.call()
         logger.i {"Connecting to $request" }
         val client = WebSocketCall.create(httpClient, request)
+
+        val timerSubscription = AtomicReference<Subscription>()
+
         client.enqueue(object : WebSocketListener {
+            private lateinit var webSocket : WebSocket
+
             override fun onOpen(webSocket: WebSocket, response: Response?) {
                 logger.i {"Connected to $request" }
+                this.webSocket = webSocket
                 if (sendMessageProvider != null && subscriber.isUnsubscribed.not()) {
                     subscriber.add(sendMessageProvider.subscribe {  webSocket.sendMessage(RequestBody.create(WebSocket.TEXT, it))  })
                 }
                 retryPolicy.notifyConnected()
+                sendPing()
+            }
+
+            private fun sendPing() {
+                logger.d { "Sending ping" }
+                try {
+                    webSocket.sendPing(null)
+                } catch(e: Exception) {
+                    logger.e(e) { "Error sending ping" }
+                    subscriber.onError(e)
+                    webSocket.close(1011, "Error sending ping")
+                }
             }
 
             override fun onPong(payload: Buffer?) {
                 logger.d { "Received pong" }
+
+                restartPingTimer()
+            }
+
+            private fun restartPingTimer() {
+                timerSubscription.getAndSet(
+                        Observable.timer(30, TimeUnit.SECONDS)
+                                .switchMap {
+                                    sendPing()
+                                    Observable.timer(1, TimeUnit.MINUTES, AndroidSchedulers.mainThread())
+                                }
+                                .subscribe {
+                                    logger.i { "Ping timeout" }
+                                    subscriber.onError(TimeoutException("Ping timeout"))
+                                }.apply { subscriber.add(this) })
+                        ?.unsubscribe()
             }
 
             override fun onClose(code: Int, reason: String?) {
@@ -207,6 +243,9 @@ private fun receivePushService(httpClient: OkHttpClient,
                 try {
                     val msg = message.string()
                     logger.d { "Received message $msg" }
+                    // It's good time to restart ping timer
+                    restartPingTimer()
+
                     subscriber.onNext(msg)
                 } catch(e: Exception) {
                     logger.e(e) { "Error reading message" }

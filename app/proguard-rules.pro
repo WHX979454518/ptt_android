@@ -42,6 +42,11 @@
 # Gson specific classes
 -keep class sun.misc.Unsafe { *; }
 
+# Crashylitics
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+-printmapping mapping.txt
+
 -keepnames class rx.**
 -keepnames class android.**
 -keep class android.support.v7.widget.SearchView { *; }
@@ -50,12 +55,17 @@
 -dontwarn rx.**
 -dontwarn com.xianzhitech.ptt.**
 
+
+# Logs
 -keep class ch.qos.** { *; }
 -keep class org.slf4j.** { *; }
 -keepattributes *Annotation*
 
 -dontwarn ch.qos.logback.core.net.*
 -dontwarn org.slf4j.*
+
+
+# Rx
 
 -keepclassmembers class rx.internal.util.unsafe.*ArrayQueue*Field* {
     long producerIndex;

@@ -246,67 +246,81 @@ class SignalServiceHandler(private val appContext: Context,
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
+    fun waitForUserLogin() : Completable {
+        return Completable.defer {
+            val state = appComponent.signalHandler.peekLoginState()
+            if (state.status == LoginStatus.LOGGED_IN) {
+                return@defer Completable.complete()
+            }
+
+            logger.i { "Waiting for user to log in..." }
+            appComponent.signalHandler.loginStatus
+                    .first { it == LoginStatus.LOGGED_IN }
+                    .toCompletable()
+        }
+    }
+
     fun joinRoom(roomId: String): Completable {
-        return Completable.create { subscriber ->
-            ensureLoggedIn()
+        return waitForUserLogin()
+                .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                .andThen(Completable.create { subscriber ->
+                    val currRoomState = peekRoomState()
+                    val currentRoomId = currRoomState.currentRoomId
+                    if (currentRoomId == roomId && currRoomState.status != RoomStatus.OFFLINE) {
+                        subscriber.onCompleted()
+                        return@create
+                    }
 
-            val currRoomState = peekRoomState()
-            val currentRoomId = currRoomState.currentRoomId
-            if (currentRoomId == roomId && currRoomState.status != RoomStatus.OFFLINE) {
-                subscriber.onCompleted()
-                return@create
-            }
+                    if (currentRoomId != null) {
+                        LeaveRoomCommand(currentRoomId, appComponent.preference.keepSession.not()).send()
+                    }
 
-            if (currentRoomId != null) {
-                LeaveRoomCommand(currentRoomId, appComponent.preference.keepSession.not()).send()
-            }
+                    roomStateSubject += RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId)
 
-            roomStateSubject += RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId)
+                    JoinRoomCommand(roomId)
+                            .send()
+                            .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .flatMap { appComponent.roomRepository.saveRooms(listOf(it.room)).execAsync().toSingleDefault(it) }
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(object : SingleSubscriber<JoinRoomResult>() {
+                                override fun onError(error: Throwable) {
+                                    subscriber.onError(error)
 
-            JoinRoomCommand(roomId)
-                    .send()
-                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .flatMap { appComponent.roomRepository.saveRooms(listOf(it.room)).execAsync().toSingleDefault(it) }
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(object : SingleSubscriber<JoinRoomResult>() {
-                        override fun onError(error: Throwable) {
-                            subscriber.onError(error)
+                                    if (peekRoomState().currentRoomId == roomId) {
+                                        quitRoom()
+                                    }
 
-                            if (peekRoomState().currentRoomId == roomId) {
-                                quitRoom()
-                            }
-
-                            if (error is KnownServerException &&
-                                    error.errorName == "room_not_exists") {
-                                appComponent.roomRepository.removeRooms(listOf(roomId)).execAsync().subscribeSimple()
-                            }
-                        }
-
-                        override fun onSuccess(value: JoinRoomResult) {
-                            logger.d { "Join room result $value" }
-
-                            val state = peekRoomState()
-                            if (state.currentRoomId == value.room.id && state.status == RoomStatus.JOINING) {
-                                val newStatus = if (value.speakerId == null) {
-                                    RoomStatus.JOINED
-                                } else {
-                                    RoomStatus.ACTIVE
+                                    if (error is KnownServerException &&
+                                            error.errorName == "room_not_exists") {
+                                        appComponent.roomRepository.removeRooms(listOf(roomId)).execAsync().subscribeSimple()
+                                    }
                                 }
 
-                                roomStateSubject += state.copy(status = newStatus,
-                                        onlineMemberIds = state.onlineMemberIds + value.onlineMemberIds.toSet(),
-                                        currentRoomInitiatorUserId = value.initiatorUserId,
-                                        speakerId = value.speakerId,
-                                        speakerPriority = value.speakerPriority,
-                                        voiceServer = value.voiceServerConfiguration)
-                            }
+                                override fun onSuccess(value: JoinRoomResult) {
+                                    logger.d { "Join room result $value" }
 
-                            subscriber.onCompleted()
-                        }
-                    })
+                                    val state = peekRoomState()
+                                    if (state.currentRoomId == value.room.id && state.status == RoomStatus.JOINING) {
+                                        val newStatus = if (value.speakerId == null) {
+                                            RoomStatus.JOINED
+                                        } else {
+                                            RoomStatus.ACTIVE
+                                        }
 
-        }.subscribeOn(AndroidSchedulers.mainThread())
+                                        roomStateSubject += state.copy(status = newStatus,
+                                                onlineMemberIds = state.onlineMemberIds + value.onlineMemberIds.toSet(),
+                                                currentRoomInitiatorUserId = value.initiatorUserId,
+                                                speakerId = value.speakerId,
+                                                speakerPriority = value.speakerPriority,
+                                                voiceServer = value.voiceServerConfiguration)
+                                    }
+
+                                    subscriber.onCompleted()
+                                }
+                            })
+
+                }.subscribeOn(AndroidSchedulers.mainThread()))
     }
 
     fun quitRoom() {

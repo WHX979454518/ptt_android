@@ -7,7 +7,6 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
-import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomInvitationObject
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
-import java.util.concurrent.TimeUnit
 
 private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
@@ -44,20 +42,6 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                     Single.just(Unit)
                 },
                 { user, room, ignored -> InviteInfo(invite, room, user) })
-                .flatMap { info ->
-                    // 看看用户是否在登陆，如果是，则需要等待登陆完成
-                    when (appComponent.signalHandler.peekLoginState().status) {
-                        LoginStatus.LOGGED_IN -> Single.just(info)
-                        else -> {
-                            logger.i { "Waiting for user to log in..." }
-                            appComponent.signalHandler.loginStatus
-                                    .first { it == LoginStatus.LOGGED_IN }
-                                    .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                                    .toSingle()
-                                    .map { info }
-                        }
-                    }
-                }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeSimple { onReceive(context, it.invitation, it.currentRoom, it.inviter) }
     }
