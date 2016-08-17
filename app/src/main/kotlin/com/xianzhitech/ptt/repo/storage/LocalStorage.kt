@@ -6,204 +6,239 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.ext.d
-import com.xianzhitech.ptt.ext.i
-import com.xianzhitech.ptt.ext.lazySplit
-import com.xianzhitech.ptt.ext.toSqlSet
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.RoomModel
 import org.slf4j.LoggerFactory
+import rx.Completable
+import rx.Single
+import rx.schedulers.Schedulers
 import java.util.*
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.withLock
+import kotlin.concurrent.write
 
 private val logger = LoggerFactory.getLogger("LocalStorage")
 
 
-class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), UserStorage {
-    override fun getUsers(ids: Iterable<String>, out: MutableList<User>): List<User> {
-        return queryList(Users.MAPPER, out, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${ids.toSqlSet()}")
+class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<User>(db), UserStorage {
+    override fun getUsers(ids: Iterable<String>, out: MutableList<User>) = read<List<User>>(ids, out, {
+        queryList(Users.MAPPER, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${it.toSqlSet()}")
+    })
+
+    override fun saveUsers(users: Iterable<User>) : Completable = executeInTransaction {
+        val contentValues = ContentValues()
+        users.forEach {
+            db.insertWithOnConflict(Users.TABLE_NAME, null, it.toContentValues(contentValues), SQLiteDatabase.CONFLICT_REPLACE)
+        }
+        clearCache(users)
     }
 
-    override fun saveUsers(users: Iterable<User>) {
-        return executeInTransaction {
-            val contentValues = ContentValues()
-            users.forEach {
-                db.insertWithOnConflict(Users.TABLE_NAME, null, it.toContentValues(contentValues), SQLiteDatabase.CONFLICT_REPLACE)
-            }
-        }
-    }
-
-    override fun clear() {
-        return executeInTransaction {
-            db.delete(Users.TABLE_NAME, "1", arrayOf())
-        }
+    override fun clear() : Completable = executeInTransaction {
+        db.delete(Users.TABLE_NAME, "1", arrayOf())
+        clearCache()
     }
 }
 
-class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), GroupStorage {
-    override fun getGroups(groupIds: Iterable<String>, out: MutableList<Group>): List<Group> {
-        return queryList(Groups.MAPPER, out, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${groupIds.toSqlSet()}")
+class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<Group>(db), GroupStorage {
+    override fun getGroups(groupIds: Iterable<String>, out: MutableList<Group>) = read<List<Group>>(groupIds, out, {
+        queryList(Groups.MAPPER, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${it.toSqlSet()}")
+    })
+
+    override fun saveGroups(groups: Iterable<Group>) : Completable = executeInTransaction {
+        val contentValues = ContentValues()
+        groups.forEach {
+            db.insertWithOnConflict(Groups.TABLE_NAME, null, it.toContentValues(contentValues), SQLiteDatabase.CONFLICT_REPLACE)
+        }
+        clearCache(groups)
     }
 
-    override fun saveGroups(groups: Iterable<Group>) {
-        return executeInTransaction {
-            val contentValues = ContentValues()
-            groups.forEach {
-                db.insertWithOnConflict(Groups.TABLE_NAME, null, it.toContentValues(contentValues), SQLiteDatabase.CONFLICT_REPLACE)
-            }
-        }
-    }
-
-    override fun clear() {
-        return executeInTransaction {
-            db.delete(Groups.TABLE_NAME, "1", arrayOf())
-        }
+    override fun clear() : Completable = executeInTransaction {
+        db.delete(Groups.TABLE_NAME, "1", arrayOf())
+        clearCache()
     }
 }
 
-class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage(db), RoomStorage {
-    override fun getAllRooms(): List<RoomModel> {
-        return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME}")
-    }
+class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<RoomModel>(db), RoomStorage {
+    private var roomIds : HashSet<String>? = null
+    private val roomIdsLock = ReentrantReadWriteLock()
 
-    override fun getRooms(roomIds: Iterable<String>): List<RoomModel> {
-        return queryList(Rooms.MAPPER, arrayListOf(), "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${roomIds.toSqlSet()}")
-    }
+    private fun ensureRoomIds() : Single<List<String>> {
+        return Single.defer {
+            val result = roomIdsLock.read { roomIds?.toList() }
+            if (result == null) {
+                Single.fromCallable<List<String>> {
+                    logger.d { "Caching all room IDs..." }
+                    db.rawQuery("SELECT ${Rooms.ID} FROM ${Rooms.TABLE_NAME}", emptyArray()).use {
+                        val roomIdList = ArrayList<String>(it.count).apply {
+                            if (it.moveToFirst()) {
+                                do {
+                                    add(it.getString(0))
+                                } while (it.moveToNext())
+                            }
+                        }
 
-    override fun removeRooms(roomIds: Iterable<String>) {
-        return executeInTransaction {
-            db.delete(Rooms.TABLE_NAME, "${Rooms.ID} IN ${roomIds.toSqlSet()}", emptyArray())
-        }
-    }
+                        roomIdsLock.write {
+                            if (roomIds == null) {
+                                roomIds = roomIdList.toHashSet()
+                            } else {
+                                roomIds!!.addAll(roomIdList)
+                            }
+                        }
 
-    override fun updateRoomName(roomId: String, name: String) {
-        return executeInTransaction {
-            val contentValue = ContentValues(2)
-            contentValue.put(Rooms.NAME, name)
-            contentValue.put(Rooms.LAST_ACTIVE_TIME, System.currentTimeMillis())
-            db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
-        }
-    }
-
-    override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) {
-        return executeInTransaction {
-            val contentValue = ContentValues(3)
-            contentValue.put(Rooms.LAST_SPEAK_TIME, time.time)
-            contentValue.put(Rooms.LAST_SPEAK_MEMBER_ID, speakerId)
-            contentValue.put(Rooms.LAST_ACTIVE_TIME, time.time)
-            db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
-        }
-    }
-
-    override fun updateLastActiveTime(roomId: String, time: Date) {
-        return executeInTransaction {
-            val contentValue = ContentValues(1)
-            contentValue.put(Rooms.LAST_ACTIVE_TIME, time.time)
-            db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
-        }
-    }
-
-    override fun saveRooms(rooms: Iterable<Room>) {
-        return executeInTransaction {
-            val contentValues = ContentValues()
-            rooms.forEach {
-                if (db.update(Rooms.TABLE_NAME, it.toContentValues(contentValues), "${Rooms.ID} = ?", arrayOf(it.id)) <= 0) {
-                    contentValues.put(Rooms.LAST_ACTIVE_TIME, System.currentTimeMillis())
-                    db.insert(Rooms.TABLE_NAME, null, contentValues)
-                }
+                        roomIdList
+                    }
+                }.subscribeOn(queryScheduler)
+            }
+            else {
+                Single.just(result)
             }
         }
     }
 
-    override fun clear() {
-        return executeInTransaction {
-            db.delete(Rooms.TABLE_NAME, "1", arrayOf())
+    override fun getAllRooms() : Single<List<RoomModel>> {
+        return ensureRoomIds().flatMap { getRooms(it, ArrayList(it.size)) }
+    }
+
+    override fun getRooms(roomIds: Iterable<String>, out: MutableList<RoomModel>) = read<List<RoomModel>>(roomIds, out, {
+        queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${it.toSqlSet()}")
+    })
+
+    override fun removeRooms(roomIds: Iterable<String>) : Completable = executeInTransaction {
+        clearCacheById(roomIds)
+        roomIdsLock.write { this.roomIds?.removeAll(roomIds) }
+        db.delete(Rooms.TABLE_NAME, "${Rooms.ID} IN ${roomIds.toSqlSet()}", emptyArray())
+    }
+
+    override fun updateRoomName(roomId: String, name: String) : Completable = executeInTransaction {
+        clearCacheById(listOf(roomId))
+        val contentValue = ContentValues(2)
+        contentValue.put(Rooms.NAME, name)
+        contentValue.put(Rooms.LAST_ACTIVE_TIME, System.currentTimeMillis())
+        db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
+    }
+
+    override fun updateLastRoomSpeaker(roomId: String, time: Date, speakerId: String) : Completable = executeInTransaction {
+        val contentValue = ContentValues(3)
+        contentValue.put(Rooms.LAST_SPEAK_TIME, time.time)
+        contentValue.put(Rooms.LAST_SPEAK_MEMBER_ID, speakerId)
+        contentValue.put(Rooms.LAST_ACTIVE_TIME, time.time)
+        db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
+        clearCacheById(listOf(roomId))
+    }
+
+    override fun updateLastActiveTime(roomId: String, time: Date) : Completable = executeInTransaction {
+        val contentValue = ContentValues(1)
+        contentValue.put(Rooms.LAST_ACTIVE_TIME, time.time)
+        db.update(Rooms.TABLE_NAME, contentValue, "${Rooms.ID} = ?", arrayOf(roomId))
+        clearCacheById(listOf(roomId))
+    }
+
+    override fun saveRooms(rooms: Iterable<Room>) : Completable = executeInTransaction {
+        val contentValues = ContentValues()
+        rooms.forEach {
+            if (db.update(Rooms.TABLE_NAME, it.toContentValues(contentValues), "${Rooms.ID} = ?", arrayOf(it.id)) <= 0) {
+                contentValues.put(Rooms.LAST_ACTIVE_TIME, System.currentTimeMillis())
+                db.insert(Rooms.TABLE_NAME, null, contentValues)
+            }
         }
+        roomIdsLock.write {
+            if (roomIds != null) {
+                rooms.forEach { roomIds!!.add(it.id) }
+            }
+        }
+        clearCache(rooms)
+    }
+
+    override fun clear() : Completable = executeInTransaction {
+        db.delete(Rooms.TABLE_NAME, "1", arrayOf())
+        roomIdsLock.write { roomIds = null }
+        clearCache()
     }
 }
 
 class ContactSQLiteStorage(db: SQLiteOpenHelper,
                            private val userStorage: UserStorage,
-                           private val groupStorage: GroupStorage) : BaseSQLiteStorage(db), ContactStorage {
+                           private val groupStorage: GroupStorage) : BaseSQLiteStorage<Model>(db), ContactStorage {
+    override fun getContactItems(): Single<List<Model>> {
+        return Single.fromCallable {
+            // Get user ids and group ids
+            val groupIds = db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                ArrayList<String>(cursor.count).apply {
+                    if (cursor.moveToFirst()) {
+                        do {
+                            add(cursor.getString(0))
+                        } while (cursor.moveToNext())
+                    }
+                }
+            } ?: emptyList<String>()
 
-    override fun getContactItems(): List<Model> {
-        val ids = arrayListOf<String>()
-        val result = arrayListOf<Model>()
+            // Query user ids
+            val userIds = db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                ArrayList<String>(cursor.count).apply {
+                    if (cursor.moveToFirst()) {
+                        do {
+                            add(cursor.getString(0))
+                        } while (cursor.moveToNext())
+                    }
+                }
+            } ?: emptyList<String>()
 
-        // Query group ids
-        db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", arrayOf())?.use { cursor ->
-            ids.ensureCapacity(ids.size + cursor.count)
-            if (cursor.moveToFirst()) {
-                do {
-                    ids.add(cursor.getString(0))
-                } while (cursor.moveToNext())
-            }
-        }
-
-        // Query groups
-        if (ids.isNotEmpty()) {
-            groupStorage.getGroups(ids, result as MutableList<Group>)
-            ids.clear()
-        }
-
-        // Query user ids
-        db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
-            ids.ensureCapacity(ids.size + cursor.count)
-            if (cursor.moveToFirst()) {
-                do {
-                    ids.add(cursor.getString(0))
-                } while (cursor.moveToNext())
-            }
-        }
-
-        // Query users
-        if (ids.isNotEmpty()) {
-            userStorage.getUsers(ids, result as MutableList<User>)
-            ids.clear()
-        }
-
-        return result
+            groupIds to userIds
+        }.subscribeOn(queryScheduler)
+                .flatMap {
+                    val (groupIds, userIds) = it
+                    val result = ArrayList<Model>(groupIds.size + userIds.size)
+                    Single.zip(
+                            userStorage.getUsers(ids = userIds, out = Collections.synchronizedList(result as MutableList<User>)),
+                            groupStorage.getGroups(groupIds = groupIds, out = Collections.synchronizedList(result as MutableList<Group>)),
+                            { users, groups -> result }
+                    )
+                }
     }
 
-    override fun getAllContactUsers(): List<User> {
-        val ids = arrayListOf<String>()
+    override fun getAllContactUsers(): Single<List<User>> {
+        return Single.defer {
+            val ids = arrayListOf<String>()
 
-        // Query user ids
-        db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
-            ids.ensureCapacity(ids.size + cursor.count)
-            if (cursor.moveToFirst()) {
-                do {
-                    ids.add(cursor.getString(0))
-                } while (cursor.moveToNext())
-            }
-        }
-
-        return userStorage.getUsers(ids)
-    }
-
-    override fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) {
-        return executeInTransaction {
-            userStorage.saveUsers(users)
-            groupStorage.saveGroups(groups)
-
-            val localDb = db
-
-            localDb.delete(Contacts.TABLE_NAME, "1", arrayOf())
-            val contentValues = ContentValues(2)
-
-            users.forEach {
-                contentValues.put(Contacts.USER_ID, it.id)
-                localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
+            // Query user ids
+            db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                ids.ensureCapacity(ids.size + cursor.count)
+                if (cursor.moveToFirst()) {
+                    do {
+                        ids.add(cursor.getString(0))
+                    } while (cursor.moveToNext())
+                }
             }
 
-            contentValues.remove(Contacts.USER_ID)
-            groups.forEach {
-                contentValues.put(Contacts.GROUP_ID, it.id)
-                localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
-            }
+            userStorage.getUsers(ids, ArrayList(ids.size))
         }
     }
 
-    override fun clear() {
+    override fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) : Completable {
+        return Completable.merge(userStorage.saveUsers(users), groupStorage.saveGroups(groups))
+                .andThen(executeInTransaction {
+                    val localDb = db
+
+                    localDb.delete(Contacts.TABLE_NAME, "1", arrayOf())
+                    val contentValues = ContentValues(2)
+
+                    users.forEach {
+                        contentValues.put(Contacts.USER_ID, it.id)
+                        localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
+                    }
+
+                    contentValues.remove(Contacts.USER_ID)
+                    groups.forEach {
+                        contentValues.put(Contacts.GROUP_ID, it.id)
+                        localDb.insertWithOnConflict(Contacts.TABLE_NAME, null, contentValues, SQLiteDatabase.CONFLICT_REPLACE)
+                    }
+                })
+    }
+
+    override fun clear() : Completable {
         return executeInTransaction {
             db.delete(Contacts.TABLE_NAME, "1", arrayOf())
         }
@@ -211,33 +246,92 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
 }
 
 
-open class BaseSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) {
+open class BaseSQLiteStorage<T : Model>(dbOpenHelper: SQLiteOpenHelper) {
 
     protected val db: SQLiteDatabase by lazy { dbOpenHelper.writableDatabase }
+    protected val cache = CacheMap<String, T>(1024)
+    protected val cacheLock = ReentrantLock()
+    protected val queryScheduler = Schedulers.computation()
 
-    protected inline fun executeInTransaction(func: () -> Unit) {
-        db.beginTransaction()
-        try {
-            func()
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+    protected fun executeInTransaction(func: () -> Unit) : Completable {
+        return Completable.fromCallable {
+            db.beginTransaction()
+            try {
+                func()
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }.subscribeOn(queryScheduler)
+    }
+
+    protected fun clearCacheById(ids : Iterable<String>) {
+        cacheLock.withLock {
+            ids.forEach { cache.remove(it) }
         }
     }
 
-    protected fun <T> queryList(mapper: (Cursor) -> T, out: MutableList<T>, sql: String, vararg args: String?): List<T> {
+    protected fun clearCache(models : Iterable<Model>) {
+        cacheLock.withLock {
+            models.forEach { cache.remove(it.id) }
+        }
+    }
+
+    protected fun clearCache() {
+        cacheLock.withLock {
+            cache.clear()
+        }
+    }
+
+    protected fun saveInCache(data : Iterable<T>) {
+        cacheLock.withLock {
+            data.forEach {
+                cache[it.id] = it
+            }
+        }
+    }
+
+    protected fun <R : Collection<T>> read(ids: Iterable<String>,
+                                           output : MutableCollection<T>,
+                                           readFromDatabase : (Iterable<String>) -> List<T>) : Single<R> {
+        return Single.defer<R> {
+            val dbIds = arrayListOf<String>()
+            cacheLock.withLock {
+                ids.forEach { id ->
+                    val obj = cache[id]
+                    if (obj == null) {
+                        dbIds.add(id)
+                    }
+                    else {
+                        output.add(obj)
+                    }
+                }
+            }
+
+            if (dbIds.isEmpty()) {
+                return@defer Single.just(output as R)
+            }
+
+            Single.fromCallable {
+                val newResult = readFromDatabase(dbIds)
+                saveInCache(newResult)
+                output.addAll(newResult)
+                output as R
+            }.subscribeOn(queryScheduler)
+        }
+    }
+
+    protected fun <T> queryList(mapper: (Cursor) -> T, sql: String, vararg args: String?): List<T> {
         val startTime = System.currentTimeMillis()
         return db.rawQuery(sql, args)?.use { cursor: Cursor ->
-            out.apply {
-                out.ensureMoreCapacity(cursor.count)
-
+            ArrayList<T>(cursor.count).apply {
                 if (cursor.moveToFirst()) {
                     do {
                         add(mapper(cursor))
                     } while (cursor.moveToNext())
                 }
 
-                logger.d {"Query and map costs ${System.currentTimeMillis() - startTime}ms: ${sql.substring(0, Math.min(sql.length, 200))}" }
+                logger.trace {"Query and map costs ${System.currentTimeMillis() - startTime}ms: ${sql.substring(0, Math.min(sql.length, 200))}" }
             }
         } ?: emptyList<T>()
     }
@@ -277,6 +371,11 @@ fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelpe
     }
 }
 
+class CacheMap<K, V>(private val maxItem : Int) : LinkedHashMap<K, V>(0, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>): Boolean {
+        return size > maxItem
+    }
+}
 
 private data class UserModel(override val id: String,
                              override val name: String,
@@ -456,10 +555,3 @@ private fun String?.toPermissionSet(): Set<Permission> {
 
     return set
 }
-
-private fun <T> MutableList<T>.ensureMoreCapacity(cap: Int) {
-    if (this is ArrayList) {
-        ensureCapacity(size + cap)
-    }
-}
-

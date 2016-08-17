@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.service
 
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.User
 
 data class RoomState(val status: RoomStatus,
@@ -22,7 +23,7 @@ data class RoomState(val status: RoomStatus,
     }
 
     fun canRequestMic(user : User?) : Boolean {
-        if (user == null || currentRoomId == null || speakerId == user.id) {
+        if (user == null || currentRoomId == null || speakerId == user.id || user.permissions.contains(Permission.CAN_SPEAK).not()) {
             return false
         }
 

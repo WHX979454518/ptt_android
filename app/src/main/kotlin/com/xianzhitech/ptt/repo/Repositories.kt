@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.repo
 import android.content.Context
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.addAllLimited
 import com.xianzhitech.ptt.ext.first
 import com.xianzhitech.ptt.ext.sizeAtLeast
 import com.xianzhitech.ptt.ext.toFormattedString
@@ -14,14 +15,13 @@ import com.xianzhitech.ptt.repo.storage.ContactStorage
 import com.xianzhitech.ptt.repo.storage.GroupStorage
 import com.xianzhitech.ptt.repo.storage.RoomStorage
 import com.xianzhitech.ptt.repo.storage.UserStorage
-import rx.*
+import rx.Completable
 import rx.Observable
 import rx.Observer
+import rx.Single
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
-import rx.subjects.PublishSubject
+import rx.subjects.Subject
 import java.util.*
-import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
 /**
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
  */
 
 class UserRepository(private val userStorage: UserStorage,
-                     private val userNotification: PublishSubject<Unit>) {
+                     private val userNotification: Subject<*, *>) {
 
     fun getUsers(ids: Iterable<String>): QueryResult<List<User>> {
         return RepoQueryResult({
@@ -48,7 +48,7 @@ class UserRepository(private val userStorage: UserStorage,
 
     fun getUser(userId: String?): QueryResult<User?> {
         return RepoQueryResult({
-            userId?.let { userStorage.getUsers(listOf(it)).firstOrNull() }
+            userId?.let { userStorage.getUsers(listOf(it)).map { it.firstOrNull() } } ?: Single.just<User>(null)
         }, userNotification)
     }
 
@@ -60,7 +60,7 @@ class UserRepository(private val userStorage: UserStorage,
 }
 
 class GroupRepository(private val groupStorage: GroupStorage,
-                      private val groupNotification: PublishSubject<Unit>) {
+                      private val groupNotification: Subject<*, *>) {
 
     fun getGroups(groupIds: Iterable<String>): QueryResult<List<Group>> {
         return RepoQueryResult({
@@ -84,9 +84,9 @@ class GroupRepository(private val groupStorage: GroupStorage,
 class RoomRepository(private val roomStorage: RoomStorage,
                      private val groupStorage: GroupStorage,
                      private val userStorage: UserStorage,
-                     private val roomNotification: PublishSubject<Unit>,
-                     private val userNotification: PublishSubject<Unit>,
-                     private val groupNotification: PublishSubject<Unit>) {
+                     private val roomNotification: Subject<*, *>,
+                     private val userNotification: Subject<*, *>,
+                     private val groupNotification: Subject<*, *>) {
 
     fun getAllRooms(): QueryResult<List<RoomModel>> {
         return RepoQueryResult({
@@ -112,7 +112,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }
 
         return RepoQueryResult({
-            roomStorage.getRooms(listOf(roomId)).firstOrNull()
+            roomStorage.getRooms(listOf(roomId)).map { it.firstOrNull() }
         }, roomNotification)
     }
 
@@ -122,43 +122,32 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }
 
         return RepoQueryResult({
-            val room = roomStorage.getRooms(listOf(roomId)).first()
-            val groups = groupStorage.getGroups(room.associatedGroupIds)
-            val memberIds = linkedSetOf<String>()
+            roomStorage.getRooms(listOf(roomId))
+                .flatMap {
+                    val room = it.firstOrNull() ?: return@flatMap Single.just(emptyList<String>())
+                    val userIds = LinkedHashSet<String>()
+                    val filter = { it : String? -> excludeUserIds.contains(it).not() }
 
-            if (memberIds.size < maxMemberCount && excludeUserIds.contains(room.ownerId).not()) {
-                memberIds.add(room.ownerId)
-            }
+                    var needsGroupMembers = false
 
-            // Add members from associated groups first
-            loopGroup@ for (group in groups) {
-                for (memberId in group.memberIds) {
-                    if (excludeUserIds.contains(memberId)) {
-                        continue
+                    if (userIds.addAllLimited(maxMemberCount, listOf(room.ownerId), filter)) {
+                        if (userIds.addAllLimited(maxMemberCount, room.extraMemberIds, filter)) {
+                            needsGroupMembers = true
+                        }
                     }
 
-                    memberIds.add(memberId)
-                    if (memberIds.size >= maxMemberCount) {
-                        break@loopGroup
+                    if (needsGroupMembers) {
+                        groupStorage.getGroups(room.associatedGroupIds)
+                            .map { groups : List<Group> ->
+                                groups.forEach { userIds.addAllLimited(maxMemberCount, it.memberIds, filter) }
+                                userIds
+                            }
                     }
-                }
-            }
-
-            // Add members from 'extraMembers'
-            if (memberIds.size < maxMemberCount) {
-                for (memberId in room.extraMemberIds) {
-                    if (excludeUserIds.contains(memberId)) {
-                        continue
-                    }
-
-                    memberIds.add(memberId)
-                    if (memberIds.size >= maxMemberCount) {
-                        break
+                    else {
+                        Single.just(userIds)
                     }
                 }
-            }
-
-            userStorage.getUsers(memberIds)
+                .flatMap { userStorage.getUsers(it, ArrayList(it.size)) }
         }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
@@ -169,35 +158,38 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }
 
         return RepoQueryResult({
-            val room = roomStorage.getRooms(listOf(roomId)).firstOrNull() ?: return@RepoQueryResult null
+            roomStorage.getRooms(listOf(roomId))
+                .flatMap {
+                    val room = it.firstOrNull() ?: return@flatMap Single.just<RoomName>(null)
 
-            // 有预定房间名称, 直接返回
-            if (room.name.isNullOrEmpty().not()) {
-                return@RepoQueryResult RoomName(room.name, false)
-            }
+                    // 有预定房间名称, 直接返回
+                    if (room.name.isNullOrEmpty().not()) {
+                        return@flatMap Single.just(RoomName(room.name, false))
+                    }
 
-            // 有一个相关组且没有额外的用户, 则返回相关组的名称
-            if (room.associatedGroupIds.sizeAtLeast(1) && room.extraMemberIds.sizeAtLeast(1).not()) {
-                val groupName = groupStorage.getGroups(room.associatedGroupIds.first(1)).firstOrNull()?.name
-                if (groupName != null) {
-                    return@RepoQueryResult RoomName(groupName, false)
+                    // 有一个相关组且没有额外的用户, 则返回相关组的名称
+                    if (room.associatedGroupIds.sizeAtLeast(1) && room.extraMemberIds.sizeAtLeast(1).not()) {
+                        return@flatMap groupStorage.getGroups(room.associatedGroupIds.first(1))
+                            .map { it.firstOrNull()?.name?.let { RoomName(it, false) } }
+                    }
+
+                    // 否则返回成员名称组合
+                    getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).getAsync()
+                        .map { members ->
+                            val usedMemberList: List<User>
+                            val ellipizes: Boolean
+                            if (members.size > maxDisplayMemberNames) {
+                                usedMemberList = members.subList(0, maxDisplayMemberNames - 1)
+                                ellipizes = true
+                            } else {
+                                usedMemberList = members
+                                ellipizes = false
+                            }
+
+                            val name = usedMemberList.joinToString(separator = separator, transform = { it.name })
+                            RoomName(if (ellipizes) name + ellipsizeEnd else name, usedMemberList.size == 1)
+                        }
                 }
-            }
-
-            // 否则返回成员名称组合
-            val members = getRoomMembers(roomId, maxDisplayMemberNames + 1, excludeUserIds).call()
-            val usedMemberList: List<User>
-            val ellipizes: Boolean
-            if (members.size > maxDisplayMemberNames) {
-                usedMemberList = members.subList(0, maxDisplayMemberNames - 1)
-                ellipizes = true
-            } else {
-                usedMemberList = members
-                ellipizes = false
-            }
-
-            val name = usedMemberList.joinToString(separator = separator, transform = { it.name })
-            RoomName(if (ellipizes) name + ellipsizeEnd else name, usedMemberList.size == 1)
         }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
@@ -233,8 +225,8 @@ class RoomRepository(private val roomStorage: RoomStorage,
 }
 
 class ContactRepository(private val contactStorage: ContactStorage,
-                        private val userNotification: PublishSubject<Unit>,
-                        private val groupNotification: PublishSubject<Unit>) {
+                        private val userNotification: Subject<*, *>,
+                        private val groupNotification: Subject<*, *>) {
 
     fun getContactItems(): QueryResult<List<Model>> {
         return RepoQueryResult({
@@ -261,15 +253,13 @@ class ContactRepository(private val contactStorage: ContactStorage,
     }
 }
 
-interface QueryResult<T> : Callable<T> {
-    fun getAsync(scheduler: Scheduler = Schedulers.computation()): Single<T>
-    fun observe(scheduler: Scheduler = Schedulers.computation()): Observable<T>
+interface QueryResult<T> {
+    fun getAsync(): Single<T>
+    fun observe(): Observable<T>
 }
 
 interface UpdateResult {
-    fun exec(notifyChanges : Boolean = true)
-    fun execAsync(scheduler: Scheduler = Schedulers.computation(),
-                  notifyChanges : Boolean = true): Completable
+    fun execAsync(notifyChanges : Boolean = true): Completable
 }
 
 data class RoomName(val name: String,
@@ -295,30 +285,26 @@ fun RoomName?.getInvitationDescription(context: Context, inviterId: String, invi
     }
 }
 
-private class RepoUpdateResult(private val func: () -> Unit,
-                               vararg private val notifications: Observer<Unit>) : UpdateResult {
-    override fun exec(notifyChanges: Boolean) {
-        func()
-        if (notifyChanges) {
-            notifications.forEach { it.onNext(Unit) }
-        }
-    }
+private class RepoUpdateResult(private val func: () -> Completable,
+                               vararg private val notifications: Observer<*>) : UpdateResult {
 
-    override fun execAsync(scheduler: Scheduler, notifyChanges: Boolean): Completable {
-        return Completable.fromCallable { exec(notifyChanges) }.subscribeOn(scheduler)
+    override fun execAsync(notifyChanges: Boolean): Completable {
+        return if (notifyChanges) {
+            func().doOnCompleted {
+                notifications.forEach { it.onNext(null) }
+            }
+        } else {
+            func()
+        }
     }
 }
 
 private object NullQueryResult : QueryResult<Any?> {
-    override fun call(): Any? {
-        return null
-    }
-
-    override fun getAsync(scheduler: Scheduler): Single<Any?> {
+    override fun getAsync(): Single<Any?> {
         return Single.just(null)
     }
 
-    override fun observe(scheduler: Scheduler): Observable<Any?> {
+    override fun observe(): Observable<Any?> {
         return Observable.just(null)
     }
 }
@@ -329,37 +315,29 @@ private fun <T> nullResult(): QueryResult<T> {
 
 private fun <T> fixedResult(obj: T): QueryResult<T> {
     return object : QueryResult<T> {
-        override fun call(): T {
-            return obj
-        }
-
-        override fun getAsync(scheduler: Scheduler): Single<T> {
+        override fun getAsync(): Single<T> {
             return Single.just(obj)
         }
 
-        override fun observe(scheduler: Scheduler): Observable<T> {
+        override fun observe(): Observable<T> {
             return Observable.just(obj)
         }
 
     }
 }
 
-private class RepoQueryResult<T>(private val func: () -> T,
-                                 vararg private val eventNotifications: Observable<Unit>) : QueryResult<T>, Callable<T> {
-    override fun call(): T {
+private class RepoQueryResult<T>(private val func : () -> Single<T>,
+                                 vararg private val eventNotifications: Observable<*>) : QueryResult<T> {
+
+    override fun getAsync(): Single<T> {
         return func()
     }
 
-    override fun getAsync(scheduler: Scheduler): Single<T> {
-        return Single.fromCallable(this).subscribeOn(scheduler)
-    }
-
-    override fun observe(scheduler: Scheduler): Observable<T> {
+    override fun observe(): Observable<T> {
         return Observable.merge(eventNotifications)
                 .debounce(100, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .startWith(Unit)
-                .observeOn(scheduler)
-                .map { func() }
+                .switchMap { func().toObservable() }
     }
 }
 

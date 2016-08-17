@@ -10,6 +10,7 @@ import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import com.crashlytics.android.Crashlytics
 import com.google.gson.Gson
+import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
@@ -29,6 +30,9 @@ import org.slf4j.MDC
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import rx.Scheduler
+import rx.android.plugins.RxAndroidPlugins
+import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 
@@ -64,6 +68,14 @@ open class App : Application(), AppComponent {
         instance = this
         super.onCreate()
 
+        RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
+            private val scheduler = ImmediateMainThreadScheduler()
+
+            override fun getMainThreadScheduler(): Scheduler {
+                return scheduler
+            }
+        })
+
         if (BuildConfig.DEBUG.not()) {
             Fabric.with(this, Crashlytics())
         }
@@ -78,15 +90,15 @@ open class App : Application(), AppComponent {
             preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
             val helper = createSQLiteStorageHelper(this, "data")
-            val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
-            val groupStorage = GroupLRUCacheStorage(GroupSQLiteStorage(helper))
+            val userStorage = UserSQLiteStorage(helper)
+            val groupStorage = GroupSQLiteStorage(helper)
             val userNotification = PublishSubject.create<Unit>()
             val groupNotification = PublishSubject.create<Unit>()
             val roomNotification = PublishSubject.create<Unit>()
 
             userRepository = UserRepository(userStorage, userNotification)
             groupRepository = GroupRepository(groupStorage, groupNotification)
-            roomRepository = RoomRepository(RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage,
+            roomRepository = RoomRepository(RoomSQLiteStorage(helper), groupStorage,
                     userStorage, roomNotification, userNotification, groupNotification)
             contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 

@@ -10,6 +10,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
@@ -122,7 +123,7 @@ class SignalServiceHandler(private val appContext: Context,
 
                                     if (u.currentUserID != appComponent.preference.lastLoginUserId) {
                                         logger.i { "Clearing room data for new user" }
-                                        appComponent.roomRepository.clear().exec()
+                                        appComponent.roomRepository.clear().execAsync(true).await()
                                         appComponent.preference.lastLoginUserId = u.currentUserID
                                     }
 
@@ -157,7 +158,7 @@ class SignalServiceHandler(private val appContext: Context,
                                     val userId = appComponent.preference.userSessionToken?.userId
                                     if (userId != null) {
                                         // Fill current user value from database
-                                        loginStateSubject.onNext(u.copy(currentUser = appComponent.userRepository.getUser(userId).call()))
+                                        loginStateSubject.onNext(u.copy(currentUser = appComponent.userRepository.getUser(userId).getAsync().toBlocking().value()))
                                     }
                                 }
                                 else {
@@ -250,6 +251,12 @@ class SignalServiceHandler(private val appContext: Context,
     fun createRoom(groupIds : Iterable<String> = emptyList(), userIds : Iterable<String> = emptyList()): Single<Room> {
         return Single.defer {
             ensureLoggedIn()
+
+            val permissions = peekLoginState().currentUser!!.permissions
+            if ((userIds.count() == 1 && permissions.contains(Permission.MAKE_INDIVIDUAL_CALL).not()) ||
+                    (groupIds.sizeAtLeast(1) && permissions.contains(Permission.MAKE_GROUP_CALL).not())) {
+                throw StaticUserException(R.string.error_no_permission)
+            }
 
             CreateRoomCommand(groupIds = groupIds, extraMemberIds = userIds)
                     .send()

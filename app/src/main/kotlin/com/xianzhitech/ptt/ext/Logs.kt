@@ -33,6 +33,12 @@ inline fun Logger.e(e : Throwable?, func: () -> Any?) {
     }
 }
 
+inline fun Logger.trace(func: () -> Any?) {
+    if (isTraceEnabled) {
+        trace(func()?.toString())
+    }
+}
+
 fun Array<*>.print() : String {
     return "[${this.joinToString(separator = ",", prefix = "'", postfix = "'")}]"
 }
