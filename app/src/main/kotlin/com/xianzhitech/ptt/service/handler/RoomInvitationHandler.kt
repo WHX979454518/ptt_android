@@ -25,7 +25,17 @@ class RoomInvitationHandler() : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val invite : RoomInvitation = when (intent?.action) {
             SignalServiceHandler.ACTION_ROOM_INVITATION -> intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
-            PushService.ACTION_MESSAGE -> RoomInvitationObject(JSONObject(intent!!.getStringExtra(PushService.EXTRA_MSG)))
+            PushService.ACTION_MESSAGE -> {
+                val obj: JSONObject
+                try {
+                    obj = JSONObject(intent!!.getStringExtra(PushService.EXTRA_MSG))
+                } catch(e: Exception) {
+                    logger.e(e) { "Error decoding push message. " }
+                    return
+                }
+
+                RoomInvitationObject(obj)
+            }
             else -> return
         }
 

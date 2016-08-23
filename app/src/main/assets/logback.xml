@@ -15,7 +15,7 @@
             <!-- daily rollover period -->
             <fileNamePattern>log/log.%d.txt</fileNamePattern>
 
-            <!-- keep 7 days' worth of history -->
+            <!-- keep 2 days' worth of history -->
             <maxHistory>2</maxHistory>
         </rollingPolicy>
 

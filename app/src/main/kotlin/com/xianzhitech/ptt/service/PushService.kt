@@ -5,6 +5,7 @@ import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.ui.RoomInvitationHelperActivity
 import okhttp3.*
@@ -79,17 +80,23 @@ class PushService : Service() {
         this.connectParams = connectParams
         messageSubscription?.unsubscribe()
         messageSubscription = receivePushService(
-                OkHttpClient.Builder().readTimeout(0, TimeUnit.SECONDS).build(),
-                Func0 {
+                httpClient = OkHttpClient.Builder().readTimeout(0, TimeUnit.SECONDS).build(),
+                requestProvider = Func0 {
                     Request.Builder().url(connectParams.uri)
                             .header("X-User-Id", connectParams.userId)
                             .header("X-User-Token", connectParams.userToken)
                             .build()
                 },
-                null,
-                AndroidReconnectPolicy(applicationContext))
+                powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager,
+                sendMessageProvider = null,
+                retryPolicy = AndroidReconnectPolicy(applicationContext))
                 .observeOnMainThread()
                 .subscribe {
+                    if (it.isNullOrBlank()) {
+                        logger.w { "Received empty message. Ignored" }
+                        return@subscribe
+                    }
+
                     // 检查主进程是否存在，如果存在，则不需要调用help activity
                     if (am.runningAppProcesses.indexOfFirst { it.processName == applicationContext.packageName } >= 0) {
                         logger.d { "Sending message broadcast" }
@@ -176,6 +183,7 @@ class AndroidReconnectPolicy(private val context: Context) : ReconnectPolicy {
 
 private fun receivePushService(httpClient: OkHttpClient,
                                requestProvider : Func0<Request>,
+                               powerManager: PowerManager,
                                sendMessageProvider : Observable<String>? = null,
                                retryPolicy : ReconnectPolicy) : Observable<String> {
 
@@ -185,7 +193,9 @@ private fun receivePushService(httpClient: OkHttpClient,
         val client = WebSocketCall.create(httpClient, request)
 
         val timerSubscription = AtomicReference<Subscription>()
+        val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PushService")
 
+        wakeLock.acquire(10000)
         client.enqueue(object : WebSocketListener {
             private lateinit var webSocket : WebSocket
 
@@ -202,6 +212,7 @@ private fun receivePushService(httpClient: OkHttpClient,
             private fun sendPing() {
                 logger.d { "Sending ping" }
                 try {
+                    wakeLock.acquire(10000)
                     webSocket.sendPing(null)
                 } catch(e: Exception) {
                     logger.e(e) { "Error sending ping" }
@@ -212,13 +223,13 @@ private fun receivePushService(httpClient: OkHttpClient,
 
             override fun onPong(payload: Buffer?) {
                 logger.d { "Received pong" }
-
+                wakeLock.release()
                 restartPingTimer()
             }
 
             private fun restartPingTimer() {
                 timerSubscription.getAndSet(
-                        Observable.timer(30, TimeUnit.SECONDS)
+                        Observable.timer(2, TimeUnit.MINUTES)
                                 .switchMap {
                                     sendPing()
                                     Observable.timer(1, TimeUnit.MINUTES, AndroidSchedulers.mainThread())
