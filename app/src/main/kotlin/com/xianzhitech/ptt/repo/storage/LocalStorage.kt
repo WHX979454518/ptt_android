@@ -6,7 +6,10 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.lazySplit
+import com.xianzhitech.ptt.ext.perf
+import com.xianzhitech.ptt.ext.toSqlSet
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.RoomModel
 import org.slf4j.LoggerFactory
@@ -24,9 +27,11 @@ private val logger = LoggerFactory.getLogger("LocalStorage")
 
 
 class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<User>(db), UserStorage {
-    override fun getUsers(ids: Iterable<String>, out: MutableList<User>) = read<List<User>>(ids, out, {
-        queryList(Users.MAPPER, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${it.toSqlSet()}")
-    })
+    override fun getUsers(ids: Iterable<String>, out: MutableList<User>) = logger.perf("Getting users") {
+        read<List<User>>(ids, out, {
+            queryList(Users.MAPPER, "SELECT ${Users.ALL} FROM ${Users.TABLE_NAME} WHERE ${Users.ID} IN ${it.toSqlSet()}")
+        })
+    }
 
     override fun saveUsers(users: Iterable<User>) : Completable = executeInTransaction {
         val contentValues = ContentValues()
@@ -43,9 +48,11 @@ class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<User>(db), Use
 }
 
 class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<Group>(db), GroupStorage {
-    override fun getGroups(groupIds: Iterable<String>, out: MutableList<Group>) = read<List<Group>>(groupIds, out, {
-        queryList(Groups.MAPPER, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${it.toSqlSet()}")
-    })
+    override fun getGroups(groupIds: Iterable<String>, out: MutableList<Group>) = logger.perf("Getting groups") {
+        read<List<Group>>(groupIds, out, {
+            queryList(Groups.MAPPER, "SELECT ${Groups.ALL} FROM ${Groups.TABLE_NAME} WHERE ${Groups.ID} IN ${it.toSqlSet()}")
+        })
+    }
 
     override fun saveGroups(groups: Iterable<Group>) : Completable = executeInTransaction {
         val contentValues = ContentValues()
@@ -70,25 +77,26 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<RoomModel>(db)
             val result = roomIdsLock.read { roomIds?.toList() }
             if (result == null) {
                 Single.fromCallable<List<String>> {
-                    logger.d { "Caching all room IDs..." }
-                    db.rawQuery("SELECT ${Rooms.ID} FROM ${Rooms.TABLE_NAME}", emptyArray()).use {
-                        val roomIdList = ArrayList<String>(it.count).apply {
-                            if (it.moveToFirst()) {
-                                do {
-                                    add(it.getString(0))
-                                } while (it.moveToNext())
+                    logger.perf("Caching all room ids") {
+                        db.rawQuery("SELECT ${Rooms.ID} FROM ${Rooms.TABLE_NAME}", emptyArray()).use {
+                            val roomIdList = ArrayList<String>(it.count).apply {
+                                if (it.moveToFirst()) {
+                                    do {
+                                        add(it.getString(0))
+                                    } while (it.moveToNext())
+                                }
                             }
-                        }
 
-                        roomIdsLock.write {
-                            if (roomIds == null) {
-                                roomIds = roomIdList.toHashSet()
-                            } else {
-                                roomIds!!.addAll(roomIdList)
+                            roomIdsLock.write {
+                                if (roomIds == null) {
+                                    roomIds = roomIdList.toHashSet()
+                                } else {
+                                    roomIds!!.addAll(roomIdList)
+                                }
                             }
-                        }
 
-                        roomIdList
+                            roomIdList
+                        }
                     }
                 }.subscribeOn(queryScheduler)
             }
@@ -99,12 +107,14 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<RoomModel>(db)
     }
 
     override fun getAllRooms() : Single<List<RoomModel>> {
-        return ensureRoomIds().flatMap { getRooms(it, ArrayList(it.size)) }
+        return logger.perf("getAllRooms") { ensureRoomIds().flatMap { getRooms(it, ArrayList(it.size)) } }
     }
 
-    override fun getRooms(roomIds: Iterable<String>, out: MutableList<RoomModel>) = read<List<RoomModel>>(roomIds, out, {
-        queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${it.toSqlSet()}")
-    })
+    override fun getRooms(roomIds: Iterable<String>, out: MutableList<RoomModel>) = logger.perf("getRooms") {
+        read<List<RoomModel>>(roomIds, out, {
+            queryList(Rooms.MAPPER, "SELECT ${Rooms.ALL} FROM ${Rooms.TABLE_NAME} WHERE ${Rooms.ID} IN ${it.toSqlSet()}")
+        })
+    }
 
     override fun removeRooms(roomIds: Iterable<String>) : Completable = executeInTransaction {
         clearCacheById(roomIds)
@@ -164,29 +174,31 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
                            private val groupStorage: GroupStorage) : BaseSQLiteStorage<Model>(db), ContactStorage {
     override fun getContactItems(): Single<List<Model>> {
         return Single.fromCallable {
-            // Get user ids and group ids
-            val groupIds = db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", arrayOf())?.use { cursor ->
-                ArrayList<String>(cursor.count).apply {
-                    if (cursor.moveToFirst()) {
-                        do {
-                            add(cursor.getString(0))
-                        } while (cursor.moveToNext())
+            logger.perf("Getting contact items") {
+                // Get user ids and group ids
+                val groupIds = db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                    ArrayList<String>(cursor.count).apply {
+                        if (cursor.moveToFirst()) {
+                            do {
+                                add(cursor.getString(0))
+                            } while (cursor.moveToNext())
+                        }
                     }
-                }
-            } ?: emptyList<String>()
+                } ?: emptyList<String>()
 
-            // Query user ids
-            val userIds = db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
-                ArrayList<String>(cursor.count).apply {
-                    if (cursor.moveToFirst()) {
-                        do {
-                            add(cursor.getString(0))
-                        } while (cursor.moveToNext())
+                // Query user ids
+                val userIds = db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                    ArrayList<String>(cursor.count).apply {
+                        if (cursor.moveToFirst()) {
+                            do {
+                                add(cursor.getString(0))
+                            } while (cursor.moveToNext())
+                        }
                     }
-                }
-            } ?: emptyList<String>()
+                } ?: emptyList<String>()
 
-            groupIds to userIds
+                groupIds to userIds
+            }
         }.subscribeOn(queryScheduler)
                 .flatMap {
                     val (groupIds, userIds) = it
@@ -322,7 +334,6 @@ open class BaseSQLiteStorage<T : Model>(dbOpenHelper: SQLiteOpenHelper) {
     }
 
     protected fun <T> queryList(mapper: (Cursor) -> T, sql: String, vararg args: String?): List<T> {
-        val startTime = System.currentTimeMillis()
         return db.rawQuery(sql, args)?.use { cursor: Cursor ->
             ArrayList<T>(cursor.count).apply {
                 if (cursor.moveToFirst()) {
@@ -330,8 +341,6 @@ open class BaseSQLiteStorage<T : Model>(dbOpenHelper: SQLiteOpenHelper) {
                         add(mapper(cursor))
                     } while (cursor.moveToNext())
                 }
-
-                logger.trace {"Query and map costs ${System.currentTimeMillis() - startTime}ms: ${sql.substring(0, Math.min(sql.length, 200))}" }
             }
         } ?: emptyList<T>()
     }

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Process
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
+import ch.qos.logback.classic.Level
 import com.crashlytics.android.Crashlytics
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
@@ -26,6 +27,8 @@ import com.xianzhitech.ptt.util.ActivityProviderImpl
 import io.fabric.sdk.android.Fabric
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
@@ -78,6 +81,9 @@ open class App : Application(), AppComponent {
 
         if (BuildConfig.DEBUG.not()) {
             Fabric.with(this, Crashlytics())
+        }
+        else {
+            (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as? ch.qos.logback.classic.Logger)?.level = Level.ALL
         }
 
         MDC.put("pid", Process.myPid().toString())

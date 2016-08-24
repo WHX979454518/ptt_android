@@ -15,6 +15,7 @@ import okhttp3.ws.WebSocketListener
 import okio.Buffer
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
 import rx.Single
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -89,6 +90,7 @@ class PushService : Service() {
                 },
                 powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager,
                 sendMessageProvider = null,
+                pingPongScheduler = AlarmManagerScheduler(applicationContext),
                 retryPolicy = AndroidReconnectPolicy(applicationContext))
                 .observeOnMainThread()
                 .subscribe {
@@ -184,6 +186,7 @@ class AndroidReconnectPolicy(private val context: Context) : ReconnectPolicy {
 private fun receivePushService(httpClient: OkHttpClient,
                                requestProvider : Func0<Request>,
                                powerManager: PowerManager,
+                               pingPongScheduler : Scheduler,
                                sendMessageProvider : Observable<String>? = null,
                                retryPolicy : ReconnectPolicy) : Observable<String> {
 
@@ -229,7 +232,7 @@ private fun receivePushService(httpClient: OkHttpClient,
 
             private fun restartPingTimer() {
                 timerSubscription.getAndSet(
-                        Observable.timer(2, TimeUnit.MINUTES)
+                        Observable.timer(2, TimeUnit.MINUTES, pingPongScheduler)
                                 .switchMap {
                                     sendPing()
                                     Observable.timer(1, TimeUnit.MINUTES, AndroidSchedulers.mainThread())
@@ -254,9 +257,6 @@ private fun receivePushService(httpClient: OkHttpClient,
                 try {
                     val msg = message.string()
                     logger.d { "Received message $msg" }
-                    // It's good time to restart ping timer
-                    restartPingTimer()
-
                     subscriber.onNext(msg)
                 } catch(e: Exception) {
                     logger.e(e) { "Error reading message" }
