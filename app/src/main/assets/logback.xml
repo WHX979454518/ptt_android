@@ -17,6 +17,7 @@
 
             <!-- keep 2 days' worth of history -->
             <maxHistory>2</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
 
         <prudent>true</prudent>

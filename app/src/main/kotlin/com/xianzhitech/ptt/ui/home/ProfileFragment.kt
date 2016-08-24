@@ -135,11 +135,6 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
             appComponent.appService.submitLogs(map)
         }.subscribeOn(Schedulers.io())
-                .doOnCompleted {
-                    srcDir.listFiles()?.forEach {
-                        it.writeBytes(byteArrayOf())
-                    }
-                }
                 .observeOnMainThread()
                 .subscribe(LogUploadSubscriber(activity.applicationContext))
     }
