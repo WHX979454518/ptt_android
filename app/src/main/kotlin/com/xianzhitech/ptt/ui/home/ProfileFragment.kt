@@ -130,7 +130,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             map["model"] = RequestBody.create(plainText, "${Build.MANUFACTURER} - ${Build.MODEL}")
 
             dst.listFiles()?.forEachIndexed { i, file ->
-                map["log_file\"; filename=\"file_$i.log"] = RequestBody.create(plainText, file)
+                map["log_file\"; filename=\"${file.name}"] = RequestBody.create(plainText, file)
             }
 
             appComponent.appService.submitLogs(map)
