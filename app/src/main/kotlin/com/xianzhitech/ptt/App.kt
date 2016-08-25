@@ -87,7 +87,7 @@ open class App : Application(), AppComponent {
         }
 
         MDC.put("pid", Process.myPid().toString())
-        MDC.put("version", BuildConfig.VERSION_NAME)
+        MDC.put("version", "${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE}")
 
         val am = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
         val pid = Process.myPid()
