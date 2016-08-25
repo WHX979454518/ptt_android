@@ -281,7 +281,7 @@ abstract class BaseActivity : AppCompatActivity(),
             }
         }
 
-        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
+        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.peekCurrentUserId ?: Constants.EMPTY_USER_ID)
                 .toObservable()
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
@@ -289,7 +289,7 @@ abstract class BaseActivity : AppCompatActivity(),
                     handleUpdate(it)
                 }
 
-        appComponent.signalHandler.currentUserIdSubject
+        appComponent.signalHandler.currentUserId
             .switchMap { appComponent.userRepository.getUser(it).getAsync().toObservable() }
             .observeOnMainThread()
             .compose(bindToLifecycle())

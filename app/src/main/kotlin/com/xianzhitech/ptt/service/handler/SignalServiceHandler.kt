@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
@@ -24,6 +25,7 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.lang.kotlin.PublishSubject
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
+import rx.subjects.SerializedSubject
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -33,8 +35,17 @@ private val logger = LoggerFactory.getLogger("SignalServiceHandler")
 class SignalServiceHandler(private val appContext: Context,
                            private val appComponent: AppComponent) {
 
-    private val loginStateSubject = BehaviorSubject.create(LoginState.EMPTY)
+    private val loginStatusSubject = BehaviorSubject.create(LoginStatus.IDLE)
     private val roomStateSubject = BehaviorSubject.create(RoomState.EMPTY)
+
+    val peekCurrentUserId: String?
+        get() = appComponent.preference.userSessionToken?.userId
+
+    val currentUserId : Observable<String?>
+        get() = appComponent.preference.userSessionTokenSubject.map { it?.userId }.distinctUntilChanged()
+
+    val loggedIn : Observable<Boolean>
+        get() = appComponent.preference.userSessionTokenSubject.map { it != null }.distinctUntilChanged()
 
     private val mainThreadHandler = Handler(Looper.getMainLooper())
 
@@ -43,24 +54,20 @@ class SignalServiceHandler(private val appContext: Context,
 
     private var sendCommandSubject = PublishSubject<Command<*, *>>()
     private val authTokenFactory = AuthTokenFactoryImpl()
+    private lateinit var coreService : CoreService
 
-    val loginState: Observable<LoginState> = loginStateSubject
-    val roomState: Observable<RoomState> = roomStateSubject
-    val loginStatus: Observable<LoginStatus>
-        get() = loginState.map { peekLoginState().status }.distinctUntilChanged()
+    val roomState: Observable<RoomState>
+        get()  = roomStateSubject
     val roomStatus: Observable<RoomStatus>
         get() = roomState.map { peekRoomState().status }.distinctUntilChanged()
+    val loginStatus: Observable<LoginStatus>
+        get() = loginStatusSubject.distinctUntilChanged()
 
-    val currentUserId: String?
-        get() = peekLoginState().currentUser?.id
-    val currentRoomId: String?
-        get() = peekRoomState().currentRoomId
+    val currentRoomId : Observable<String?>
+        get() = roomState.map { it.currentRoomId }.distinctUntilChanged()
 
-    val currentUserIdSubject : Observable<String?>
-        get() = loginState.map { currentUserId }.distinctUntilChanged()
-
-    val currentRoomIdSubject : Observable<String?>
-        get() = roomState.map { currentRoomId }.distinctUntilChanged()
+    var currentUserCache : User? = null
+        private set
 
     init {
         appComponent.preference.userSessionToken?.let {
@@ -69,14 +76,13 @@ class SignalServiceHandler(private val appContext: Context,
         }
     }
 
-
-    fun peekLoginState(): LoginState = loginStateSubject.value
+    fun peekLoginStatus(): LoginStatus = loginStatusSubject.value
+    fun peekCurrentRoomId() : String? = roomStateSubject.value.currentRoomId
     fun peekRoomState(): RoomState = roomStateSubject.value
 
     fun login() {
         mainThread {
-            val state = loginStateSubject.value
-            if (state.status != LoginStatus.IDLE) {
+            if (loginStatusSubject.value != LoginStatus.IDLE) {
                 return@mainThread
             }
 
@@ -86,8 +92,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun login(loginName: String, loginPassword: String) {
         mainThread {
-            val state = loginStateSubject.value
-            if (state.status != LoginStatus.IDLE) {
+            if (loginStatusSubject.value != LoginStatus.IDLE) {
                 return@mainThread
             }
 
@@ -103,6 +108,11 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun doLogin() {
+        // Serialize login status to prevent unexpected result
+        val loginStatusSubject = SerializedSubject(loginStatusSubject)
+
+        loginStatusSubject += LoginStatus.LOGIN_IN_PROGRESS
+
         loginSubscription = getDeviceId().zipWith(retrieveAppParams(Constants.EMPTY_USER_ID), { first, second -> first to second })
                 .observeOn(AndroidSchedulers.mainThread())
                 .flatMapObservable {
@@ -111,62 +121,17 @@ class SignalServiceHandler(private val appContext: Context,
                         throw ForceUpdateException(appConfig)
                     }
 
-                    val coreService = CoreServiceImpl(appComponent.httpClient, appConfig.signalServerEndpoint)
+                    coreService = CoreServiceImpl(appComponent.httpClient, appConfig.signalServerEndpoint)
 
+                    val androidReconnectPolicy = AndroidRetryPolicy(appContext)
                     receiveSignal(uri = Uri.parse(appConfig.signalServerEndpoint),
-                            retryPolicy = AndroidReconnectPolicy(appContext),
-                            signalFactory = DefaultSignalFactory(),
-                            loginStateNotification = { u ->
-                                if (u.status == LoginStatus.LOGGED_IN) {
-                                    appComponent.preference.userSessionToken = UserToken(u.currentUserID!!, authTokenFactory.password)
-                                    appComponent.userRepository.saveUsers(listOf(u.currentUser!!)).execAsync().subscribeSimple()
-
-                                    if (u.currentUserID != appComponent.preference.lastLoginUserId) {
-                                        logger.i { "Clearing room data for new user" }
-                                        appComponent.roomRepository.clear().execAsync(true).await()
-                                        appComponent.preference.lastLoginUserId = u.currentUserID
-                                    }
-
-                                    if (syncContactSubscription == null) {
-                                        syncContactSubscription = loginStateSubject
-                                                .map { it.status }
-                                                .distinctUntilChanged()
-                                                .filter { it == LoginStatus.LOGGED_IN }
-                                                .switchMap { Observable.interval(0, Constants.SYNC_CONTACT_INTERVAL_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()) }
-                                                .switchMap {
-                                                    val version = appComponent.preference.contactVersion
-                                                    logger.i { "Syncing contact version with localVersion=$version" }
-                                                    coreService.syncContact(u.currentUserID!!, version).toObservable()
-                                                }
-                                                .switchMap {
-                                                    logger.i { "Got contact $it" }
-                                                    if (it != null) {
-                                                        appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(it).toObservable()
-                                                    } else {
-                                                        Observable.never<SyncContactResult>()
-                                                    }
-                                                }
-                                                .onErrorResumeNext(Observable.never())
-                                                .subscribeSimple {
-                                                    appComponent.preference.contactVersion = it.version
-                                                }
-                                    }
-
-                                    loginStateSubject.onNext(u)
+                            retryPolicy = object : RetryPolicy by androidReconnectPolicy {
+                                override fun canContinue(err: Throwable): Boolean {
+                                    return peekCurrentUserId != null
                                 }
-                                else if ((u.status == LoginStatus.LOGIN_IN_PROGRESS || u.status == LoginStatus.OFFLINE) && u.currentUser == null) {
-                                    val userId = appComponent.preference.userSessionToken?.userId
-                                    if (userId != null) {
-                                        // Fill current user value from database
-                                        loginStateSubject.onNext(u.copy(currentUser = appComponent.userRepository.getUser(userId).getAsync().toBlocking().value()))
-                                    }
-                                }
-                                else {
-                                    loginStateSubject.onNext(u)
-                                }
-
-
                             },
+                            signalFactory = DefaultSignalFactory(),
+                            loginStatusNotification = { loginStatusSubject += it },
                             commandEmitter = sendCommandSubject as Observable<Command<*, in Any>>,
                             deviceIdProvider = object : DeviceIdFactory {
                                 override val deviceId: String
@@ -188,7 +153,7 @@ class SignalServiceHandler(private val appContext: Context,
                     override fun onCompleted() { }
 
                     override fun onError(e: Throwable?) {
-                        loginStateSubject.onNext(LoginState.EMPTY)
+                        loginStatusSubject += LoginStatus.IDLE
                         handleSignalError(e)
                     }
                 })
@@ -206,6 +171,47 @@ class SignalServiceHandler(private val appContext: Context,
             is RoomSpeakerUpdateSignal -> onRoomSpeakerUpdate(signal.update)
             is RoomOnlineMemberUpdateSignal -> onRoomOnlineMemberUpdate(signal.update)
             is RoomInviteSignal -> onReceiveInvitation(signal.invitation)
+            is UserLoggedInSignal -> onUserLoggedIn(signal.user)
+        }
+    }
+
+    private fun onUserLoggedIn(user: UserObject) {
+        currentUserCache = user
+        val firstTimeLogin = appComponent.preference.userSessionToken?.userId != user.id
+        appComponent.preference.userSessionToken = UserToken(user.id, authTokenFactory.password)
+
+        // Save user to database
+        appComponent.userRepository.saveUsers(listOf(user)).execAsync().subscribeSimple()
+
+        if (firstTimeLogin) {
+            logger.i { "Clearing room data for new user" }
+            appComponent.roomRepository.clear().execAsync(true).await()
+        }
+
+        PushService.start(appContext, user.pushServerUri, user.id, user.serviceToken)
+
+        if (syncContactSubscription == null) {
+            syncContactSubscription = loginStatusSubject
+                    .distinctUntilChanged()
+                    .filter { it == LoginStatus.LOGGED_IN }
+                    .switchMap { Observable.interval(0, Constants.SYNC_CONTACT_INTERVAL_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()) }
+                    .switchMap {
+                        val version = appComponent.preference.contactVersion
+                        logger.i { "Syncing contact version with localVersion=$version" }
+                        coreService.syncContact(user.id, version).toObservable()
+                    }
+                    .switchMap {
+                        logger.i { "Got contact $it" }
+                        if (it != null) {
+                            appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(it).toObservable()
+                        } else {
+                            Observable.never<SyncContactResult>()
+                        }
+                    }
+                    .onErrorResumeNext(Observable.never())
+                    .subscribeSimple {
+                        appComponent.preference.contactVersion = it.version
+                    }
         }
     }
 
@@ -244,7 +250,9 @@ class SignalServiceHandler(private val appContext: Context,
                 contactVersion = -1
             }
 
-            loginStateSubject += LoginState.EMPTY
+            loginStatusSubject += LoginStatus.IDLE
+            currentUserCache = null
+            PushService.stop(appContext)
         }
     }
 
@@ -252,7 +260,7 @@ class SignalServiceHandler(private val appContext: Context,
         return Single.defer {
             ensureLoggedIn()
 
-            val permissions = peekLoginState().currentUser!!.permissions
+            val permissions = currentUserCache!!.permissions
             if ((userIds.count() == 1 && permissions.contains(Permission.MAKE_INDIVIDUAL_CALL).not()) ||
                     (groupIds.sizeAtLeast(1) && permissions.contains(Permission.MAKE_GROUP_CALL).not())) {
                 throw StaticUserException(R.string.error_no_permission)
@@ -267,9 +275,9 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun waitForUserLogin() : Completable {
         return Completable.defer {
-            when (appComponent.signalHandler.peekLoginState().status) {
+            when (loginStatusSubject.value) {
                 LoginStatus.LOGGED_IN -> return@defer Completable.complete()
-                LoginStatus.OFFLINE -> return@defer Completable.error(StaticUserException(R.string.error_unable_to_connect))
+                LoginStatus.IDLE -> return@defer Completable.error(StaticUserException(R.string.error_unable_to_connect))
                 else -> {}
             }
 
@@ -286,7 +294,7 @@ class SignalServiceHandler(private val appContext: Context,
                 .andThen(Completable.create { subscriber ->
                     val currRoomState = peekRoomState()
                     val currentRoomId = currRoomState.currentRoomId
-                    if (currentRoomId == roomId && currRoomState.status != RoomStatus.OFFLINE) {
+                    if (currentRoomId == roomId && currRoomState.status != RoomStatus.IDLE) {
                         subscriber.onCompleted()
                         return@create
                     }
@@ -345,7 +353,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun quitRoom() {
         mainThread {
-            if (peekLoginState().status == LoginStatus.LOGGED_IN) {
+            if (loginStatusSubject.value == LoginStatus.LOGGED_IN) {
                 val roomId = peekRoomState().currentRoomId
                 if (roomId != null) {
                     LeaveRoomCommand(roomId, appComponent.preference.keepSession.not()).send()
@@ -361,13 +369,12 @@ class SignalServiceHandler(private val appContext: Context,
             ensureLoggedIn()
 
             val roomState = peekRoomState()
-            val loginState = peekLoginState()
-            val currUserId = loginState.currentUser?.id
-            if (roomState.speakerId == currUserId) {
+            val userId = peekCurrentUserId
+            if (roomState.speakerId == userId) {
                 return@defer Single.just(true)
             }
 
-            if (roomState.canRequestMic(loginState.currentUser).not()) {
+            if (roomState.canRequestMic(currentUserCache!!).not()) {
                 throw IllegalStateException("Can't request mic in room state $roomState")
             }
 
@@ -384,10 +391,10 @@ class SignalServiceHandler(private val appContext: Context,
                             logger.d { "Successfully requested mic in $newRoomState" }
                             if ((newRoomState.status == RoomStatus.REQUESTING_MIC || newRoomState.status == RoomStatus.ACTIVE) &&
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
-                                    peekLoginState().currentUserID == currUserId) {
+                                    peekCurrentUserId == userId) {
                                 roomStateSubject += newRoomState.copy(
-                                        speakerId = currUserId,
-                                        speakerPriority = loginState.currentUser?.priority,
+                                        speakerId = userId,
+                                        speakerPriority = currentUserCache!!.priority,
                                         status = RoomStatus.ACTIVE)
                             }
                         }
@@ -396,7 +403,7 @@ class SignalServiceHandler(private val appContext: Context,
                         val newRoomState = peekRoomState()
                         if (newRoomState.status == RoomStatus.REQUESTING_MIC &&
                                 newRoomState.currentRoomId == roomState.currentRoomId &&
-                                peekLoginState().currentUserID == currUserId) {
+                                peekCurrentUserId == userId) {
                             val newStatus = if (newRoomState.speakerId == null) {
                                 RoomStatus.JOINED
                             } else {
@@ -415,7 +422,7 @@ class SignalServiceHandler(private val appContext: Context,
             logger.d { "Releasing mic in $state" }
 
             if (state.currentRoomId != null &&
-                    (state.speakerId == peekLoginState().currentUserID || state.status == RoomStatus.REQUESTING_MIC)) {
+                    (state.speakerId == peekCurrentUserId || state.status == RoomStatus.REQUESTING_MIC)) {
                 ReleaseMicCommand(state.currentRoomId).send()
                 roomStateSubject += state.copy(speakerId = null, speakerPriority = null, status = RoomStatus.JOINED)
             }
@@ -441,14 +448,14 @@ class SignalServiceHandler(private val appContext: Context,
     fun changePassword(oldPassword: String, newPassword: String): Completable {
         return Completable.defer {
             ensureLoggedIn()
-            val currUserId = peekLoginState().currentUserID!!
+            val currUserId = peekCurrentUserId!!
             val oldPassword = oldPassword.toMD5()
             val newPassword = newPassword.toMD5()
             ChangePasswordCommand(currUserId, oldPassword, newPassword)
                     .send()
                     .doOnSuccess {
                         mainThread {
-                            if (peekLoginState().currentUserID == currUserId) {
+                            if (peekCurrentUserId == currUserId) {
                                 authTokenFactory.setPassword(newPassword)
                                 appComponent.preference.userSessionToken = UserToken(currUserId, newPassword)
                             }
@@ -459,7 +466,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun ensureLoggedIn() {
-        if (peekLoginState().status != LoginStatus.LOGGED_IN) {
+        if (loginStatusSubject.value != LoginStatus.LOGGED_IN || currentUserCache == null) {
             throw StaticUserException(R.string.error_unable_to_connect)
         }
     }
@@ -475,7 +482,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     private fun onRoomKickedOut(roomId : String) {
         mainThread {
-            if (roomId == currentRoomId) {
+            if (roomId == peekCurrentRoomId()) {
                 quitRoom()
                 Toast.makeText(appContext, R.string.room_kicked_out, Toast.LENGTH_LONG).show()
                 (appComponent.activityProvider.currentStartedActivity as? RoomActivity)?.finish()
@@ -537,6 +544,7 @@ class SignalServiceHandler(private val appContext: Context,
 
         const val EXTRA_INVITATION = "extra_ri"
     }
+
 }
 
 

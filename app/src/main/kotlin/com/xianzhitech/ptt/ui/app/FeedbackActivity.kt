@@ -83,7 +83,7 @@ class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveBu
             appComponent.appService.submitFeedback(Feedback(
                     title = titleView.text.toString(),
                     message = messageView.text.toString(),
-                    userId = appComponent.signalHandler.currentUserId))
+                    userId = appComponent.signalHandler.peekCurrentUserId))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(FeedbackSubscriber(applicationContext))
 

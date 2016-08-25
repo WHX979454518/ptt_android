@@ -14,7 +14,6 @@ import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.UserObject
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
@@ -35,12 +34,6 @@ class ServiceHandler(private val appContext: Context,
                      private val appComponent: AppComponent) {
     init {
         val signalService = appComponent.signalHandler
-        signalService.loginState
-                .filter { it.status == LoginStatus.LOGGED_IN }
-                .subscribeSimple {
-                    val currUser = it.currentUser as UserObject
-                    PushService.start(appContext, currUser.pushServerUri, currUser.id, currUser.serviceToken)
-                }
 
         appComponent.preference.userSessionTokenSubject
                 .map { it != null }
@@ -56,10 +49,10 @@ class ServiceHandler(private val appContext: Context,
                         logger.i { "User has logged in/logging in. Start monitoring events." }
                         Observable.combineLatest(
                                 signalService.roomStatus,
-                                signalService.currentRoomIdSubject.switchMap { appComponent.roomRepository.getRoom(it).observe() },
-                                signalService.currentRoomIdSubject.switchMap { appComponent.roomRepository.getRoomName(it, excludeUserIds = arrayOf(appComponent.preference.userSessionToken?.userId)).observe() },
+                                signalService.currentRoomId.switchMap { appComponent.roomRepository.getRoom(it).observe() },
+                                signalService.currentUserId.switchMap { appComponent.roomRepository.getRoomName(it, excludeUserIds = arrayOf(appComponent.preference.userSessionToken?.userId)).observe() },
                                 signalService.loginStatus,
-                                appComponent.preference.userSessionTokenSubject.switchMap { appComponent.userRepository.getUser(it?.userId).observe() },
+                                signalService.currentUserId.switchMap { appComponent.userRepository.getUser(it).observe() },
                                 appContext.getConnectivity(),
                                 { roomStatus, currRoom, roomName, loginStatus, currUser, connectivity -> State(roomStatus, currRoom, roomName, loginStatus, currUser, connectivity) })
                     }
@@ -132,13 +125,9 @@ class ServiceHandler(private val appContext: Context,
                 icon = R.drawable.ic_notification_logged_on
             }
 
-            LoginStatus.OFFLINE -> {
+            LoginStatus.IDLE -> {
                 builder.setContentText(R.string.notification_user_offline.toFormattedString(appContext, state.currUser?.name ?: ""))
                 icon = R.drawable.ic_notification_offline
-            }
-
-            LoginStatus.IDLE -> {
-                return
             }
         }
 

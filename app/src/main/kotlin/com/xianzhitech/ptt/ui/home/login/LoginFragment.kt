@@ -11,7 +11,6 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.LoginState
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.ShareActivity
@@ -32,15 +31,15 @@ class LoginFragment : BaseFragment()
 
         callbacks<Callbacks>()?.setTitle(R.string.login_app.toFormattedString(context))
 
-        (context.applicationContext as AppComponent).signalHandler.loginState
+        (context.applicationContext as AppComponent).signalHandler.loginStatus
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe { updateLoginState(it) }
     }
 
-    private fun updateLoginState(state: LoginState) {
+    private fun updateLoginState(status : LoginStatus) {
         views?.apply {
-            val isIdle = state.status == LoginStatus.IDLE
+            val isIdle = status == LoginStatus.IDLE
             nameEditText.isEnabled = isIdle
             passwordEditText.isEnabled = isIdle
             loginButton.isEnabled = isIdle

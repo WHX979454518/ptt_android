@@ -82,7 +82,7 @@ class RoomFragment : BaseFragment()
 
 
         rootView.findViewById(R.id.room_info)?.setOnClickListener {
-            val roomId = appComponent.signalHandler.currentRoomId
+            val roomId = appComponent.signalHandler.peekCurrentRoomId()
             if (roomId != null) {
                 activity.startActivityWithAnimation(RoomDetailsActivity.build(context, roomId))
             }
@@ -130,7 +130,7 @@ class RoomFragment : BaseFragment()
             adapter = onlineUserAdapter
         }
         view.findViewById(R.id.roomOnlineInfo_all)!!.setOnClickListener {
-            val currentRoomId = appComponent.signalHandler.currentRoomId
+            val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
             if (currentRoomId != null) {
                 activity.startActivityWithAnimation(
                         ModelListActivity.build(context, R.string.room_members.toFormattedString(context),
@@ -148,7 +148,7 @@ class RoomFragment : BaseFragment()
         val stateByRoomId = signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
 
         Observable.combineLatest(
-                stateByRoomId.switchMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.currentUserId)).observe() },
+                stateByRoomId.switchMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekCurrentUserId)).observe() },
                 signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.map { it.onlineMemberIds },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoomMembers(it.currentRoomId, maxMemberCount = Int.MAX_VALUE).observe() },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },
@@ -200,7 +200,7 @@ class RoomFragment : BaseFragment()
                         } else if (speakerView.tag != speaker) {
                             speakerNameView.text = R.string.name_with_level.toFormattedString(context, speaker.name, speaker.priority.toLevelString(context))
                             speakerAvatarView.setImageDrawable(speaker.createDrawable(context))
-                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalHandler.currentUserId) R.drawable.sending else R.drawable.receiving))
+                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalHandler.peekCurrentUserId) R.drawable.sending else R.drawable.receiving))
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 1f).apply {
                                 addListener(object : SimpleAnimatorListener() {

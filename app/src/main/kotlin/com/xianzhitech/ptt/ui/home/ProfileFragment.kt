@@ -15,7 +15,6 @@ import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
@@ -90,9 +89,8 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
             views = Views(this).apply {
 
-                appComponent.signalHandler.loginState
-                        .filter { it.currentUserID != null }
-                        .switchMap { appComponent.userRepository.getUser(it.currentUserID!!).observe() }
+                appComponent.signalHandler.currentUserId
+                        .switchMap { appComponent.userRepository.getUser(it).observe() }
                         .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
                         .observeOnMainThread()
                         .subscribeSimple {
@@ -126,7 +124,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
             val map = hashMapOf<String, RequestBody>()
 
-            map["userId"] = RequestBody.create(plainText, appComponent.signalHandler.currentUserId ?: "unknown")
+            map["userId"] = RequestBody.create(plainText, appComponent.signalHandler.peekCurrentUserId ?: "unknown")
             map["model"] = RequestBody.create(plainText, "${Build.MANUFACTURER} - ${Build.MODEL}")
 
             dst.listFiles()?.forEachIndexed { i, file ->

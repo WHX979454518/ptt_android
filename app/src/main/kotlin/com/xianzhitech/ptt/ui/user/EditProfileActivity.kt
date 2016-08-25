@@ -39,7 +39,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
         super.onStart()
 
         val comp = (application as AppComponent)
-        val currUserId = comp.signalHandler.currentUserId
+        val currUserId = comp.signalHandler.peekCurrentUserId
         if (currUserId == null) {
             AlertDialogFragment.Builder().apply {
                 title = R.string.error_title.toFormattedString(this@EditProfileActivity)

@@ -18,7 +18,6 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity
@@ -79,7 +78,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
         Observable.combineLatest(
                 appComponent.roomRepository.getRoom(roomId).observe().map { it ?: throw StaticUserException(R.string.error_room_not_exists) },
-                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalHandler.peekLoginState().currentUserID)).observe(),
+                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalHandler.peekCurrentUserId)).observe(),
                 appComponent.roomRepository.getRoomMembers(roomId, maxMemberCount = Int.MAX_VALUE).observe(),
                 { room, name, members ->
                     RoomData(room, name!!, members)
@@ -129,7 +128,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         // Display members
         memberAdapter.setUsers(roomMembers.subList(0, Math.min(roomMembers.size, MAX_MEMBER_DISPLAY_COUNT)))
 
-        if (room.id == appComponent.signalHandler.currentRoomId) {
+        if (room.id == appComponent.signalHandler.peekCurrentRoomId()) {
             joinRoomButton.setText(R.string.in_room)
             joinRoomButton.isEnabled = false
         } else {

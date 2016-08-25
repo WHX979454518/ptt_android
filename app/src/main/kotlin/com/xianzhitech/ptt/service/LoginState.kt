@@ -1,13 +1,8 @@
 package com.xianzhitech.ptt.service
 
-import com.xianzhitech.ptt.model.User
 
-data class LoginState(val status: LoginStatus,
-                      val currentUser : User?) {
-    companion object {
-        @JvmStatic val EMPTY = LoginState(LoginStatus.IDLE, null)
-    }
+enum class LoginStatus {
+    IDLE,
+    LOGIN_IN_PROGRESS,
+    LOGGED_IN,
 }
-
-val LoginState.currentUserID : String?
-get() = currentUser?.id

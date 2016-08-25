@@ -42,7 +42,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                 joinRoom(CreateRoomRequest(extraMemberIds = listOf(user!!.id)))
             }
         }
-        callButton.setVisible((application as AppComponent).signalHandler.currentUserId != intent.getStringExtra(EXTRA_USER_ID))
+        callButton.setVisible((application as AppComponent).signalHandler.peekCurrentUserId != intent.getStringExtra(EXTRA_USER_ID))
     }
 
     override fun onStart() {

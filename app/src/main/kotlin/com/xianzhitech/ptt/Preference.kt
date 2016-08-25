@@ -12,7 +12,6 @@ import rx.Observable
 interface Preference {
     var updateDownloadId: Pair<Uri, Long>?
     var userSessionToken: UserToken?
-    var lastLoginUserId: String?
     var lastAppParams : AppConfig?
     var lastIgnoredUpdateUrl : String?
     var lastExpPromptTime : Long?

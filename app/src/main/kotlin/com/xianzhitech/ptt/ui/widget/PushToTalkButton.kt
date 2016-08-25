@@ -82,7 +82,7 @@ class PushToTalkButton : ImageButton {
                     this.add(signalService.roomState.distinctUntilChanged { it -> it.status }
                             .observeOnMainThread()
                             .subscribeSimple {
-                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.currentUserId) {
+                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.peekCurrentUserId) {
                                     vibrator!!.vibrate(120)
                                 }
                             })
@@ -104,7 +104,7 @@ class PushToTalkButton : ImageButton {
 
     private fun applyRoomStatus() {
         isEnabled = when (signalService.peekRoomState().status) {
-            RoomStatus.IDLE, RoomStatus.OFFLINE -> false
+            RoomStatus.IDLE -> false
             else -> true
         }
     }
@@ -113,13 +113,12 @@ class PushToTalkButton : ImageButton {
         super.onDraw(canvas)
 
         val roomState = signalService.peekRoomState()
-        val loginState = signalService.peekLoginState()
         val roomStatus = roomState.status
         logger.d { "Paint ptt button roomStatus: $roomStatus" }
 
         paint.color = when {
             roomStatus == RoomStatus.JOINED ||
-                    (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(loginState.currentUser)) -> android.R.color.holo_green_dark
+                    (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(signalService.currentUserCache)) -> android.R.color.holo_green_dark
             roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
             roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
             else -> android.R.color.darker_gray

@@ -70,7 +70,7 @@ class AppPreference(appContext : Context,
             pref.edit().putBoolean(autoExitKey, value).apply()
         }
 
-    override var lastLoginUserId: String?
+    var lastLoginUserId: String?
         get() = pref.getString(KEY_LAST_LOGIN_USER_ID, null)
         set(value) {
             pref.edit().putString(KEY_LAST_LOGIN_USER_ID, value).apply()

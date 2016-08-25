@@ -99,23 +99,23 @@ class MainActivity : BaseToolbarActivity(),
     override fun onStart() {
         super.onStart()
 
-        appComponent.signalHandler.loginState.distinctUntilChanged { it -> it.status }
+        appComponent.signalHandler.loginStatus
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribeSimple {
-                    if (it.status == LoginStatus.LOGIN_IN_PROGRESS && appComponent.preference.userSessionToken == null) {
+                    if (it == LoginStatus.LOGIN_IN_PROGRESS && appComponent.signalHandler.peekCurrentUserId == null) {
                         showProgressDialog(R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
                     } else {
                         (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()
                     }
                 }
 
-        appComponent.preference.userSessionTokenSubject
+        appComponent.signalHandler.loggedIn
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
-                .subscribeSimple {
-                    logger.d { "User session token changed to $it" }
-                    if (it == null) {
+                .subscribeSimple { loggedIn ->
+                    logger.d { "User login state changed to $loggedIn" }
+                    if (loggedIn.not()) {
                         displayFragment(LoginFragment::class.java)
                     } else {
                         displayFragment(HomeFragment::class.java)

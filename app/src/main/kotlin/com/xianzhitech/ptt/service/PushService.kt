@@ -16,12 +16,11 @@ import okio.Buffer
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Scheduler
-import rx.Single
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.functions.Func0
+import rx.functions.Func1
 import rx.lang.kotlin.add
-import rx.lang.kotlin.observable
 import rx.schedulers.Schedulers
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -91,7 +90,7 @@ class PushService : Service() {
                 powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager,
                 sendMessageProvider = null,
                 pingPongScheduler = AlarmManagerScheduler(applicationContext),
-                retryPolicy = AndroidReconnectPolicy(applicationContext))
+                retryPolicy = AndroidRetryPolicy(applicationContext))
                 .observeOnMainThread()
                 .subscribe {
                     if (it.isNullOrBlank()) {
@@ -146,15 +145,20 @@ private data class ConnectParams(val uri : String,
                                  val userToken : String)
 
 
-interface ReconnectPolicy {
-    fun scheduleNextConnect() : Single<*>
-    fun notifyConnected()
+interface RetryPolicy {
+    fun canContinue(err: Throwable) : Boolean
+    fun scheduleNextRetry(): Observable<*>
+    fun notifySuccess()
 }
 
-class AndroidReconnectPolicy(private val context: Context) : ReconnectPolicy {
+class AndroidRetryPolicy(private val context: Context) : RetryPolicy {
     private val currentReconnectInterval = AtomicLong(MIN_RECONNECT_WAIT_MILLS)
 
-    override fun scheduleNextConnect(): Single<*> {
+    override fun canContinue(err: Throwable): Boolean {
+        return true
+    }
+
+    override fun scheduleNextRetry(): Observable<*> {
         val interval = currentReconnectInterval.getAndSet(Math.min(MAX_RECONNECT_WAIT_MILLS, (currentReconnectInterval.get() * RECONNECT_INCREASE_FACTOR).toLong()))
         logger.i { "Trying to reconnect $interval ms later" }
 
@@ -165,10 +169,10 @@ class AndroidReconnectPolicy(private val context: Context) : ReconnectPolicy {
                     context.getConnectivity(false).first { it }
                 },
                 context.receiveBroadcasts(false, Intent.ACTION_SCREEN_ON).first()
-        ).toSingle()
+        )
     }
 
-    override fun notifyConnected() {
+    override fun notifySuccess() {
         logger.i { "Resetting next reconnect timer to $MIN_RECONNECT_WAIT_MILLS ms" }
         currentReconnectInterval.set(MIN_RECONNECT_WAIT_MILLS)
     }
@@ -178,7 +182,7 @@ class AndroidReconnectPolicy(private val context: Context) : ReconnectPolicy {
         private val MIN_RECONNECT_WAIT_MILLS = 500L
         private val RECONNECT_INCREASE_FACTOR = 1.5f
 
-        private val logger = LoggerFactory.getLogger("AndroidReconnectPolicy")
+        private val logger = LoggerFactory.getLogger("AndroidRetryPolicy")
     }
 }
 
@@ -188,9 +192,9 @@ private fun receivePushService(httpClient: OkHttpClient,
                                powerManager: PowerManager,
                                pingPongScheduler : Scheduler,
                                sendMessageProvider : Observable<String>? = null,
-                               retryPolicy : ReconnectPolicy) : Observable<String> {
+                               retryPolicy : RetryPolicy) : Observable<String> {
 
-    return observable<String> { subscriber ->
+    return Observable.create<String> { subscriber ->
         val request = requestProvider.call()
         logger.i {"Connecting to $request" }
         val client = WebSocketCall.create(httpClient, request)
@@ -208,7 +212,7 @@ private fun receivePushService(httpClient: OkHttpClient,
                 if (sendMessageProvider != null && subscriber.isUnsubscribed.not()) {
                     subscriber.add(sendMessageProvider.subscribe {  webSocket.sendMessage(RequestBody.create(WebSocket.TEXT, it))  })
                 }
-                retryPolicy.notifyConnected()
+                retryPolicy.notifySuccess()
                 sendPing()
             }
 
@@ -267,8 +271,13 @@ private fun receivePushService(httpClient: OkHttpClient,
 
         subscriber.add { client.cancel() }
     }.subscribeOn(Schedulers.io()).retryWhen {
-        it.switchMap {
-            retryPolicy.scheduleNextConnect().toObservable()
-        }
+        it.switchMap<Any>(Func1 {
+            if (retryPolicy.canContinue(it).not()) {
+                Observable.error(it)
+            }
+            else {
+                retryPolicy.scheduleNextRetry()
+            }
+        })
     }
 }

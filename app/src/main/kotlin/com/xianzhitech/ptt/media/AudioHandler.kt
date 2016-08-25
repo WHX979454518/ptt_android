@@ -20,7 +20,6 @@ import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
@@ -78,7 +77,7 @@ class AudioHandler(private val appContext: Context,
         // 监听蓝牙、 耳机的变化, 一旦变化, 也发出通知
         val sessionRef = AtomicReference<MediaSessionCompat>(null)
         Observable.combineLatest(
-                signalService.loginState.map { it.status != LoginStatus.IDLE }.distinctUntilChanged(),
+                signalService.loggedIn,
                 currentBluetoothDevice,
                 audioManager.headsetSubject,
                 { loggedIn, device, pluggedIn -> loggedIn })
@@ -97,7 +96,7 @@ class AudioHandler(private val appContext: Context,
                             }
                         })
                         session.addOnActiveChangeListener {
-                            if (session.isActive.not() && signalService.peekLoginState().status != LoginStatus.IDLE) {
+                            if (session.isActive.not() && signalService.peekCurrentUserId != null) {
                                 session.isActive = true
                             }
                         }
@@ -114,10 +113,10 @@ class AudioHandler(private val appContext: Context,
         // 当进入房间时, 连接当前的蓝牙设备到SCO上, 退出时则关闭
         Observable.combineLatest(
                 signalService.roomStatus.distinctUntilChanged { it -> it.inRoom },
-                signalService.loginState.distinctUntilChanged { it -> it.currentUserID },
+                signalService.currentUserId,
                 audioManager.headsetSubject,
                 currentBluetoothDevice,
-                { status, loginState, headsetPluggedIn, device -> Triple(status, headsetPluggedIn, device) })
+                { status, userId, headsetPluggedIn, device -> Triple(status, headsetPluggedIn, device) })
                 .observeOnMainThread()
                 .subscribeSimple {
                     val (status, headsetPluggedIn, device) = it
@@ -138,7 +137,7 @@ class AudioHandler(private val appContext: Context,
                         logger.d { "SPEAKER: Turning to ${headsetPluggedIn.not()}" }
                         audioManager.isSpeakerphoneOn = headsetPluggedIn.not()
 
-                        if (signalService.currentUserId == null || device == null) {
+                        if (signalService.peekCurrentUserId == null || device == null) {
                             logger.d { "SCO: Turning off bluetooth sco" }
                             stopSco()
                         }
@@ -154,7 +153,7 @@ class AudioHandler(private val appContext: Context,
                     if (it.voiceServer.isNotEmpty()) {
                         currentTalkEngine?.dispose()
                         currentTalkEngine = WebRtcTalkEngine(appContext, httpClient).apply {
-                            connect(it.currentRoomId!!, mapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to signalService.currentUserId,
+                            connect(it.currentRoomId!!, mapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to signalService.peekCurrentUserId,
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to it.voiceServer["host"],
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to it.voiceServer["port"],
                                     WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_TCP_PORT to it.voiceServer["tcpPort"],
@@ -172,7 +171,7 @@ class AudioHandler(private val appContext: Context,
                 .map { it.speakerId }
                 .distinctUntilChanged()
                 .subscribeSimple {
-                    if (it != null && it == signalService.currentUserId) {
+                    if (it != null && it == signalService.peekCurrentUserId) {
                         currentTalkEngine?.startSend()
                     } else {
                         currentTalkEngine?.stopSend()
@@ -186,10 +185,10 @@ class AudioHandler(private val appContext: Context,
                 .distinctUntilChanged { it -> it.status }
                 .subscribeSimple {
                     when (it.status) {
-                        RoomStatus.ACTIVE -> onMicActivated(it.speakerId == signalService.currentUserId)
+                        RoomStatus.ACTIVE -> onMicActivated(it.speakerId == signalService.peekCurrentUserId)
                         RoomStatus.JOINED -> {
                             when (lastRoomState.status) {
-                                RoomStatus.ACTIVE -> onMicReleased(lastRoomState.speakerId == signalService.currentUserId)
+                                RoomStatus.ACTIVE -> onMicReleased(lastRoomState.speakerId == signalService.peekCurrentUserId)
                                 RoomStatus.REQUESTING_MIC -> {
                                     // 抢麦失败
                                     playSound(R.raw.pttup_offline)
@@ -211,7 +210,7 @@ class AudioHandler(private val appContext: Context,
         signalService.roomState
                 .distinctUntilChanged { it -> it.status }
                 .subscribeSimple {
-                    if (it.status == RoomStatus.ACTIVE && signalService.peekLoginState().currentUserID == it.speakerId) {
+                    if (it.status == RoomStatus.ACTIVE && signalService.peekCurrentUserId == it.speakerId) {
                         audioManager.startBluetoothSco()
                     }
                 }

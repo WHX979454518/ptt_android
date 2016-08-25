@@ -20,7 +20,6 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.service.currentUserID
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
@@ -69,12 +68,12 @@ class RoomListFragment : BaseFragment() {
         val appComponent = context.applicationContext as AppComponent
         Observable.combineLatest(
                 appComponent.roomRepository.getAllRooms().observe(),
-                appComponent.signalHandler.loginState.first { it.currentUserID != null },
-                { first, second -> first to second })
+                appComponent.signalHandler.currentUserId.first { it != null },
+                { first, second -> first to second!! })
                 .observeOnMainThread()
                 .compose(bindToLifecycle())
                 .subscribe {
-                    adapter.currentUserId = it.second.currentUserID!!
+                    adapter.currentUserId = it.second
                     roomList.clear()
                     roomList.addAll(it.first)
                     roomList.sortWith(RoomComparator)
@@ -151,7 +150,7 @@ class RoomListFragment : BaseFragment() {
         PopupMenu(context, anchorView).apply {
             inflate(R.menu.room_operation)
             setOnMenuItemClickListener {
-                if (room.id == appComponent.signalHandler.currentRoomId) {
+                if (room.id == appComponent.signalHandler.peekCurrentRoomId()) {
                     Toast.makeText(context, R.string.error_delete_fail_in_room, Toast.LENGTH_LONG).show()
                     return@setOnMenuItemClickListener true
                 }

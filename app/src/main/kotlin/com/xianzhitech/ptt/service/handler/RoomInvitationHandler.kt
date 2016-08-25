@@ -42,7 +42,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
         val appComponent = context.appComponent
         Single.zip(
                 appComponent.userRepository.getUser(invite.inviterId).getAsync(),
-                appComponent.roomRepository.getRoom(appComponent.signalHandler.currentRoomId).getAsync(),
+                appComponent.roomRepository.getRoom(appComponent.signalHandler.peekCurrentRoomId()).getAsync(),
                 if (invite is RoomInvitationObject) {
                     appComponent.roomRepository.saveRooms(listOf(invite.room))
                             .execAsync()

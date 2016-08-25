@@ -131,7 +131,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 }
                 .bindToLifecycle()
                 .subscribeSimple {
-                    val loginStatus = appComponent.signalHandler.peekLoginState().status
+                    val loginStatus = appComponent.signalHandler.peekLoginStatus()
                     val peekRoomState = appComponent.signalHandler.peekRoomState()
                     if (loginStatus == LoginStatus.LOGGED_IN && peekRoomState.status == RoomStatus.IDLE && !isFinishing) {
                         Toast.makeText(this, R.string.room_quited, Toast.LENGTH_LONG).show()
@@ -141,7 +141,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
     }
 
     override fun joinRoomConfirmed(roomId: String) {
-        val currentRoomId = appComponent.signalHandler.currentRoomId
+        val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
         if (currentRoomId == roomId) {
             return
         }
