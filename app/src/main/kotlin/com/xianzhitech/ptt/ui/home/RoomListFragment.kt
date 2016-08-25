@@ -123,14 +123,18 @@ class RoomListFragment : BaseFragment() {
                     onLongClickOnRoom(holder.itemView, room)
                 } ?: false
             }
+
+            holder.itemView.setOnClickListener {
+                roomList.getOrNull(holder.adapterPosition)?.let {
+                    (activity as BaseActivity).joinRoom(it.id)
+                }
+            }
+
             return holder
         }
 
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
             holder.setRoom(roomList[position], currentUserId)
-            holder.itemView.setOnClickListener { v ->
-                (activity as BaseActivity).joinRoom(roomList[position].id)
-            }
         }
 
         override fun onViewDetachedFromWindow(holder: RoomItemHolder) {

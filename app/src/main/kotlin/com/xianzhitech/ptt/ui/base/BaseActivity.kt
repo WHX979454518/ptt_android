@@ -140,15 +140,20 @@ abstract class BaseActivity : AppCompatActivity(),
                 downloadManager.remove(lastUpdateDownloadId.second)
             }
 
-            val fileName = "${appConfig.getAppFullName(this)}.apk"
-            val downloadRequest = DownloadManager.Request(downloadUri)
-            downloadRequest.setMimeType("application/vnd.android.package-archive")
-            downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-            downloadRequest.setNotificationVisibility(View.VISIBLE)
-            downloadRequest.setVisibleInDownloadsUi(true)
-            downloadRequest.setTitle(fileName)
+            try {
+                val fileName = "${appConfig.getAppFullName(this)}.apk"
+                val downloadRequest = DownloadManager.Request(downloadUri)
+                downloadRequest.setMimeType("application/vnd.android.package-archive")
+                downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                downloadRequest.setNotificationVisibility(View.VISIBLE)
+                downloadRequest.setVisibleInDownloadsUi(true)
+                downloadRequest.setTitle(fileName)
 
-            preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
+                preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
+            } catch(e: Exception) {
+                logger.e(e) { "Download failed: " }
+                Toast.makeText(this, R.string.error_download, Toast.LENGTH_LONG).show()
+            }
         } else {
             installPackage(this, lastUpdateDownloadId.second)
         }

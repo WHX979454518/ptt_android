@@ -59,11 +59,6 @@ infix operator fun <T> Observer<T>.plusAssign(obj: T) {
     onNext(obj)
 }
 
-fun <T> Single<T>.toCompletable() : Completable {
-    return Completable.fromSingle(this)
-}
-
-
 private class MainThreadSubscription(private val action: Action0,
                                      private val handler : Handler?) : Runnable, Subscription {
     @Volatile private var unsubscribed : Boolean = false

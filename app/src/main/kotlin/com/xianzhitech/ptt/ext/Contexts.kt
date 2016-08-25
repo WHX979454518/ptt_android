@@ -57,10 +57,6 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
 }
 
 fun ConnectivityManager.hasActiveConnection(): Boolean {
-//    if (Build.VERSION.SDK_INT >= 21) {
-//        return isDefaultNetworkActive
-//    }
-
     return activeNetworkInfo?.isConnected ?: false
 }
 
