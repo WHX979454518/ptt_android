@@ -141,7 +141,15 @@ class SignalServiceHandler(private val appContext: Context,
                                 override val connected: Observable<Boolean>
                                     get() = appContext.getConnectivity(true)
                             },
-                            loginTimeoutMills = TimeUnit.MILLISECONDS.convert(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                            loginTimeoutProvider = {
+                                if (peekCurrentUserId == null) {
+                                    // first time login, timeout is
+                                    TimeUnit.MILLISECONDS.convert(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                                }
+                                else {
+                                    40000L // <- Default socket timeout 30 sec
+                                }
+                            },
                             authTokenFactory = authTokenFactory)
                 }
                 .observeOnMainThread()

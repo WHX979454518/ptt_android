@@ -36,7 +36,7 @@ fun receiveSignal(uri: Uri,
                   connectivityProvider : ConnectivityProvider,
                   commandEmitter: Observable<Command<*, in Any>>,
                   deviceIdProvider : DeviceIdFactory,
-                  loginTimeoutMills: Long,
+                  loginTimeoutProvider : () -> Long,
                   authTokenFactory: AuthTokenFactory) : Observable<Signal> {
 
     return Observable.create<Signal> { subscriber ->
@@ -44,7 +44,7 @@ fun receiveSignal(uri: Uri,
             multiplex = false
             reconnection = false
             transports = arrayOf("websocket")
-            timeout = loginTimeoutMills
+            timeout = loginTimeoutProvider()
         })
 
         s.on(Socket.EVENT_CONNECT, {
