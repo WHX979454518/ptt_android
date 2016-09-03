@@ -62,7 +62,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
                     }
                 }
                 .subscribeSimple {
-                    if (signalServiceHandler.currentRoomId != null) {
+                    if (signalServiceHandler.peekCurrentRoomId() != null) {
                         logger.d { "Auto quit room because room is put to idle" }
                         signalServiceHandler.quitRoom()
                         (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
