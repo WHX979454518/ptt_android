@@ -2,7 +2,7 @@ package com.xianzhitech.ptt.ext
 
 import android.database.DatabaseUtils
 
-fun String.escapeSql() = DatabaseUtils.sqlEscapeString(this)
+fun String.escapeSql() : String = DatabaseUtils.sqlEscapeString(this)
 fun <T> Iterable<T>.toSqlSet(escape: Boolean = true): String {
     return if (escape) {
         joinToString(separator = ",", prefix = "(", postfix = ")", transform = { it.toString().escapeSql() })

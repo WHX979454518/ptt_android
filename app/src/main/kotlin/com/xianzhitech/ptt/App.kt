@@ -1,9 +1,7 @@
 package com.xianzhitech.ptt
 
 import android.Manifest
-import android.app.ActivityManager
 import android.app.Application
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Process
 import android.preference.PreferenceManager
@@ -42,7 +40,7 @@ import rx.subjects.PublishSubject
 
 open class App : Application(), AppComponent {
 
-    override val httpClient by lazy { onBuildHttpClient().build() }
+    override val httpClient : OkHttpClient by lazy { onBuildHttpClient().build() }
     override lateinit var userRepository: UserRepository
     override lateinit var groupRepository: GroupRepository
     override lateinit var roomRepository: RoomRepository
@@ -53,9 +51,6 @@ open class App : Application(), AppComponent {
     override lateinit var statisticCollector: StatisticCollector
     override lateinit var mediaButtonHandler: MediaButtonHandler
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
-
-    var isPushProcess : Boolean = false
-    private set
 
     override val appService: AppService by lazy {
         Retrofit.Builder()
@@ -89,47 +84,39 @@ open class App : Application(), AppComponent {
         MDC.put("pid", Process.myPid().toString())
         MDC.put("version", "${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE}")
 
-        val am = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
-        val pid = Process.myPid()
-        val currentProcessName = am.runningAppProcesses.first { it.pid == pid }.processName
-        if (currentProcessName.contains("push").not()) {
-            isPushProcess = false
-            preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
+        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
-            val helper = createSQLiteStorageHelper(this, "data")
-            val userStorage = UserSQLiteStorage(helper)
-            val groupStorage = GroupSQLiteStorage(helper)
-            val userNotification = PublishSubject.create<Unit>()
-            val groupNotification = PublishSubject.create<Unit>()
-            val roomNotification = PublishSubject.create<Unit>()
+        val helper = createSQLiteStorageHelper(this, "data")
+        val userStorage = UserSQLiteStorage(helper)
+        val groupStorage = GroupSQLiteStorage(helper)
+        val userNotification = PublishSubject.create<Unit>()
+        val groupNotification = PublishSubject.create<Unit>()
+        val roomNotification = PublishSubject.create<Unit>()
 
-            userRepository = UserRepository(userStorage, userNotification)
-            groupRepository = GroupRepository(groupStorage, groupNotification)
-            roomRepository = RoomRepository(RoomSQLiteStorage(helper), groupStorage,
-                    userStorage, roomNotification, userNotification, groupNotification)
-            contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
+        userRepository = UserRepository(userStorage, userNotification)
+        groupRepository = GroupRepository(groupStorage, groupNotification)
+        roomRepository = RoomRepository(RoomSQLiteStorage(helper), groupStorage,
+                userStorage, roomNotification, userNotification, groupNotification)
+        contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
-            signalHandler = SignalServiceHandler(this, this)
+        signalHandler = SignalServiceHandler(this, this)
 
 
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
-                    ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                PhoneCallHandler.register(this)
-            }
-
-            activityProvider = ActivityProviderImpl().apply {
-                registerActivityLifecycleCallbacks(this)
-            }
-
-            mediaButtonHandler = MediaButtonHandler(signalHandler)
-            AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
-            ServiceHandler(this, this)
-            RoomStatusHandler(roomRepository, signalHandler)
-            RoomAutoQuitHandler(preference, activityProvider, signalHandler)
-            statisticCollector = StatisticCollector(signalHandler)
-        } else {
-            isPushProcess = true
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            PhoneCallHandler.register(this)
         }
+
+        activityProvider = ActivityProviderImpl().apply {
+            registerActivityLifecycleCallbacks(this)
+        }
+
+        mediaButtonHandler = MediaButtonHandler(signalHandler)
+        AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
+        ServiceHandler(this, this)
+        RoomStatusHandler(roomRepository, signalHandler)
+        RoomAutoQuitHandler(preference, activityProvider, signalHandler)
+        statisticCollector = StatisticCollector(signalHandler)
     }
 
     open protected fun onBuildHttpClient(): OkHttpClient.Builder {
@@ -137,8 +124,7 @@ open class App : Application(), AppComponent {
     }
 
     companion object {
-        lateinit var instance : App
+        @JvmStatic lateinit var instance : App
         private set
     }
-
 }

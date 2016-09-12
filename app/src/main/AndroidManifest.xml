@@ -96,12 +96,6 @@
         <activity android:name=".ui.app.AboutActivity"
             android:label="@string/about" />
 
-        <activity android:name=".ui.RoomInvitationHelperActivity"
-            android:theme="@style/AppTheme.Invisible"
-            android:noHistory="true" />
-
-        <service android:name=".service.PushService" android:process=":push" />
-
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
@@ -113,6 +107,8 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
+
+        <service android:name=".service.handler.BackgroundService" />
 
         <receiver android:name=".service.handler.RoomInvitationHandler">
             <intent-filter>

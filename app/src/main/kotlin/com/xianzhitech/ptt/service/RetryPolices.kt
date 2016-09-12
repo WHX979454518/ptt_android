@@ -1,13 +1,9 @@
 package com.xianzhitech.ptt.service
 
-import android.app.ActivityManager
-import android.app.Notification
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.ui.RoomInvitationHelperActivity
 import okhttp3.*
 import okhttp3.ws.WebSocket
 import okhttp3.ws.WebSocketCall
@@ -29,120 +25,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 
-private val logger = LoggerFactory.getLogger("PushService")
-
-class PushService : Service() {
-    companion object {
-        private const val ACTION_START = "connect"
-        private const val ACTION_UPDATE_NOTIFICATION = "update_notification"
-
-        const val ACTION_MESSAGE = "PushService.Message"
-
-        const val EXTRA_MSG = "msg"
-        const val EXTRA_SERVER_URI = "server_uri"
-        const val EXTRA_USER_ID = "user_id"
-        const val EXTRA_USER_TOKEN = "user_token"
-
-        private const val EXTRA_NOTIFICATION = "notification"
-
-        fun start(context: Context, serverUri : String, userId : String, token : String) {
-            context.startService(Intent(context, PushService::class.java)
-                    .setAction(ACTION_START)
-                    .putExtra(EXTRA_USER_ID, userId)
-                    .putExtra(EXTRA_USER_TOKEN, token)
-                    .putExtra(EXTRA_SERVER_URI, serverUri)
-            )
-        }
-
-        fun update(context: Context, notification: Notification) {
-            context.startService(Intent(context, PushService::class.java)
-                    .setAction(ACTION_UPDATE_NOTIFICATION)
-                    .putExtra(EXTRA_NOTIFICATION, notification)
-            )
-        }
-
-        fun stop(context: Context) {
-            context.stopService(Intent(context, PushService::class.java))
-        }
-    }
-
-    private var connectParams : ConnectParams? = null
-    private var messageSubscription : Subscription? = null
-
-    private fun doConnect(connectParams : ConnectParams) {
-        if (this.connectParams == connectParams) {
-            logger.i { "Uri hasn't changed. Skip new connection" }
-            return
-        }
-
-        val am = (applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
-
-        this.connectParams = connectParams
-        messageSubscription?.unsubscribe()
-        messageSubscription = receivePushService(
-                httpClient = OkHttpClient.Builder().readTimeout(0, TimeUnit.SECONDS).build(),
-                requestProvider = Func0 {
-                    Request.Builder().url(connectParams.uri)
-                            .header("X-User-Id", connectParams.userId)
-                            .header("X-User-Token", connectParams.userToken)
-                            .build()
-                },
-                powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager,
-                sendMessageProvider = null,
-                pingPongScheduler = AlarmManagerScheduler(applicationContext),
-                retryPolicy = AndroidRetryPolicy(applicationContext))
-                .observeOnMainThread()
-                .subscribe {
-                    if (it.isNullOrBlank()) {
-                        logger.w { "Received empty message. Ignored" }
-                        return@subscribe
-                    }
-
-                    // 检查主进程是否存在，如果存在，则不需要调用help activity
-                    if (am.runningAppProcesses.indexOfFirst { it.processName == applicationContext.packageName } >= 0) {
-                        logger.d { "Sending message broadcast" }
-                        sendBroadcast(Intent(PushService.ACTION_MESSAGE).putExtra(EXTRA_MSG, it))
-                    }
-                    else {
-                        logger.d { "Starting helper activity to deliver broadcast msg" }
-                        startActivity(Intent(this, RoomInvitationHelperActivity::class.java)
-                                .putExtra(RoomInvitationHelperActivity.EXTRA_MSG, it)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-                    }
-                }
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return when (intent?.action) {
-            ACTION_START -> {
-                doConnect(ConnectParams(intent!!.getStringExtra(EXTRA_SERVER_URI),
-                        intent.getStringExtra(EXTRA_USER_ID),
-                        intent.getStringExtra(EXTRA_USER_TOKEN)))
-                START_REDELIVER_INTENT
-            }
-
-            ACTION_UPDATE_NOTIFICATION -> {
-                startForeground(1, intent!!.getParcelableExtra(EXTRA_NOTIFICATION))
-                START_REDELIVER_INTENT
-            }
-
-            else -> super.onStartCommand(intent, flags, startId)
-        }
-    }
-
-    override fun onDestroy() {
-        stopForeground(true)
-        connectParams = null
-        messageSubscription?.unsubscribe()
-        super.onDestroy()
-    }
-
-    override fun onBind(intent: Intent?) = null
-}
-
-private data class ConnectParams(val uri : String,
-                                 val userId : String,
-                                 val userToken : String)
+private val logger = LoggerFactory.getLogger("RetryPolicy")
 
 
 interface RetryPolicy {

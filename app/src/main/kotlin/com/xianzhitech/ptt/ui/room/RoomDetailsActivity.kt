@@ -25,7 +25,7 @@ import com.xianzhitech.ptt.ui.user.ContactUserProvider
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
-import rx.Completable
+import rx.CompletableSubscriber
 import rx.Observable
 import rx.Subscriber
 import rx.Subscription
@@ -166,7 +166,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
     }
 
     private class RoomUpdateSubscriber(private val context: Context,
-                                       private val roomId: String) : Completable.CompletableSubscriber {
+                                       private val roomId: String) : CompletableSubscriber {
 
         override fun onSubscribe(d: Subscription?) {
         }

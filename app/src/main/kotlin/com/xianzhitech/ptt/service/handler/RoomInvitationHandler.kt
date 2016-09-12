@@ -7,12 +7,10 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
-import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomInvitationObject
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
@@ -25,17 +23,6 @@ class RoomInvitationHandler() : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val invite : RoomInvitation = when (intent?.action) {
             SignalServiceHandler.ACTION_ROOM_INVITATION -> intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
-            PushService.ACTION_MESSAGE -> {
-                val obj: JSONObject
-                try {
-                    obj = JSONObject(intent!!.getStringExtra(PushService.EXTRA_MSG))
-                } catch(e: Exception) {
-                    logger.e(e) { "Error decoding push message. " }
-                    return
-                }
-
-                RoomInvitationObject(obj)
-            }
             else -> return
         }
 

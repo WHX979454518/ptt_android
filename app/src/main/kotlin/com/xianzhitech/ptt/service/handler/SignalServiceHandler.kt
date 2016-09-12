@@ -196,8 +196,6 @@ class SignalServiceHandler(private val appContext: Context,
             appComponent.roomRepository.clear().execAsync(true).await()
         }
 
-        PushService.start(appContext, user.pushServerUri, user.id, user.serviceToken)
-
         if (syncContactSubscription == null) {
             syncContactSubscription = loginStatusSubject
                     .distinctUntilChanged()
@@ -260,7 +258,6 @@ class SignalServiceHandler(private val appContext: Context,
 
             loginStatusSubject += LoginStatus.IDLE
             currentUserCache = null
-            PushService.stop(appContext)
         }
     }
 
@@ -299,7 +296,7 @@ class SignalServiceHandler(private val appContext: Context,
     fun joinRoom(roomId: String): Completable {
         return waitForUserLogin()
                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                .andThen(Completable.create { subscriber ->
+                .andThen(Completable.create { subscriber : CompletableSubscriber ->
                     val currRoomState = peekRoomState()
                     val currentRoomId = currRoomState.currentRoomId
                     if (currentRoomId == roomId && currRoomState.status != RoomStatus.IDLE) {

@@ -1,8 +1,10 @@
 package com.xianzhitech.ptt.service.handler
 
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.IBinder
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
@@ -12,7 +14,6 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.PushService
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -30,6 +31,28 @@ private data class State(val roomStatus: RoomStatus,
                          val currUser: User?,
                          val connectivity: Boolean)
 
+class BackgroundService : Service() {
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_UPDATE_NOTIFICATION) {
+            startForeground(1, intent!!.getParcelableExtra(EXTRA_NOTIFICATION))
+        }
+
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        stopForeground(true)
+        super.onDestroy()
+    }
+
+    companion object {
+        const val ACTION_UPDATE_NOTIFICATION = "update_notification"
+        const val EXTRA_NOTIFICATION = "notification"
+    }
+}
+
 class ServiceHandler(private val appContext: Context,
                      private val appComponent: AppComponent) {
     init {
@@ -42,7 +65,7 @@ class ServiceHandler(private val appContext: Context,
                 .switchMap { userHasLoggedIn ->
                     if (userHasLoggedIn.not()) {
                         logger.i { "User has logged out, stopping PushService" }
-                        PushService.stop(appContext)
+                        appContext.stopService(Intent(appContext, BackgroundService::class.java))
                         Observable.never<State>()
                     }
                     else {
@@ -132,7 +155,10 @@ class ServiceHandler(private val appContext: Context,
         }
 
         builder.setSmallIcon(icon)
-        PushService.update(appContext, builder.build())
+        appContext.startService(Intent(appContext, BackgroundService::class.java).apply {
+            action = BackgroundService.ACTION_UPDATE_NOTIFICATION
+            putExtra(BackgroundService.EXTRA_NOTIFICATION, builder.build())
+        })
     }
 
 }

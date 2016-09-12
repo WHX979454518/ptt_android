@@ -28,6 +28,7 @@ import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import rx.Completable
+import rx.CompletableSubscriber
 import rx.Single
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -137,7 +138,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                 .subscribe(LogUploadSubscriber(activity.applicationContext))
     }
 
-    private class LogUploadSubscriber(private val appContext: Context) : Completable.CompletableSubscriber {
+    private class LogUploadSubscriber(private val appContext: Context) : CompletableSubscriber {
         override fun onSubscribe(d: Subscription?) { }
 
         override fun onError(e: Throwable?) {

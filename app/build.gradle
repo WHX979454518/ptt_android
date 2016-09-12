@@ -34,7 +34,7 @@ repositories {
 
 android {
     compileSdkVersion 24
-    buildToolsVersion '24.0.1'
+    buildToolsVersion '24.0.2'
 
     defaultConfig {
         applicationId "com.xianzhitech.ptt"
@@ -143,7 +143,7 @@ dependencies {
     compile group: 'com.squareup.okhttp3', name: 'okhttp-ws', version: '3.4.1'
 
     compile 'io.reactivex:rxandroid:1.2.1'
-    compile 'io.reactivex:rxjava:1.1.8'
+    compile 'io.reactivex:rxjava:1.1.10'
     compile 'io.reactivex:rxkotlin:0.60.0'
     compile 'com.trello:rxlifecycle:0.6.1'
 

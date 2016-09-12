@@ -17,7 +17,7 @@ import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import rx.Completable
+import rx.CompletableSubscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
@@ -160,7 +160,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
     }
 
     private class JoinRoomSubscriber(private val appContext: Context,
-                                     private val roomId: String) : Completable.CompletableSubscriber {
+                                     private val roomId: String) : CompletableSubscriber {
         override fun onSubscribe(d: Subscription?) {
         }
 

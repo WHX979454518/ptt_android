@@ -19,8 +19,6 @@
             <maxHistory>2</maxHistory>
             <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
-
-        <prudent>true</prudent>
     </appender>
 
     <appender name="async" class="ch.qos.logback.classic.AsyncAppender">

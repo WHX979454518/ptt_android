@@ -41,20 +41,16 @@ class AppPreference(appContext : Context,
 
     override val userSessionTokenSubject: Observable<UserToken>
         get() {
-            return observable { subscriber ->
-                subscriber.onNext(userSessionToken)
-
-                if (subscriber.isUnsubscribed.not()) {
-                    val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-                        if (key == KEY_USER_TOKEN) {
-                            subscriber.onNext(userSessionToken)
-                        }
+            return observable<UserToken> { subscriber ->
+                val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+                    if (key == KEY_USER_TOKEN) {
+                        subscriber.onNext(userSessionToken)
                     }
-
-                    pref.registerOnSharedPreferenceChangeListener(listener)
-                    subscriber.add { pref.unregisterOnSharedPreferenceChangeListener(listener) }
                 }
-            }
+
+                pref.registerOnSharedPreferenceChangeListener(listener)
+                subscriber.add { pref.unregisterOnSharedPreferenceChangeListener(listener) }
+            }.startWith(userSessionToken)
         }
 
 
