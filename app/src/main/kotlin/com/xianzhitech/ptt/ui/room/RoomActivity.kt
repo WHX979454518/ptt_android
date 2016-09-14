@@ -153,7 +153,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
 
-        appComponent.signalHandler.joinRoom(roomId, fromInvitation)
+        appComponent.signalHandler.joinRoom(roomId, fromInvitation.not())
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(JoinRoomSubscriber(applicationContext, roomId))
