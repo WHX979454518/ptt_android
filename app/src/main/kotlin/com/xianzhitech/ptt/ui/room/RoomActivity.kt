@@ -11,9 +11,9 @@ import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomInvitation
-import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.maintain.service.LoginStatus
+import com.xianzhitech.ptt.maintain.service.RoomInvitation
+import com.xianzhitech.ptt.maintain.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -140,7 +140,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 }
     }
 
-    override fun joinRoomConfirmed(roomId: String) {
+    override fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {
         val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
         if (currentRoomId == roomId) {
             return
@@ -153,7 +153,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
 
-        appComponent.signalHandler.joinRoom(roomId)
+        appComponent.signalHandler.joinRoom(roomId, fromInvitation)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(JoinRoomSubscriber(applicationContext, roomId))

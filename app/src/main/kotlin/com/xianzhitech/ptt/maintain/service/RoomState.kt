@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.service
+package com.xianzhitech.ptt.maintain.service
 
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.User

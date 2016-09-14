@@ -17,7 +17,7 @@ import android.widget.TextView
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.RoomInvitation
+import com.xianzhitech.ptt.maintain.service.RoomInvitation
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
@@ -103,7 +103,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder? {
             return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.view_invitation_item, parent, false)).apply {
                 joinButton.setOnClickListener {
-                    (activity as? BaseActivity)?.joinRoom(invitationList[adapterPosition].invitation.roomId)
+                    (activity as? BaseActivity)?.joinRoom(invitationList[adapterPosition].invitation.roomId, true)
                     dismissImmediately()
                 }
 

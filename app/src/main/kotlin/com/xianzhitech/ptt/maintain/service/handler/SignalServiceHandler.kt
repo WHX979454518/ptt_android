@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.service.handler
+package com.xianzhitech.ptt.maintain.service.handler
 
 import android.content.Context
 import android.content.Intent
@@ -10,13 +10,13 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.maintain.service.*
+import com.xianzhitech.ptt.maintain.service.dto.JoinRoomResult
+import com.xianzhitech.ptt.maintain.service.dto.RoomOnlineMemberUpdate
+import com.xianzhitech.ptt.maintain.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.*
-import com.xianzhitech.ptt.service.dto.JoinRoomResult
-import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
-import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
@@ -293,7 +293,7 @@ class SignalServiceHandler(private val appContext: Context,
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
-    fun joinRoom(roomId: String): Completable {
+    fun joinRoom(roomId: String, sendInvitation : Boolean): Completable {
         return waitForUserLogin()
                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .andThen(Completable.create { subscriber : CompletableSubscriber ->
@@ -310,7 +310,7 @@ class SignalServiceHandler(private val appContext: Context,
 
                     roomStateSubject += RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId)
 
-                    JoinRoomCommand(roomId)
+                    JoinRoomCommand(roomId, sendInvitation)
                             .send()
                             .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                             .observeOn(AndroidSchedulers.mainThread())

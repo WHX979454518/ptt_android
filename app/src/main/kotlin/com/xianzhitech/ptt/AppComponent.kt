@@ -1,13 +1,13 @@
 package com.xianzhitech.ptt
 
+import com.xianzhitech.ptt.maintain.service.AppService
+import com.xianzhitech.ptt.maintain.service.handler.SignalServiceHandler
+import com.xianzhitech.ptt.maintain.service.handler.StatisticCollector
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
 import com.xianzhitech.ptt.repo.RoomRepository
 import com.xianzhitech.ptt.repo.UserRepository
-import com.xianzhitech.ptt.service.AppService
-import com.xianzhitech.ptt.service.handler.SignalServiceHandler
-import com.xianzhitech.ptt.service.handler.StatisticCollector
 import com.xianzhitech.ptt.ui.ActivityProvider
 import okhttp3.OkHttpClient
 

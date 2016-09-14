@@ -20,10 +20,10 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.service.AppConfig
-import com.xianzhitech.ptt.service.CreateRoomRequest
-import com.xianzhitech.ptt.service.describeInHumanMessage
-import com.xianzhitech.ptt.service.handler.ForceUpdateException
+import com.xianzhitech.ptt.maintain.service.AppConfig
+import com.xianzhitech.ptt.maintain.service.CreateRoomRequest
+import com.xianzhitech.ptt.maintain.service.describeInHumanMessage
+import com.xianzhitech.ptt.maintain.service.handler.ForceUpdateException
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
@@ -66,10 +66,11 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private fun handleIntent(intent: Intent) {
         intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
+            val fromInvitation = intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITATION, false)
             if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false)) {
-                joinRoomConfirmed(roomId)
+                joinRoomConfirmed(roomId, fromInvitation)
             } else {
-                joinRoom(roomId)
+                joinRoom(roomId, fromInvitation)
             }
             intent.removeExtra(EXTRA_JOIN_ROOM_ID)
             intent.removeExtra(EXTRA_JOIN_ROOM_CONFIRMED)
@@ -117,7 +118,10 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_PERMISSION_DIALOG -> ActivityCompat.requestPermissions(this, fragment.attachmentAs<List<String>>().toTypedArray(), 0)
-            TAG_SWITCH_ROOM_CONFIRMATION -> joinRoomConfirmed(fragment.attachment as String)
+            TAG_SWITCH_ROOM_CONFIRMATION -> {
+                val (roomId, fromInvitation) = (fragment.attachment as Pair<String, Boolean>)
+                joinRoomConfirmed(roomId, fromInvitation)
+            }
             TAG_UPDATE -> startDownload(fragment.attachmentAs<AppConfig>())
         }
     }
@@ -159,14 +163,14 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    fun joinRoom(roomId: String) {
+    fun joinRoom(roomId: String, fromInvitation: Boolean) {
         val appComponent = application as AppComponent
 
         val currentRoomID = appComponent.signalHandler.peekRoomState().currentRoomId
 
         // 如果用户已经加入这个房间, 直接确认这个操作
         if (currentRoomID == roomId) {
-            joinRoomConfirmed(roomId)
+            joinRoomConfirmed(roomId, fromInvitation)
             return
         }
 
@@ -177,7 +181,7 @@ abstract class BaseActivity : AppCompatActivity(),
                 message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
                 btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
                 btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
-                attachment = roomId
+                attachment = roomId to fromInvitation
 
                 show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
             }
@@ -186,10 +190,10 @@ abstract class BaseActivity : AppCompatActivity(),
         }
 
         // 如果用户没有加入任意一个房间, 则确认操作
-        joinRoomConfirmed(roomId)
+        joinRoomConfirmed(roomId, fromInvitation)
     }
 
-    open fun joinRoomConfirmed(roomId: String) {
+    open fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {
         // Base 类不知道具体怎么加入房间, 打开RoomActivity来加入房间
         startActivityWithAnimation(
                 Intent(this, RoomActivity::class.java)
@@ -344,7 +348,7 @@ abstract class BaseActivity : AppCompatActivity(),
             val currentActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
             if (currentActivity != null) {
                 currentActivity.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
-                currentActivity.joinRoom(value.id)
+                currentActivity.joinRoom(value.id, false)
             } else {
                 startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
             }
@@ -363,6 +367,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
+        const val EXTRA_JOIN_ROOM_FROM_INVITATION = "extra_fi"
 
         private const val STATE_PENDING_DENIED_PERMISSIONS = "state_pending_denied_permissions"
 

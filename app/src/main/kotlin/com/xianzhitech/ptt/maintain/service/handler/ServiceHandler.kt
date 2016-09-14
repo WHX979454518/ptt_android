@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.service.handler
+package com.xianzhitech.ptt.maintain.service.handler
 
 import android.app.PendingIntent
 import android.app.Service
@@ -13,8 +13,8 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.maintain.service.LoginStatus
+import com.xianzhitech.ptt.maintain.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory

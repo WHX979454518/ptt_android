@@ -11,7 +11,7 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.maintain.service.LoginStatus
 import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.ShareActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment

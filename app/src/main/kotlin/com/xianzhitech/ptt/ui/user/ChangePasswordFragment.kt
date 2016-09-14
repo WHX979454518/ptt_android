@@ -16,7 +16,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.isEmpty
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.maintain.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import rx.android.schedulers.AndroidSchedulers

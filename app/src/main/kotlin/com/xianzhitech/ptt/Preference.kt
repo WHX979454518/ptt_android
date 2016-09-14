@@ -2,8 +2,8 @@ package com.xianzhitech.ptt
 
 import android.net.Uri
 import com.google.gson.annotations.SerializedName
-import com.xianzhitech.ptt.service.AppConfig
-import com.xianzhitech.ptt.service.UserToken
+import com.xianzhitech.ptt.maintain.service.AppConfig
+import com.xianzhitech.ptt.maintain.service.UserToken
 import rx.Observable
 
 /**

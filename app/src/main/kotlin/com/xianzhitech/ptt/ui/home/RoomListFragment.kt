@@ -125,7 +125,7 @@ class RoomListFragment : BaseFragment() {
 
             holder.itemView.setOnClickListener {
                 roomList.getOrNull(holder.adapterPosition)?.let {
-                    (activity as BaseActivity).joinRoom(it.id)
+                    (activity as BaseActivity).joinRoom(it.id, false)
                 }
             }
 

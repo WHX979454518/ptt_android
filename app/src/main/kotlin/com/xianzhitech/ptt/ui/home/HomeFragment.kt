@@ -14,11 +14,11 @@ import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.maintain.service.LoginStatus
+import com.xianzhitech.ptt.maintain.service.RoomStatus
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import rx.Observable
@@ -155,7 +155,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                     text = roomName.getInRoomDescription(context)
 
                                     setOnClickListener {
-                                        (activity as BaseActivity).joinRoom(currRoom.id)
+                                        (activity as BaseActivity).joinRoom(currRoom.id, false)
                                     }
                                 } else {
                                     setVisible(false)

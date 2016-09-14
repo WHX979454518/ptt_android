@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.service.dto
+package com.xianzhitech.ptt.maintain.service.dto
 
 
 interface RoomOnlineMemberUpdate {

@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.service
+package com.xianzhitech.ptt.maintain.service
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body

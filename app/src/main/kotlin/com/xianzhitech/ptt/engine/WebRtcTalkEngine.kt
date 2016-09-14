@@ -4,8 +4,8 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.service.VoiceService
-import com.xianzhitech.ptt.service.VoiceServiceJoinRoomRequest
+import com.xianzhitech.ptt.maintain.service.VoiceService
+import com.xianzhitech.ptt.maintain.service.VoiceServiceJoinRoomRequest
 import okhttp3.OkHttpClient
 import org.webrtc.autoim.MediaEngine
 import org.webrtc.autoim.NativeWebRtcContextRegistry

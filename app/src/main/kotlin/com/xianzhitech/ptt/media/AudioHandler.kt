@@ -18,9 +18,9 @@ import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.engine.WebRtcTalkEngine
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.handler.SignalServiceHandler
+import com.xianzhitech.ptt.maintain.service.LoginStatus
+import com.xianzhitech.ptt.maintain.service.RoomStatus
+import com.xianzhitech.ptt.maintain.service.handler.SignalServiceHandler
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
 import rx.Observable

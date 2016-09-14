@@ -16,7 +16,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getString
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.plusAssign
-import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.maintain.service.*
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -27,6 +27,7 @@ import rx.schedulers.Schedulers
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 
 class ServerInitActivity : BaseToolbarActivity() {
@@ -60,7 +61,7 @@ class ServerInitActivity : BaseToolbarActivity() {
 
                 val cookieCache = SetCookieCache()
                 val cookieJar = PersistentCookieJar(cookieCache, SharedPrefsCookiePersistor(applicationContext))
-                val okHttp = OkHttpClient.Builder().cookieJar(cookieJar).build()
+                val okHttp = OkHttpClient.Builder().cookieJar(cookieJar).readTimeout(0, TimeUnit.SECONDS).build()
                 val service = Retrofit.Builder()
                         .client(okHttp)
                         .baseUrl(endpoint)
@@ -68,60 +69,22 @@ class ServerInitActivity : BaseToolbarActivity() {
                         .build()
                         .create(MaintainService::class.java)
 
+                cookieJar.clear()
                 service.init().execute()
-
-                subscriber += "Logging as admin"
                 service.login(LoginRequest("0", "000000")).execute()
 
-                subscriber += "Creating enterprise..."
-
-                val request = EnterpriseCreateRequest("测试企业", "000000", EnterpriseQuota(10000, 10000))
-                val enterpriseNumber = service.createEnterprise(request).execute().body().idNumber
-                subscriber += "Created enterprise $request"
-
-                cookieJar.clear()
-
-                subscriber += "Logging as ${request.name}"
-                service.login(LoginRequest(enterpriseNumber, request.password)).execute()
-
-                val users = resources.getStringArray(R.array.user_names)
-                subscriber += "Creating ${users.size} users..."
-
-                val createdUserNumbers = arrayListOf<String?>()
-                val tasks = arrayListOf<Observable<String>>()
-                val scheduler = Schedulers.from(Executors.newFixedThreadPool(10))
-
-                users.forEachIndexed { i, s ->
-                    tasks.add(Observable.fromCallable {
-                        val userNumber = service.createUserNumber().execute().body().number
-                        service.createUser(CreateUserRequest(s, userNumber, (13000000000L + i).toString(), "000000", UserPrivileges((1 + 6 * Math.random()).toInt()))).execute()
-                        userNumber
-                    }.subscribeOn(scheduler).onErrorReturn { null })
+                val enterprise = Enterprise("测试企业", "000000", EnterpriseQuota(10000, 10000))
+                val users = resources.getStringArray(R.array.user_names).mapIndexed { i, s ->
+                    User(s, (13000000000L + i).toString(), "000000", UserPrivileges((1 + 6 * Math.random()).toInt()))
                 }
 
-                var lastProgress = 0
-                Observable.merge(tasks).toBlocking().forEach {
-                    val progress = createdUserNumbers.size * 100 / tasks.size
-                    if (progress - lastProgress >= 10 || progress == 100) {
-                        subscriber += "$progress%% completed creating users..."
-                        lastProgress = progress
-                    }
-                    createdUserNumbers.add(it)
+                val groups = arrayOf(10, 20, 30, 50, 100, 200, 300).map { memberSize ->
+                    val createSize = Math.min(users.size, memberSize)
+                    Group("${createSize}人组", "这是一个${createSize}人组", users.subList(0, createSize).mapIndexed { i, user -> i.toString() })
                 }
 
-                subscriber += "Created ${users.size} users"
-
-                val categories = arrayOf(10, 20, 30, 50, 100, 200, 300)
-
-                createdUserNumbers.removeAll { it == null }
-                createdUserNumbers.sortBy { it!!.toInt() }
-
-                categories.forEach { category ->
-                    val createSize = Math.min(createdUserNumbers.size, category)
-                    val groupRequest = CreateGroupRequest("${createSize}人组", "这是一个${createSize}人组", createdUserNumbers.subList(0, createSize) as List<String>)
-                    service.createGroup(groupRequest).execute()
-                    subscriber.onNext("Created group ${groupRequest.name}")
-                }
+                val response = service.import(ImportRequest(enterprise = enterprise, users = users, groups = groups)).execute().body()
+                subscriber.onNext("导入成功。企业ID = ${response.enterpriseId}")
 
             } catch(e: Exception) {
                 subscriber.onError(e)

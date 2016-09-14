@@ -4,7 +4,7 @@ import android.content.Intent
 import android.view.KeyEvent
 import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.service.handler.SignalServiceHandler
+import com.xianzhitech.ptt.maintain.service.handler.SignalServiceHandler
 import org.slf4j.LoggerFactory
 
 

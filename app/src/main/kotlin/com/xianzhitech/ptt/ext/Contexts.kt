@@ -11,7 +11,7 @@ import android.support.v4.content.LocalBroadcastManager
 import android.view.View
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.service.ConnectivityException
+import com.xianzhitech.ptt.maintain.service.ConnectivityException
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import org.slf4j.LoggerFactory
 import rx.Observable

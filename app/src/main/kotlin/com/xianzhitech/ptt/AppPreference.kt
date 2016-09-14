@@ -5,8 +5,8 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.service.AppConfig
-import com.xianzhitech.ptt.service.UserToken
+import com.xianzhitech.ptt.maintain.service.AppConfig
+import com.xianzhitech.ptt.maintain.service.UserToken
 import rx.Observable
 import rx.lang.kotlin.add
 import rx.lang.kotlin.observable

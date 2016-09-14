@@ -1,15 +1,15 @@
-package com.xianzhitech.ptt.service
+package com.xianzhitech.ptt.maintain.service
 
 import android.net.Uri
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.maintain.service.dto.JoinRoomResult
+import com.xianzhitech.ptt.maintain.service.dto.RoomOnlineMemberUpdate
+import com.xianzhitech.ptt.maintain.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.dto.JoinRoomResult
-import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
-import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import io.socket.client.Ack
 import io.socket.client.IO.Options
 import io.socket.client.IO.socket
@@ -264,7 +264,7 @@ class CreateRoomCommand(name : String? = null,
     }
 }
 
-class JoinRoomCommand(roomId : String) : Command<JoinRoomResponse, JSONObject>("c_join_room", roomId) {
+class JoinRoomCommand(roomId : String, sendInvitation : Boolean) : Command<JoinRoomResponse, JSONObject>("c_join_room", roomId, sendInvitation) {
     override fun convert(value: JSONObject): JoinRoomResponse {
         return JoinRoomResponse(value)
     }

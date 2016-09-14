@@ -17,7 +17,7 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.maintain.service.StaticUserException
 import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity
@@ -64,7 +64,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
         joinRoomButton.isEnabled = false
         joinRoomButton.setOnClickListener {
-            joinRoom(roomId)
+            joinRoom(roomId, false)
         }
     }
 

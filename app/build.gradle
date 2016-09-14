@@ -8,7 +8,7 @@ project.ext.appServerUrl = System.properties['APP_SERVER_URL']
 
 buildscript {
     ext.kotlin_version = '1.0.3'
-    ext.support_library_version = '24.2.0'
+    ext.support_library_version = '24.2.1'
 
     repositories {
         // required for this library, don't use mavenCentral()

@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.service
+package com.xianzhitech.ptt.maintain.service
 
 import android.content.Context
 import android.support.annotation.StringRes
