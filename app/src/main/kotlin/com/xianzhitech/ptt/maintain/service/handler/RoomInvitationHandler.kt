@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
+import java.util.concurrent.TimeUnit
 
 private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
@@ -62,6 +63,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
             //  2. 上一次房间有动作的时刻已经很久远
             //  3. 邀请者是拥有最高权限
             intent.putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.roomId)
+                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, true)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
         } else {
             logger.i { "Sending out invitation" }

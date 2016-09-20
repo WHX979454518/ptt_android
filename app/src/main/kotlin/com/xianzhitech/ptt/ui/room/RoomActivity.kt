@@ -11,6 +11,7 @@ import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.maintain.service.KnownServerException
 import com.xianzhitech.ptt.maintain.service.LoginStatus
 import com.xianzhitech.ptt.maintain.service.RoomInvitation
 import com.xianzhitech.ptt.maintain.service.RoomStatus
@@ -153,7 +154,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
 
-        appComponent.signalHandler.joinRoom(roomId, fromInvitation.not())
+        appComponent.signalHandler.joinRoom(roomId, fromInvitation)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(JoinRoomSubscriber(applicationContext, roomId))
@@ -165,7 +166,12 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         }
 
         override fun onError(e: Throwable) {
-            defaultOnErrorAction.call(e)
+            if (e is KnownServerException && e.errorName == "no_initiator") {
+                //这个错误表明这个房间邀请已经失效，不需要提示什么
+            }
+            else {
+                defaultOnErrorAction.call(e)
+            }
 
             val activity = appContext.appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {

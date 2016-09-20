@@ -264,7 +264,7 @@ class CreateRoomCommand(name : String? = null,
     }
 }
 
-class JoinRoomCommand(roomId : String, sendInvitation : Boolean) : Command<JoinRoomResponse, JSONObject>("c_join_room", roomId, sendInvitation) {
+class JoinRoomCommand(roomId : String, fromInvitation: Boolean) : Command<JoinRoomResponse, JSONObject>("c_join_room", roomId, fromInvitation) {
     override fun convert(value: JSONObject): JoinRoomResponse {
         return JoinRoomResponse(value)
     }

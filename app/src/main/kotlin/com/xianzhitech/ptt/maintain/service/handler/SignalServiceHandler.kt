@@ -293,7 +293,7 @@ class SignalServiceHandler(private val appContext: Context,
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
-    fun joinRoom(roomId: String, sendInvitation : Boolean): Completable {
+    fun joinRoom(roomId: String, fromInvitation: Boolean): Completable {
         return waitForUserLogin()
                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .andThen(Completable.create { subscriber : CompletableSubscriber ->
@@ -310,7 +310,7 @@ class SignalServiceHandler(private val appContext: Context,
 
                     roomStateSubject += RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId)
 
-                    JoinRoomCommand(roomId, sendInvitation)
+                    JoinRoomCommand(roomId, fromInvitation)
                             .send()
                             .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                             .observeOn(AndroidSchedulers.mainThread())
