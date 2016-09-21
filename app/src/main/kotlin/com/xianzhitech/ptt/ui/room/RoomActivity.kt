@@ -166,12 +166,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         }
 
         override fun onError(e: Throwable) {
-            if (e is KnownServerException && e.errorName == "no_initiator") {
-                //这个错误表明这个房间邀请已经失效，不需要提示什么
-            }
-            else {
-                defaultOnErrorAction.call(e)
-            }
+            defaultOnErrorAction.call(e)
 
             val activity = appContext.appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {
