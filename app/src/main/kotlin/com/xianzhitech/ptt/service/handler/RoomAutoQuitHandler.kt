@@ -1,11 +1,10 @@
-package com.xianzhitech.ptt.maintain.service.handler
+package com.xianzhitech.ptt.service.handler
 
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
-import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.maintain.service.RoomState
-import com.xianzhitech.ptt.maintain.service.RoomStatus
+import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
@@ -26,7 +25,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
 
     init {
         signalServiceHandler.roomState
-                .doOnNext { logger.d { "Room state changed to $it" } }
+                .doOnNext { com.xianzhitech.ptt.service.logger.d { "Room state changed to $it" } }
                 .scan(ArrayList<RoomState>(2), { result, newState ->
                     if (newState.status.inRoom.not()) {
                         result.clear()
@@ -63,7 +62,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
                 }
                 .subscribeSimple {
                     if (signalServiceHandler.peekCurrentRoomId() != null) {
-                        logger.d { "Auto quit room because room is put to idle" }
+                        com.xianzhitech.ptt.service.logger.d { "Auto quit room because room is put to idle" }
                         signalServiceHandler.quitRoom()
                         (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
                     }
@@ -72,7 +71,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
     }
 
     private fun onRoomStateChanged(lastRoomState: RoomState, currRoomState: RoomState) {
-        logger.d { "Online member changed from ${lastRoomState.onlineMemberIds} to ${currRoomState.onlineMemberIds}" }
+        com.xianzhitech.ptt.service.logger.d { "Online member changed from ${lastRoomState.onlineMemberIds} to ${currRoomState.onlineMemberIds}" }
 
         if (lastRoomState.onlineMemberIds.size > 1 &&
                 currRoomState.status.inRoom &&

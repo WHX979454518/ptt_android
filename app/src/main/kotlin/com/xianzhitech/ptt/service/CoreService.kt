@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.maintain.service
+package com.xianzhitech.ptt.service
 
 import com.xianzhitech.ptt.ext.transform
 import com.xianzhitech.ptt.model.Group

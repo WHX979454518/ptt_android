@@ -10,7 +10,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.maintain.service.RoomInvitation
+import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.user.UserItemHolder

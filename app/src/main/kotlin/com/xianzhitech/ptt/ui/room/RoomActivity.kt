@@ -11,10 +11,10 @@ import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.maintain.service.KnownServerException
-import com.xianzhitech.ptt.maintain.service.LoginStatus
-import com.xianzhitech.ptt.maintain.service.RoomInvitation
-import com.xianzhitech.ptt.maintain.service.RoomStatus
+import com.xianzhitech.ptt.service.KnownServerException
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomInvitation
+import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity

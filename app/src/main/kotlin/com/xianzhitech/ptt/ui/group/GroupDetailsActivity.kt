@@ -12,8 +12,8 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.maintain.service.CreateRoomRequest
-import com.xianzhitech.ptt.maintain.service.StaticUserException
+import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter

@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.maintain.service.handler
+package com.xianzhitech.ptt.service.handler
 
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.repo.RoomRepository

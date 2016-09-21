@@ -5,7 +5,7 @@ import android.os.Looper
 import android.os.Message
 import android.widget.Toast
 import com.xianzhitech.ptt.App
-import com.xianzhitech.ptt.maintain.service.describeInHumanMessage
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import org.slf4j.LoggerFactory
 import rx.*
 import rx.android.schedulers.AndroidSchedulers

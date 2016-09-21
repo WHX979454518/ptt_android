@@ -4,8 +4,8 @@ import android.content.Context
 import android.telephony.TelephonyManager
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.receiveBroadcasts
-import com.xianzhitech.ptt.maintain.service.RoomState
-import com.xianzhitech.ptt.maintain.service.RoomStatus
+import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import rx.Observable
 import java.lang.reflect.Method
 import java.util.*

@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.maintain.service.handler
+package com.xianzhitech.ptt.service.handler
 
 import android.content.BroadcastReceiver
 import android.content.Context

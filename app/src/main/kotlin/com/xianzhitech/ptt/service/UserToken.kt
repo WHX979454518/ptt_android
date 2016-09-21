@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.maintain.service
+package com.xianzhitech.ptt.service
 
 import com.google.gson.annotations.SerializedName
 

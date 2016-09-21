@@ -13,7 +13,7 @@ import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.isEmpty
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.maintain.service.Feedback
+import com.xianzhitech.ptt.service.Feedback
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import rx.CompletableSubscriber

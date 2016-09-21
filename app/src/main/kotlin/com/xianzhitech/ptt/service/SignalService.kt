@@ -1,15 +1,15 @@
-package com.xianzhitech.ptt.maintain.service
+package com.xianzhitech.ptt.service
 
 import android.net.Uri
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.maintain.service.dto.JoinRoomResult
-import com.xianzhitech.ptt.maintain.service.dto.RoomOnlineMemberUpdate
-import com.xianzhitech.ptt.maintain.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.service.dto.JoinRoomResult
+import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
+import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import io.socket.client.Ack
 import io.socket.client.IO.Options
 import io.socket.client.IO.socket

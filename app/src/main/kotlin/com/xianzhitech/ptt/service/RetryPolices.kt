@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.maintain.service
+package com.xianzhitech.ptt.service
 
 import android.content.Context
 import android.content.Intent
@@ -56,7 +56,7 @@ class AndroidRetryPolicy(private val context: Context) : RetryPolicy {
     }
 
     override fun notifySuccess() {
-        logger.i { "Resetting next reconnect timer to $MIN_RECONNECT_WAIT_MILLS ms" }
+        logger.i { "Resetting next reconnect timer to ${MIN_RECONNECT_WAIT_MILLS} ms" }
         currentReconnectInterval.set(MIN_RECONNECT_WAIT_MILLS)
     }
 

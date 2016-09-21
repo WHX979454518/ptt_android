@@ -6,7 +6,7 @@ import android.os.Parcelable
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.model.Model
-import com.xianzhitech.ptt.maintain.service.StaticUserException
+import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.home.ModelProvider
 import rx.Observable
 

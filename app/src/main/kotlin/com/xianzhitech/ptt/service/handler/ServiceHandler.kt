@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.maintain.service.handler
+package com.xianzhitech.ptt.service.handler
 
 import android.app.PendingIntent
 import android.app.Service
@@ -8,13 +8,14 @@ import android.os.IBinder
 import android.support.v4.app.NotificationCompat
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.getConnectivity
+import com.xianzhitech.ptt.ext.receiveBroadcasts
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.repo.getInRoomDescription
-import com.xianzhitech.ptt.maintain.service.LoginStatus
-import com.xianzhitech.ptt.maintain.service.RoomStatus
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
@@ -35,8 +36,8 @@ class BackgroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_UPDATE_NOTIFICATION) {
-            startForeground(1, intent!!.getParcelableExtra(EXTRA_NOTIFICATION))
+        if (intent?.action == com.xianzhitech.ptt.service.BackgroundService.Companion.ACTION_UPDATE_NOTIFICATION) {
+            startForeground(1, intent!!.getParcelableExtra(com.xianzhitech.ptt.service.BackgroundService.Companion.EXTRA_NOTIFICATION))
         }
 
         return START_STICKY
@@ -64,12 +65,12 @@ class ServiceHandler(private val appContext: Context,
                 .observeOn(AndroidSchedulers.mainThread())
                 .switchMap { userHasLoggedIn ->
                     if (userHasLoggedIn.not()) {
-                        logger.i { "User has logged out, stopping PushService" }
+                        com.xianzhitech.ptt.service.logger.i { "User has logged out, stopping PushService" }
                         appContext.stopService(Intent(appContext, BackgroundService::class.java))
-                        Observable.never<State>()
+                        Observable.never<com.xianzhitech.ptt.service.State>()
                     }
                     else {
-                        logger.i { "User has logged in/logging in. Start monitoring events." }
+                        com.xianzhitech.ptt.service.logger.i { "User has logged in/logging in. Start monitoring events." }
                         Observable.combineLatest(
                                 signalService.roomStatus,
                                 signalService.currentRoomId.switchMap { appComponent.roomRepository.getRoom(it).observe() },
@@ -77,10 +78,10 @@ class ServiceHandler(private val appContext: Context,
                                 signalService.loginStatus,
                                 signalService.currentUserId.switchMap { appComponent.userRepository.getUser(it).observe() },
                                 appContext.getConnectivity(),
-                                { roomStatus, currRoom, roomName, loginStatus, currUser, connectivity -> State(roomStatus, currRoom, roomName, loginStatus, currUser, connectivity) })
+                                { roomStatus, currRoom, roomName, loginStatus, currUser, connectivity -> com.xianzhitech.ptt.service.State(roomStatus, currRoom, roomName, loginStatus, currUser, connectivity) })
                     }
                 }
-                .subscribeSimple { state : State ->
+                .subscribeSimple { state : com.xianzhitech.ptt.service.State ->
                     onStateChanged(state)
                 }
 
@@ -90,17 +91,17 @@ class ServiceHandler(private val appContext: Context,
                 .subscribe {
                     val roomState = signalService.peekRoomState()
                     if (roomState.currentRoomId != null && roomState.status != RoomStatus.IDLE) {
-                        logger.i { "Screen turning on and current in room. Open room activity." }
+                        com.xianzhitech.ptt.service.logger.i { "Screen turning on and current in room. Open room activity." }
                         appContext.startActivity(Intent(appContext, RoomActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK))
                     }
                 }
     }
 
-    private fun onStateChanged(state: State) {
-        logger.d { "State changed to $state" }
+    private fun onStateChanged(state: com.xianzhitech.ptt.service.State) {
+        com.xianzhitech.ptt.service.logger.d { "State changed to $state" }
 
         if (appComponent.preference.userSessionToken == null) {
-            logger.w { "User session has ended. Stopping service" }
+            com.xianzhitech.ptt.service.logger.w { "User session has ended. Stopping service" }
             return
         }
 
@@ -156,8 +157,8 @@ class ServiceHandler(private val appContext: Context,
 
         builder.setSmallIcon(icon)
         appContext.startService(Intent(appContext, BackgroundService::class.java).apply {
-            action = BackgroundService.ACTION_UPDATE_NOTIFICATION
-            putExtra(BackgroundService.EXTRA_NOTIFICATION, builder.build())
+            action = com.xianzhitech.ptt.service.BackgroundService.Companion.ACTION_UPDATE_NOTIFICATION
+            putExtra(com.xianzhitech.ptt.service.BackgroundService.Companion.EXTRA_NOTIFICATION, builder.build())
         })
     }
 

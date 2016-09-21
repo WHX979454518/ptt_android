@@ -20,10 +20,10 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.maintain.service.AppConfig
-import com.xianzhitech.ptt.maintain.service.CreateRoomRequest
-import com.xianzhitech.ptt.maintain.service.describeInHumanMessage
-import com.xianzhitech.ptt.maintain.service.handler.ForceUpdateException
+import com.xianzhitech.ptt.service.AppConfig
+import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.service.handler.ForceUpdateException
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
