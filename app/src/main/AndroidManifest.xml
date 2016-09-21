@@ -108,16 +108,16 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".maintain.service.handler.BackgroundService" />
+        <service android:name=".service.handler.BackgroundService" />
 
-        <receiver android:name=".maintain.service.handler.RoomInvitationHandler">
+        <receiver android:name=".service.handler.RoomInvitationHandler">
             <intent-filter>
                 <action android:name="SignalService.Room" />
                 <action android:name="PushService.Message" />
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".maintain.service.handler.AutoStartReceiver">
+        <receiver android:name=".service.handler.AutoStartReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.SCREEN_ON" />
