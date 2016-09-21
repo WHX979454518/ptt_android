@@ -4,8 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.Constants
-import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.service.RoomInvitation
@@ -39,25 +38,25 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                 } else {
                     Single.just(Unit)
                 },
-                { user, room, ignored -> com.xianzhitech.ptt.service.RoomInvitationHandler.InviteInfo(invite, room, user) })
+                { user, room, ignored -> RoomInvitationHandler.InviteInfo(invite, room, user) })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeSimple { onReceive(context, it.invitation, it.currentRoom, it.inviter) }
     }
 
     private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?, inviter: User?) {
         if (invitation.roomId == currentRoom?.id) {
-            com.xianzhitech.ptt.service.logger.i { "Already in room ${invitation.roomId}. Skip inviting..." }
+            logger.i { "Already in room ${invitation.roomId}. Skip inviting..." }
             return
         }
 
-        com.xianzhitech.ptt.service.logger.d { "Receive room invitation $invitation, currRoom: $currentRoom, inviter: $inviter" }
+        logger.d { "Receive room invitation $invitation, currRoom: $currentRoom, inviter: $inviter" }
 
         val intent = Intent(context, RoomActivity::class.java)
 
         if (currentRoom == null ||
                 System.currentTimeMillis() - currentRoom.lastActiveTime.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
                 (inviter != null && inviter.priority == 0)) {
-            com.xianzhitech.ptt.service.logger.i { "Join room ${invitation.roomId} directly" }
+            logger.i { "Join room ${invitation.roomId} directly" }
             // 如果满足下列条件之一, 则直接接受邀请并进入对讲房间
             //  1. 当前没有对讲房间
             //  2. 上一次房间有动作的时刻已经很久远
@@ -66,7 +65,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, true)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
         } else {
-            com.xianzhitech.ptt.service.logger.i { "Sending out invitation" }
+            logger.i { "Sending out invitation" }
             intent.putExtra(RoomActivity.EXTRA_INVITATIONS, listOf(invitation) as Serializable)
         }
 

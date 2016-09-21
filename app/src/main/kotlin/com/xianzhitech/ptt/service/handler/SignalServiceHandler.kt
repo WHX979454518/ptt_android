@@ -53,7 +53,7 @@ class SignalServiceHandler(private val appContext: Context,
     private var syncContactSubscription : Subscription? = null // Part of login subscription
 
     private var sendCommandSubject = PublishSubject<Command<*, *>>()
-    private val authTokenFactory = com.xianzhitech.ptt.service.AuthTokenFactoryImpl()
+    private val authTokenFactory = AuthTokenFactoryImpl()
     private lateinit var coreService : CoreService
 
     val roomState: Observable<RoomState>
@@ -118,7 +118,7 @@ class SignalServiceHandler(private val appContext: Context,
                 .flatMapObservable {
                     val (deviceId, appConfig) = it
                     if (appConfig.hasUpdate && appConfig.mandatory) {
-                        throw com.xianzhitech.ptt.service.ForceUpdateException(appConfig)
+                        throw ForceUpdateException(appConfig)
                     }
 
                     coreService = CoreServiceImpl(appComponent.httpClient, appConfig.signalServerEndpoint)
@@ -192,7 +192,7 @@ class SignalServiceHandler(private val appContext: Context,
         appComponent.userRepository.saveUsers(listOf(user)).execAsync().subscribeSimple()
 
         if (firstTimeLogin) {
-            com.xianzhitech.ptt.service.logger.i { "Clearing room data for new user" }
+            logger.i { "Clearing room data for new user" }
             appComponent.roomRepository.clear().execAsync(true).await()
         }
 
@@ -203,11 +203,11 @@ class SignalServiceHandler(private val appContext: Context,
                     .switchMap { Observable.interval(0, Constants.SYNC_CONTACT_INTERVAL_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()) }
                     .switchMap {
                         val version = appComponent.preference.contactVersion
-                        com.xianzhitech.ptt.service.logger.i { "Syncing contact version with localVersion=$version" }
+                        logger.i { "Syncing contact version with localVersion=$version" }
                         coreService.syncContact(user.id, version).toObservable()
                     }
                     .switchMap {
-                        com.xianzhitech.ptt.service.logger.i { "Got contact $it" }
+                        logger.i { "Got contact $it" }
                         if (it != null) {
                             appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(it).toObservable()
                         } else {
@@ -286,7 +286,7 @@ class SignalServiceHandler(private val appContext: Context,
                 else -> {}
             }
 
-            com.xianzhitech.ptt.service.logger.i { "Waiting for user to log in..." }
+            logger.i { "Waiting for user to log in..." }
             appComponent.signalHandler.loginStatus
                     .first { it == LoginStatus.LOGGED_IN }
                     .toCompletable()
@@ -331,7 +331,7 @@ class SignalServiceHandler(private val appContext: Context,
                                 }
 
                                 override fun onSuccess(value: JoinRoomResult) {
-                                    com.xianzhitech.ptt.service.logger.d { "Join room result $value" }
+                                    logger.d { "Join room result $value" }
 
                                     val state = peekRoomState()
                                     if (state.currentRoomId == value.room.id && state.status == RoomStatus.JOINING) {
@@ -383,7 +383,7 @@ class SignalServiceHandler(private val appContext: Context,
                 throw IllegalStateException("Can't request mic in room state $roomState")
             }
 
-            com.xianzhitech.ptt.service.logger.d { "Requesting mic... $roomState" }
+            logger.d { "Requesting mic... $roomState" }
 
             roomStateSubject += roomState.copy(status = RoomStatus.REQUESTING_MIC)
             RequestMicCommand(roomState.currentRoomId!!)
@@ -393,7 +393,7 @@ class SignalServiceHandler(private val appContext: Context,
                     .doOnSuccess {
                         if (it) {
                             val newRoomState = peekRoomState()
-                            com.xianzhitech.ptt.service.logger.d { "Successfully requested mic in $newRoomState" }
+                            logger.d { "Successfully requested mic in $newRoomState" }
                             if ((newRoomState.status == RoomStatus.REQUESTING_MIC || newRoomState.status == RoomStatus.ACTIVE) &&
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
                                     peekCurrentUserId == userId) {
@@ -424,7 +424,7 @@ class SignalServiceHandler(private val appContext: Context,
         mainThread {
             ensureLoggedIn()
             val state = peekRoomState()
-            com.xianzhitech.ptt.service.logger.d { "Releasing mic in $state" }
+            logger.d { "Releasing mic in $state" }
 
             if (state.currentRoomId != null &&
                     (state.speakerId == peekCurrentUserId || state.status == RoomStatus.REQUESTING_MIC)) {
@@ -517,14 +517,14 @@ class SignalServiceHandler(private val appContext: Context,
                 return@mainThread
             }
 
-            com.xianzhitech.ptt.service.logger.d { "Online member IDs updated to ${update.memberIds}, curr state = $state" }
+            logger.d { "Online member IDs updated to ${update.memberIds}, curr state = $state" }
 
             roomStateSubject += state.copy(onlineMemberIds = update.memberIds.toSet())
         }
     }
 
     private fun onReceiveInvitation(invite: RoomInvitation) {
-        appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(com.xianzhitech.ptt.service.SignalServiceHandler.Companion.EXTRA_INVITATION, invite))
+        appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(SignalServiceHandler.Companion.EXTRA_INVITATION, invite))
     }
 
     private fun showToast(message: CharSequence) {
@@ -586,8 +586,8 @@ private class AuthTokenFactoryImpl() : AuthTokenFactory {
 
     private fun String.guessLoginPostfix() : String {
         return when {
-            matches(com.xianzhitech.ptt.service.AuthTokenFactoryImpl.Companion.PHONE_MATCHER) -> ":PHONE"
-            matches(com.xianzhitech.ptt.service.AuthTokenFactoryImpl.Companion.EMAIL_MATCHER) -> ":MAIL"
+            matches(AuthTokenFactoryImpl.Companion.PHONE_MATCHER) -> ":PHONE"
+            matches(AuthTokenFactoryImpl.Companion.EMAIL_MATCHER) -> ":MAIL"
             else -> ""
         }
     }
