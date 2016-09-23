@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import rx.*
 import rx.android.schedulers.AndroidSchedulers
 import rx.lang.kotlin.PublishSubject
+import rx.lang.kotlin.onErrorReturnNull
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import rx.subjects.SerializedSubject
@@ -204,20 +205,10 @@ class SignalServiceHandler(private val appContext: Context,
                     .switchMap {
                         val version = appComponent.preference.contactVersion
                         logger.i { "Syncing contact version with localVersion=$version" }
-                        coreService.syncContact(user.id, version).toObservable()
+                        syncContact(version).andThen(Observable.empty<Unit>())
                     }
-                    .switchMap {
-                        logger.i { "Got contact $it" }
-                        if (it != null) {
-                            appComponent.contactRepository.replaceAllContacts(it.users, it.groups).execAsync().toSingleDefault(it).toObservable()
-                        } else {
-                            Observable.never<SyncContactResult>()
-                        }
-                    }
-                    .onErrorResumeNext(Observable.never())
-                    .subscribeSimple {
-                        appComponent.preference.contactVersion = it.version
-                    }
+                    .onErrorReturnNull()
+                    .subscribeSimple()
         }
     }
 
@@ -235,6 +226,29 @@ class SignalServiceHandler(private val appContext: Context,
                 .onErrorResumeNext {
                     // 出错了: 如果我们之前存有AppParam, 则使用那个, 否则就继续返回错误
                     appComponent.preference.lastAppParams?.let { Single.just(it) } ?: Single.error(it)
+                }
+    }
+
+    fun syncContact(version : Long = -1L) : Completable {
+        val userId = peekCurrentUserId ?: return Completable.complete()
+
+        return coreService.syncContact(userId, version)
+                .flatMap {
+                    val result = Single.just(it)
+                    if (it == null) {
+                        throw StaticUserException(R.string.error_unable_to_connect)
+                    }
+
+                    appComponent.contactRepository.replaceAllContacts(it.users, it.groups)
+                            .execAsync()
+                            .andThen(result)
+                }
+                .flatMapCompletable {
+                    if (it != null) {
+                        logger.d { "Got contact version ${it.version}" }
+                        appComponent.preference.contactVersion = it.version
+                    }
+                    Completable.complete()
                 }
     }
 

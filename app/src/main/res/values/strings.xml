@@ -188,6 +188,7 @@
     <string name="field_required">该项目不能为空</string>
     <string name="type_room_name">房间名称</string>
     <string name="room_not_updated">房间未更新</string>
+    <string name="contact_updated">通讯录更新完成</string>
 
     <string name="shortcut_mode_no_op">无操作</string>
     <string name="shortcut_mode_contact">呼叫通讯录中的联系人/群组</string>
