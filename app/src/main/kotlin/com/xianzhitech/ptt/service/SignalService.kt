@@ -63,6 +63,9 @@ fun receiveSignal(uri: Uri,
             subscriber.onError(err)
         }
 
+        s.io().on(Manager.EVENT_PING, { logger.i { "Ping!" } })
+        s.io().on(Manager.EVENT_PONG, { logger.i { "Pong!" } })
+
         s.io().on(Manager.EVENT_TRANSPORT, {
             val transport = it.first() as Transport
             transport.on(Transport.EVENT_REQUEST_HEADERS, {
@@ -352,12 +355,6 @@ class UserObject(private val obj: JSONObject) : User {
         get() = obj.getStringValue("enterName", "")
     override val enterpriseExpireDate: Date?
         get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
-
-    val serviceToken : String
-        get() = obj.getString("serviceToken")
-
-    val pushServerUri : String
-        get() = obj.getString("pushServerUri")
 
     override fun toString(): String {
         return obj.toString()

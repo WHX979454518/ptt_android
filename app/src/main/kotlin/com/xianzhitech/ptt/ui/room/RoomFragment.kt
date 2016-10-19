@@ -155,7 +155,6 @@ class RoomFragment : BaseFragment()
                 { roomName, onlineMemberIds, roomMembers, room -> RoomInfo(roomName, room, roomMembers, onlineMemberIds) }
         )
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
                     if (it.roomName != null && it.room != null) {
                         callbacks<Callbacks>()?.setTitle(it.roomName.name)
@@ -165,13 +164,13 @@ class RoomFragment : BaseFragment()
                         }
                     }
                 }
+                .bindToLifecycle()
 
         Observable.combineLatest(
                 signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.switchMap { appComponent.userRepository.getUsers(it.onlineMemberIds).observe() },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },
                 { first, second -> first to second })
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
                     onlineUserAdapter.setUsers(it.first)
                     val roomInitiatorUserId = signalService.peekRoomState().currentRoomInitiatorUserId
@@ -179,11 +178,11 @@ class RoomFragment : BaseFragment()
                         onlineUserAdapter.setUserToPosition(roomInitiatorUserId, 0)
                     }
                 }
+                .bindToLifecycle()
 
         signalService.roomState.distinctUntilChanged { it -> it.speakerId }
                 .switchMap { appComponent.userRepository.getUser(it.speakerId).observe() }
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple { speaker ->
                     views?.apply {
                         if (speaker == null) {
@@ -236,6 +235,7 @@ class RoomFragment : BaseFragment()
                         }
                     }
                 }
+                .bindToLifecycle()
     }
 
     private fun startUpdatingDurationView() {

@@ -113,7 +113,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         appComponent.signalHandler
                 .roomStatus
                 .observeOnMainThread()
-                .bindToLifecycle()
                 .subscribeSimple {
                     if (it == RoomStatus.JOINING) {
                         showProgressDialog(R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
@@ -121,6 +120,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
                     }
                 }
+                .bindToLifecycle()
 
         appComponent.signalHandler.roomStatus
                 .switchMap {
@@ -130,7 +130,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         rx.Observable.never()
                     }
                 }
-                .bindToLifecycle()
                 .subscribeSimple {
                     val loginStatus = appComponent.signalHandler.peekLoginStatus()
                     val peekRoomState = appComponent.signalHandler.peekRoomState()
@@ -139,6 +138,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         finish()
                     }
                 }
+                .bindToLifecycle()
     }
 
     override fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {

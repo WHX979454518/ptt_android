@@ -51,7 +51,6 @@ class UserDetailsActivity : BaseToolbarActivity() {
         (application as AppComponent).userRepository.getUser(intent.getStringExtra(EXTRA_USER_ID))
                 .observe()
                 .observeOnMainThread()
-                .bindToLifecycle()
                 .subscribeSimple { user ->
                     if (user == null) {
                         Toast.makeText(this@UserDetailsActivity, R.string.error_getting_user_info, Toast.LENGTH_LONG).show()
@@ -65,6 +64,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                         callButton.isEnabled = true
                     }
                 }
+                .bindToLifecycle()
     }
 
     companion object {

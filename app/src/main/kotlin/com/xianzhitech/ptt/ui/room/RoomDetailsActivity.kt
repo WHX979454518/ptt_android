@@ -85,7 +85,6 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
                 }
         )
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribe(object : Subscriber<RoomData>() {
                     override fun onError(e: Throwable) {
                         defaultOnErrorAction.call(e)
@@ -98,6 +97,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
                         onRoomLoaded(t.room, t.name, t.members)
                     }
                 })
+                .bindToLifecycle()
     }
 
     private fun onRoomLoaded(room: Room, roomName: RoomName, roomMembers: List<User>) {

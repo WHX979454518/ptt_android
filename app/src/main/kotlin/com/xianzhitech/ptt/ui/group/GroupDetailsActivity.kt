@@ -62,7 +62,6 @@ class GroupDetailsActivity : BaseToolbarActivity() {
                             .map { group to it }
                 }
                 .observeOnMainThread()
-                .bindToLifecycle()
                 .subscribe(object : Subscriber<Pair<Group, List<User>>>() {
                     override fun onError(e: Throwable) {
                         defaultOnErrorAction.call(e)
@@ -75,6 +74,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
                         onGroupLoaded(t.first, t.second)
                     }
                 })
+                .bindToLifecycle()
     }
 
     private fun onGroupLoaded(group: Group, groupMembers: List<User>) {

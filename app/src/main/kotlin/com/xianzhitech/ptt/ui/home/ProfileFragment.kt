@@ -11,7 +11,6 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.trello.rxlifecycle.FragmentEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -88,19 +87,21 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             }
             findView<View>(R.id.profile_logout).setOnClickListener(this@ProfileFragment)
 
-            views = Views(this).apply {
-
-                appComponent.signalHandler.currentUserId
-                        .switchMap { appComponent.userRepository.getUser(it).observe() }
-                        .compose(bindUntil(FragmentEvent.DESTROY_VIEW))
-                        .observeOnMainThread()
-                        .subscribeSimple {
-                            iconView.setImageDrawable(it?.createDrawable(context))
-                            nameView.text = it?.name
-                            numberView.text = it?.id
-                        }
-            }
+            views = Views(this)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        appComponent.signalHandler.currentUserId
+                .switchMap { appComponent.userRepository.getUser(it).observe() }
+                .observeOnMainThread()
+                .subscribeSimple {
+                    views?.iconView?.setImageDrawable(it?.createDrawable(context))
+                    views?.nameView?.text = it?.name
+                    views?.numberView?.text = it?.id
+                }
     }
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
@@ -184,9 +185,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                     ?.fold(initialValue, { result, file -> result.first + 1 to result.second + file.length() }) ?: initialValue
         }.subscribeOn(Schedulers.io())
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .toObservable()
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
                     val (count, totalFileSize) = it
                     if (count == 0 || totalFileSize == 0L) {
@@ -201,6 +200,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                         }.show(childFragmentManager, TAG_UPLOAD_LOG_CONFIRMATION)
                     }
                 }
+                .bindToLifecycle()
     }
 
 

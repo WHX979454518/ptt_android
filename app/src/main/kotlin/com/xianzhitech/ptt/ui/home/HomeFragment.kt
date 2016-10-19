@@ -133,7 +133,6 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                             )
                         },
                 { loginStatus, roomStatus, roomInfo -> LoginRoomInfo(loginStatus, roomStatus, roomInfo?.first, roomInfo?.second) })
-                .compose(bindToLifecycle())
                 .observeOnMainThread()
                 .subscribeSimple {
                     views?.topBanner?.apply {
@@ -164,6 +163,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                         }
                     }
                 }
+                .bindToLifecycle()
     }
 
     private fun setTabItemSelected(position: Int, selected: Boolean) {

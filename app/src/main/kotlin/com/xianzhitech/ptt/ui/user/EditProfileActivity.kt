@@ -54,7 +54,6 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
                 .first()
                 .map { it ?: throw StaticUserException(R.string.error_no_such_user) }
                 .observeOnMainThread()
-                .bindToLifecycle()
                 .doOnError {
                     Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
                     finish()
@@ -63,6 +62,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
                     nameView.text = user.name
                     avatarImage.setImageDrawable(user.createDrawable(this))
                 }
+                .bindToLifecycle()
     }
 
     override fun onClick(v: View) {

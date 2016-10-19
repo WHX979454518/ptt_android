@@ -40,20 +40,20 @@ class ContactsFragment : ModelListFragment() {
     private fun refresh() {
         swipeRefreshLayout?.isRefreshing = true
         appComponent.signalHandler.syncContact()
-                .toObservable<Unit>()
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe(object : Subscriber<Unit>() {
+                .subscribe(object : CompletableSubscriber {
                     override fun onError(e: Throwable) {
                         defaultOnErrorAction.call(e)
                         swipeRefreshLayout?.isRefreshing = false
                     }
 
-                    override fun onNext(t: Unit?) { }
-
                     override fun onCompleted() {
                         swipeRefreshLayout?.isRefreshing = false
                         Toast.makeText(context, R.string.contact_updated, Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onSubscribe(d: Subscription) {
+                        d.bindToLifecycle()
                     }
                 })
     }

@@ -33,8 +33,8 @@ class LoginFragment : BaseFragment()
 
         (context.applicationContext as AppComponent).signalHandler.loginStatus
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribe { updateLoginState(it) }
+                .bindToLifecycle()
     }
 
     private fun updateLoginState(status : LoginStatus) {

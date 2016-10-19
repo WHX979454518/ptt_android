@@ -143,9 +143,8 @@ dependencies {
     compile group: 'com.squareup.okhttp3', name: 'okhttp-ws', version: '3.4.1'
 
     compile 'io.reactivex:rxandroid:1.2.1'
-    compile 'io.reactivex:rxjava:1.2.1'
+    compile 'io.reactivex:rxjava:1.1.10'
     compile 'io.reactivex:rxkotlin:0.60.0'
-    compile 'com.trello:rxlifecycle:0.8.0'
 
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'

@@ -13,8 +13,6 @@ import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.Toast
-import com.trello.rxlifecycle.ActivityEvent
-import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
@@ -31,10 +29,10 @@ import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.update.installPackage
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import rx.Observable
 import rx.SingleSubscriber
+import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import rx.subjects.BehaviorSubject
+import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
@@ -43,14 +41,12 @@ abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
         AlertDialogFragment.OnNegativeButtonClickListener {
 
-    private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
     private var pendingDeniedPermissions: List<String>? = null
     protected val logger : Logger by lazy { LoggerFactory.getLogger(javaClass.simpleName) }
+    private var subscriptions: CompositeSubscription? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        lifecycleEventSubject.onNext(ActivityEvent.CREATE)
 
         if (savedInstanceState == null) {
             handleIntent(intent)
@@ -77,28 +73,10 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    override fun onDestroy() {
-        lifecycleEventSubject.onNext(ActivityEvent.DESTROY)
-
-        super.onDestroy()
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        lifecycleEventSubject.onNext(ActivityEvent.START)
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
         outState.putSerializable(STATE_PENDING_DENIED_PERMISSIONS, pendingDeniedPermissions as? Serializable)
-    }
-
-    override fun onStop() {
-        lifecycleEventSubject.onNext(ActivityEvent.STOP)
-
-        super.onStop()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -262,9 +240,6 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
 
-        lifecycleEventSubject.onNext(ActivityEvent.RESUME)
-
-
         if (pendingDeniedPermissions?.isNotEmpty() ?: false) {
             AlertDialogFragment.Builder().apply {
                 message = R.string.error_no_android_permissions.toFormattedString(this@BaseActivity)
@@ -288,15 +263,14 @@ abstract class BaseActivity : AppCompatActivity(),
         appComponent.appService.retrieveAppConfig(appComponent.signalHandler.peekCurrentUserId ?: Constants.EMPTY_USER_ID)
                 .toObservable()
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
                     handleUpdate(it)
                 }
+                .bindToLifecycle()
 
         appComponent.signalHandler.currentUserId
             .switchMap { appComponent.userRepository.getUser(it).getAsync().toObservable() }
             .observeOnMainThread()
-            .compose(bindToLifecycle())
             .subscribeSimple {
                 val now = System.currentTimeMillis()
                 if (it != null && it.enterpriseExpireDate != null &&
@@ -312,29 +286,24 @@ abstract class BaseActivity : AppCompatActivity(),
                     supportFragmentManager.executePendingTransactions()
                 }
             }
+            .bindToLifecycle()
     }
 
-    override fun onPause() {
-        lifecycleEventSubject.onNext(ActivityEvent.PAUSE)
-        hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
 
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
+
+        subscriptions?.unsubscribe()
+        subscriptions = null
     }
 
-    fun <D> bindToLifecycle(): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindActivity(lifecycleEventSubject)
-    }
+    protected fun Subscription.bindToLifecycle() : Subscription {
+        if (subscriptions == null) {
+            subscriptions = CompositeSubscription()
+        }
 
-    fun <D> bindUntil(event: ActivityEvent): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindUntilEvent(lifecycleEventSubject, event)
-    }
-
-    protected fun <T> Observable<T>.bindToLifecycle(): Observable<T> {
-        return compose(RxLifecycle.bindActivity<T>(lifecycleEventSubject))
-    }
-
-    protected fun <T> Observable<T>.bindUntil(event: ActivityEvent): Observable<T> {
-        return compose(this@BaseActivity.bindUntil(event))
+        subscriptions!!.add(this)
+        return this
     }
 
     private class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {

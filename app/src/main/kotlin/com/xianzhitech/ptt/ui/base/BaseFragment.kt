@@ -1,82 +1,25 @@
 package com.xianzhitech.ptt.ui.base
 
-import android.content.Context
-import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.view.View
-import com.trello.rxlifecycle.FragmentEvent
-import com.trello.rxlifecycle.RxLifecycle
-import rx.Observable
-import rx.subjects.BehaviorSubject
+import rx.Subscription
+import rx.subscriptions.CompositeSubscription
 
 abstract class BaseFragment : Fragment() {
-    val lifecycleEventSubject = BehaviorSubject.create<FragmentEvent>()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        lifecycleEventSubject.onNext(FragmentEvent.CREATE)
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        lifecycleEventSubject.onNext(FragmentEvent.RESUME)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        lifecycleEventSubject.onNext(FragmentEvent.CREATE_VIEW)
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        lifecycleEventSubject.onNext(FragmentEvent.START)
-    }
-
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-
-        lifecycleEventSubject.onNext(FragmentEvent.ATTACH)
-    }
-
-    override fun onDetach() {
-        lifecycleEventSubject.onNext(FragmentEvent.DETACH)
-
-        super.onDetach()
-    }
+    private var subscriptions : CompositeSubscription? = null
 
     override fun onStop() {
-        lifecycleEventSubject.onNext(FragmentEvent.STOP)
         super.onStop()
+
+        subscriptions?.unsubscribe()
+        subscriptions = null
     }
 
-    override fun onDestroyView() {
-        lifecycleEventSubject.onNext(FragmentEvent.DESTROY_VIEW)
-        super.onDestroyView()
-    }
+    protected fun Subscription.bindToLifecycle() : Subscription {
+        if (subscriptions == null) {
+            subscriptions = CompositeSubscription()
+        }
 
-    override fun onPause() {
-        lifecycleEventSubject.onNext(FragmentEvent.PAUSE)
-        super.onPause()
-    }
-
-    override fun onDestroy() {
-        lifecycleEventSubject.onNext(FragmentEvent.DESTROY)
-        super.onDestroy()
-    }
-
-    fun <D> bindToLifecycle(): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindFragment<D>(lifecycleEventSubject)
-    }
-
-    fun <D> bindUntil(event: FragmentEvent): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindUntilFragmentEvent<D>(lifecycleEventSubject, event)
-    }
-
-    companion object {
-        const val TAG_GENERIC_ERROR_DIALOG = "tag_generic_error_dialog"
+        subscriptions!!.add(this)
+        return this
     }
 }

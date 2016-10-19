@@ -71,7 +71,6 @@ class RoomListFragment : BaseFragment() {
                 appComponent.signalHandler.currentUserId.first { it != null },
                 { first, second -> first to second!! })
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribe {
                     adapter.currentUserId = it.second
                     roomList.clear()
@@ -80,6 +79,7 @@ class RoomListFragment : BaseFragment() {
                     adapter.notifyDataSetChanged()
                     errorView?.setVisible(it.first.isEmpty())
                 }
+                .bindToLifecycle()
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {

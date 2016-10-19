@@ -101,7 +101,6 @@ class MainActivity : BaseToolbarActivity(),
 
         appComponent.signalHandler.loginStatus
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
                     if (it == LoginStatus.LOGIN_IN_PROGRESS && appComponent.signalHandler.peekCurrentUserId == null) {
                         showProgressDialog(R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
@@ -109,10 +108,10 @@ class MainActivity : BaseToolbarActivity(),
                         (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()
                     }
                 }
+                .bindToLifecycle()
 
         appComponent.signalHandler.loggedIn
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple { loggedIn ->
                     logger.d { "User login state changed to $loggedIn" }
                     if (loggedIn.not()) {
@@ -121,6 +120,7 @@ class MainActivity : BaseToolbarActivity(),
                         displayFragment(HomeFragment::class.java)
                     }
                 }
+                .bindToLifecycle()
     }
 
     private fun displayFragment(fragmentClazz: Class<out Fragment>) {
