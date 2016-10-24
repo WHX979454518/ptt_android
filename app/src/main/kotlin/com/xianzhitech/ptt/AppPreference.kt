@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.DownTime
+import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
 import rx.Observable
@@ -19,6 +21,8 @@ class AppPreference(appContext : Context,
     private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
     private val playIndicatorSoundKey = R.string.key_play_indicator_sound.toFormattedString(appContext)
     private val keepSessionKey = R.string.key_keep_session.toFormattedString(appContext)
+    private val downTimeEnableKey = R.string.key_enable_downtime.toFormattedString(appContext)
+    private val downTimeKey = R.string.key_downtime.toFormattedString(appContext)
 
     private var userTokenCache = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
 
@@ -134,6 +138,17 @@ class AppPreference(appContext : Context,
                 pref.edit().remove(KEY_LAST_EXP_PROMPT_TIME).apply()
             }
         }
+    override var downTime: DownTime
+        get() = DownTime.fromString(pref.getString(downTimeKey, null)) ?: DEFAULT_DOWNTIME
+        set(value) {
+            pref.edit().putString(downTimeKey, value.toString()).apply()
+        }
+
+    override var enableDownTime: Boolean
+        get() = pref.getBoolean(downTimeEnableKey, false)
+        set(value) {
+            pref.edit().putBoolean(downTimeEnableKey, value).apply()
+        }
 
     companion object {
         const val KEY_USER_TOKEN = "current_user_token"
@@ -146,5 +161,8 @@ class AppPreference(appContext : Context,
         const val KEY_DEVICE_ID = "key_device_id"
         const val KEY_SHORTCUT = "key_shortcut"
         const val KEY_LAST_EXP_PROMPT_TIME = "key_last_exp_prompt_time"
+
+        @JvmStatic val DEFAULT_DOWNTIME = DownTime(startTime = LocalTime(minute = 0, hourOfDay = 23),
+                endTime = LocalTime(minute = 30, hourOfDay = 7))
     }
 }

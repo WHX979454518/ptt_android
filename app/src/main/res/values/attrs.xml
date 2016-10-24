@@ -13,4 +13,9 @@
     <declare-styleable name="SideNavigationView">
         <attr name="android:textColor" />
     </declare-styleable>
+
+    <declare-styleable name="DownTimePreference">
+        <attr name="startTimePreference" format="string" />
+    </declare-styleable>
+
 </resources>

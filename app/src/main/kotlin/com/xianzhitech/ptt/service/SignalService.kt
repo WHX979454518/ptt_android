@@ -237,6 +237,8 @@ interface RoomInvitation : Serializable {
     val roomId: String
     val inviterId: String
     val inviteTime: Date
+    val inviterPriority: Int
+    val force: Boolean
 }
 
 interface ExtraRoomInvitation {
@@ -298,6 +300,8 @@ class RoomInvitationObject(private @Transient val obj: JSONObject) : RoomInvitat
     override val roomId: String = room.id
     override val inviterId: String = obj.getString("inviterId")
     override val inviteTime: Date = Date()
+    override val inviterPriority: Int = obj.getInt("inviterPriority")
+    override val force: Boolean = obj.getBoolean("force")
 }
 
 class GroupObject(private val obj: JSONObject) : Group {
@@ -433,7 +437,15 @@ private fun JSONObject?.toPermissionSet(): Set<Permission> {
     }
 
     if (!has("forbidSpeak") || !getBoolean("forbidSpeak")) {
-        set.add(Permission.CAN_SPEAK)
+        set.add(Permission.SPEAK)
+    }
+
+    if (has("muteAble") && getBoolean("muteAble")) {
+        set.add(Permission.MUTE)
+    }
+
+    if (has("powerInviteAble") && getBoolean("powerInviteAble")) {
+        set.add(Permission.FORCE_INVITE)
     }
 
     return set

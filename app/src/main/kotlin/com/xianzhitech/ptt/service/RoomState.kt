@@ -31,7 +31,7 @@ data class RoomState(val status: RoomStatus,
     }
 
     fun canRequestMic(user : User?) : Boolean {
-        if (user == null || currentRoomId == null || speakerId == user.id || user.permissions.contains(Permission.CAN_SPEAK).not()) {
+        if (user == null || currentRoomId == null || speakerId == user.id || user.permissions.contains(Permission.SPEAK).not()) {
             return false
         }
 

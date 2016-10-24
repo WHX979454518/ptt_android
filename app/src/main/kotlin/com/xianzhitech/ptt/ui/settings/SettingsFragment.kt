@@ -1,16 +1,20 @@
 package com.xianzhitech.ptt.ui.settings
 
 import android.os.Bundle
+import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceFragmentCompat
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.Shortcut
 import com.xianzhitech.ptt.ShortcutMode
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.DownTime
+import com.xianzhitech.ptt.util.showDialogOnce
 import rx.Single
 import rx.subscriptions.CompositeSubscription
 
-class SettingsFragment : PreferenceFragmentCompat () {
+class SettingsFragment : PreferenceFragmentCompat(), DownTimePickerDialogFragment.OnTimeSetListener {
     private lateinit var modeNoOp : CharSequence
     private lateinit var modeFromContact : CharSequence
     private lateinit var modeFromRoom : CharSequence
@@ -26,6 +30,23 @@ class SettingsFragment : PreferenceFragmentCompat () {
         super.onCreate(savedInstanceState)
     }
 
+    override fun onDisplayPreferenceDialog(preference: Preference) {
+        if (preference is DownTimePreference) {
+            childFragmentManager.showDialogOnce(preference.key, {
+                DownTimePickerDialogFragment.createInstance(
+                        appComponent.preference.downTime,
+                        preference.dialogTitle)
+            })
+        }
+        else {
+            super.onDisplayPreferenceDialog(preference)
+        }
+    }
+
+    override fun onTimeSet(downTime: DownTime) {
+        (context.applicationContext as AppComponent).preference.downTime = downTime
+        (findPreference(getString(R.string.key_downtime)) as DownTimePreference).notifyChanged()
+    }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.preferences)

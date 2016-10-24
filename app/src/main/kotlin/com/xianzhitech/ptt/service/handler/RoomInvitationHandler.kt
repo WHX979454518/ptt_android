@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.service.RoomInvitation
@@ -28,7 +29,6 @@ class RoomInvitationHandler() : BroadcastReceiver() {
 
         val appComponent = context.appComponent
         Single.zip(
-                appComponent.userRepository.getUser(invite.inviterId).getAsync(),
                 appComponent.roomRepository.getRoom(appComponent.signalHandler.peekCurrentRoomId()).getAsync(),
                 if (invite is RoomInvitationObject) {
                     appComponent.roomRepository.saveRooms(listOf(invite.room))
@@ -38,24 +38,33 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                 } else {
                     Single.just(Unit)
                 },
-                { user, room, ignored -> RoomInvitationHandler.InviteInfo(invite, room, user) })
+                { room, ignored -> RoomInvitationHandler.InviteInfo(invite, room) })
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribeSimple { onReceive(context, it.invitation, it.currentRoom, it.inviter) }
+                .subscribeSimple { onReceive(context, it.invitation, it.currentRoom) }
     }
 
-    private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?, inviter: User?) {
+    private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?) {
         if (invitation.roomId == currentRoom?.id) {
             logger.i { "Already in room ${invitation.roomId}. Skip inviting..." }
             return
         }
 
-        logger.d { "Receive room invitation $invitation, currRoom: $currentRoom, inviter: $inviter" }
+        val appComponent = context.appComponent
+        if (appComponent.signalHandler.currentUserCache?.permissions?.contains(Permission.MUTE) ?: false &&
+                appComponent.preference.enableDownTime &&
+                appComponent.preference.downTime.isDownTime(System.currentTimeMillis())) {
+            logger.i { "User in downtime, skip inviting..." }
+            return
+        }
+
+        logger.d { "Receive room invitation $invitation, currRoom: $currentRoom" }
 
         val intent = Intent(context, RoomActivity::class.java)
 
         if (currentRoom == null ||
                 System.currentTimeMillis() - currentRoom.lastActiveTime.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
-                (inviter != null && inviter.priority == 0)) {
+                (invitation.inviterPriority == 0) ||
+                invitation.force) {
             logger.i { "Join room ${invitation.roomId} directly" }
             // 如果满足下列条件之一, 则直接接受邀请并进入对讲房间
             //  1. 当前没有对讲房间
@@ -69,7 +78,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
             intent.putExtra(RoomActivity.EXTRA_INVITATIONS, listOf(invitation) as Serializable)
         }
 
-        val startedActivity = context.appComponent.activityProvider.currentStartedActivity
+        val startedActivity = appComponent.activityProvider.currentStartedActivity
 
         if (startedActivity != null) {
             startedActivity.startActivityWithAnimation(intent)
@@ -79,6 +88,5 @@ class RoomInvitationHandler() : BroadcastReceiver() {
     }
 
     private data class InviteInfo(val invitation: RoomInvitation,
-                                  val currentRoom: RoomModel?,
-                                  val inviter: User?)
+                                  val currentRoom: RoomModel?)
 }

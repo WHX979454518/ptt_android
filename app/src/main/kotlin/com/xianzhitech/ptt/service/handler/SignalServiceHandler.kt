@@ -268,6 +268,7 @@ class SignalServiceHandler(private val appContext: Context,
                 userSessionToken = null
                 lastExpPromptTime = null
                 contactVersion = -1
+                enableDownTime = false
             }
 
             loginStatusSubject += LoginStatus.IDLE
