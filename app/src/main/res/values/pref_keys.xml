@@ -6,5 +6,6 @@
     <string name="key_shortcut_mode" translatable="false">shortcut_mode</string>
     <string name="key_keep_session" translatable="false">keep_session</string>
     <string name="key_enable_downtime" translatable="false">enable_downtime</string>
-    <string name="key_downtime" translatable="false">downtime</string>
+    <string name="key_downtime_start" translatable="false">downtime_start</string>
+    <string name="key_downtime_end" translatable="false">downtime_end</string>
 </resources>

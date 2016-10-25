@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.model.DownTime
 import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
@@ -22,7 +21,8 @@ class AppPreference(appContext : Context,
     private val playIndicatorSoundKey = R.string.key_play_indicator_sound.toFormattedString(appContext)
     private val keepSessionKey = R.string.key_keep_session.toFormattedString(appContext)
     private val downTimeEnableKey = R.string.key_enable_downtime.toFormattedString(appContext)
-    private val downTimeKey = R.string.key_downtime.toFormattedString(appContext)
+    private val downTimeStartKey = R.string.key_downtime_start.toFormattedString(appContext)
+    private val downTimeEndKey = R.string.key_downtime_end.toFormattedString(appContext)
 
     private var userTokenCache = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
 
@@ -138,10 +138,17 @@ class AppPreference(appContext : Context,
                 pref.edit().remove(KEY_LAST_EXP_PROMPT_TIME).apply()
             }
         }
-    override var downTime: DownTime
-        get() = DownTime.fromString(pref.getString(downTimeKey, null)) ?: DEFAULT_DOWNTIME
+
+    override var downTimeStart: LocalTime
+        get() = LocalTime.fromString(pref.getString(downTimeStartKey, null)) ?: DEFAULT_DOWNTIME_START
         set(value) {
-            pref.edit().putString(downTimeKey, value.toString()).apply()
+            pref.edit().putString(downTimeStartKey, value.toString()).apply()
+        }
+
+    override var downTimeEnd: LocalTime
+        get() = LocalTime.fromString(pref.getString(downTimeEndKey, null)) ?: DEFAULT_DOWNTIME_END
+        set(value) {
+            pref.edit().putString(downTimeEndKey, value.toString()).apply()
         }
 
     override var enableDownTime: Boolean
@@ -162,7 +169,7 @@ class AppPreference(appContext : Context,
         const val KEY_SHORTCUT = "key_shortcut"
         const val KEY_LAST_EXP_PROMPT_TIME = "key_last_exp_prompt_time"
 
-        @JvmStatic val DEFAULT_DOWNTIME = DownTime(startTime = LocalTime(minute = 0, hourOfDay = 23),
-                endTime = LocalTime(minute = 30, hourOfDay = 7))
+        @JvmStatic val DEFAULT_DOWNTIME_START = LocalTime(minute = 0, hourOfDay = 23)
+        @JvmStatic val DEFAULT_DOWNTIME_END = LocalTime(minute = 30, hourOfDay = 7)
     }
 }

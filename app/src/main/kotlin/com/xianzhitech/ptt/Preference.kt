@@ -2,7 +2,7 @@ package com.xianzhitech.ptt
 
 import android.net.Uri
 import com.google.gson.annotations.SerializedName
-import com.xianzhitech.ptt.model.DownTime
+import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
 import rx.Observable
@@ -23,9 +23,9 @@ interface Preference {
     var playIndicatorSound : Boolean
     var shortcut : Shortcut
     var keepSession : Boolean
-    var downTime : DownTime
-    var enableDownTime: Boolean
-
+    var enableDownTime : Boolean
+    var downTimeStart : LocalTime
+    var downTimeEnd : LocalTime
     val userSessionTokenSubject : Observable<UserToken>
 }
 

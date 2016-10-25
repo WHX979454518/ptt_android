@@ -210,11 +210,12 @@
     <string name="downtime_next_day_with_time">次日 %1$s</string>
     <string name="downtime_settings">免打扰设置</string>
     <string name="downtime_range">免打扰时段</string>
-    <string name="enable_downtime">开启免打扰模式</string>
+    <string name="enable_downtime">免打扰模式</string>
     <string name="downtime_description">开启后将收不到其它人的呼叫</string>
     <string name="click_to_set_time">点击设置时间</string>
-    <string name="downtime_same_day">%1$s 至 %2$s</string>
-    <string name="downtime_cross_day">%1$s 至 次日%2$s</string>
+    <string name="downtime_start_time">开始时间</string>
+    <string name="downtime_end_time">结束时间</string>
+    <string name="no_permission_to_downtime">当前用户无权限使用该功能</string>
     <string name="to">至</string>
 
     <string-array name="level_number">

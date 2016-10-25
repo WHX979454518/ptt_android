@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
@@ -52,7 +53,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
         val appComponent = context.appComponent
         if (appComponent.signalHandler.currentUserCache?.permissions?.contains(Permission.MUTE) ?: false &&
                 appComponent.preference.enableDownTime &&
-                appComponent.preference.downTime.isDownTime(System.currentTimeMillis())) {
+                LocalTime.isDownTime(System.currentTimeMillis(), appComponent.preference.downTimeStart, appComponent.preference.downTimeEnd)) {
             logger.i { "User in downtime, skip inviting..." }
             return
         }

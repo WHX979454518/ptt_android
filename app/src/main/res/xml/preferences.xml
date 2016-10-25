@@ -41,10 +41,17 @@
             android:title="@string/enable_downtime"
             android:summary="@string/downtime_description" />
 
-        <com.xianzhitech.ptt.ui.settings.DownTimePreference
-            android:key="@string/key_downtime"
+        <com.xianzhitech.ptt.ui.settings.TimePreference
+            android:key="@string/key_downtime_start"
             android:dependency="@string/key_enable_downtime"
-            android:title="@string/downtime_range" />
+            app:isStart="true"
+            android:title="@string/downtime_start_time" />
+
+        <com.xianzhitech.ptt.ui.settings.TimePreference
+            android:key="@string/key_downtime_end"
+            android:dependency="@string/key_enable_downtime"
+            app:isStart="false"
+            android:title="@string/downtime_end_time" />
 
     </PreferenceCategory>
 
