@@ -43,7 +43,7 @@ data class LocalTime(val minute : Int, val hourOfDay: Int) : Comparable<LocalTim
         fun isDownTime(now : Long, startTime: LocalTime, endTime: LocalTime) : Boolean {
             val currTime = LocalTime.fromCalendar(Calendar.getInstance().apply { timeInMillis = now })
 
-            if (startTime > endTime) {
+            if (startTime < endTime) {
                 return currTime >= startTime && currTime <= endTime
             }
             else {
