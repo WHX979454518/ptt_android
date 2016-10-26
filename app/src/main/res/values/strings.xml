@@ -216,6 +216,7 @@
     <string name="downtime_start_time">开始时间</string>
     <string name="downtime_end_time">结束时间</string>
     <string name="no_permission_to_downtime">当前用户无权限使用该功能</string>
+    <string name="speak_forbidden">禁止发言</string>
     <string name="to">至</string>
 
     <string-array name="level_number">

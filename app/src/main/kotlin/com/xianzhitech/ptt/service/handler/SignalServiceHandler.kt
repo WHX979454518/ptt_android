@@ -394,6 +394,10 @@ class SignalServiceHandler(private val appContext: Context,
                 return@defer Single.just(true)
             }
 
+            if (currentUserCache!!.permissions.contains(Permission.SPEAK).not()) {
+                throw StaticUserException(R.string.speak_forbidden)
+            }
+
             if (roomState.canRequestMic(currentUserCache!!).not()) {
                 throw IllegalStateException("Can't request mic in room state $roomState")
             }
