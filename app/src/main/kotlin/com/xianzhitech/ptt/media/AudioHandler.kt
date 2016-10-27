@@ -299,7 +299,7 @@ class AudioHandler(private val appContext: Context,
                             .startWith(allConnectedDevices.toList())
                 }
                 .doOnNext { logger.d { "QUERY: Got connected bluetooth devices: ${it.joinToString(",", transform = { it.name })}" } }
-                .map { it.filter { it.name.contains("PTT") } }
+                .map { it.toList() }
     }
 
     private fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int): Single<MutableSet<BluetoothDevice>> {
