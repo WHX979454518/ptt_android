@@ -102,7 +102,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".media.MediaButtonReceiver">
+        <receiver android:name=".media.MediaButtonReceiver" android:priority="65536">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
