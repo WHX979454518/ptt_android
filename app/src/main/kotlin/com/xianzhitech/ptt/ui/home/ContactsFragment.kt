@@ -29,7 +29,7 @@ class ContactsFragment : ModelListFragment() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         swipeRefreshLayout = SwipeRefreshLayout(context)
-        container?.addView(swipeRefreshLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        swipeRefreshLayout!!.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         swipeRefreshLayout!!.addView(super.onCreateView(inflater, swipeRefreshLayout, savedInstanceState))
         swipeRefreshLayout!!.setOnRefreshListener {
             refresh()
