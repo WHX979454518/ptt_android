@@ -181,7 +181,14 @@ class SignalServiceHandler(private val appContext: Context,
             is RoomOnlineMemberUpdateSignal -> onRoomOnlineMemberUpdate(signal.update)
             is RoomInviteSignal -> onReceiveInvitation(signal.invitation)
             is UserLoggedInSignal -> onUserLoggedIn(signal.user)
+            is UserUpdatedSignal -> onUserUpdated(signal.user)
         }
+    }
+
+    private fun onUserUpdated(user: UserObject) {
+        logger.i { "Updating user to $user" }
+        currentUserCache = user
+        appComponent.userRepository.saveUsers(listOf(user)).execAsync().subscribeSimple()
     }
 
     private fun onUserLoggedIn(user: UserObject) {
