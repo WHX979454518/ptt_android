@@ -45,17 +45,31 @@ class RoomInvitationHandler() : BroadcastReceiver() {
     }
 
     private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?) {
-        if (invitation.roomId == currentRoom?.id) {
-            logger.i { "Already in room ${invitation.roomId}. Skip inviting..." }
+        if (invitation.room.id == currentRoom?.id) {
+            logger.i { "Already in room ${invitation.room.id}. Skip inviting..." }
             return
         }
 
         val appComponent = context.appComponent
-        if (appComponent.signalHandler.currentUserCache?.permissions?.contains(Permission.MUTE) ?: false &&
+        val user = appComponent.signalHandler.currentUserCache
+        if ((user?.permissions?.contains(Permission.MUTE) ?: false) &&
                 appComponent.preference.enableDownTime &&
                 LocalTime.isDownTime(System.currentTimeMillis(), appComponent.preference.downTimeStart, appComponent.preference.downTimeEnd)) {
             logger.i { "User in downtime, skip inviting..." }
             return
+        }
+
+        if ((user?.permissions?.contains(Permission.RECEIVE_INDIVIDUAL_CALL)?.not() ?: false) &&
+                invitation.room.associatedGroupIds.isEmpty() &&
+                invitation.room.extraMemberIds.size <= 2) {
+            logger.w { "User has no permission to receive individual call" }
+            return
+        }
+
+        if ((user?.permissions?.contains(Permission.RECEIVE_TEMPORARY_GROUP_CALL)?.not() ?: false) &&
+                invitation.room.associatedGroupIds.isEmpty() &&
+                invitation.room.extraMemberIds.size > 2) {
+            logger.w { "User has no permission to receive temporary group call" }
         }
 
         logger.d { "Receive room invitation $invitation, currRoom: $currentRoom" }
@@ -66,12 +80,12 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                 System.currentTimeMillis() - currentRoom.lastActiveTime.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
                 (invitation.inviterPriority == 0) ||
                 invitation.force) {
-            logger.i { "Join room ${invitation.roomId} directly" }
+            logger.i { "Join room ${invitation.room.id} directly" }
             // 如果满足下列条件之一, 则直接接受邀请并进入对讲房间
             //  1. 当前没有对讲房间
             //  2. 上一次房间有动作的时刻已经很久远
             //  3. 邀请者是拥有最高权限
-            intent.putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.roomId)
+            intent.putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.room.id)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, true)
                     .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
         } else {

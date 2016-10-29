@@ -236,20 +236,16 @@ open class Command<R, V>(val cmd : String,
 
 
 interface RoomInvitation : Serializable {
-    val roomId: String
+    val room: Room
     val inviterId: String
     val inviteTime: Date
     val inviterPriority: Int
     val force: Boolean
 }
 
-interface ExtraRoomInvitation {
-    val room : Room
-}
-
 data class CreateRoomRequest(val name: String? = null,
-                             val groupIds: Iterable<String> = emptyList(),
-                             val extraMemberIds: Iterable<String> = emptyList()) {
+                             val groupIds: Collection<String> = emptyList(),
+                             val extraMemberIds: Collection<String> = emptyList()) {
     init {
         if (groupIds.sizeAtLeast(1).not() && extraMemberIds.sizeAtLeast(1).not()) {
             throw IllegalArgumentException("GroupId and MemberIds can't be null in the same time")
@@ -297,9 +293,8 @@ class ChangePasswordCommand(userId : String, oldPassword : String, newPassword :
 }
 
 
-class RoomInvitationObject(private @Transient val obj: JSONObject) : RoomInvitation, ExtraRoomInvitation {
-    @Transient override val room: Room = RoomObject(obj.getJSONObject("room"))
-    override val roomId: String = room.id
+class RoomInvitationObject(obj: JSONObject) : RoomInvitation {
+    override val room: Room = RoomObject(obj.getJSONObject("room"))
     override val inviterId: String = obj.getString("inviterId")
     override val inviteTime: Date = Date()
     override val inviterPriority: Int = obj.getInt("inviterPriority")
@@ -323,23 +318,13 @@ class GroupObject(private val obj: JSONObject) : Group {
     }
 }
 
-private class RoomObject(private val obj: JSONObject) : Room {
-    override val id: String
-        get() = obj.getString("idNumber")
-    override val name: String
-        get() = obj.getStringValue("name")
-    override val description: String?
-        get() = obj.getStringValue("description")
-    override val ownerId: String
-        get() = obj.getString("ownerId")
-    override val associatedGroupIds: Collection<String>
-        get() = obj.optJSONArray("associatedGroupIds").toStringList()
-    override val extraMemberIds: Collection<String>
-        get() = obj.optJSONArray("extraMemberIds").toStringList()
-
-    override fun toString(): String {
-        return obj.toString()
-    }
+private class RoomObject(obj: JSONObject) : Room, Serializable {
+    override val id: String = obj.getString("idNumber")
+    override val name: String = obj.getStringValue("name")
+    override val description: String? = obj.getStringValue("description")
+    override val ownerId: String = obj.getString("ownerId")
+    override val associatedGroupIds: Collection<String> = obj.optJSONArray("associatedGroupIds").toStringList().toList()
+    override val extraMemberIds: Collection<String> = obj.optJSONArray("extraMemberIds").toStringList().toList()
 }
 
 class UserObject(private val obj: JSONObject) : User {
@@ -427,7 +412,7 @@ private fun JSONObject?.toPermissionSet(): Set<Permission> {
     }
 
     if (has("groupAble") && getBoolean("groupAble")) {
-        set.add(Permission.MAKE_GROUP_CALL)
+        set.add(Permission.MAKE_TEMPORARY_GROUP_CALL)
     }
 
     if (has("calledAble") && getBoolean("calledAble")) {
@@ -435,7 +420,7 @@ private fun JSONObject?.toPermissionSet(): Set<Permission> {
     }
 
     if (has("joinAble") && getBoolean("joinAble")) {
-        set.add(Permission.RECEIVE_ROOM)
+        set.add(Permission.RECEIVE_TEMPORARY_GROUP_CALL)
     }
 
     if (!has("forbidSpeak") || !getBoolean("forbidSpeak")) {

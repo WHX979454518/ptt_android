@@ -306,17 +306,17 @@ abstract class BaseActivity : AppCompatActivity(),
         return this
     }
 
-    private class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
+    private inner class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
         override fun onError(error: Throwable) {
             defaultOnErrorAction.call(error)
 
-            ((appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity)?.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+            hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
         }
 
         override fun onSuccess(value: Room) {
+            hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
             val currentActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
             if (currentActivity != null) {
-                currentActivity.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
                 currentActivity.joinRoom(value.id, false)
             } else {
                 startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
