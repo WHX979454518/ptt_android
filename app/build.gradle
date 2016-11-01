@@ -133,7 +133,7 @@ dependencies {
     }
 
 
-    compile ('io.socket:socket.io-client:0.8.1') {
+    compile ('io.socket:socket.io-client:0.8.2') {
 //    compile (project(':socket.io-client-java')) {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'

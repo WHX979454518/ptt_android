@@ -217,6 +217,11 @@ class SignalServiceHandler(private val appContext: Context,
                     .onErrorReturnNull()
                     .subscribeSimple()
         }
+
+        val rs = peekRoomState()
+        if (rs.status.inRoom && rs.currentRoomId != null) {
+            joinRoom(rs.currentRoomId, false, true).subscribeSimple()
+        }
     }
 
     private fun onRoomUpdate(newRoom: Room) {
@@ -316,7 +321,7 @@ class SignalServiceHandler(private val appContext: Context,
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
-    fun joinRoom(roomId: String, fromInvitation: Boolean): Completable {
+    fun joinRoom(roomId: String, fromInvitation: Boolean, force : Boolean = false): Completable {
         return waitForUserLogin()
                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .andThen(appComponent.roomRepository.getRoom(roomId).getAsync())
@@ -329,7 +334,7 @@ class SignalServiceHandler(private val appContext: Context,
                     Completable.create { subscriber : CompletableSubscriber ->
                         val currRoomState = peekRoomState()
                         val currentRoomId = currRoomState.currentRoomId
-                        if (currentRoomId == roomId && currRoomState.status != RoomStatus.IDLE) {
+                        if (currentRoomId == roomId && currRoomState.status != RoomStatus.IDLE && force.not()) {
                             subscriber.onCompleted()
                             return@create
                         }
@@ -342,7 +347,7 @@ class SignalServiceHandler(private val appContext: Context,
                             return@create
                         }
 
-                        if (currentRoomId != null) {
+                        if (currentRoomId != null && currentRoomId != roomId) {
                             LeaveRoomCommand(currentRoomId, appComponent.preference.keepSession.not()).send()
                         }
 

@@ -137,6 +137,7 @@ fun receiveSignal(uri: Uri,
             }
 
             subscriber.add(connectivityProvider.connected.subscribe {
+                logger.i { "Connectivity changed to $it" }
                 if (it.not()) {
                     loginStatusNotification(LoginStatus.IDLE)
                     subscriber.onError(RuntimeException("No internet"))
@@ -145,9 +146,10 @@ fun receiveSignal(uri: Uri,
         })
 
         subscriber.add {
+            logger.i { "Disconnecting socket $uri" }
             s.off()
             s.io().off()
-            s.disconnect()
+            s.close()
         }
 
         loginStatusNotification(LoginStatus.LOGIN_IN_PROGRESS)
