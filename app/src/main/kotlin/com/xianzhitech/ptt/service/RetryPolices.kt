@@ -49,7 +49,7 @@ class AndroidRetryPolicy(private val context: Context) : RetryPolicy {
     }
 
     companion object {
-        private val MAX_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(30, TimeUnit.SECONDS)
+        private val MAX_RECONNECT_WAIT_MILLS = TimeUnit.MILLISECONDS.convert(5, TimeUnit.SECONDS)
         private val MIN_RECONNECT_WAIT_MILLS = 500L
         private val RECONNECT_INCREASE_FACTOR = 1.05f
 
