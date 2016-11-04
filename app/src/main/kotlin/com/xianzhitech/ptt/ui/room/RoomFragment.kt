@@ -16,11 +16,14 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.TextView
+import android.widget.Toast
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.home.ModelListActivity
@@ -30,6 +33,7 @@ import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
 import rx.Observable
+import rx.SingleSubscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
@@ -39,6 +43,7 @@ class RoomFragment : BaseFragment()
 
     private class Views(rootView: View,
                         val titleView: TextView = rootView.findView(R.id.room_title),
+                        val notificationView : View = rootView.findView(R.id.room_notification),
                         val speakerView: View = rootView.findView(R.id.room_speakerView),
                         val speakerAvatarView: ImageView = speakerView.findView(R.id.room_speakerAvatar),
                         val speakerAnimationView: ImageView = speakerView.findView(R.id.room_speakerAnimationView),
@@ -85,6 +90,38 @@ class RoomFragment : BaseFragment()
             val roomId = appComponent.signalHandler.peekCurrentRoomId()
             if (roomId != null) {
                 activity.startActivityWithAnimation(RoomDetailsActivity.build(context, roomId))
+            }
+        }
+
+        views.notificationView.setOnClickListener {
+            views.notificationView.isEnabled = false
+            val roomId = appComponent.signalHandler.peekCurrentRoomId()
+            if (roomId != null) {
+                appComponent.signalHandler.inviteRoomMembers(roomId)
+                        .timeout(Constants.INVITE_MEMBER_TIME_OUT_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                        .observeOnMainThread()
+                        .subscribe(object : SingleSubscriber<Int>() {
+                            override fun onSuccess(value: Int) {
+                                val msg : String
+                                if (value > 0) {
+                                    msg = getString(R.string.member_invitation_sent, value)
+                                }
+                                else {
+                                    msg = getString(R.string.member_invitation_sent_none)
+                                }
+
+                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                views.notificationView.isEnabled = true
+                            }
+
+                            override fun onError(error: Throwable?) {
+                                Toast.makeText(context, getString(R.string.member_invitation_sent_failed, error.describeInHumanMessage(context)),
+                                        Toast.LENGTH_LONG).show()
+                                views.notificationView.isEnabled = true
+                            }
+                        })
+                        .bindToLifecycle()
+
             }
         }
 

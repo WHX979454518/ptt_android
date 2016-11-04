@@ -69,8 +69,8 @@ class PushToTalkButton : ImageButton {
         paint.strokeWidth = R.dimen.button_stroke.toDimen(context)
         if (isInEditMode.not()) {
             signalService = context.appComponent.signalHandler
+            applyRoomStatus()
         }
-        applyRoomStatus()
     }
 
     override fun onAttachedToWindow() {
@@ -112,17 +112,19 @@ class PushToTalkButton : ImageButton {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val roomState = signalService.peekRoomState()
-        val roomStatus = roomState.status
-        logger.d { "Paint ptt button roomStatus: $roomStatus" }
+        if (isInEditMode.not()) {
+            val roomState = signalService.peekRoomState()
+            val roomStatus = roomState.status
+            logger.d { "Paint ptt button roomStatus: $roomStatus" }
 
-        paint.color = when {
-            roomStatus == RoomStatus.JOINED ||
-                    (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(signalService.currentUserCache)) -> android.R.color.holo_green_dark
-            roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
-            roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
-            else -> android.R.color.darker_gray
-        }.toColorValue(context)
+            paint.color = when {
+                roomStatus == RoomStatus.JOINED ||
+                        (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(signalService.currentUserCache)) -> android.R.color.holo_green_dark
+                roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
+                roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
+                else -> android.R.color.darker_gray
+            }.toColorValue(context)
+        }
 
         canvas.drawCircle(width / 2f, height / 2f, (width - paint.strokeWidth) / 2f - ringPadding, paint)
     }

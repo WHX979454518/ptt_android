@@ -290,6 +290,8 @@ class AddRoomMembersCommand(roomId: String, userIds : Iterable<String>) : Comman
     }
 }
 
+class InviteRoomMemberCommand(roomId: String) : Command<Int, Int>("c_invite_room_members", roomId)
+
 class ChangePasswordCommand(userId : String, oldPassword : String, newPassword : String) : Command<Unit, Any?>("c_change_pwd", oldPassword, newPassword) {
     override fun convert(value: Any?) = Unit
 }

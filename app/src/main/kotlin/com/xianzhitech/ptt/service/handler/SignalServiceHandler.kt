@@ -482,6 +482,20 @@ class SignalServiceHandler(private val appContext: Context,
         }
     }
 
+    fun inviteRoomMembers(roomId: String) : Single<Int> {
+        return Single.defer {
+            ensureLoggedIn()
+            val state = peekRoomState()
+
+            if (state.currentRoomId == roomId) {
+                InviteRoomMemberCommand(roomId).send()
+            }
+            else {
+                throw StaticUserException(R.string.error_room_not_exists)
+            }
+        }.subscribeOn(AndroidSchedulers.mainThread())
+    }
+
     fun retrieveRoomInfo(roomId: String): Single<Room> {
         //TODO:
         return Single.create {  }
