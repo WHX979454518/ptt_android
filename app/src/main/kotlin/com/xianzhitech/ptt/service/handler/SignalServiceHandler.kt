@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.service.handler
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -22,11 +21,9 @@ import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
 import rx.*
 import rx.android.schedulers.AndroidSchedulers
-import rx.lang.kotlin.PublishSubject
 import rx.lang.kotlin.onErrorReturnNull
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
-import rx.subjects.SerializedSubject
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -53,9 +50,15 @@ class SignalServiceHandler(private val appContext: Context,
     private var loginSubscription: Subscription? = null
     private var syncContactSubscription : Subscription? = null // Part of login subscription
 
-    private var sendCommandSubject = PublishSubject<Command<*, *>>()
-    private val authTokenFactory = AuthTokenFactoryImpl()
-    private lateinit var coreService : CoreService
+    private val authTokenFactory = AuthTokenFactory()
+
+    private val signalService = SignalService(
+            { authTokenFactory() },
+            DefaultSignalFactory(),
+            { getDeviceId() },
+            { retrieveAppParams(Constants.EMPTY_USER_ID) },
+            appComponent.httpClient
+    )
 
     val roomState: Observable<RoomState>
         get()  = roomStateSubject
@@ -71,35 +74,30 @@ class SignalServiceHandler(private val appContext: Context,
         private set
 
     init {
-        appComponent.preference.userSessionToken?.let {
-            authTokenFactory.set(it.userId, it.password)
-            login()
+        val token = appComponent.preference.userSessionToken
+        if (token != null) {
+            authTokenFactory.set(token.userId, token.password)
+            signalService.login().subscribeSimple()
         }
+
+        signalService.signals.observeOnMainThread().subscribeSimple { dispatchSignal(it) }
     }
 
     fun peekLoginStatus(): LoginStatus = loginStatusSubject.value
     fun peekCurrentRoomId() : String? = roomStateSubject.value.currentRoomId
     fun peekRoomState(): RoomState = roomStateSubject.value
 
-    fun login() {
-        mainThread {
+    fun login(loginName: String, loginPassword: String) : Completable {
+        return Completable.defer {
             if (loginStatusSubject.value != LoginStatus.IDLE) {
-                return@mainThread
-            }
-
-            doLogin()
-        }
-    }
-
-    fun login(loginName: String, loginPassword: String) {
-        mainThread {
-            if (loginStatusSubject.value != LoginStatus.IDLE) {
-                return@mainThread
+                return@defer Completable.complete()
             }
 
             authTokenFactory.set(loginName, loginPassword.toMD5())
-            doLogin()
-        }
+            signalService.login()
+        }.subscribeOn(AndroidSchedulers.mainThread())
+                .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                .doOnError { logout() }
     }
 
     private fun getDeviceId() : Single<String> {
@@ -108,72 +106,9 @@ class SignalServiceHandler(private val appContext: Context,
 
     }
 
-    private fun doLogin() {
-        // Serialize login status to prevent unexpected result
-        val loginStatusSubject = SerializedSubject(loginStatusSubject)
-
-        loginStatusSubject += LoginStatus.LOGIN_IN_PROGRESS
-
-        loginSubscription = getDeviceId().zipWith(retrieveAppParams(Constants.EMPTY_USER_ID), { first, second -> first to second })
-                .observeOn(AndroidSchedulers.mainThread())
-                .flatMapObservable {
-                    val (deviceId, appConfig) = it
-                    if (appConfig.hasUpdate && appConfig.mandatory) {
-                        throw ForceUpdateException(appConfig)
-                    }
-
-                    coreService = CoreServiceImpl(appComponent.httpClient, appConfig.signalServerEndpoint)
-
-                    val androidReconnectPolicy = AndroidRetryPolicy(appContext)
-                    receiveSignal(uri = Uri.parse(appConfig.signalServerEndpoint),
-                            retryPolicy = object : RetryPolicy by androidReconnectPolicy {
-                                override fun canContinue(err: Throwable): Boolean {
-                                    return peekCurrentUserId != null
-                                }
-                            },
-                            signalFactory = DefaultSignalFactory(),
-                            loginStatusNotification = { loginStatusSubject += it },
-                            commandEmitter = sendCommandSubject as Observable<Command<*, in Any>>,
-                            deviceIdProvider = object : DeviceIdFactory {
-                                override val deviceId: String
-                                    get() = deviceId
-                            },
-                            connectivityProvider = object : ConnectivityProvider {
-                                override val connected: Observable<Boolean>
-                                    get() = appContext.getConnectivity(true)
-                            },
-                            loginTimeoutProvider = {
-                                if (peekCurrentUserId == null) {
-                                    // first time login, timeout is
-                                    TimeUnit.MILLISECONDS.convert(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                                }
-                                else {
-                                    40000L // <- Default socket timeout 30 sec
-                                }
-                            },
-                            authTokenFactory = authTokenFactory)
-                }
-                .observeOnMainThread()
-                .subscribe(object : Subscriber<Signal>() {
-                    override fun onNext(t: Signal) {
-                        dispatchSignal(t)
-                    }
-
-                    override fun onCompleted() { }
-
-                    override fun onError(e: Throwable?) {
-                        loginStatusSubject += LoginStatus.IDLE
-                        handleSignalError(e)
-                    }
-                })
-    }
-
-    private fun handleSignalError(err: Throwable?) {
-        showToast(err.describeInHumanMessage(appContext))
-    }
-
     private fun dispatchSignal(signal: Signal) {
         when (signal) {
+            is ConnectionSignal -> onConnectionEvent(signal)
             is RoomUpdateSignal -> onRoomUpdate(signal.room)
             is UserKickOutSignal -> onUserKickOut()
             is RoomKickOutSignal -> onRoomKickedOut(signal.roomId)
@@ -185,6 +120,13 @@ class SignalServiceHandler(private val appContext: Context,
         }
     }
 
+    private fun onConnectionEvent(signal: ConnectionSignal) {
+        when (signal.event) {
+            ConnectionEvent.CONNECTING -> loginStatusSubject += LoginStatus.LOGIN_IN_PROGRESS
+            ConnectionEvent.ERROR -> loginStatusSubject += LoginStatus.IDLE
+        }
+    }
+
     private fun onUserUpdated(user: UserObject) {
         logger.i { "Updating user to $user" }
         currentUserCache = user
@@ -192,6 +134,8 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun onUserLoggedIn(user: UserObject) {
+        loginStatusSubject += LoginStatus.LOGGED_IN
+
         currentUserCache = user
         val firstTimeLogin = appComponent.preference.userSessionToken?.userId != user.id
         appComponent.preference.userSessionToken = UserToken(user.id, authTokenFactory.password)
@@ -243,24 +187,15 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun syncContact(version : Long = -1L) : Completable {
         val userId = peekCurrentUserId ?: return Completable.complete()
-
-        return coreService.syncContact(userId, version)
-                .flatMap {
-                    val result = Single.just(it)
-                    if (it == null) {
-                        throw StaticUserException(R.string.error_unable_to_connect)
-                    }
-
+        return SyncContactCommand(userId, version).send()
+                .flatMapCompletable {
                     appComponent.contactRepository.replaceAllContacts(it.users, it.groups)
                             .execAsync()
-                            .andThen(result)
-                }
-                .flatMapCompletable {
-                    if (it != null) {
-                        logger.d { "Got contact version ${it.version}" }
-                        appComponent.preference.contactVersion = it.version
-                    }
-                    Completable.complete()
+                            .observeOnMainThread()
+                            .doOnCompleted {
+                                logger.d { "Got contact version ${it.version}" }
+                                appComponent.preference.contactVersion = it.version
+                            }
                 }
     }
 
@@ -285,6 +220,7 @@ class SignalServiceHandler(private val appContext: Context,
 
             loginStatusSubject += LoginStatus.IDLE
             currentUserCache = null
+            signalService.logout()
         }
     }
 
@@ -470,7 +406,6 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun releaseMic() {
         mainThread {
-            ensureLoggedIn()
             val state = peekRoomState()
             logger.d { "Releasing mic in $state" }
 
@@ -589,10 +524,6 @@ class SignalServiceHandler(private val appContext: Context,
         appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(SignalServiceHandler.Companion.EXTRA_INVITATION, invite))
     }
 
-    private fun showToast(message: CharSequence) {
-        Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
-    }
-
     private fun mainThread(runnable: () -> Unit) {
         if (Thread.currentThread() == Looper.getMainLooper().thread) {
             runnable()
@@ -602,7 +533,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun <R, C : Command<R, *>> C.send() : Single<R> {
-        sendCommandSubject.onNext(this)
+        signalService.sendCommand(this)
         return getAsync()
     }
 
@@ -619,17 +550,16 @@ class SignalServiceHandler(private val appContext: Context,
 class ForceUpdateException(val appParams: AppConfig) : RuntimeException()
 
 
-private class AuthTokenFactoryImpl() : AuthTokenFactory {
+private class AuthTokenFactory() {
     private val auth = AtomicReference<Pair<String, String>>()
     val password : String
         get() = auth.get().second
 
-    override val authToken: String
-        get() {
-            val (name, pass) = auth.get() ?: throw NullPointerException()
-            val token = "$name:$pass${name.guessLoginPostfix()}"
-            return "Basic ${token.toBase64()}"
-        }
+    operator fun invoke() : String {
+        val (name, pass) = auth.get() ?: return ""
+        val token = "$name:$pass${name.guessLoginPostfix()}"
+        return "Basic ${token.toBase64()}"
+    }
 
     fun set(loginName : String, password : String) {
         auth.set(loginName to password)
@@ -648,8 +578,8 @@ private class AuthTokenFactoryImpl() : AuthTokenFactory {
 
     private fun String.guessLoginPostfix() : String {
         return when {
-            matches(AuthTokenFactoryImpl.Companion.PHONE_MATCHER) -> ":PHONE"
-            matches(AuthTokenFactoryImpl.Companion.EMAIL_MATCHER) -> ":MAIL"
+            matches(PHONE_MATCHER) -> ":PHONE"
+            matches(EMAIL_MATCHER) -> ":MAIL"
             else -> ""
         }
     }

@@ -11,6 +11,8 @@ import android.view.MotionEvent
 import android.widget.ImageButton
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import org.slf4j.LoggerFactory
@@ -79,7 +81,7 @@ class PushToTalkButton : ImageButton {
         if (isInEditMode.not()) {
             subscription = CompositeSubscription().apply {
                 if (vibrator != null) {
-                    this.add(signalService.roomState.distinctUntilChanged { it -> it.status }
+                    this.add(signalService.roomState.distinctUntilChanged(RoomState::status)
                             .observeOnMainThread()
                             .subscribeSimple {
                                 if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.peekCurrentUserId) {
@@ -88,10 +90,14 @@ class PushToTalkButton : ImageButton {
                             })
                 }
 
-                add(signalService.roomStatus.observeOnMainThread().subscribeSimple {
-                    applyRoomStatus()
-                    invalidate()
-                })
+                add(signalService.roomStatus
+                        .cast(Any::class.java)
+                        .mergeWith(signalService.loginStatus)
+                        .observeOnMainThread()
+                        .subscribeSimple {
+                            applyRoomStatus()
+                            invalidate()
+                        })
             }
         }
     }
@@ -103,10 +109,8 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun applyRoomStatus() {
-        isEnabled = when (signalService.peekRoomState().status) {
-            RoomStatus.IDLE -> false
-            else -> true
-        }
+        isEnabled = signalService.peekRoomState().canRequestMic(signalService.currentUserCache) &&
+                signalService.peekLoginStatus() == LoginStatus.LOGGED_IN
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -115,11 +119,12 @@ class PushToTalkButton : ImageButton {
         if (isInEditMode.not()) {
             val roomState = signalService.peekRoomState()
             val roomStatus = roomState.status
+            val loginStatus = signalService.peekLoginStatus()
             logger.d { "Paint ptt button roomStatus: $roomStatus" }
 
             paint.color = when {
-                roomStatus == RoomStatus.JOINED ||
-                        (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(signalService.currentUserCache)) -> android.R.color.holo_green_dark
+                loginStatus != LoginStatus.LOGGED_IN -> android.R.color.darker_gray
+                signalService.peekRoomState().canRequestMic(signalService.currentUserCache) -> android.R.color.holo_green_dark
                 roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
                 roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
                 else -> android.R.color.darker_gray

@@ -57,6 +57,7 @@ class LoginFragment : BaseFragment()
                     } else {
                         val signalService = (context.applicationContext as AppComponent).signalHandler
                         signalService.login(nameEditText.getString().trim(), passwordEditText.getString().trim())
+                                .subscribeSimple()
                     }
                 }
 
