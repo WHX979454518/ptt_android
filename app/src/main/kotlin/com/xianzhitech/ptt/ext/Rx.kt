@@ -5,6 +5,7 @@ import android.os.Looper
 import android.os.Message
 import android.widget.Toast
 import com.xianzhitech.ptt.App
+import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import org.slf4j.LoggerFactory
 import rx.*
@@ -20,7 +21,7 @@ private val logger = LoggerFactory.getLogger("RxUtil")
 
 val defaultOnErrorAction: Action1<Throwable> = Action1 {
     logger.e(it) { "Error occurred: ${it.message}" }
-    Toast.makeText(App.instance, it.describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
+//    Toast.makeText(App.instance, it.describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
 }
 
 val defaultOnValueAction: Action1<Any?> = Action1 {  }

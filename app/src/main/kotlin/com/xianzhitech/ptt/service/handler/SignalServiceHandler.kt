@@ -77,7 +77,16 @@ class SignalServiceHandler(private val appContext: Context,
         val token = appComponent.preference.userSessionToken
         if (token != null) {
             authTokenFactory.set(token.userId, token.password)
-            signalService.login().subscribeSimple()
+            signalService.login().subscribe(object : CompletableSubscriber {
+                override fun onSubscribe(d: Subscription?) { }
+
+                override fun onError(e: Throwable?) {
+                    logger.e(e) { "Error logging in" }
+                }
+
+                override fun onCompleted() {
+                }
+            })
         }
 
         signalService.signals.observeOnMainThread().subscribeSimple { dispatchSignal(it) }
