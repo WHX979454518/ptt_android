@@ -20,6 +20,7 @@ import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
@@ -43,7 +44,7 @@ class RoomFragment : BaseFragment()
 
     private class Views(rootView: View,
                         val titleView: TextView = rootView.findView(R.id.room_title),
-                        val notificationView : View = rootView.findView(R.id.room_notification),
+                        val notificationView : ImageView = rootView.findView(R.id.room_notification),
                         val speakerView: View = rootView.findView(R.id.room_speakerView),
                         val speakerAvatarView: ImageView = speakerView.findView(R.id.room_speakerAvatar),
                         val speakerAnimationView: ImageView = speakerView.findView(R.id.room_speakerAnimationView),
@@ -124,6 +125,22 @@ class RoomFragment : BaseFragment()
 
             }
         }
+
+
+        appComponent.userRepository.getUser(appComponent.signalHandler.peekCurrentUserId)
+                .observe()
+                .observeOnMainThread()
+                .onErrorResumeNext(Observable.just(null))
+                .subscribeSimple { user->
+                    val color = if (user != null && user.permissions.contains(Permission.FORCE_INVITE)) {
+                        ContextCompat.getColor(context, R.color.red)
+                    } else {
+                        0
+                    }
+
+                    views.notificationView.setColorFilter(color)
+                }
+                .bindToLifecycle()
 
         views.titleView.isEnabled = false // Click not allowed when data is loading
         views.titleView.setOnClickListener {
