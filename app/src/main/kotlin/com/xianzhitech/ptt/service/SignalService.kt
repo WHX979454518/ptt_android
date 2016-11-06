@@ -166,7 +166,7 @@ class SignalService(val authTokenFactory: () -> String,
                                 cmd.resultSubject.onNext(resultObj.get("data") as V)
                             }
                             else {
-                                cmd.resultSubject.onCompleted()
+                                cmd.resultSubject.onNext(null)
                             }
                         } else {
                             cmd.resultSubject.onError(resultObj.getJSONObject("error").toError())
