@@ -504,6 +504,10 @@ class RoomInvitationObject(obj: JSONObject) : RoomInvitation {
     override val inviteTime: Date = Date()
     override val inviterPriority: Int = obj.getInt("inviterPriority")
     override val force: Boolean = obj.getBoolean("force")
+
+    companion object {
+        @JvmStatic val serialVersionUID = 1L
+    }
 }
 
 class GroupObject(private val obj: JSONObject) : Group {
