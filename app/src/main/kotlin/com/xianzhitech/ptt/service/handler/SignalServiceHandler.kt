@@ -102,7 +102,7 @@ class SignalServiceHandler(private val appContext: Context,
                 return@defer Completable.complete()
             }
 
-            authTokenFactory.set(loginName, loginPassword.toMD5())
+            authTokenFactory.set(loginName, loginPassword)
             signalService.login()
         }.subscribeOn(AndroidSchedulers.mainThread())
                 .timeout(Constants.LOGIN_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
@@ -126,7 +126,13 @@ class SignalServiceHandler(private val appContext: Context,
             is RoomInviteSignal -> onReceiveInvitation(signal.invitation)
             is UserLoggedInSignal -> onUserLoggedIn(signal.user)
             is UserUpdatedSignal -> onUserUpdated(signal.user)
+            is UserLoginFailSignal -> onUserLoginFailed()
         }
+    }
+
+    private fun onUserLoginFailed() {
+//        logout()
+        Toast.makeText(appContext, appContext.getString(R.string.error_login_failed), Toast.LENGTH_SHORT).show()
     }
 
     private fun onConnectionEvent(signal: ConnectionSignal) {
@@ -460,9 +466,7 @@ class SignalServiceHandler(private val appContext: Context,
         return Completable.defer {
             ensureLoggedIn()
             val currUserId = peekCurrentUserId!!
-            val oldPassword = oldPassword.toMD5()
-            val newPassword = newPassword.toMD5()
-            ChangePasswordCommand(currUserId, oldPassword, newPassword)
+            ChangePasswordCommand(currUserId, oldPassword.toMD5(), newPassword.toMD5())
                     .send()
                     .doOnSuccess {
                         mainThread {
@@ -566,7 +570,7 @@ private class AuthTokenFactory() {
 
     operator fun invoke() : String {
         val (name, pass) = auth.get() ?: return ""
-        val token = "$name:$pass${name.guessLoginPostfix()}"
+        val token = "$name:${pass.toMD5()}${name.guessLoginPostfix()}"
         return "Basic ${token.toBase64()}"
     }
 
