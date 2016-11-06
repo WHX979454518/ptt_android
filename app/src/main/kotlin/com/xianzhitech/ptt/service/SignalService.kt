@@ -506,7 +506,7 @@ class RoomInvitationObject(obj: JSONObject) : RoomInvitation {
     override val force: Boolean = obj.getBoolean("force")
 
     companion object {
-        @JvmStatic val serialVersionUID = 1L
+        private const val serialVersionUID = 1L
     }
 }
 
