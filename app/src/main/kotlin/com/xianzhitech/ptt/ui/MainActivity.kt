@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v4.app.Fragment
 import android.support.v7.app.AlertDialog
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.CreateRoomRequest
@@ -100,29 +99,28 @@ class MainActivity : BaseToolbarActivity(),
     override fun onStart() {
         super.onStart()
 
-        val signalService = (application as AppComponent).signalHandler
-
-        signalService.loginState.distinctUntilChanged { it.status }
+        appComponent.signalHandler.loginStatus
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
-                    if (it.status == LoginStatus.LOGIN_IN_PROGRESS && it.currentUserID == null) {
+                    if (it == LoginStatus.LOGIN_IN_PROGRESS && appComponent.signalHandler.peekCurrentUserId == null) {
                         showProgressDialog(R.string.login_in_progress, TAG_LOGIN_IN_PROGRESS)
                     } else {
                         (supportFragmentManager.findFragmentByTag(TAG_LOGIN_IN_PROGRESS) as? DialogFragment)?.dismissImmediately()
                     }
                 }
+                .bindToLifecycle()
 
-        signalService.loginState.distinctUntilChanged { it.currentUserID }
+        appComponent.signalHandler.loggedIn
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe {
-                    if (it.currentUserID == null) {
+                .subscribeSimple { loggedIn ->
+                    logger.d { "User login state changed to $loggedIn" }
+                    if (loggedIn.not()) {
                         displayFragment(LoginFragment::class.java)
                     } else {
                         displayFragment(HomeFragment::class.java)
                     }
                 }
+                .bindToLifecycle()
     }
 
     private fun displayFragment(fragmentClazz: Class<out Fragment>) {
@@ -130,7 +128,7 @@ class MainActivity : BaseToolbarActivity(),
             supportFragmentManager.beginTransaction()
                     .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
                     .replace(R.id.main_content, Fragment.instantiate(this, fragmentClazz.name))
-                    .commit();
+                    .commit()
         }
     }
 

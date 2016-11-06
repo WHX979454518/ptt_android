@@ -2,23 +2,60 @@ package com.xianzhitech.ptt.ui.home
 
 import android.os.Bundle
 import android.support.v4.view.MenuItemCompat
+import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.SearchView
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.ViewGroup
+import android.view.*
+import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.defaultOnErrorAction
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.Model
+import rx.CompletableSubscriber
 import rx.Observable
+import rx.Subscriber
+import rx.Subscription
 
 class ContactsFragment : ModelListFragment() {
+    private var swipeRefreshLayout : SwipeRefreshLayout? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setHasOptionsMenu(true)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        swipeRefreshLayout = SwipeRefreshLayout(context)
+        swipeRefreshLayout!!.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        swipeRefreshLayout!!.addView(super.onCreateView(inflater, swipeRefreshLayout, savedInstanceState))
+        swipeRefreshLayout!!.setOnRefreshListener {
+            refresh()
+        }
+        return swipeRefreshLayout
+    }
+
+    private fun refresh() {
+        swipeRefreshLayout?.isRefreshing = true
+        appComponent.signalHandler.syncContact()
+                .observeOnMainThread()
+                .subscribe(object : CompletableSubscriber {
+                    override fun onError(e: Throwable) {
+                        defaultOnErrorAction.call(e)
+                        swipeRefreshLayout?.isRefreshing = false
+                    }
+
+                    override fun onCompleted() {
+                        swipeRefreshLayout?.isRefreshing = false
+                        Toast.makeText(context, R.string.contact_updated, Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onSubscribe(d: Subscription) {
+                        d.bindToLifecycle()
+                    }
+                })
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

@@ -109,3 +109,26 @@ fun String?.lazySplit(separator: Char): Collection<String> {
         }
     }
 }
+
+/**
+ * returns true if collection can be added
+ */
+inline fun <T> MutableCollection<T>.addAllLimited(maxSize : Int, input : Iterable<T>, filter : (T?) -> Boolean) : Boolean {
+    if (size < maxSize) {
+        val iter = input.iterator()
+        while (iter.hasNext()) {
+            val obj = iter.next()
+            if (filter(obj)) {
+                add(obj)
+            }
+
+            if (size >= maxSize) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    return false
+}

@@ -25,8 +25,9 @@ import com.xianzhitech.ptt.ui.user.ContactUserProvider
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
-import rx.Completable
+import rx.CompletableSubscriber
 import rx.Observable
+import rx.Subscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
@@ -63,7 +64,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
         joinRoomButton.isEnabled = false
         joinRoomButton.setOnClickListener {
-            joinRoom(roomId)
+            joinRoom(roomId, false)
         }
     }
 
@@ -77,24 +78,26 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
         Observable.combineLatest(
                 appComponent.roomRepository.getRoom(roomId).observe().map { it ?: throw StaticUserException(R.string.error_room_not_exists) },
-                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalHandler.peekLoginState().currentUserID)).observe(),
+                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalHandler.peekCurrentUserId)).observe(),
                 appComponent.roomRepository.getRoomMembers(roomId, maxMemberCount = Int.MAX_VALUE).observe(),
                 { room, name, members ->
                     RoomData(room, name!!, members)
                 }
         )
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
-                .subscribe(object : GlobalSubscriber<RoomData>(this) {
+                .subscribe(object : Subscriber<RoomData>() {
                     override fun onError(e: Throwable) {
-                        super.onError(e)
+                        defaultOnErrorAction.call(e)
                         finish()
                     }
+
+                    override fun onCompleted() { }
 
                     override fun onNext(t: RoomData) {
                         onRoomLoaded(t.room, t.name, t.members)
                     }
                 })
+                .bindToLifecycle()
     }
 
     private fun onRoomLoaded(room: Room, roomName: RoomName, roomMembers: List<User>) {
@@ -125,7 +128,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         // Display members
         memberAdapter.setUsers(roomMembers.subList(0, Math.min(roomMembers.size, MAX_MEMBER_DISPLAY_COUNT)))
 
-        if (room.id == appComponent.signalHandler.currentRoomId) {
+        if (room.id == appComponent.signalHandler.peekCurrentRoomId()) {
             joinRoomButton.setText(R.string.in_room)
             joinRoomButton.isEnabled = false
         } else {
@@ -163,13 +166,13 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
     }
 
     private class RoomUpdateSubscriber(private val context: Context,
-                                       private val roomId: String) : Completable.CompletableSubscriber {
+                                       private val roomId: String) : CompletableSubscriber {
 
         override fun onSubscribe(d: Subscription?) {
         }
 
         override fun onError(e: Throwable) {
-            globalHandleError(e, context)
+            defaultOnErrorAction.call(e)
         }
 
         override fun onCompleted() {

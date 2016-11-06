@@ -6,10 +6,8 @@ import android.provider.Settings
 import com.google.gson.annotations.SerializedName
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.Constants
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.PUT
-import retrofit2.http.Path
+import okhttp3.RequestBody
+import retrofit2.http.*
 import rx.Completable
 import rx.Single
 import java.io.Serializable
@@ -19,6 +17,7 @@ class AppConfig(@SerializedName("latest_version_code") val latestVersionCode: Lo
                 @SerializedName("update_message") val updateMessage: String?,
                 @SerializedName("mandatory") val mandatory : Boolean,
                 @SerializedName("signal_server_endpoint") val signalServerEndpoint: String,
+                @SerializedName("push_server_endpoint") val pushServerEndpoint : String,
                 @SerializedName("download_url") val downloadUrl : String?) : Serializable {
     val hasUpdate : Boolean
     get() {
@@ -63,4 +62,8 @@ interface AppService {
 
     @PUT("/feedback")
     fun submitFeedback(@Body feedback: Feedback) : Completable
+
+    @POST("/logs")
+    @Multipart
+    fun submitLogs(@PartMap data: MutableMap<String, RequestBody>) : Completable
 }

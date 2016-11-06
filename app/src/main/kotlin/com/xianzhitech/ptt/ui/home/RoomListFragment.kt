@@ -68,18 +68,18 @@ class RoomListFragment : BaseFragment() {
         val appComponent = context.applicationContext as AppComponent
         Observable.combineLatest(
                 appComponent.roomRepository.getAllRooms().observe(),
-                appComponent.signalHandler.loginState.first { it.currentUserID != null },
-                { first, second -> first to second })
+                appComponent.signalHandler.currentUserId.first { it != null },
+                { first, second -> first to second!! })
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribe {
-                    adapter.currentUserId = it.second.currentUserID!!
+                    adapter.currentUserId = it.second
                     roomList.clear()
                     roomList.addAll(it.first)
                     roomList.sortWith(RoomComparator)
                     adapter.notifyDataSetChanged()
                     errorView?.setVisible(it.first.isEmpty())
                 }
+                .bindToLifecycle()
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -122,14 +122,18 @@ class RoomListFragment : BaseFragment() {
                     onLongClickOnRoom(holder.itemView, room)
                 } ?: false
             }
+
+            holder.itemView.setOnClickListener {
+                roomList.getOrNull(holder.adapterPosition)?.let {
+                    (activity as BaseActivity).joinRoom(it.id, false)
+                }
+            }
+
             return holder
         }
 
         override fun onBindViewHolder(holder: RoomItemHolder, position: Int) {
             holder.setRoom(roomList[position], currentUserId)
-            holder.itemView.setOnClickListener { v ->
-                (activity as BaseActivity).joinRoom(roomList[position].id)
-            }
         }
 
         override fun onViewDetachedFromWindow(holder: RoomItemHolder) {
@@ -146,7 +150,7 @@ class RoomListFragment : BaseFragment() {
         PopupMenu(context, anchorView).apply {
             inflate(R.menu.room_operation)
             setOnMenuItemClickListener {
-                if (room.id == appComponent.signalHandler.currentRoomId) {
+                if (room.id == appComponent.signalHandler.peekCurrentRoomId()) {
                     Toast.makeText(context, R.string.error_delete_fail_in_room, Toast.LENGTH_LONG).show()
                     return@setOnMenuItemClickListener true
                 }
@@ -179,11 +183,13 @@ class RoomListFragment : BaseFragment() {
             this.room = room
             this.subscription?.unsubscribe()
             val appComponent = itemView.context.applicationContext as AppComponent
-            this.subscription = appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe()
-                    .combineWith(appComponent.userRepository.getUser(room.lastSpeakMemberId).observe())
+            this.subscription = Observable.combineLatest(
+                    appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe(),
+                    appComponent.userRepository.getUser(room.lastSpeakMemberId).observe(),
+                    { first, second -> first to second })
                     .switchMap { result ->
                         (Observable.interval(0, 1, TimeUnit.MINUTES, AndroidSchedulers.mainThread()) as Observable<*>)
-                                .mergeWith(appComponent.signalHandler.roomState.distinctUntilChanged { it.currentRoomId } as Observable<out Nothing>)
+                                .mergeWith(appComponent.signalHandler.roomState.distinctUntilChanged { it -> it.currentRoomId } as Observable<out Nothing>)
                                 .map { result }
                     }
                     .observeOnMainThread()

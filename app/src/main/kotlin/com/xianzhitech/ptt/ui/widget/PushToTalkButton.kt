@@ -11,10 +11,16 @@ import android.view.MotionEvent
 import android.widget.ImageButton
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
+import org.slf4j.LoggerFactory
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
+
+
+private val logger = LoggerFactory.getLogger("PushToTalkButton")
 
 /**
 
@@ -65,8 +71,8 @@ class PushToTalkButton : ImageButton {
         paint.strokeWidth = R.dimen.button_stroke.toDimen(context)
         if (isInEditMode.not()) {
             signalService = context.appComponent.signalHandler
+            applyRoomStatus()
         }
-        applyRoomStatus()
     }
 
     override fun onAttachedToWindow() {
@@ -75,19 +81,23 @@ class PushToTalkButton : ImageButton {
         if (isInEditMode.not()) {
             subscription = CompositeSubscription().apply {
                 if (vibrator != null) {
-                    this.add(signalService.roomState.distinctUntilChanged { it.status }
+                    this.add(signalService.roomState.distinctUntilChanged(RoomState::status)
                             .observeOnMainThread()
                             .subscribeSimple {
-                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.currentUserId) {
+                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.peekCurrentUserId) {
                                     vibrator!!.vibrate(120)
                                 }
                             })
                 }
 
-                add(signalService.roomStatus.observeOnMainThread().subscribeSimple {
-                    applyRoomStatus()
-                    invalidate()
-                })
+                add(signalService.roomStatus
+                        .cast(Any::class.java)
+                        .mergeWith(signalService.loginStatus)
+                        .observeOnMainThread()
+                        .subscribeSimple {
+                            applyRoomStatus()
+                            invalidate()
+                        })
             }
         }
     }
@@ -99,27 +109,27 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun applyRoomStatus() {
-        isEnabled = when (signalService.peekRoomState().status) {
-            RoomStatus.IDLE, RoomStatus.OFFLINE -> false
-            else -> true
-        }
+        isEnabled = signalService.peekRoomState().canRequestMic(signalService.currentUserCache) &&
+                signalService.peekLoginStatus() == LoginStatus.LOGGED_IN
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val roomState = signalService.peekRoomState()
-        val loginState = signalService.peekLoginState()
-        val roomStatus = roomState.status
-        logd("Paint ptt button roomStatus: $roomStatus")
+        if (isInEditMode.not()) {
+            val roomState = signalService.peekRoomState()
+            val roomStatus = roomState.status
+            val loginStatus = signalService.peekLoginStatus()
+            logger.d { "Paint ptt button roomStatus: $roomStatus" }
 
-        paint.color = when {
-            roomStatus == RoomStatus.JOINED ||
-                    (roomStatus == RoomStatus.ACTIVE && roomState.canRequestMic(loginState.currentUser)) -> android.R.color.holo_green_dark
-            roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
-            roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
-            else -> android.R.color.darker_gray
-        }.toColorValue(context)
+            paint.color = when {
+                loginStatus != LoginStatus.LOGGED_IN -> android.R.color.darker_gray
+                signalService.peekRoomState().canRequestMic(signalService.currentUserCache) -> android.R.color.holo_green_dark
+                roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
+                roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
+                else -> android.R.color.darker_gray
+            }.toColorValue(context)
+        }
 
         canvas.drawCircle(width / 2f, height / 2f, (width - paint.strokeWidth) / 2f - ringPadding, paint)
     }
@@ -142,6 +152,6 @@ class PushToTalkButton : ImageButton {
             }
         }
 
-        return true;
+        return true
     }
 }

@@ -5,6 +5,10 @@ import android.support.annotation.StringRes
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.toFormattedString
+import io.socket.client.SocketIOException
+import io.socket.engineio.client.EngineIOException
+import retrofit2.adapter.rxjava.HttpException
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeoutException
 
 /**
@@ -63,7 +67,7 @@ class KnownServerException(val errorName: String, val errorMessage: String? = nu
             if (BuildConfig.DEBUG && errorName.isNotBlank()) {
                 return errorName
             } else {
-                return context.getString(R.string.error_unknown);
+                return context.getString(R.string.error_unknown)
             }
         }
 
@@ -76,7 +80,10 @@ class ConnectivityException() : StaticUserException(R.string.error_unable_to_con
 fun Throwable?.describeInHumanMessage(context: Context): CharSequence {
     return when {
         this is UserDescribableException -> describe(context)
-        this is TimeoutException -> R.string.error_timeout.toFormattedString(context)
+        this is HttpException || this is EngineIOException -> R.string.error_unable_to_connect.toFormattedString(context)
+        this is SocketTimeoutException ||
+                (this is SocketIOException && this.message == "timeout") ||
+                this is TimeoutException -> R.string.error_timeout.toFormattedString(context)
         else -> {
             if (BuildConfig.DEBUG && this != null) {
                 this.message ?: R.string.error_unknown.toFormattedString(context)

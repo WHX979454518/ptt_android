@@ -1,6 +1,15 @@
 package com.xianzhitech.ptt.service
 
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.User
+
+enum class RoomStatus(val inRoom: Boolean) {
+    IDLE(false),
+    JOINING(true),
+    JOINED(true),
+    REQUESTING_MIC(true),
+    ACTIVE(true),
+}
 
 data class RoomState(val status: RoomStatus,
                      val currentRoomId: String?,
@@ -22,7 +31,7 @@ data class RoomState(val status: RoomStatus,
     }
 
     fun canRequestMic(user : User?) : Boolean {
-        if (user == null || currentRoomId == null || speakerId == user.id) {
+        if (user == null || currentRoomId == null || speakerId == user.id || user.permissions.contains(Permission.SPEAK).not()) {
             return false
         }
 

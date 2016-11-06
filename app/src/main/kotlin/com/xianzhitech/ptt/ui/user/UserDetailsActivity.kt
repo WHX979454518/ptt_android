@@ -42,7 +42,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                 joinRoom(CreateRoomRequest(extraMemberIds = listOf(user!!.id)))
             }
         }
-        callButton.setVisible((application as AppComponent).signalHandler.currentUserId != intent.getStringExtra(EXTRA_USER_ID))
+        callButton.setVisible((application as AppComponent).signalHandler.peekCurrentUserId != intent.getStringExtra(EXTRA_USER_ID))
     }
 
     override fun onStart() {
@@ -51,10 +51,9 @@ class UserDetailsActivity : BaseToolbarActivity() {
         (application as AppComponent).userRepository.getUser(intent.getStringExtra(EXTRA_USER_ID))
                 .observe()
                 .observeOnMainThread()
-                .bindToLifecycle()
                 .subscribeSimple { user ->
                     if (user == null) {
-                        Toast.makeText(this@UserDetailsActivity, R.string.error_getting_user_info, Toast.LENGTH_LONG).show();
+                        Toast.makeText(this@UserDetailsActivity, R.string.error_getting_user_info, Toast.LENGTH_LONG).show()
                         finish()
                     } else {
                         this@UserDetailsActivity.user = user
@@ -65,6 +64,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
                         callButton.isEnabled = true
                     }
                 }
+                .bindToLifecycle()
     }
 
     companion object {

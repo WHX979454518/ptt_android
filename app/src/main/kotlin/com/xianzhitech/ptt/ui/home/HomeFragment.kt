@@ -32,7 +32,7 @@ import java.util.*
  */
 class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
 
-    private enum class Tab private constructor(@StringRes
+    private enum class Tab constructor(@StringRes
                                                val labelRes: Int, @DrawableRes
                                                val drawableRes: Int, val fragmentClazz: Class<out Fragment>) {
         Conversation(R.string.tab_conversation, R.drawable.ic_chat_bubble, RoomListFragment::class.java),
@@ -122,13 +122,17 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         Observable.combineLatest(
                 signalService.loginStatus,
                 signalService.roomStatus,
-                signalService.roomState.distinctUntilChanged { it.currentRoomId }
+                signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
                         .switchMap {
-                            roomRepository.getRoom(it.currentRoomId).observe()
-                                    .combineWith(roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekLoginState().currentUserID!!)).observe())
+                            val currUserId = appComponent.preference.userSessionToken?.userId ?: return@switchMap Observable.never<Pair<Room, RoomName>>()
+
+                            Observable.combineLatest(
+                                    roomRepository.getRoom(it.currentRoomId).observe(),
+                                    roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(currUserId)).observe(),
+                                    { first, second -> first to second }
+                            )
                         },
                 { loginStatus, roomStatus, roomInfo -> LoginRoomInfo(loginStatus, roomStatus, roomInfo?.first, roomInfo?.second) })
-                .compose(bindToLifecycle())
                 .observeOnMainThread()
                 .subscribeSimple {
                     views?.topBanner?.apply {
@@ -139,7 +143,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                 setVisible(true)
                                 setText(R.string.connecting_to_server)
                             }
-                            LoginStatus.OFFLINE -> {
+                            LoginStatus.IDLE -> {
                                 setVisible(true)
                                 setText(R.string.error_unable_to_connect)
                             }
@@ -150,7 +154,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                                     text = roomName.getInRoomDescription(context)
 
                                     setOnClickListener {
-                                        (activity as BaseActivity).joinRoom(currRoom.id)
+                                        (activity as BaseActivity).joinRoom(currRoom.id, false)
                                     }
                                 } else {
                                     setVisible(false)
@@ -159,6 +163,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                         }
                     }
                 }
+                .bindToLifecycle()
     }
 
     private fun setTabItemSelected(position: Int, selected: Boolean) {

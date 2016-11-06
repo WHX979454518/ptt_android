@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    >
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <PreferenceCategory
         android:key="general"
@@ -29,6 +30,28 @@
             android:summary="@string/keep_session_explained"
             android:defaultValue="false"
             android:key="@string/key_keep_session" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/downtime_settings">
+
+        <CheckBoxPreference
+            android:key="@string/key_enable_downtime"
+            android:title="@string/enable_downtime"
+            android:summary="@string/downtime_description" />
+
+        <com.xianzhitech.ptt.ui.settings.TimePreference
+            android:key="@string/key_downtime_start"
+            android:dependency="@string/key_enable_downtime"
+            app:isStart="true"
+            android:title="@string/downtime_start_time" />
+
+        <com.xianzhitech.ptt.ui.settings.TimePreference
+            android:key="@string/key_downtime_end"
+            android:dependency="@string/key_enable_downtime"
+            app:isStart="false"
+            android:title="@string/downtime_end_time" />
 
     </PreferenceCategory>
 

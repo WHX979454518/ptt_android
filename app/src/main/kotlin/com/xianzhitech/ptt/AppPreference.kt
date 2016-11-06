@@ -5,8 +5,12 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
+import rx.Observable
+import rx.lang.kotlin.add
+import rx.lang.kotlin.observable
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
@@ -16,6 +20,11 @@ class AppPreference(appContext : Context,
     private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
     private val playIndicatorSoundKey = R.string.key_play_indicator_sound.toFormattedString(appContext)
     private val keepSessionKey = R.string.key_keep_session.toFormattedString(appContext)
+    private val downTimeEnableKey = R.string.key_enable_downtime.toFormattedString(appContext)
+    private val downTimeStartKey = R.string.key_downtime_start.toFormattedString(appContext)
+    private val downTimeEndKey = R.string.key_downtime_end.toFormattedString(appContext)
+
+    private var userTokenCache = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
 
     override var lastIgnoredUpdateUrl: String?
         get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
@@ -24,14 +33,30 @@ class AppPreference(appContext : Context,
         }
 
     override var userSessionToken: UserToken?
-        get() = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
+        get() = userTokenCache
         set(value) {
+            userTokenCache = value
             if (value == null) {
                 pref.edit().remove(KEY_USER_TOKEN).apply()
             } else {
                 pref.edit().putString(KEY_USER_TOKEN, gson.toJson(value)).apply()
             }
         }
+
+    override val userSessionTokenSubject: Observable<UserToken>
+        get() {
+            return observable<UserToken> { subscriber ->
+                val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+                    if (key == KEY_USER_TOKEN) {
+                        subscriber.onNext(userSessionToken)
+                    }
+                }
+
+                pref.registerOnSharedPreferenceChangeListener(listener)
+                subscriber.add { pref.unregisterOnSharedPreferenceChangeListener(listener) }
+            }.startWith(userSessionToken)
+        }
+
 
     override var blockCalls: Boolean
         get() = pref.getBoolean(blockCallsKey, false)
@@ -45,7 +70,7 @@ class AppPreference(appContext : Context,
             pref.edit().putBoolean(autoExitKey, value).apply()
         }
 
-    override var lastLoginUserId: String?
+    var lastLoginUserId: String?
         get() = pref.getString(KEY_LAST_LOGIN_USER_ID, null)
         set(value) {
             pref.edit().putString(KEY_LAST_LOGIN_USER_ID, value).apply()
@@ -114,6 +139,24 @@ class AppPreference(appContext : Context,
             }
         }
 
+    override var downTimeStart: LocalTime
+        get() = LocalTime.fromString(pref.getString(downTimeStartKey, null)) ?: DEFAULT_DOWNTIME_START
+        set(value) {
+            pref.edit().putString(downTimeStartKey, value.toString()).apply()
+        }
+
+    override var downTimeEnd: LocalTime
+        get() = LocalTime.fromString(pref.getString(downTimeEndKey, null)) ?: DEFAULT_DOWNTIME_END
+        set(value) {
+            pref.edit().putString(downTimeEndKey, value.toString()).apply()
+        }
+
+    override var enableDownTime: Boolean
+        get() = pref.getBoolean(downTimeEnableKey, false)
+        set(value) {
+            pref.edit().putBoolean(downTimeEnableKey, value).apply()
+        }
+
     companion object {
         const val KEY_USER_TOKEN = "current_user_token"
         const val KEY_LAST_UPDATE_DOWNLOAD_URL = "last_update_download_url"
@@ -125,5 +168,8 @@ class AppPreference(appContext : Context,
         const val KEY_DEVICE_ID = "key_device_id"
         const val KEY_SHORTCUT = "key_shortcut"
         const val KEY_LAST_EXP_PROMPT_TIME = "key_last_exp_prompt_time"
+
+        @JvmStatic val DEFAULT_DOWNTIME_START = LocalTime(minute = 0, hourOfDay = 23)
+        @JvmStatic val DEFAULT_DOWNTIME_END = LocalTime(minute = 30, hourOfDay = 7)
     }
 }

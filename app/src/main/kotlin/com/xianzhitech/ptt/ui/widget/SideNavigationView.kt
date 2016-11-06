@@ -5,6 +5,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.support.v4.view.NestedScrollingChild
+import android.support.v4.view.NestedScrollingChildHelper
+import android.support.v4.widget.SwipeRefreshLayout
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -47,16 +50,31 @@ class SideNavigationView @JvmOverloads constructor(context : Context,
         }
     }
 
+    private fun findSRL() : SwipeRefreshLayout? {
+        var walk = parent
+        while (walk != null) {
+            if (walk is SwipeRefreshLayout) {
+                return walk
+            }
+
+            walk = walk.parent
+        }
+
+        return null
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
                 isPressed = false
                 onMoveTo(event.y)
                 onNavigateListener?.onNavigateCancel()
+                findSRL()?.isEnabled = true
             }
 
             MotionEvent.ACTION_DOWN -> {
                 isPressed = true
+                findSRL()?.isEnabled = false
                 onMoveTo(event.y)
             }
 
@@ -86,7 +104,7 @@ class SideNavigationView @JvmOverloads constructor(context : Context,
     }
 
     companion object {
-        private val CHARS = Array<String>(27, {
+        private val CHARS = Array(27, {
             if (it == 0) {
                 "#"
             }

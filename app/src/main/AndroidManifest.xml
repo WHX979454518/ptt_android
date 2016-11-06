@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          android:installLocation="internalOnly"
-          package="com.xianzhitech.ptt">
+    android:installLocation="internalOnly"
+    package="com.xianzhitech.ptt">
 
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -66,38 +66,35 @@
 
         <activity android:name=".ui.KickOutActivity" />
 
-
-        <service android:name=".service.handler.Service"/>
-
         <activity android:name=".ui.user.EditProfileActivity"
-                  android:label="@string/edit_profile" />
+            android:label="@string/edit_profile" />
 
         <activity android:name=".ui.app.ShareActivity"
-                  android:label="@string/share" />
+            android:label="@string/share" />
 
         <activity android:name=".ui.user.ChangePasswordActivity"
-                  android:label="@string/change_password" />
+            android:label="@string/change_password" />
 
         <activity android:name=".ui.room.RoomDetailsActivity"
-                  android:label="@string/room_info" />
+            android:label="@string/room_info" />
 
         <activity android:name=".ui.home.ModelListActivity"
-                  android:windowSoftInputMode="adjustPan"
-                  android:label="@string/user_list" />
+            android:windowSoftInputMode="adjustPan"
+            android:label="@string/user_list" />
 
         <activity android:name=".ui.user.UserDetailsActivity"
-                  android:label="@string/user_info" />
+            android:label="@string/user_info" />
 
         <activity android:name=".ui.app.TextInputActivity" />
 
         <activity android:name=".ui.group.GroupDetailsActivity"
-                  android:label="@string/group_info" />
+            android:label="@string/group_info" />
 
         <activity android:name=".ui.app.FeedbackActivity"
-                  android:label="@string/feedback" />
+            android:label="@string/feedback" />
 
         <activity android:name=".ui.app.AboutActivity"
-                  android:label="@string/about" />
+            android:label="@string/about" />
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
@@ -105,9 +102,18 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".media.MediaButtonReceiver">
+        <receiver android:name=".media.MediaButtonReceiver" android:priority="65536">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".service.handler.BackgroundService" />
+
+        <receiver android:name=".service.handler.RoomInvitationHandler">
+            <intent-filter>
+                <action android:name="SignalService.Room" />
+                <action android:name="PushService.Message" />
             </intent-filter>
         </receiver>
 

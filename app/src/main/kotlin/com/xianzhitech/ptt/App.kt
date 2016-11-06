@@ -3,10 +3,13 @@ package com.xianzhitech.ptt
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import android.os.Process
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
+import ch.qos.logback.classic.Level
 import com.crashlytics.android.Crashlytics
 import com.google.gson.Gson
+import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
@@ -22,16 +25,22 @@ import com.xianzhitech.ptt.util.ActivityProviderImpl
 import io.fabric.sdk.android.Fabric
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import rx.Scheduler
+import rx.android.plugins.RxAndroidPlugins
+import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 
 
 open class App : Application(), AppComponent {
 
-    override val httpClient by lazy { onBuildHttpClient().build() }
+    override val httpClient : OkHttpClient by lazy { onBuildHttpClient().build() }
     override lateinit var userRepository: UserRepository
     override lateinit var groupRepository: GroupRepository
     override lateinit var roomRepository: RoomRepository
@@ -54,24 +63,39 @@ open class App : Application(), AppComponent {
     }
 
     override fun onCreate() {
+        instance = this
         super.onCreate()
+
+        RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
+            private val scheduler = ImmediateMainThreadScheduler()
+
+            override fun getMainThreadScheduler(): Scheduler {
+                return scheduler
+            }
+        })
 
         if (BuildConfig.DEBUG.not()) {
             Fabric.with(this, Crashlytics())
         }
+        else {
+            (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as? ch.qos.logback.classic.Logger)?.level = Level.ALL
+        }
+
+        MDC.put("pid", Process.myPid().toString())
+        MDC.put("version", "${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE}")
 
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
         val helper = createSQLiteStorageHelper(this, "data")
-        val userStorage = UserLRUCacheStorage(UserSQLiteStorage(helper))
-        val groupStorage = GroupLRUCacheStorage(GroupSQLiteStorage(helper))
+        val userStorage = UserSQLiteStorage(helper)
+        val groupStorage = GroupSQLiteStorage(helper)
         val userNotification = PublishSubject.create<Unit>()
         val groupNotification = PublishSubject.create<Unit>()
         val roomNotification = PublishSubject.create<Unit>()
 
         userRepository = UserRepository(userStorage, userNotification)
         groupRepository = GroupRepository(groupStorage, groupNotification)
-        roomRepository = RoomRepository(RoomLRUCacheStorage(RoomSQLiteStorage(helper)), groupStorage,
+        roomRepository = RoomRepository(RoomSQLiteStorage(helper), groupStorage,
                 userStorage, roomNotification, userNotification, groupNotification)
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
 
@@ -87,10 +111,9 @@ open class App : Application(), AppComponent {
             registerActivityLifecycleCallbacks(this)
         }
 
-        RoomInvitationHandler(this, signalHandler, userRepository, roomRepository, activityProvider)
         mediaButtonHandler = MediaButtonHandler(signalHandler)
         AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
-        ServiceHandler(this, signalHandler)
+        ServiceHandler(this, this)
         RoomStatusHandler(roomRepository, signalHandler)
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)
         statisticCollector = StatisticCollector(signalHandler)
@@ -100,4 +123,8 @@ open class App : Application(), AppComponent {
         return OkHttpClient.Builder().cache(Cache(cacheDir, Constants.HTTP_MAX_CACHE_SIZE))
     }
 
+    companion object {
+        @JvmStatic lateinit var instance : App
+        private set
+    }
 }

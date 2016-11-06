@@ -8,7 +8,7 @@ class SettingsActivity : BaseToolbarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_settings);
+        setContentView(R.layout.activity_settings)
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()

@@ -53,7 +53,7 @@ private class ModelDrawable constructor(private val context: Context,
 
         override fun onNext(t: List<User>) {
             modelDrawableRef.get()?.apply {
-                val currentUserId = (context.applicationContext as AppComponent).signalHandler.peekLoginState().currentUserID
+                val currentUserId = (context.applicationContext as AppComponent).signalHandler.peekCurrentUserId
                 if (t.size <= 2 && currentUserId != null && excludeCurrentUser) {
                     drawable = t.firstOrNull { it.id != currentUserId }?.createDrawable(context)
                 } else {

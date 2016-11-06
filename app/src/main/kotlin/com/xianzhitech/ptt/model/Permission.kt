@@ -2,10 +2,11 @@ package com.xianzhitech.ptt.model
 
 enum class Permission {
     MAKE_INDIVIDUAL_CALL,
-    MAKE_GROUP_CALL,
-    CREATE_ROOM,
+    MAKE_TEMPORARY_GROUP_CALL,
     RECEIVE_INDIVIDUAL_CALL,
-    RECEIVE_ROOM,
-    CAN_SPEAK,
+    RECEIVE_TEMPORARY_GROUP_CALL,
+    SPEAK,
+    MUTE, // 免打扰
+    FORCE_INVITE, // 强制拉人
     ;
 }

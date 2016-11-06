@@ -13,8 +13,6 @@ import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.Toast
-import com.trello.rxlifecycle.ActivityEvent
-import com.trello.rxlifecycle.RxLifecycle
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
@@ -29,10 +27,12 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.update.installPackage
-import rx.Observable
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import rx.SingleSubscriber
+import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import rx.subjects.BehaviorSubject
+import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
@@ -41,13 +41,12 @@ abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnPositiveButtonClickListener,
         AlertDialogFragment.OnNegativeButtonClickListener {
 
-    private val lifecycleEventSubject = BehaviorSubject.create<ActivityEvent>()
     private var pendingDeniedPermissions: List<String>? = null
+    protected val logger : Logger by lazy { LoggerFactory.getLogger(javaClass.simpleName) }
+    private var subscriptions: CompositeSubscription? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        lifecycleEventSubject.onNext(ActivityEvent.CREATE)
 
         if (savedInstanceState == null) {
             handleIntent(intent)
@@ -63,38 +62,21 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private fun handleIntent(intent: Intent) {
         intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
+            val fromInvitation = intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITATION, false)
             if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false)) {
-                joinRoomConfirmed(roomId)
+                joinRoomConfirmed(roomId, fromInvitation)
             } else {
-                joinRoom(roomId)
+                joinRoom(roomId, fromInvitation)
             }
             intent.removeExtra(EXTRA_JOIN_ROOM_ID)
             intent.removeExtra(EXTRA_JOIN_ROOM_CONFIRMED)
         }
     }
 
-    override fun onDestroy() {
-        lifecycleEventSubject.onNext(ActivityEvent.DESTROY)
-
-        super.onDestroy()
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        lifecycleEventSubject.onNext(ActivityEvent.START)
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
         outState.putSerializable(STATE_PENDING_DENIED_PERMISSIONS, pendingDeniedPermissions as? Serializable)
-    }
-
-    override fun onStop() {
-        lifecycleEventSubject.onNext(ActivityEvent.STOP)
-
-        super.onStop()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -114,7 +96,10 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
             TAG_PERMISSION_DIALOG -> ActivityCompat.requestPermissions(this, fragment.attachmentAs<List<String>>().toTypedArray(), 0)
-            TAG_SWITCH_ROOM_CONFIRMATION -> joinRoomConfirmed(fragment.attachment as String)
+            TAG_SWITCH_ROOM_CONFIRMATION -> {
+                val (roomId, fromInvitation) = (fragment.attachment as Pair<String, Boolean>)
+                joinRoomConfirmed(roomId, fromInvitation)
+            }
             TAG_UPDATE -> startDownload(fragment.attachmentAs<AppConfig>())
         }
     }
@@ -137,28 +122,33 @@ abstract class BaseActivity : AppCompatActivity(),
                 downloadManager.remove(lastUpdateDownloadId.second)
             }
 
-            val fileName = "${appConfig.getAppFullName(this)}.apk"
-            val downloadRequest = DownloadManager.Request(downloadUri)
-            downloadRequest.setMimeType("application/vnd.android.package-archive")
-            downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-            downloadRequest.setNotificationVisibility(View.VISIBLE)
-            downloadRequest.setVisibleInDownloadsUi(true)
-            downloadRequest.setTitle(fileName)
+            try {
+                val fileName = "${appConfig.getAppFullName(this)}.apk"
+                val downloadRequest = DownloadManager.Request(downloadUri)
+                downloadRequest.setMimeType("application/vnd.android.package-archive")
+                downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                downloadRequest.setNotificationVisibility(View.VISIBLE)
+                downloadRequest.setVisibleInDownloadsUi(true)
+                downloadRequest.setTitle(fileName)
 
-            preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
+                preference.updateDownloadId = Pair(downloadUri, downloadManager.enqueue(downloadRequest))
+            } catch(e: Exception) {
+                logger.e(e) { "Download failed: " }
+                Toast.makeText(this, R.string.error_download, Toast.LENGTH_LONG).show()
+            }
         } else {
             installPackage(this, lastUpdateDownloadId.second)
         }
     }
 
-    fun joinRoom(roomId: String) {
+    fun joinRoom(roomId: String, fromInvitation: Boolean) {
         val appComponent = application as AppComponent
 
         val currentRoomID = appComponent.signalHandler.peekRoomState().currentRoomId
 
         // 如果用户已经加入这个房间, 直接确认这个操作
         if (currentRoomID == roomId) {
-            joinRoomConfirmed(roomId)
+            joinRoomConfirmed(roomId, fromInvitation)
             return
         }
 
@@ -169,7 +159,7 @@ abstract class BaseActivity : AppCompatActivity(),
                 message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
                 btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
                 btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
-                attachment = roomId
+                attachment = roomId to fromInvitation
 
                 show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
             }
@@ -178,10 +168,10 @@ abstract class BaseActivity : AppCompatActivity(),
         }
 
         // 如果用户没有加入任意一个房间, 则确认操作
-        joinRoomConfirmed(roomId)
+        joinRoomConfirmed(roomId, fromInvitation)
     }
 
-    open fun joinRoomConfirmed(roomId: String) {
+    open fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {
         // Base 类不知道具体怎么加入房间, 打开RoomActivity来加入房间
         startActivityWithAnimation(
                 Intent(this, RoomActivity::class.java)
@@ -197,7 +187,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
         showProgressDialog(R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
 
-        signalService.createRoom(createRoomRequest)
+        signalService.createRoom(createRoomRequest.groupIds, createRoomRequest.extraMemberIds)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(CreateRoomSubscriber(applicationContext))
@@ -250,9 +240,6 @@ abstract class BaseActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
 
-        lifecycleEventSubject.onNext(ActivityEvent.RESUME)
-
-
         if (pendingDeniedPermissions?.isNotEmpty() ?: false) {
             AlertDialogFragment.Builder().apply {
                 message = R.string.error_no_android_permissions.toFormattedString(this@BaseActivity)
@@ -273,18 +260,17 @@ abstract class BaseActivity : AppCompatActivity(),
             }
         }
 
-        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.currentUserId ?: Constants.EMPTY_USER_ID)
+        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.peekCurrentUserId ?: Constants.EMPTY_USER_ID)
                 .toObservable()
                 .observeOnMainThread()
-                .compose(bindToLifecycle())
                 .subscribeSimple {
                     handleUpdate(it)
                 }
+                .bindToLifecycle()
 
-        appComponent.signalHandler.currentUserIdSubject
+        appComponent.signalHandler.currentUserId
             .switchMap { appComponent.userRepository.getUser(it).getAsync().toObservable() }
             .observeOnMainThread()
-            .compose(bindToLifecycle())
             .subscribeSimple {
                 val now = System.currentTimeMillis()
                 if (it != null && it.enterpriseExpireDate != null &&
@@ -300,43 +286,38 @@ abstract class BaseActivity : AppCompatActivity(),
                     supportFragmentManager.executePendingTransactions()
                 }
             }
+            .bindToLifecycle()
     }
 
-    override fun onPause() {
-        lifecycleEventSubject.onNext(ActivityEvent.PAUSE)
-        hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
 
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
+
+        subscriptions?.unsubscribe()
+        subscriptions = null
     }
 
-    fun <D> bindToLifecycle(): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindActivity(lifecycleEventSubject)
+    protected fun Subscription.bindToLifecycle() : Subscription {
+        if (subscriptions == null) {
+            subscriptions = CompositeSubscription()
+        }
+
+        subscriptions!!.add(this)
+        return this
     }
 
-    fun <D> bindUntil(event: ActivityEvent): Observable.Transformer<in D, out D> {
-        return RxLifecycle.bindUntilEvent(lifecycleEventSubject, event)
-    }
-
-    protected fun <T> Observable<T>.bindToLifecycle(): Observable<T> {
-        return compose(RxLifecycle.bindActivity<T>(lifecycleEventSubject))
-    }
-
-    protected fun <T> Observable<T>.bindUntil(event: ActivityEvent): Observable<T> {
-        return compose(this@BaseActivity.bindUntil(event))
-    }
-
-    private class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
+    private inner class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
         override fun onError(error: Throwable) {
-            globalHandleError(error, appContext)
+            defaultOnErrorAction.call(error)
 
-            ((appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity)?.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+            hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
         }
 
         override fun onSuccess(value: Room) {
+            hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
             val currentActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
             if (currentActivity != null) {
-                currentActivity.hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
-                currentActivity.joinRoom(value.id)
+                currentActivity.joinRoom(value.id, false)
             } else {
                 startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
             }
@@ -355,6 +336,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
+        const val EXTRA_JOIN_ROOM_FROM_INVITATION = "extra_fi"
 
         private const val STATE_PENDING_DENIED_PERMISSIONS = "state_pending_denied_permissions"
 

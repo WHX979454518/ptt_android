@@ -2,16 +2,19 @@ package com.xianzhitech.ptt.service.handler
 
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
-import com.xianzhitech.ptt.ext.logd
+import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
 import java.util.*
 import java.util.concurrent.TimeUnit
+
+private val logger = LoggerFactory.getLogger("RoomAutoQuitHandler")
 
 /**
  * 处理自动退出房间的逻辑
@@ -23,7 +26,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
 
     init {
         signalServiceHandler.roomState
-                .doOnNext { logd("Room state changed to $it") }
+                .doOnNext { logger.d { "Room state changed to $it" } }
                 .scan(ArrayList<RoomState>(2), { result, newState ->
                     if (newState.status.inRoom.not()) {
                         result.clear()
@@ -59,8 +62,8 @@ class RoomAutoQuitHandler(private val preference: Preference,
                     }
                 }
                 .subscribeSimple {
-                    if (signalServiceHandler.currentRoomId != null) {
-                        logd("Auto quit room because room is put to idle")
+                    if (signalServiceHandler.peekCurrentRoomId() != null) {
+                        logger.d { "Auto quit room because room is put to idle" }
                         signalServiceHandler.quitRoom()
                         (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
                     }
@@ -69,7 +72,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
     }
 
     private fun onRoomStateChanged(lastRoomState: RoomState, currRoomState: RoomState) {
-        logd("Online member changed from ${lastRoomState.onlineMemberIds} to ${currRoomState.onlineMemberIds}")
+        logger.d { "Online member changed from ${lastRoomState.onlineMemberIds} to ${currRoomState.onlineMemberIds}" }
 
         if (lastRoomState.onlineMemberIds.size > 1 &&
                 currRoomState.status.inRoom &&

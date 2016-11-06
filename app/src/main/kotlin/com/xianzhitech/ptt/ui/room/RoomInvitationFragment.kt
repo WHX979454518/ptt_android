@@ -48,7 +48,7 @@ class RoomInvitationFragment : BaseFragment() {
     }
 
     fun removeRoomInvitation(roomId: String) {
-        if (pendingInvitations.removeAll { it.roomId == roomId } && view != null) {
+        if (pendingInvitations.removeAll { it.room.id == roomId } && view != null) {
             applyView()
         }
     }
@@ -85,7 +85,7 @@ class RoomInvitationFragment : BaseFragment() {
     }
 
     private fun onAccept(invitation: RoomInvitation) {
-        (activity as? BaseActivity)?.joinRoom(invitation.roomId)
+        (activity as? BaseActivity)?.joinRoom(invitation.room.id, true)
         if (pendingInvitations.remove(invitation)) {
             applyView()
         }

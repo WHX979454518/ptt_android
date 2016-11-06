@@ -11,15 +11,16 @@ import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.KnownServerException
+import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import rx.Completable
+import rx.CompletableSubscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -83,10 +84,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.ignoreAllInvitations()
     }
 
-    private class RoomInvitationImpl(override val inviterId: String,
-                                     override val roomId: String = "123",
-                                     override val inviteTime: Date = Date()) : RoomInvitation
-
     override fun dismissInvitations() {
         supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG)?.let {
             supportFragmentManager.beginTransaction()
@@ -116,7 +113,6 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         appComponent.signalHandler
                 .roomStatus
                 .observeOnMainThread()
-                .bindToLifecycle()
                 .subscribeSimple {
                     if (it == RoomStatus.JOINING) {
                         showProgressDialog(R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
@@ -124,6 +120,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         hideProgressDialog(TAG_JOIN_ROOM_PROGRESS)
                     }
                 }
+                .bindToLifecycle()
 
         appComponent.signalHandler.roomStatus
                 .switchMap {
@@ -133,17 +130,19 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         rx.Observable.never()
                     }
                 }
-                .bindToLifecycle()
                 .subscribeSimple {
-                    if (appComponent.signalHandler.peekRoomState().status == RoomStatus.IDLE && !isFinishing) {
+                    val loginStatus = appComponent.signalHandler.peekLoginStatus()
+                    val peekRoomState = appComponent.signalHandler.peekRoomState()
+                    if (loginStatus == LoginStatus.LOGGED_IN && peekRoomState.status == RoomStatus.IDLE && !isFinishing) {
                         Toast.makeText(this, R.string.room_quited, Toast.LENGTH_LONG).show()
                         finish()
                     }
                 }
+                .bindToLifecycle()
     }
 
-    override fun joinRoomConfirmed(roomId: String) {
-        val currentRoomId = appComponent.signalHandler.currentRoomId
+    override fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {
+        val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
         if (currentRoomId == roomId) {
             return
         }
@@ -155,19 +154,19 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
 
-        appComponent.signalHandler.joinRoom(roomId)
+        appComponent.signalHandler.joinRoom(roomId, fromInvitation)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(JoinRoomSubscriber(applicationContext, roomId))
     }
 
     private class JoinRoomSubscriber(private val appContext: Context,
-                                     private val roomId: String) : Completable.CompletableSubscriber {
+                                     private val roomId: String) : CompletableSubscriber {
         override fun onSubscribe(d: Subscription?) {
         }
 
         override fun onError(e: Throwable) {
-            globalHandleError(e, appContext)
+            defaultOnErrorAction.call(e)
 
             val activity = appContext.appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {

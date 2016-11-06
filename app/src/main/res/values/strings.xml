@@ -54,6 +54,7 @@
     <string name="error_no_record_permission">录音权限被拒绝，对讲将无法工作, 请同意此权限</string>
     <string name="error_no_phone_permission">控制电话权限被拒绝，对讲将无法正常工作，请同意此权限</string>
     <string name="error_getting_user_info">获取该用户信息失败</string>
+    <string name="error_download">下载失败。请检查您的存储卡是否有剩余空间</string>
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
     <string name="error_no_such_room">没有该房间</string>
@@ -187,6 +188,7 @@
     <string name="field_required">该项目不能为空</string>
     <string name="type_room_name">房间名称</string>
     <string name="room_not_updated">房间未更新</string>
+    <string name="contact_updated">通讯录更新完成</string>
 
     <string name="shortcut_mode_no_op">无操作</string>
     <string name="shortcut_mode_contact">呼叫通讯录中的联系人/群组</string>
@@ -200,6 +202,26 @@
     <string name="share_text">亲们，推荐一款专业软对讲APP, 为行业客户提供实时对讲保证，可广泛用于出租车、酒店、小区物业、交通运输、自驾、物流、电力、铁路等现有对讲公共和行业市场，欢迎试用、合作。有需要的请联系QQ：276376336，电话18011563127（微信绑定）。 App下载地址:%1$s ，推广测试账号：2000010–2000015，密码000000</string>
     <string name="share_via">分享下载连接</string>
     <string name="share">分享应用</string>
+    <string name="log_upload">日志上报</string>
+    <string name="total_log_files">一共 %1$d 个日志文件，大小 %2$s。是否确定上传？</string>
+    <string name="upload">上传</string>
+    <string name="log_upload_success">日志上传成功，感谢您的支持</string>
+    <string name="no_upload">没有可上传的日志</string>
+    <string name="downtime_next_day_with_time">次日 %1$s</string>
+    <string name="downtime_settings">免打扰设置</string>
+    <string name="downtime_range">免打扰时段</string>
+    <string name="enable_downtime">免打扰模式</string>
+    <string name="downtime_description">开启后将收不到其它人的呼叫</string>
+    <string name="click_to_set_time">点击设置时间</string>
+    <string name="downtime_start_time">开始时间</string>
+    <string name="downtime_end_time">结束时间</string>
+    <string name="no_permission_to_downtime">当前用户无权限使用该功能</string>
+    <string name="speak_forbidden">禁止发言</string>
+    <string name="to">至</string>
+
+    <string name="member_invitation_sent">已向%1$d位成员发出对讲邀请</string>
+    <string name="member_invitation_sent_none">已无其他成员可邀请</string>
+    <string name="member_invitation_sent_failed">邀请失败：%1$s</string>
 
     <string-array name="level_number">
         <item>管理员</item>

@@ -103,7 +103,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder? {
             return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.view_invitation_item, parent, false)).apply {
                 joinButton.setOnClickListener {
-                    (activity as? BaseActivity)?.joinRoom(invitationList[adapterPosition].invitation.roomId)
+                    (activity as? BaseActivity)?.joinRoom(invitationList[adapterPosition].invitation.room.id, true)
                     dismissImmediately()
                 }
 

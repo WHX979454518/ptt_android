@@ -9,7 +9,7 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 
 
-class AboutActivity : BaseToolbarActivity() {
+open class BaseAboutActivity : BaseToolbarActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

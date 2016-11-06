@@ -79,6 +79,24 @@
         tools:drawableTint="@android:color/white"
         tools:text="商务部事宜非常非常非常长的名字(12/24)" />
 
+    <FrameLayout
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="@dimen/unit_four"
+        android:orientation="horizontal"
+        android:layout_centerHorizontal="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/room_notification"
+            android:src="@drawable/ic_notification_white"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/unit_one"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </FrameLayout>
+
     <RelativeLayout
         android:id="@+id/room_speakerView"
         android:layout_width="wrap_content"

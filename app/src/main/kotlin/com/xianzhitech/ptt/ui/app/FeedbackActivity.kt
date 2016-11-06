@@ -16,7 +16,7 @@ import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.Feedback
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
-import rx.Completable
+import rx.CompletableSubscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 
@@ -83,7 +83,7 @@ class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveBu
             appComponent.appService.submitFeedback(Feedback(
                     title = titleView.text.toString(),
                     message = messageView.text.toString(),
-                    userId = appComponent.signalHandler.currentUserId))
+                    userId = appComponent.signalHandler.peekCurrentUserId))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(FeedbackSubscriber(applicationContext))
 
@@ -99,7 +99,7 @@ class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveBu
     }
 }
 
-private class FeedbackSubscriber(private val appContext : Context) : Completable.CompletableSubscriber {
+private class FeedbackSubscriber(private val appContext : Context) : CompletableSubscriber {
     override fun onSubscribe(d: Subscription?) {
     }
 

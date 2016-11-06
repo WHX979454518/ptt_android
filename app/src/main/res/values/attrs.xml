@@ -13,4 +13,9 @@
     <declare-styleable name="SideNavigationView">
         <attr name="android:textColor" />
     </declare-styleable>
+
+    <declare-styleable name="TimePreference">
+        <attr name="isStart" format="boolean" />
+    </declare-styleable>
+
 </resources>

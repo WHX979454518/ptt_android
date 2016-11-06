@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Text.Body2"
+    tools:text="13:30"
+    android:padding="@dimen/unit_one"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
