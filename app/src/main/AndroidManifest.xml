@@ -110,7 +110,7 @@
 
         <service android:name=".service.handler.BackgroundService" />
 
-        <receiver android:name=".service.handler.RoomInvitationHandler">
+        <receiver android:name=".service.handler.RoomInvitationHandler" android:exported="false">
             <intent-filter>
                 <action android:name="SignalService.Room" />
                 <action android:name="PushService.Message" />
