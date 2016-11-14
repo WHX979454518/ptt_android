@@ -8,6 +8,8 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentTransaction
 import android.view.WindowManager
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -18,6 +20,7 @@ import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
+import com.xianzhitech.ptt.util.withUser
 import rx.CompletableSubscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -42,6 +45,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
             handleIntent(intent)
         }
     }
+
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -109,6 +113,15 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
     override fun onStart() {
         super.onStart()
+
+        val roomId = intent.getStringExtra(EXTRA_JOIN_ROOM_ID)
+        if (roomId != null) {
+            Answers.getInstance().logContentView(ContentViewEvent().apply {
+                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+                putContentId(roomId)
+                putContentType("room")
+            })
+        }
 
         appComponent.signalHandler
                 .roomStatus

@@ -11,6 +11,8 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -23,6 +25,7 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.EditProfileActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import com.xianzhitech.ptt.util.withUser
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory

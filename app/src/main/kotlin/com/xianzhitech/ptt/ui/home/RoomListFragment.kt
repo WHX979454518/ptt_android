@@ -12,6 +12,8 @@ import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
@@ -26,6 +28,7 @@ import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
+import com.xianzhitech.ptt.util.withUser
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers

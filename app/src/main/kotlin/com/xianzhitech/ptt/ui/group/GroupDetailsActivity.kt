@@ -7,6 +7,8 @@ import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.widget.TextView
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -17,6 +19,7 @@ import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
+import com.xianzhitech.ptt.util.withUser
 import rx.Subscriber
 
 class GroupDetailsActivity : BaseToolbarActivity() {
@@ -52,6 +55,12 @@ class GroupDetailsActivity : BaseToolbarActivity() {
 
     override fun onStart() {
         super.onStart()
+
+        Answers.getInstance().logContentView(ContentViewEvent().apply {
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+            putContentType("group-details")
+            putContentId(groupId)
+        })
 
         val appComponent = application as AppComponent
         appComponent.groupRepository.getGroups(listOf(groupId))
