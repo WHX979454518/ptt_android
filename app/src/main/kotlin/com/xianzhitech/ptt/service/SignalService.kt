@@ -83,6 +83,10 @@ class SignalService(val authTokenFactory: () -> String,
                             signalSubject += ConnectionSignal(ConnectionEvent.CONNECTING)
                         })
 
+                        s.io().on(Manager.EVENT_PING, { logger.i { "Ping!" } })
+                        s.io().on(Manager.EVENT_PONG, { logger.i { "Pong!" } })
+
+
                         s.io().on(Manager.EVENT_TRANSPORT, {
                             val transport = it.first() as Transport
                             transport.on(Transport.EVENT_REQUEST_HEADERS, {

@@ -8,6 +8,7 @@ import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import ch.qos.logback.classic.Level
 import com.crashlytics.android.Crashlytics
+import com.crashlytics.android.answers.Answers
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
@@ -75,9 +76,10 @@ open class App : Application(), AppComponent {
         })
 
         if (BuildConfig.DEBUG.not()) {
-            Fabric.with(this, Crashlytics())
+            Fabric.with(this, Crashlytics(), Answers())
         }
         else {
+            Fabric.with(this, Answers())
             (LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as? ch.qos.logback.classic.Logger)?.level = Level.ALL
         }
 
