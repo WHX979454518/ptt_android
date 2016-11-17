@@ -8,7 +8,7 @@ project.ext.appServerUrl = System.properties['APP_SERVER_URL']
 
 buildscript {
     ext.kotlin_version = '1.0.5'
-    ext.support_library_version = '25.0.0'
+    ext.support_library_version = '25.0.1'
 
     repositories {
         // required for this library, don't use mavenCentral()
@@ -83,6 +83,7 @@ android {
             def appServerUrl = project.appServerUrl ?: "http://netptt.cn:20002"
             applicationId 'com.xianzhitech.ptt.dev'
             buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
+            manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "hWdRd0tU6Fkv1BOUteDzp4HsgkUvkNuz"
             println("Using $appServerUrl as app server for dev build")
 
             buildConfigField("boolean", "IS_PRODUCTION", "false")
@@ -92,6 +93,7 @@ android {
             def appServerUrl = project.appServerUrl ?: "http://netptt.cn:10005"
             applicationId 'com.xianzhitech.ptt'
             buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
+            manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "M7uMw7magyVuxsUSttGeQ123k10LREz4"
             println("Using $appServerUrl as app server for production build")
 
             buildConfigField("boolean", "IS_PRODUCTION", "true")
@@ -119,6 +121,7 @@ dependencies {
     compile 'com.belerweb:pinyin4j:2.5.1'
 
     compile(name: 'webrtc-android-release', ext: 'aar')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
 
     compile "com.android.support:appcompat-v7:$support_library_version"
     compile "com.android.support:preference-v7:$support_library_version"

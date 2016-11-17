@@ -75,7 +75,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         super.onStart()
 
         Answers.getInstance().logContentView(ContentViewEvent().apply {
-            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
             putContentId(roomId)
             putContentType("room-details")
         })

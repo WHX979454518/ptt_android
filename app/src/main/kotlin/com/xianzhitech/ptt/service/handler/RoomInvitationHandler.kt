@@ -1,13 +1,12 @@
 package com.xianzhitech.ptt.service.handler
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.support.v4.content.WakefulBroadcastReceiver
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomInvitationObject
@@ -20,7 +19,7 @@ import java.io.Serializable
 
 private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
-class RoomInvitationHandler() : BroadcastReceiver() {
+class RoomInvitationHandler() : WakefulBroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         val invite : RoomInvitation = when (intent?.action) {
@@ -51,7 +50,7 @@ class RoomInvitationHandler() : BroadcastReceiver() {
         }
 
         val appComponent = context.appComponent
-        val user = appComponent.signalHandler.currentUserCache
+        val user = appComponent.signalHandler.currentUserCache.value
         if ((user?.permissions?.contains(Permission.MUTE) ?: false) &&
                 appComponent.preference.enableDownTime &&
                 LocalTime.isDownTime(System.currentTimeMillis(), appComponent.preference.downTimeStart, appComponent.preference.downTimeEnd)) {

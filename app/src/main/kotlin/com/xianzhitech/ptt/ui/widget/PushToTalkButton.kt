@@ -109,7 +109,7 @@ class PushToTalkButton : ImageButton {
     }
 
     private fun applyRoomStatus() {
-        isEnabled = signalService.peekRoomState().canRequestMic(signalService.currentUserCache) &&
+        isEnabled = signalService.peekRoomState().canRequestMic(signalService.currentUserCache.value) &&
                 signalService.peekLoginStatus() == LoginStatus.LOGGED_IN
     }
 
@@ -124,7 +124,7 @@ class PushToTalkButton : ImageButton {
 
             paint.color = when {
                 loginStatus != LoginStatus.LOGGED_IN -> android.R.color.darker_gray
-                signalService.peekRoomState().canRequestMic(signalService.currentUserCache) -> android.R.color.holo_green_dark
+                signalService.peekRoomState().canRequestMic(signalService.currentUserCache.value) -> android.R.color.holo_green_dark
                 roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
                 roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
                 else -> android.R.color.darker_gray

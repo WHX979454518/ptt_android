@@ -560,6 +560,15 @@ class UserObject(private val obj: JSONObject) : User {
     override val enterpriseExpireDate: Date?
         get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
 
+    val locationEnabled : Boolean = true
+//        get() = obj.optBoolean("locationEnable", false)
+
+    val locationScanInterval: Long = 1000
+//        get() = obj.optLong("locationScanInterval", -1L)
+
+    val locationReportInterval: Long = 15000
+//        get() = obj.optLong("locationReportInterval", -1L)
+
     override fun toString(): String {
         return obj.toString()
     }

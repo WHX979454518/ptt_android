@@ -13,7 +13,6 @@ import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.KnownServerException
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomStatus
@@ -117,7 +116,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         val roomId = intent.getStringExtra(EXTRA_JOIN_ROOM_ID)
         if (roomId != null) {
             Answers.getInstance().logContentView(ContentViewEvent().apply {
-                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
                 putContentId(roomId)
                 putContentType("room")
             })

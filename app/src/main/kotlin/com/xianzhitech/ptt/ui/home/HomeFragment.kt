@@ -124,7 +124,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         val roomRepository = appComponent.roomRepository
 
         Answers.getInstance().logContentView(ContentViewEvent().apply {
-            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
             putContentType("home")
         })
 

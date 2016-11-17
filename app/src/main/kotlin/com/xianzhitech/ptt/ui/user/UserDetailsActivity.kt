@@ -53,7 +53,7 @@ class UserDetailsActivity : BaseToolbarActivity() {
 
         if (user != null) {
             Answers.getInstance().logContentView(ContentViewEvent().apply {
-                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
                 putContentType("user-details")
                 putContentId(user!!.id)
             })

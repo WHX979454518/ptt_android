@@ -32,7 +32,7 @@ class SettingsFragment : PreferenceFragmentCompat(), TimePickerDialogFragment.On
         super.onCreate(savedInstanceState)
 
         (findPreference(getString(R.string.key_enable_downtime)) as CheckBoxPreference).apply {
-            val hasPermission = appComponent.signalHandler.currentUserCache?.permissions?.contains(Permission.MUTE) ?: false
+            val hasPermission = appComponent.signalHandler.currentUserCache.value?.permissions?.contains(Permission.MUTE) ?: false
             isEnabled = hasPermission
             isChecked = hasPermission && isChecked
             if (hasPermission.not()) {

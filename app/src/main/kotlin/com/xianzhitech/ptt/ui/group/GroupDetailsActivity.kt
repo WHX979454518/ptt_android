@@ -57,7 +57,7 @@ class GroupDetailsActivity : BaseToolbarActivity() {
         super.onStart()
 
         Answers.getInstance().logContentView(ContentViewEvent().apply {
-            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache)
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
             putContentType("group-details")
             putContentId(groupId)
         })

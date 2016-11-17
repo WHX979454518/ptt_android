@@ -118,6 +118,7 @@ open class App : Application(), AppComponent {
         ServiceHandler(this, this)
         RoomStatusHandler(roomRepository, signalHandler)
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)
+        LocationHandler(this, signalHandler)
         statisticCollector = StatisticCollector(signalHandler)
     }
 

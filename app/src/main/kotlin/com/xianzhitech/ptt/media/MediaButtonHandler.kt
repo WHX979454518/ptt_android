@@ -13,7 +13,7 @@ private val logger = LoggerFactory.getLogger("MediaButtonHandler")
 class MediaButtonHandler(private val signalService: SignalServiceHandler) {
     private var lastHeadsetReleaseTime = 0L
 
-    private fun canRequestMic() = signalService.peekRoomState().canRequestMic(signalService.currentUserCache)
+    private fun canRequestMic() = signalService.peekRoomState().canRequestMic(signalService.currentUserCache.value)
 
     fun handleMediaButtonEvent(intent: Intent?) {
         if (intent != null && intent.action == Intent.ACTION_MEDIA_BUTTON) {
