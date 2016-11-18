@@ -2,10 +2,7 @@ package com.xianzhitech.ptt.service
 
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
@@ -18,6 +15,7 @@ import io.socket.client.Socket
 import io.socket.engineio.client.Transport
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import rx.Completable
@@ -408,8 +406,9 @@ class DefaultSignalFactory : SignalFactory {
 }
 
 open class Command<R, V>(val cmd : String,
-                         vararg val args: Any?)  {
+                         vararg args: Any?)  {
     val resultSubject : BehaviorSubject<V> = BehaviorSubject.create()
+    open val args : Array<out Any?> = args
 
     fun getAsync() : Single<R> {
         return resultSubject.map { convert(it) }.first().toSingle()
@@ -471,6 +470,15 @@ class SyncContactCommand(val userId : String,
                 users = value.optJSONArray("enterpriseMembers")?.transform { UserObject(it as JSONObject) } ?: emptyList(),
                 groups = value.optJSONArray("enterpriseGroups")?.transform { GroupObject(it as JSONObject) } ?: emptyList()
         )
+    }
+}
+
+class UpdateLocationCommand(val locations : List<Location>) : Command<Unit, JSONObject>("c_update_location") {
+    override val args: Array<out Any?> by lazy {
+        Array(1, { locations.transform { it.toJSON() }.toJSONArray() })
+    }
+
+    override fun convert(value: JSONObject) {
     }
 }
 

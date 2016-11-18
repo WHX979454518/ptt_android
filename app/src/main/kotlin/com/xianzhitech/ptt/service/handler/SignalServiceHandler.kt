@@ -569,7 +569,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun ensureLoggedIn() {
-        if (loginStatusSubject.value != LoginStatus.LOGGED_IN || currentUserCache == null) {
+        if (loginStatusSubject.value != LoginStatus.LOGGED_IN || currentUserCache.value == null) {
             throw StaticUserException(R.string.error_unable_to_connect)
         }
     }
