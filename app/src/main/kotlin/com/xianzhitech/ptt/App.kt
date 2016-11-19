@@ -50,6 +50,7 @@ open class App : Application(), AppComponent {
     override lateinit var activityProvider: ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
     override lateinit var mediaButtonHandler: MediaButtonHandler
+    override lateinit var audioHandler: AudioHandler
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
 
     override val appService: AppService by lazy {
@@ -112,7 +113,7 @@ open class App : Application(), AppComponent {
         }
 
         mediaButtonHandler = MediaButtonHandler(signalHandler)
-        AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
+        audioHandler = AudioHandler(this, signalHandler, mediaButtonHandler, httpClient, preference)
         ServiceHandler(this, this)
         RoomStatusHandler(roomRepository, signalHandler)
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)

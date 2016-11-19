@@ -80,10 +80,10 @@
         tools:text="商务部事宜非常非常非常长的名字(12/24)" />
 
     <FrameLayout
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="@dimen/unit_four"
-        android:orientation="horizontal"
+        android:layout_alignTop="@+id/room_qualityMode"
+        android:layout_alignBottom="@+id/room_qualityMode"
         android:layout_centerHorizontal="true"
+        android:orientation="horizontal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
@@ -91,11 +91,86 @@
             android:id="@+id/room_notification"
             android:src="@drawable/ic_notification_white"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_gravity="center"
             android:padding="@dimen/unit_one"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
     </FrameLayout>
+
+    <LinearLayout
+        android:layout_alignParentBottom="true"
+        android:id="@+id/room_qualityMode"
+        android:layout_marginBottom="@dimen/unit_four"
+        android:background="@drawable/bg_room_control_left"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:minHeight="55dp"
+        android:translationX="-30dp"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_weight="1"
+            style="@style/Text.Body2"
+            android:text="@string/audio_quality"
+            android:gravity="right"
+            android:layout_marginRight="@dimen/unit_half"
+            android:layout_gravity="center"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:id="@+id/room_qualityModeImage"
+            android:src="@drawable/ic_audiotrack"
+            android:tint="@color/primary_light"
+            android:scaleType="centerInside"
+            android:background="@drawable/bg_circle"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:id="@+id/room_record"
+        android:layout_marginBottom="@dimen/unit_four"
+        android:background="@drawable/bg_room_control_left"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:minHeight="55dp"
+        android:translationX="30dp"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/room_recordImage"
+            android:src="@drawable/ic_record"
+            android:tint="@color/primary_light"
+            android:scaleType="centerInside"
+            android:background="@drawable/bg_circle"
+            android:layout_gravity="left|center_vertical"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+
+        <TextView
+            android:layout_weight="1"
+            style="@style/Text.Body2"
+            android:text="@string/record"
+            android:gravity="left"
+            android:layout_marginLeft="@dimen/unit_half"
+            android:layout_gravity="center"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+
+    </LinearLayout>
+
+
 
     <RelativeLayout
         android:id="@+id/room_speakerView"

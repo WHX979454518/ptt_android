@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt
 
+import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -21,6 +22,7 @@ interface AppComponent {
     val httpClient: OkHttpClient
     val preference: Preference
 
+    val audioHandler : AudioHandler
     val appServerEndpoint : String
     val appService: AppService
     val signalHandler: SignalServiceHandler

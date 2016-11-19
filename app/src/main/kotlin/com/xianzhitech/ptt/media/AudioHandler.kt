@@ -53,6 +53,12 @@ class AudioHandler(private val appContext: Context,
         }
     }
 
+    var highQualityMode : Boolean
+    get() = currentTalkEngine?.highQualityMode ?: false
+    set(value) {
+        currentTalkEngine?.enableHighQualityMode(value)
+    }
+
     init {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (audioManager.isBluetoothScoAvailableOffCall && bluetoothAdapter != null) {

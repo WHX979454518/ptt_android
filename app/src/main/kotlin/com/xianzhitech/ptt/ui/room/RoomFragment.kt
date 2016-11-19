@@ -39,8 +39,7 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
-class RoomFragment : BaseFragment()
-        , BackPressable {
+class RoomFragment : BaseFragment(), BackPressable {
 
     private class Views(rootView: View,
                         val titleView: TextView = rootView.findView(R.id.room_title),
@@ -48,9 +47,13 @@ class RoomFragment : BaseFragment()
                         val speakerView: View = rootView.findView(R.id.room_speakerView),
                         val speakerAvatarView: ImageView = speakerView.findView(R.id.room_speakerAvatar),
                         val speakerAnimationView: ImageView = speakerView.findView(R.id.room_speakerAnimationView),
-                        val speakerEllapseTimeView: View = speakerView.findView(R.id.room_speakerEllapseTime),
+                        val speakerElapseTimeView: View = speakerView.findView(R.id.room_speakerEllapseTime),
                         val speakerDurationTimeView: TextView = speakerView.findView(R.id.room_speakerDuration),
-                        val speakerNameView: TextView = speakerView.findView(R.id.room_speakerName)) {
+                        val speakerNameView: TextView = speakerView.findView(R.id.room_speakerName),
+                        val qualityView : View = rootView.findView(R.id.room_qualityMode),
+                        val qualityImageView : ImageView = rootView.findView(R.id.room_qualityModeImage),
+                        val recordView : View = rootView.findView(R.id.room_record),
+                        val recordImageView : ImageView = rootView.findView(R.id.room_recordImage)) {
         var speakerAnimator: ObjectAnimator? = null
 
         init {
@@ -126,6 +129,19 @@ class RoomFragment : BaseFragment()
             }
         }
 
+        views.qualityImageView.setImageResource(if (appComponent.audioHandler.highQualityMode) R.drawable.ic_audiotrack else R.drawable.ic_phone)
+
+        views.qualityView.setOnClickListener {
+
+            appComponent.audioHandler.highQualityMode = appComponent.audioHandler.highQualityMode.not()
+            views.qualityImageView.setImageResource(if (appComponent.audioHandler.highQualityMode) R.drawable.ic_audiotrack else R.drawable.ic_phone)
+
+            Toast.makeText(context, if (appComponent.audioHandler.highQualityMode) R.string.switched_to_high_quality else R.string.switched_to_low_quality, Toast.LENGTH_SHORT).show()
+        }
+
+        views.recordView.setOnClickListener {
+            Toast.makeText(context, "此功能正在实现中...", Toast.LENGTH_SHORT).show()
+        }
 
         appComponent.userRepository.getUser(appComponent.signalHandler.peekCurrentUserId)
                 .observe()
@@ -269,7 +285,7 @@ class RoomFragment : BaseFragment()
 
                         if (speaker == null) {
                             speakerAnimationView.visibility = View.INVISIBLE
-                            speakerEllapseTimeView.visibility = View.VISIBLE
+                            speakerElapseTimeView.visibility = View.VISIBLE
                             if (animateDrawable is AnimationDrawable) {
                                 animateDrawable.stop()
                             }
@@ -279,7 +295,7 @@ class RoomFragment : BaseFragment()
                                 animateDrawable.start()
                             }
                             speakerAnimationView.visibility = View.VISIBLE
-                            speakerEllapseTimeView.visibility = View.INVISIBLE
+                            speakerElapseTimeView.visibility = View.INVISIBLE
                             startUpdatingDurationView()
                         }
 

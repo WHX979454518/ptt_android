@@ -218,10 +218,14 @@
     <string name="no_permission_to_downtime">当前用户无权限使用该功能</string>
     <string name="speak_forbidden">禁止发言</string>
     <string name="to">至</string>
+    <string name="switched_to_high_quality">已切换到高品质音质模式</string>
+    <string name="switched_to_low_quality">已切换到电话音质模式</string>
 
     <string name="member_invitation_sent">已向%1$d位成员发出对讲邀请</string>
     <string name="member_invitation_sent_none">已无其他成员可邀请</string>
     <string name="member_invitation_sent_failed">邀请失败：%1$s</string>
+    <string name="audio_quality">音质</string>
+    <string name="record">录音</string>
 
     <string-array name="level_number">
         <item>管理员</item>
