@@ -10,6 +10,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
@@ -25,6 +27,7 @@ import com.xianzhitech.ptt.ui.user.ContactUserProvider
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
+import com.xianzhitech.ptt.util.withUser
 import rx.CompletableSubscriber
 import rx.Observable
 import rx.Subscriber
@@ -70,6 +73,12 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
     override fun onStart() {
         super.onStart()
+
+        Answers.getInstance().logContentView(ContentViewEvent().apply {
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
+            putContentId(roomId)
+            putContentType("room-details")
+        })
 
         appComponent.signalHandler.retrieveRoomInfo(roomId)
                 .subscribeSimple {

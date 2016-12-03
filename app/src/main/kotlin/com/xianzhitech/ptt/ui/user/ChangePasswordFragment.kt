@@ -10,15 +10,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.isEmpty
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
+import com.xianzhitech.ptt.util.withUser
 import rx.android.schedulers.AndroidSchedulers
 
 class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonClickListener, AlertDialogFragment.OnNegativeButtonClickListener {
@@ -40,6 +40,15 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
     override fun onDestroyView() {
         views = null
         super.onDestroyView()
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        Answers.getInstance().logContentView(ContentViewEvent().apply {
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
+            putContentType("changePassword")
+        })
     }
 
     fun requestFinish(): Boolean {

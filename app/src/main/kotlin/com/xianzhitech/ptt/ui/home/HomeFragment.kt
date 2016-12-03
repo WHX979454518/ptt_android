@@ -11,6 +11,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -21,6 +23,7 @@ import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.util.withUser
 import rx.Observable
 import java.util.*
 
@@ -119,6 +122,12 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         val appComponent = context.applicationContext as AppComponent
         val signalService = appComponent.signalHandler
         val roomRepository = appComponent.roomRepository
+
+        Answers.getInstance().logContentView(ContentViewEvent().apply {
+            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
+            putContentType("home")
+        })
+
         Observable.combineLatest(
                 signalService.loginStatus,
                 signalService.roomStatus,

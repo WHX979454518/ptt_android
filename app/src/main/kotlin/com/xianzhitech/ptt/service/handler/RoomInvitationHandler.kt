@@ -50,7 +50,7 @@ class RoomInvitationHandler() : WakefulBroadcastReceiver() {
         }
 
         val appComponent = context.appComponent
-        val user = appComponent.signalHandler.currentUserCache
+        val user = appComponent.signalHandler.currentUserCache.value
         if ((user?.permissions?.contains(Permission.MUTE) ?: false) &&
                 appComponent.preference.enableDownTime &&
                 LocalTime.isDownTime(System.currentTimeMillis(), appComponent.preference.downTimeStart, appComponent.preference.downTimeEnd)) {

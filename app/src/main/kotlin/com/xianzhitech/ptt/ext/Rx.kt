@@ -4,6 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.widget.Toast
+import com.crashlytics.android.Crashlytics
 import com.xianzhitech.ptt.App
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.service.describeInHumanMessage
@@ -21,6 +22,9 @@ private val logger = LoggerFactory.getLogger("RxUtil")
 
 val defaultOnErrorAction: Action1<Throwable> = Action1 {
     logger.e(it) { "Error occurred: ${it.message}" }
+    if (BuildConfig.DEBUG.not()) {
+        Crashlytics.logException(it)
+    }
     Toast.makeText(App.instance, it.describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
 }
 

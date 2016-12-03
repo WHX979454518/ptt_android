@@ -7,12 +7,15 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.SearchView
 import android.view.*
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.defaultOnErrorAction
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.util.withUser
 import rx.CompletableSubscriber
 import rx.Observable
 import rx.Subscriber

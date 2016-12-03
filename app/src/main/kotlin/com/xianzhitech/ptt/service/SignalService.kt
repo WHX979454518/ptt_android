@@ -1,11 +1,9 @@
 package com.xianzhitech.ptt.service
 
+import com.google.gson.Gson
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
@@ -16,8 +14,11 @@ import io.socket.client.IO.socket
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.Transport
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import rx.Completable
@@ -36,7 +37,8 @@ class SignalService(val authTokenFactory: () -> String,
                     val signalFactory: SignalFactory,
                     val deviceIdFactory : () -> Single<String>,
                     val appConfigFactory : () -> Single<AppConfig>,
-                    val okHttpClient: OkHttpClient) {
+                    val okHttpClient: OkHttpClient,
+                    val gson: Gson) {
 
     private val signalSubject = PublishSubject<Signal>()
 
@@ -82,6 +84,10 @@ class SignalService(val authTokenFactory: () -> String,
                             logger.i { "Reconnecting to $uri" }
                             signalSubject += ConnectionSignal(ConnectionEvent.CONNECTING)
                         })
+
+                        s.io().on(Manager.EVENT_PING, { logger.i { "Ping!" } })
+                        s.io().on(Manager.EVENT_PONG, { logger.i { "Pong!" } })
+
 
                         s.io().on(Manager.EVENT_TRANSPORT, {
                             val transport = it.first() as Transport
@@ -135,27 +141,47 @@ class SignalService(val authTokenFactory: () -> String,
     }
 
     fun <R, V> sendCommand(cmd: Command<R, V>) {
-        if (cmd is SyncContactCommand) {
-            Completable.fromAction {
+        when {
+            cmd is UpdateLocationCommand && cmd.locations.size > Constants.MAX_LOCATIONS_TO_SEND_VIA_WS  -> Completable.fromCallable {
                 if (appConfig != null) {
-                    val req = Request.Builder()
-                            .url("${appConfig!!.signalServerEndpoint}/api/contact/sync/${cmd.userId}/${cmd.version}")
-                            .get()
-                            .build()
-                    val resp = okHttpClient.newCall(req).execute()
-                    when {
-                        resp.code() == 304 -> cmd.resultSubject.onCompleted()
-                        resp.isSuccessful.not() -> cmd.resultSubject.onError(throw RuntimeException("Error executing sync contact call: code = ${resp.code()}, msg = ${resp.body().string()}"))
-                        else -> cmd.resultSubject.onNext(JSONObject(resp.body().string()))
+                    with(Request.Builder()) {
+                        url("${appConfig!!.signalServerEndpoint}/api/location?userId=${cmd.userId}")
+                        post(RequestBody.create(MediaType.parse("application/json"), gson.toJson(cmd.locations)))
+                        okHttpClient.newCall(build()).execute()
+                    }.use { resp ->
+                        if (resp.isSuccessful) {
+                            cmd.resultSubject.onNext(Unit)
+                        }
+                        else {
+                            cmd.resultSubject.onError(throw RuntimeException("Error executing update location call: code = ${resp.code()}, msg = ${resp.body().string()}"))
+                        }
                     }
                 }
                 else {
                     cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
                 }
-            }.subscribeOn(Schedulers.io()).subscribeSimple()
-        }
-        else {
-            Completable.fromCallable {
+            }.subscribeOn(Schedulers.io()).doOnError{ cmd.resultSubject.onError(it) }.subscribeSimple()
+
+            cmd is SyncContactCommand -> Completable.fromCallable {
+                if (appConfig != null) {
+                    val req = Request.Builder()
+                            .url("${appConfig!!.signalServerEndpoint}/api/contact/sync/${cmd.userId}/${cmd.version}")
+                            .get()
+                            .build()
+                    okHttpClient.newCall(req).execute().use { resp ->
+                        when {
+                            resp.code() == 304 -> cmd.resultSubject.onCompleted()
+                            resp.isSuccessful.not() -> cmd.resultSubject.onError(throw RuntimeException("Error executing sync contact call: code = ${resp.code()}, msg = ${resp.body().string()}"))
+                            else -> cmd.resultSubject.onNext(JSONObject(resp.body().string()))
+                        }
+                    }
+                }
+                else {
+                    cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
+                }
+            }.subscribeOn(Schedulers.io()).doOnError{ cmd.resultSubject.onError(it) }.subscribeSimple()
+
+            else -> Completable.fromCallable {
                 socket?.emit(cmd.cmd, cmd.args, Ack {
                     logger.d { "Received ${cmd.cmd} result: ${it.print()}" }
                     try {
@@ -208,145 +234,6 @@ class SignalService(val authTokenFactory: () -> String,
     }
 
 }
-
-
-
-//fun receiveSignal(uri: Uri,
-//                  signalFactory: SignalFactory,
-//                  retryPolicy : RetryPolicy,
-//                  loginStatusNotification: (status : LoginStatus) -> Unit,
-//                  connectivityProvider : ConnectivityProvider,
-//                  commandEmitter: Observable<Command<*, in Any>>,
-//                  deviceIdProvider : DeviceIdFactory,
-//                  loginTimeoutProvider : () -> Long,
-//                  authTokenFactory: AuthTokenFactory) : Observable<Signal> {
-//
-//    return Observable.create<Signal> { subscriber ->
-//        val s = socket(uri.toString(), Options().apply {
-//            multiplex = false
-//            reconnection = false
-//            transports = arrayOf("websocket")
-//            timeout = loginTimeoutProvider()
-//        })
-//
-//        s.on(Socket.EVENT_CONNECT, {
-//            logger.i { "Connected to $uri" }
-//        })
-//
-//        s.on(Socket.EVENT_CONNECTING, {
-//            logger.i { "Connecting to $uri" }
-//            loginStatusNotification(LoginStatus.LOGIN_IN_PROGRESS)
-//        })
-//
-//        val errorListener = Emitter.Listener {
-//            val err = it.firstOrNull() as? Throwable
-//            logger.e { "Connect error: $err" }
-//            loginStatusNotification(LoginStatus.IDLE)
-//            subscriber.onError(err)
-//        }
-//
-//        s.io().on(Manager.EVENT_PING, { logger.i { "Ping!" } })
-//        s.io().on(Manager.EVENT_PONG, { logger.i { "Pong!" } })
-//
-//        s.io().on(Manager.EVENT_TRANSPORT, {
-//            val transport = it.first() as Transport
-//            transport.on(Transport.EVENT_REQUEST_HEADERS, {
-//                val headers = it.first() as MutableMap<String, List<String>>
-//                headers["Authorization"] = listOf(authTokenFactory.authToken)
-//                headers["X-Device-Id"] = listOf(deviceIdProvider.deviceId)
-//            })
-//        })
-//
-//        s.on(Socket.EVENT_CONNECT_ERROR, errorListener)
-//        s.on(Socket.EVENT_ERROR, errorListener)
-//
-//        s.on(Socket.EVENT_DISCONNECT, {
-//            if (subscriber.isUnsubscribed.not()) {
-//                loginStatusNotification(LoginStatus.IDLE)
-//                subscriber.onError(InterruptedException())
-//            }
-//        })
-//
-//        s.on("s_login_failed", {
-//            val err = (it.firstOrNull() as? JSONObject).toError()
-//            logger.e(err) { "User login failed because $err" }
-//            subscriber.onError(err)
-//        })
-//
-//        s.on("s_logon", {
-//            if (subscriber.isUnsubscribed) {
-//                return@on
-//            }
-//
-//            val user = UserObject(it[0] as JSONObject)
-//            logger.i { "User logon as $user" }
-//            retryPolicy.notifySuccess()
-//            loginStatusNotification(LoginStatus.LOGGED_IN)
-//            subscriber += UserLoggedInSignal(user)
-//
-//            subscriber.add(commandEmitter.subscribe { cmd ->
-//                logger.d { "Sending command $cmd" }
-//                s.emit(cmd.cmd, *cmd.args, Ack {
-//                    logger.d { "Received ${cmd.cmd} result: ${it.print()}" }
-//                    try {
-//                        val resultObj = it.first() as JSONObject
-//                        if (resultObj.optBoolean("success", false)) {
-//                            if (resultObj.has("data")) {
-//                                cmd.resultSubject.onNext(resultObj.get("data"))
-//                            }
-//                            else {
-//                                cmd.resultSubject.onNext(Unit)
-//                            }
-//                        } else {
-//                            cmd.resultSubject.onError(resultObj.getJSONObject("error").toError())
-//                        }
-//                    } catch(e: Exception) {
-//                        cmd.resultSubject.onError(e)
-//                    }
-//                })
-//            })
-//
-//            signalFactory.signalNames.forEach { name ->
-//                s.on(name, {
-//                    val signal = signalFactory.createSignal(name, *it)
-//                    if (signal == null) {
-//                        logger.e { "Unrecognized signal $name" }
-//                    }
-//                    else {
-//                        subscriber.onNext(signal)
-//                    }
-//                })
-//            }
-//
-//            subscriber.add(connectivityProvider.connected.subscribe {
-//                logger.i { "Connectivity changed to $it" }
-//                if (it.not()) {
-//                    loginStatusNotification(LoginStatus.IDLE)
-//                    subscriber.onError(RuntimeException("No internet"))
-//                }
-//            })
-//        })
-//
-//        subscriber.add {
-//            logger.i { "Disconnecting socket $uri" }
-//            s.off()
-//            s.io().off()
-//            s.close()
-//        }
-//
-//        loginStatusNotification(LoginStatus.LOGIN_IN_PROGRESS)
-//        s.connect()
-//    }.retryWhen {
-//        it.switchMap<Any>(Func1 { err ->
-//            if (err is KnownServerException || retryPolicy.canContinue(err).not()) {
-//                Observable.error(err)
-//            }
-//            else {
-//                retryPolicy.scheduleNextRetry()
-//            }
-//        })
-//    }
-//}
 
 interface Signal
 
@@ -404,8 +291,9 @@ class DefaultSignalFactory : SignalFactory {
 }
 
 open class Command<R, V>(val cmd : String,
-                         vararg val args: Any?)  {
+                         vararg args: Any?)  {
     val resultSubject : BehaviorSubject<V> = BehaviorSubject.create()
+    open val args : Array<out Any?> = args
 
     fun getAsync() : Single<R> {
         return resultSubject.map { convert(it) }.first().toSingle()
@@ -467,6 +355,16 @@ class SyncContactCommand(val userId : String,
                 users = value.optJSONArray("enterpriseMembers")?.transform { UserObject(it as JSONObject) } ?: emptyList(),
                 groups = value.optJSONArray("enterpriseGroups")?.transform { GroupObject(it as JSONObject) } ?: emptyList()
         )
+    }
+}
+
+class UpdateLocationCommand(val locations : List<Location>,
+                            val userId : String) : Command<Unit, Any>("c_update_location") {
+    override val args: Array<out Any?> by lazy {
+        Array(1, { locations.transform { it.toJSON() }.toJSONArray() })
+    }
+
+    override fun convert(value: Any) {
     }
 }
 
@@ -555,6 +453,16 @@ class UserObject(private val obj: JSONObject) : User {
         get() = obj.getStringValue("enterName", "")
     override val enterpriseExpireDate: Date?
         get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
+
+    //TODO:
+    val locationEnabled : Boolean = true
+//        get() = obj.optBoolean("locationEnable", false)
+
+    val locationScanInterval: Long = 1000
+//        get() = obj.optLong("locationScanInterval", -1L)
+
+    val locationReportInterval: Long = 25000
+//        get() = obj.optLong("locationReportInterval", -1L)
 
     override fun toString(): String {
         return obj.toString()

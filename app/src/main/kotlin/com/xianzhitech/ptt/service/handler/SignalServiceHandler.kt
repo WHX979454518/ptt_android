@@ -5,10 +5,14 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.CustomEvent
+import com.crashlytics.android.answers.LoginEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Location
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
@@ -18,6 +22,7 @@ import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.util.withUser
 import org.slf4j.LoggerFactory
 import rx.*
 import rx.android.schedulers.AndroidSchedulers
@@ -57,7 +62,8 @@ class SignalServiceHandler(private val appContext: Context,
             DefaultSignalFactory(),
             { getDeviceId() },
             { retrieveAppParams(Constants.EMPTY_USER_ID) },
-            appComponent.httpClient
+            appComponent.httpClient,
+            appComponent.gson
     )
 
     val roomState: Observable<RoomState>
@@ -70,8 +76,7 @@ class SignalServiceHandler(private val appContext: Context,
     val currentRoomId : Observable<String?>
         get() = roomState.map { it.currentRoomId }.distinctUntilChanged()
 
-    var currentUserCache : User? = null
-        private set
+    val currentUserCache: BehaviorSubject<UserObject> = BehaviorSubject.create()
 
     init {
         val token = appComponent.preference.userSessionToken
@@ -126,11 +131,19 @@ class SignalServiceHandler(private val appContext: Context,
             is RoomInviteSignal -> onReceiveInvitation(signal.invitation)
             is UserLoggedInSignal -> onUserLoggedIn(signal.user)
             is UserUpdatedSignal -> onUserUpdated(signal.user)
-            is UserLoginFailSignal -> onUserLoginFailed()
+            is UserLoginFailSignal -> onUserLoginFailed(signal.err)
         }
     }
 
-    private fun onUserLoginFailed() {
+    private fun onUserLoginFailed(err: Throwable) {
+        Answers.getInstance()
+                .logLogin(
+                        LoginEvent().apply {
+                            putSuccess(false)
+                            withUser(peekCurrentUserId, currentUserCache.value)
+                            putCustomAttribute("error", err.describeInHumanMessage(appContext).toString())
+                        }
+                )
 //        logout()
         Toast.makeText(appContext, appContext.getString(R.string.error_login_failed), Toast.LENGTH_SHORT).show()
     }
@@ -138,20 +151,34 @@ class SignalServiceHandler(private val appContext: Context,
     private fun onConnectionEvent(signal: ConnectionSignal) {
         when (signal.event) {
             ConnectionEvent.CONNECTING -> loginStatusSubject += LoginStatus.LOGIN_IN_PROGRESS
-            ConnectionEvent.ERROR -> loginStatusSubject += LoginStatus.IDLE
+            ConnectionEvent.ERROR -> {
+                Answers.getInstance()
+                    .logCustom(CustomEvent("Connection error").apply {
+                        withUser(peekCurrentUserId, currentUserCache.value)
+                    })
+                loginStatusSubject += LoginStatus.IDLE
+            }
         }
     }
 
     private fun onUserUpdated(user: UserObject) {
         logger.i { "Updating user to $user" }
-        currentUserCache = user
+        currentUserCache.onNext(user)
         appComponent.userRepository.saveUsers(listOf(user)).execAsync().subscribeSimple()
     }
 
     private fun onUserLoggedIn(user: UserObject) {
         loginStatusSubject += LoginStatus.LOGGED_IN
 
-        currentUserCache = user
+        Answers.getInstance()
+                .logLogin(
+                        LoginEvent().apply {
+                            putSuccess(true)
+                            withUser(user.id, user)
+                        }
+                )
+
+        currentUserCache.onNext(user)
         val firstTimeLogin = appComponent.preference.userSessionToken?.userId != user.id
         appComponent.preference.userSessionToken = UserToken(user.id, authTokenFactory.password)
 
@@ -214,8 +241,22 @@ class SignalServiceHandler(private val appContext: Context,
                 }
     }
 
+    fun sendLocationData(locations : List<Location>) : Completable {
+        if (locations.isEmpty()) {
+            logger.i { "Sending 0 locations...Skipping" }
+            return Completable.complete()
+        }
+
+        val userId = peekCurrentUserId ?: return Completable.complete()
+        return UpdateLocationCommand(locations = locations, userId = userId).send()
+                .toCompletable()
+    }
+
     fun logout() {
         mainThread {
+            val userId = peekCurrentUserId
+            val userName = currentUserCache.value?.name
+
             val roomState = peekRoomState()
             if (roomState.currentRoomId != null) {
                 quitRoom()
@@ -234,8 +275,16 @@ class SignalServiceHandler(private val appContext: Context,
             }
 
             loginStatusSubject += LoginStatus.IDLE
-            currentUserCache = null
+            currentUserCache.onNext(null)
             signalService.logout()
+
+            if (userId != null) {
+                Answers.getInstance()
+                        .logCustom(CustomEvent("User log out").apply {
+                            putCustomAttribute("userId", userId)
+                            putCustomAttribute("userName", userName)
+                        })
+            }
         }
     }
 
@@ -243,12 +292,19 @@ class SignalServiceHandler(private val appContext: Context,
         return Single.defer {
             ensureLoggedIn()
 
-            val permissions = currentUserCache!!.permissions
+            val permissions = currentUserCache.value!!.permissions
             if ((groupIds.isEmpty() && userIds.size == 1 && permissions.contains(Permission.MAKE_INDIVIDUAL_CALL).not()) ||
                     (groupIds.isEmpty() && permissions.contains(Permission.MAKE_TEMPORARY_GROUP_CALL).not() &&
-                            userIds.filterNot { it == currentUserCache!!.id }.size > 1 )) {
+                            userIds.filterNot { it == currentUserCache.value!!.id }.size > 1 )) {
                 throw StaticUserException(R.string.error_no_permission)
             }
+
+            Answers.getInstance()
+                    .logCustom(CustomEvent("Create room").apply {
+                        withUser(peekCurrentUserId, currentUserCache.value)
+                        putCustomAttribute("numberOfGroups", groupIds.size)
+                        putCustomAttribute("numberOfUsers", userIds.size)
+                    })
 
             CreateRoomCommand(groupIds = groupIds, extraMemberIds = userIds)
                     .send()
@@ -290,10 +346,10 @@ class SignalServiceHandler(private val appContext: Context,
                             return@create
                         }
 
-                        val permissions = currentUserCache!!.permissions
+                        val permissions = currentUserCache.value!!.permissions
                         if ((room.associatedGroupIds.isEmpty() && room.extraMemberIds.size <= 2 && permissions.contains(Permission.MAKE_INDIVIDUAL_CALL).not()) ||
                                 (room.associatedGroupIds.isEmpty() && permissions.contains(Permission.MAKE_TEMPORARY_GROUP_CALL).not() &&
-                                        room.extraMemberIds.filterNot { it == currentUserCache!!.id }.size > 1 )) {
+                                        room.extraMemberIds.filterNot { it == currentUserCache.value!!.id }.size > 1 )) {
                             subscriber.onError(StaticUserException(R.string.error_no_permission))
                             return@create
                         }
@@ -322,6 +378,14 @@ class SignalServiceHandler(private val appContext: Context,
                                                 error.errorName == "room_not_exists") {
                                             appComponent.roomRepository.removeRooms(listOf(roomId)).execAsync().subscribeSimple()
                                         }
+
+                                        Answers.getInstance()
+                                                .logCustom(CustomEvent("Join room error").apply {
+                                                    withUser(peekCurrentUserId, currentUserCache.value)
+                                                    putCustomAttribute("roomId", roomId)
+                                                    putCustomAttribute("fromInvitation", fromInvitation.toString())
+                                                    putCustomAttribute("error", error.describeInHumanMessage(appContext).toString())
+                                                })
                                     }
 
                                     override fun onSuccess(value: JoinRoomResult) {
@@ -343,6 +407,13 @@ class SignalServiceHandler(private val appContext: Context,
                                                     voiceServer = value.voiceServerConfiguration)
                                         }
 
+                                        Answers.getInstance()
+                                                .logCustom(CustomEvent("Join room success").apply {
+                                                    withUser(peekCurrentUserId, currentUserCache.value)
+                                                    putCustomAttribute("roomId", roomId)
+                                                    putCustomAttribute("fromInvitation", fromInvitation.toString())
+                                                })
+
                                         subscriber.onCompleted()
                                     }
                                 })
@@ -357,6 +428,12 @@ class SignalServiceHandler(private val appContext: Context,
                 val roomId = peekRoomState().currentRoomId
                 if (roomId != null) {
                     LeaveRoomCommand(roomId, appComponent.preference.keepSession.not()).send()
+
+                    Answers.getInstance()
+                            .logCustom(CustomEvent("Quit room").apply {
+                                withUser(peekCurrentUserId, currentUserCache.value)
+                                putCustomAttribute("roomId", roomId)
+                            })
                 }
             }
 
@@ -374,11 +451,11 @@ class SignalServiceHandler(private val appContext: Context,
                 return@defer Single.just(true)
             }
 
-            if (currentUserCache!!.permissions.contains(Permission.SPEAK).not()) {
+            if (currentUserCache.value!!.permissions.contains(Permission.SPEAK).not()) {
                 throw StaticUserException(R.string.speak_forbidden)
             }
 
-            if (roomState.canRequestMic(currentUserCache!!).not()) {
+            if (roomState.canRequestMic(currentUserCache.value!!).not()) {
                 throw IllegalStateException("Can't request mic in room state $roomState")
             }
 
@@ -398,7 +475,7 @@ class SignalServiceHandler(private val appContext: Context,
                                     peekCurrentUserId == userId) {
                                 roomStateSubject += newRoomState.copy(
                                         speakerId = userId,
-                                        speakerPriority = currentUserCache!!.priority,
+                                        speakerPriority = currentUserCache.value!!.priority,
                                         status = RoomStatus.ACTIVE)
                             }
                         }
@@ -438,6 +515,12 @@ class SignalServiceHandler(private val appContext: Context,
             val state = peekRoomState()
 
             if (state.currentRoomId == roomId) {
+                Answers.getInstance()
+                        .logCustom(CustomEvent("Manually invite room members").apply {
+                            withUser(peekCurrentUserId, currentUserCache.value)
+                            putCustomAttribute("roomId", roomId)
+                        })
+
                 InviteRoomMemberCommand(roomId).send()
             }
             else {
@@ -455,6 +538,13 @@ class SignalServiceHandler(private val appContext: Context,
         return Completable.defer {
             ensureLoggedIn()
 
+            Answers.getInstance()
+                    .logCustom(CustomEvent("Add new room members").apply {
+                        withUser(peekCurrentUserId, currentUserCache.value)
+                        putCustomAttribute("roomId", roomId)
+                        putCustomAttribute("numberOfInvitees", roomMemberIds.size)
+                    })
+
             AddRoomMembersCommand(roomId, roomMemberIds)
                     .send()
                     .flatMap { appComponent.roomRepository.saveRooms(listOf(it)).execAsync().toSingleDefault(it) }
@@ -469,6 +559,11 @@ class SignalServiceHandler(private val appContext: Context,
             ChangePasswordCommand(currUserId, oldPassword.toMD5(), newPassword.toMD5())
                     .send()
                     .doOnSuccess {
+                        Answers.getInstance()
+                                .logCustom(CustomEvent("Change password").apply {
+                                    withUser(peekCurrentUserId, currentUserCache.value)
+                                })
+
                         mainThread {
                             if (peekCurrentUserId == currUserId) {
                                 authTokenFactory.setPassword(newPassword)
@@ -481,13 +576,18 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun ensureLoggedIn() {
-        if (loginStatusSubject.value != LoginStatus.LOGGED_IN || currentUserCache == null) {
+        if (loginStatusSubject.value != LoginStatus.LOGGED_IN || currentUserCache.value == null) {
             throw StaticUserException(R.string.error_unable_to_connect)
         }
     }
 
     private fun onUserKickOut() {
         mainThread {
+            Answers.getInstance()
+                    .logCustom(CustomEvent("User kicked out").apply {
+                        withUser(peekCurrentUserId, currentUserCache.value)
+                    })
+
             logout()
             val intent = Intent(appContext, KickOutActivity::class.java)
             appComponent.activityProvider.currentStartedActivity?.startActivity(intent)
@@ -534,6 +634,14 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun onReceiveInvitation(invite: RoomInvitation) {
+        Answers.getInstance()
+                .logCustom(CustomEvent("Receive room invitation").apply {
+                    withUser(peekCurrentUserId, currentUserCache.value)
+                    putCustomAttribute("fromUserId", invite.inviterId)
+                    putCustomAttribute("fromUserPriority", invite.inviterPriority)
+                    putCustomAttribute("forceInvite", invite.force.toString())
+                })
+
         appContext.sendBroadcast(Intent(ACTION_ROOM_INVITATION).putExtra(SignalServiceHandler.Companion.EXTRA_INVITATION, invite))
     }
 

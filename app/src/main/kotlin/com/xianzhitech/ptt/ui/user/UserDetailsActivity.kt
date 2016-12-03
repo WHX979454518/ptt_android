@@ -7,6 +7,8 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import com.crashlytics.android.answers.Answers
+import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
@@ -14,6 +16,7 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import com.xianzhitech.ptt.util.withUser
 
 class UserDetailsActivity : BaseToolbarActivity() {
 
@@ -47,6 +50,14 @@ class UserDetailsActivity : BaseToolbarActivity() {
 
     override fun onStart() {
         super.onStart()
+
+        if (user != null) {
+            Answers.getInstance().logContentView(ContentViewEvent().apply {
+                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
+                putContentType("user-details")
+                putContentId(user!!.id)
+            })
+        }
 
         (application as AppComponent).userRepository.getUser(intent.getStringExtra(EXTRA_USER_ID))
                 .observe()
