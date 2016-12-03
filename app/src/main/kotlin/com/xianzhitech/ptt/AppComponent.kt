@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt
 
+import com.google.gson.Gson
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.ContactRepository
 import com.xianzhitech.ptt.repo.GroupRepository
@@ -20,6 +21,7 @@ import okhttp3.OkHttpClient
 interface AppComponent {
     val httpClient: OkHttpClient
     val preference: Preference
+    val gson: Gson
 
     val appServerEndpoint : String
     val appService: AppService

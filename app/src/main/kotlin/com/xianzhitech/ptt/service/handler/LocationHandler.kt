@@ -2,13 +2,16 @@ package com.xianzhitech.ptt.service.handler
 
 import android.content.Context
 import com.baidu.location.LocationClient
+import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.model.Location
 import com.xianzhitech.ptt.service.UserObject
 import com.xianzhitech.ptt.util.receiveLocation
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
+import rx.functions.Func2
 import java.util.concurrent.TimeUnit
 
 class LocationHandler(private val context : Context,
@@ -19,22 +22,22 @@ class LocationHandler(private val context : Context,
     init {
         signalServiceHandler.currentUserCache
                 .distinctUntilChanged { user : UserObject? -> user?.let { Triple(it.locationEnabled, it.locationScanInterval, it.locationReportInterval) } }
-                .switchMap { user : UserObject? ->
-                    if (user != null) {
+                .switchMap { user: UserObject? ->
+                    if (user != null && user.locationEnabled) {
                         logger.i { "Start collecting locations every ${user.locationScanInterval} ms" }
                         locationClient.receiveLocation(false, user.locationScanInterval.toInt())
-                                .buffer(user.locationReportInterval, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                    }
-                    else {
+                                .doOnNext { logger.d { "Got location $it" } }
+                                .distinctUntilChanged(Location::locationEquals)
+                                .buffer(Math.max(user.locationReportInterval, user.locationScanInterval), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                    } else {
                         Observable.never()
                     }
                 }
-                .flatMap {
+                .onErrorReturn { emptyList() }
+                .subscribeSimple {
                     logger.i { "Sending ${it.size} locations to server" }
-                    signalServiceHandler.sendLocationData(it).toObservable<Unit>()
+                    signalServiceHandler.sendLocationData(it).subscribeSimple()
                 }
-                .onErrorResumeNext(Observable.never())
-                .subscribeSimple()
     }
 
     companion object {

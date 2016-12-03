@@ -62,7 +62,8 @@ class SignalServiceHandler(private val appContext: Context,
             DefaultSignalFactory(),
             { getDeviceId() },
             { retrieveAppParams(Constants.EMPTY_USER_ID) },
-            appComponent.httpClient
+            appComponent.httpClient,
+            appComponent.gson
     )
 
     val roomState: Observable<RoomState>
@@ -241,8 +242,14 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     fun sendLocationData(locations : List<Location>) : Completable {
-        //TODO:
-        return Completable.complete()
+        if (locations.isEmpty()) {
+            logger.i { "Sending 0 locations...Skipping" }
+            return Completable.complete()
+        }
+
+        val userId = peekCurrentUserId ?: return Completable.complete()
+        return UpdateLocationCommand(locations = locations, userId = userId).send()
+                .toCompletable()
     }
 
     fun logout() {

@@ -20,4 +20,12 @@ data class Location(@SerializedName("lat") val lat : Double,
             put("repTime", time)
         }
     }
+
+    fun locationEquals(rhs : Location) : Boolean {
+        return lat == rhs.lat &&
+                lng == rhs.lng &&
+                radius == rhs.radius &&
+                altitude == rhs.altitude &&
+                speed == rhs.speed
+    }
 }

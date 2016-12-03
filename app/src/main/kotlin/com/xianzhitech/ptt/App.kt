@@ -52,11 +52,12 @@ open class App : Application(), AppComponent {
     override lateinit var statisticCollector: StatisticCollector
     override lateinit var mediaButtonHandler: MediaButtonHandler
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
+    override val gson: Gson = Gson()
 
     override val appService: AppService by lazy {
         Retrofit.Builder()
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .baseUrl(appServerEndpoint)
                 .client(httpClient)
                 .build()
