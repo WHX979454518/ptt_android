@@ -145,7 +145,7 @@ class SignalServiceHandler(private val appContext: Context,
                         }
                 )
 //        logout()
-        Toast.makeText(appContext, appContext.getString(R.string.error_login_failed), Toast.LENGTH_SHORT).show()
+        Toast.makeText(appContext, err.describeInHumanMessage(appContext), Toast.LENGTH_SHORT).show()
     }
 
     private fun onConnectionEvent(signal: ConnectionSignal) {
