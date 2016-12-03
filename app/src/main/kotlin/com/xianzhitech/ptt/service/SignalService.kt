@@ -18,7 +18,6 @@ import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
-import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import rx.Completable
@@ -454,15 +453,14 @@ class UserObject(private val obj: JSONObject) : User {
     override val enterpriseExpireDate: Date?
         get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
 
-    //TODO:
-    val locationEnabled : Boolean = true
-//        get() = obj.optBoolean("locationEnable", false)
+    val locationEnabled : Boolean
+        get() = obj.optBoolean("locationEnable", false)
 
-    val locationScanInterval: Long = 1000
-//        get() = obj.optLong("locationScanInterval", -1L)
+    val locationScanInterval: Long
+        get() = obj.optLong("locationScanInterval", -1L)
 
-    val locationReportInterval: Long = 25000
-//        get() = obj.optLong("locationReportInterval", -1L)
+    val locationReportInterval: Long
+        get() = obj.optLong("locationReportInterval", -1L)
 
     override fun toString(): String {
         return obj.toString()
