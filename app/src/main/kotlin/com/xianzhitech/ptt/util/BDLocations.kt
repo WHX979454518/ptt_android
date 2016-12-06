@@ -3,9 +3,14 @@ package com.xianzhitech.ptt.util
 import com.baidu.location.BDLocation
 import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
+import com.baidu.mapapi.map.BaiduMap
+import com.baidu.mapapi.map.MapStatus
+import com.baidu.mapapi.model.LatLng
+import com.baidu.mapapi.utils.CoordinateConverter
 import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.plusAssign
 import com.xianzhitech.ptt.model.Location
+import com.xianzhitech.ptt.service.dto.NearbyUser
 import org.slf4j.LoggerFactory
 import rx.AsyncEmitter
 import rx.Observable
@@ -37,6 +42,24 @@ fun LocationClient.receiveLocation(gpsOnly : Boolean,
     }, AsyncEmitter.BackpressureMode.LATEST).subscribeOn(AndroidSchedulers.mainThread())
 }
 
+fun BaiduMap.receiveMapStatus() : Observable<MapStatus> {
+    return Observable.fromEmitter({ emitter ->
+        val listener = object : BaiduMap.OnMapStatusChangeListener {
+            override fun onMapStatusChangeStart(p0: MapStatus?) { }
+
+            override fun onMapStatusChange(status: MapStatus) {
+                emitter.onNext(status)
+            }
+
+            override fun onMapStatusChangeFinish(p0: MapStatus?) { }
+        }
+        setOnMapStatusChangeListener(listener)
+        emitter.setCancellation {
+            setOnMapStatusChangeListener(null)
+        }
+    }, AsyncEmitter.BackpressureMode.LATEST)
+}
+
 private fun BDLocation.toLocation() : Location {
     return Location(
             lat = latitude,
@@ -44,6 +67,7 @@ private fun BDLocation.toLocation() : Location {
             radius = radius.toInt(),
             time = System.currentTimeMillis(),
             altitude = altitude.toInt(),
-            speed = speed.toInt()
+            speed = speed.toInt(),
+            direction = direction
     )
 }

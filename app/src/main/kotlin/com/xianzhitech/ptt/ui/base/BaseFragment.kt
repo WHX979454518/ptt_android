@@ -1,10 +1,10 @@
 package com.xianzhitech.ptt.ui.base
 
-import android.support.v4.app.Fragment
+import android.support.v7.app.AppCompatDialogFragment
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
 
-abstract class BaseFragment : Fragment() {
+abstract class BaseFragment : AppCompatDialogFragment() {
     private var subscriptions : CompositeSubscription? = null
 
     override fun onStop() {

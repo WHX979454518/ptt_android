@@ -99,6 +99,9 @@
         <activity android:name=".ui.app.AboutActivity"
             android:label="@string/about" />
 
+        <activity android:name=".ui.map.MapActivity"
+            android:label="@string/people_nearby" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />

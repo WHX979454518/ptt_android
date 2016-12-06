@@ -8,7 +8,8 @@ data class Location(@SerializedName("lat") val lat : Double,
                     @SerializedName("radius") val radius : Int,
                     @SerializedName("alt") val altitude : Int,
                     @SerializedName("speed") val speed : Int,
-                    @SerializedName("repTime") val time : Long) {
+                    @SerializedName("repTime") val time : Long,
+                    @SerializedName("direction") val direction : Float) {
 
     fun toJSON() : JSONObject {
         return JSONObject().apply {
@@ -18,6 +19,7 @@ data class Location(@SerializedName("lat") val lat : Double,
             put("alt", altitude)
             put("speed", speed)
             put("repTime", time)
+            put("direction", direction)
         }
     }
 
@@ -26,6 +28,7 @@ data class Location(@SerializedName("lat") val lat : Double,
                 lng == rhs.lng &&
                 radius == rhs.radius &&
                 altitude == rhs.altitude &&
-                speed == rhs.speed
+                speed == rhs.speed &&
+                direction == rhs.direction
     }
 }

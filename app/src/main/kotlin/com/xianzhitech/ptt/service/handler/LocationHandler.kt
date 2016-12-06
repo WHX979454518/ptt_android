@@ -24,6 +24,7 @@ class LocationHandler(private val context : Context,
                 .distinctUntilChanged { user : UserObject? -> user?.let { Triple(it.locationEnabled, it.locationScanInterval, it.locationReportInterval) } }
                 .switchMap { user: UserObject? ->
                     if (user != null && user.locationEnabled) {
+                        //TODO: 网络不通时要把位置记录下来...
                         logger.i { "Start collecting locations every ${user.locationScanInterval} ms" }
                         locationClient.receiveLocation(false, user.locationScanInterval.toInt())
                                 .doOnNext { logger.d { "Got location $it" } }

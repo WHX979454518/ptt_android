@@ -7,6 +7,7 @@ import android.os.Process
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import ch.qos.logback.classic.Level
+import com.baidu.mapapi.SDKInitializer
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
 import com.google.gson.Gson
@@ -121,6 +122,7 @@ open class App : Application(), AppComponent {
         RoomAutoQuitHandler(preference, activityProvider, signalHandler)
         LocationHandler(this, signalHandler)
         statisticCollector = StatisticCollector(signalHandler)
+        SDKInitializer.initialize(this)
     }
 
     open protected fun onBuildHttpClient(): OkHttpClient.Builder {

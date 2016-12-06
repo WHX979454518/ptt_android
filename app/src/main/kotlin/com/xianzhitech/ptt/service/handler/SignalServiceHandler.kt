@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
+import com.baidu.mapapi.model.LatLng
+import com.baidu.mapapi.model.LatLngBounds
+import com.baidu.mapapi.utils.CoordinateConverter
 import com.crashlytics.android.answers.Answers
 import com.crashlytics.android.answers.CustomEvent
 import com.crashlytics.android.answers.LoginEvent
@@ -18,6 +21,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
+import com.xianzhitech.ptt.service.dto.NearbyUser
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.ui.KickOutActivity
@@ -552,6 +556,14 @@ class SignalServiceHandler(private val appContext: Context,
         }.subscribeOn(AndroidSchedulers.mainThread())
     }
 
+    fun searchNearbyUsers(bounds : LatLngBounds): Observable<List<NearbyUser>> {
+        //TODO:
+        return Observable.just(listOf(
+                NearbyUser(userId = "100134", latLng = CoordinateConverter().from(CoordinateConverter.CoordType.COMMON).coord(LatLng(-49.291070, 174.780525)).convert()),
+                NearbyUser(userId = "100136", latLng = CoordinateConverter().from(CoordinateConverter.CoordType.COMMON).coord(LatLng(-49.299518, 174.799494)).convert())
+        ))
+    }
+
     fun changePassword(oldPassword: String, newPassword: String): Completable {
         return Completable.defer {
             ensureLoggedIn()
@@ -657,11 +669,11 @@ class SignalServiceHandler(private val appContext: Context,
         signalService.sendCommand(this)
         return getAsync()
     }
-
     companion object {
-        const val ACTION_ROOM_INVITATION = "SignalService.Room"
 
+        const val ACTION_ROOM_INVITATION = "SignalService.Room"
         const val EXTRA_INVITATION = "extra_ri"
+
     }
 
 }

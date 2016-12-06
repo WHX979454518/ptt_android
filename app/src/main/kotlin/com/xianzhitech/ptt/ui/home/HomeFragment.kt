@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.annotation.DrawableRes
 import android.support.annotation.StringRes
@@ -7,9 +8,7 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.graphics.drawable.DrawableCompat
 import android.support.v4.view.ViewPager
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.TextView
 import com.crashlytics.android.answers.Answers
 import com.crashlytics.android.answers.ContentViewEvent
@@ -23,6 +22,7 @@ import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.map.MapActivity
 import com.xianzhitech.ptt.util.withUser
 import rx.Observable
 import java.util.*
@@ -55,7 +55,23 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        setHasOptionsMenu(true)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.home, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.home_nearby -> {
+                startActivity(Intent(context, MapActivity::class.java))
+                return true
+            }
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {

@@ -29,3 +29,4 @@ interface User : Model {
     val enterpriseName: String
     val enterpriseExpireDate : Date?
 }
+
