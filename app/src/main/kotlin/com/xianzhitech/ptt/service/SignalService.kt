@@ -61,11 +61,16 @@ class SignalService(val authTokenFactory: () -> String,
                         when (type) {
                             JSONObject::class.java -> return Converter<ResponseBody, JSONObject> {
                                 val ret = JSONObject(it.string())
-                                if (ret.optInt("status", 200) != 200) {
-                                    throw UnknownServerException
-                                }
+                                if (ret.has("status")) {
+                                    if (ret.optInt("status", 200) != 200) {
+                                        throw UnknownServerException
+                                    }
 
-                                ret.getJSONObject("data")
+                                    ret.optJSONObject("data")
+                                }
+                                else {
+                                    ret
+                                }
                             }
                             JSONArray::class.java -> return Converter<ResponseBody, JSONArray> {
                                 val ret = JSONObject(it.string())
@@ -73,7 +78,7 @@ class SignalService(val authTokenFactory: () -> String,
                                     throw UnknownServerException
                                 }
 
-                                ret.getJSONArray("data") }
+                                ret.optJSONArray("data") }
                             else -> return null
                         }
 

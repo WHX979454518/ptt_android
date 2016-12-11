@@ -35,6 +35,7 @@
 
 # Gson
 -keepattributes Signature
+-keep class com.xianzhitech.ptt.model.** { *; }
 
 # For using GSON @Expose annotation
 -keepattributes *Annotation*
@@ -64,6 +65,14 @@
 -dontwarn ch.qos.logback.core.net.*
 -dontwarn org.slf4j.*
 
+# Baidu
+-keep class com.baidu.**
+-keepnames class com.baidu.**
+-keepnames class com.baidu.** { *; }
+-keepclassmembernames class com.baidu.** { *; }
+-keepclassmembers class com.baidu.** { *; }
+-dontwarn com.baidu.**
+-keep class vi.com.** {*;}
 
 # Rx
 
