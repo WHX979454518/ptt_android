@@ -64,6 +64,8 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.home, menu)
         mapMenuItem = menu.findItem(R.id.home_nearby)
+
+        mapMenuItem!!.isVisible = appComponent.signalHandler.currentUserCache.value?.permissions?.contains(Permission.VIEW_MAP) ?: false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

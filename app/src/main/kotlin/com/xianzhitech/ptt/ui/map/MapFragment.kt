@@ -2,8 +2,6 @@ package com.xianzhitech.ptt.ui.map
 
 import android.graphics.Color
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
-import android.support.v4.graphics.drawable.DrawableCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,13 +13,13 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.dto.NearbyUser
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.user.UserPopupDialog
 import com.xianzhitech.ptt.ui.widget.drawable.TextDrawable
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.receiveLocation
 import com.xianzhitech.ptt.util.receiveMapStatus
 import org.slf4j.LoggerFactory
 import rx.android.schedulers.AndroidSchedulers
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 class MapFragment : BaseFragment() {
@@ -42,6 +40,12 @@ class MapFragment : BaseFragment() {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             background = context.getTintedDrawable(R.drawable.ic_nearby_people, R.color.red.toColorValue(context))
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        selectedUserId = savedInstanceState?.getString(STATE_SELECTED_USER_ID)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -77,6 +81,10 @@ class MapFragment : BaseFragment() {
                     }
                 }
 
+                if (userId != null) {
+                    UserPopupDialog.create(userId).show(childFragmentManager, TAG_USER_DETAILS_DIALOG)
+                }
+
                 true
             }
         }
@@ -84,10 +92,11 @@ class MapFragment : BaseFragment() {
         view.findViewById(R.id.map_near_me).setOnClickListener { centerToCurrentLocation() }
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
         mapView?.onSaveInstanceState(outState)
+        outState.putString(STATE_SELECTED_USER_ID, selectedUserId)
     }
 
     override fun onDestroyView() {
@@ -239,6 +248,9 @@ class MapFragment : BaseFragment() {
     companion object {
         private val logger = LoggerFactory.getLogger("MapFragment")
 
+        private const val TAG_USER_DETAILS_DIALOG = "tag_user_details"
+
         private const val EXTRA_INFO_USER_ID = "user_id"
+        private const val STATE_SELECTED_USER_ID = "selected_user_id"
     }
 }
