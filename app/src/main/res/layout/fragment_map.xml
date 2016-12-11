@@ -14,9 +14,9 @@
         android:layout_gravity="bottom|right"
         android:src="@drawable/ic_near_me"
         app:fabSize="mini"
-        android:tint="?attr/colorControlHighlight"
+        android:tint="@color/grey_300"
         android:layout_marginBottom="100dp"
-        android:layout_marginRight="@dimen/unit_two"
+        android:layout_marginRight="6dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 

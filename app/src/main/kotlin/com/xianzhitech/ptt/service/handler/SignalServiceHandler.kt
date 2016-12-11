@@ -557,11 +557,9 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     fun searchNearbyUsers(bounds : LatLngBounds): Observable<List<NearbyUser>> {
-        //TODO:
-        return Observable.just(listOf(
-                NearbyUser(userId = "100134", latLng = CoordinateConverter().from(CoordinateConverter.CoordType.COMMON).coord(LatLng(-49.291070, 174.780525)).convert()),
-                NearbyUser(userId = "100136", latLng = CoordinateConverter().from(CoordinateConverter.CoordType.COMMON).coord(LatLng(-49.299518, 174.799494)).convert())
-        ))
+        return Observable.interval(2, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                .onBackpressureLatest()
+                .switchMap { FindNearbyPeopleCommand(bounds).send().toObservable() }
     }
 
     fun changePassword(oldPassword: String, newPassword: String): Completable {

@@ -18,4 +18,6 @@
     <dimen name="shadow_size">2dp</dimen>
     <dimen name="circle_top_height">10dp</dimen>
     <dimen name="room_details_member_icon_size">50dp</dimen>
+    <dimen name="map_people_icon_size">40dp</dimen>
+    <dimen name="map_people_icon_size_highlighted">50dp</dimen>
 </resources>

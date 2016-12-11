@@ -1,10 +1,12 @@
 package com.xianzhitech.ptt.service
 
+import com.baidu.mapapi.model.LatLngBounds
 import com.google.gson.Gson
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
+import com.xianzhitech.ptt.service.dto.NearbyUser
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.service.handler.ForceUpdateException
@@ -14,21 +16,26 @@ import io.socket.client.IO.socket
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.Transport
-import okhttp3.MediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.ResponseBody
+import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
-import rx.Completable
+import retrofit2.Converter
+import retrofit2.Retrofit
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.*
+import rx.*
 import rx.Observable
-import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import rx.lang.kotlin.PublishSubject
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import java.io.Serializable
+import java.lang.reflect.Type
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 private val logger = LoggerFactory.getLogger("SignalService")
 
@@ -46,6 +53,40 @@ class SignalService(val authTokenFactory: () -> String,
 
     private var socket : Socket? = null
     private var appConfig : AppConfig? = null
+    private val restService : SignalRestService by lazy {
+        Retrofit.Builder()
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.createWithScheduler(Schedulers.io()))
+                .addConverterFactory(object : Converter.Factory() {
+                    override fun responseBodyConverter(type: Type, annotations: Array<out Annotation>?, retrofit: Retrofit?): Converter<ResponseBody, *>? {
+                        when (type) {
+                            JSONObject::class.java -> return Converter<ResponseBody, JSONObject> {
+                                val ret = JSONObject(it.string())
+                                if (ret.optInt("status", 200) != 200) {
+                                    throw UnknownServerException
+                                }
+
+                                ret.getJSONObject("data")
+                            }
+                            JSONArray::class.java -> return Converter<ResponseBody, JSONArray> {
+                                val ret = JSONObject(it.string())
+                                if (ret.optInt("status", 200) != 200) {
+                                    throw UnknownServerException
+                                }
+
+                                ret.getJSONArray("data") }
+                            else -> return null
+                        }
+
+                    }
+                })
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .client(okHttpClient.newBuilder().readTimeout(0, TimeUnit.HOURS).addNetworkInterceptor {
+                    it.proceed(it.request().newBuilder().addHeader("Authorization", authTokenFactory()).build())
+                }.build())
+                .baseUrl(appConfig!!.signalServerEndpoint)
+                .build()
+                .create(SignalRestService::class.java)
+    }
 
     fun login() : Completable {
         signalSubject += ConnectionSignal(ConnectionEvent.CONNECTING)
@@ -141,44 +182,54 @@ class SignalService(val authTokenFactory: () -> String,
 
     fun <R, V> sendCommand(cmd: Command<R, V>) {
         when {
-            cmd is UpdateLocationCommand && cmd.locations.size > Constants.MAX_LOCATIONS_TO_SEND_VIA_WS  -> Completable.fromCallable {
-                if (appConfig != null) {
-                    with(Request.Builder()) {
-                        url("${appConfig!!.signalServerEndpoint}/api/location?userId=${cmd.userId}")
-                        post(RequestBody.create(MediaType.parse("application/json"), gson.toJson(cmd.locations)))
-                        okHttpClient.newCall(build()).execute()
-                    }.use { resp ->
-                        if (resp.isSuccessful) {
-                            cmd.resultSubject.onNext(Unit)
-                        }
-                        else {
-                            cmd.resultSubject.onError(throw RuntimeException("Error executing update location call: code = ${resp.code()}, msg = ${resp.body().string()}"))
-                        }
-                    }
-                }
-                else {
-                    cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
-                }
-            }.subscribeOn(Schedulers.io()).doOnError{ cmd.resultSubject.onError(it) }.subscribeSimple()
+            cmd is UpdateLocationCommand && cmd.locations.size > Constants.MAX_LOCATIONS_TO_SEND_VIA_WS  -> {
+                appConfig ?: return cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
 
-            cmd is SyncContactCommand -> Completable.fromCallable {
-                if (appConfig != null) {
-                    val req = Request.Builder()
-                            .url("${appConfig!!.signalServerEndpoint}/api/contact/sync/${cmd.userId}/${cmd.version}")
-                            .get()
-                            .build()
-                    okHttpClient.newCall(req).execute().use { resp ->
-                        when {
-                            resp.code() == 304 -> cmd.resultSubject.onCompleted()
-                            resp.isSuccessful.not() -> cmd.resultSubject.onError(throw RuntimeException("Error executing sync contact call: code = ${resp.code()}, msg = ${resp.body().string()}"))
-                            else -> cmd.resultSubject.onNext(JSONObject(resp.body().string()))
-                        }
-                    }
-                }
-                else {
-                    cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
-                }
-            }.subscribeOn(Schedulers.io()).doOnError{ cmd.resultSubject.onError(it) }.subscribeSimple()
+                restService.updateLocations(cmd.locations)
+                        .subscribe(object : CompletableSubscriber {
+                            override fun onSubscribe(d: Subscription?) {
+                            }
+
+                            override fun onError(e: Throwable?) {
+                                cmd.resultSubject.onError(e)
+                            }
+
+                            override fun onCompleted() {
+                                cmd.resultSubject.onNext(Unit)
+                            }
+                        })
+            }
+
+            cmd is FindNearbyPeopleCommand -> {
+                appConfig ?: return cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
+
+                restService.findNearbyPeople(cmd.latLngBounds.southwest.latitude, cmd.latLngBounds.southwest.longitude,
+                        cmd.latLngBounds.northeast.latitude, cmd.latLngBounds.northeast.longitude)
+                        .subscribe(object : SingleSubscriber<JSONArray>() {
+                            override fun onError(error: Throwable?) {
+                                cmd.resultSubject.onError(error)
+                            }
+
+                            override fun onSuccess(value: JSONArray) {
+                                cmd.resultSubject.onNext(value)
+                            }
+                        })
+            }
+
+            cmd is SyncContactCommand -> {
+                appConfig ?: return cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
+
+                restService.syncContact(cmd.userId, cmd.version)
+                        .subscribe(object : SingleSubscriber<JSONObject>() {
+                            override fun onError(error: Throwable?) {
+                                cmd.resultSubject.onError(error)
+                            }
+
+                            override fun onSuccess(value: JSONObject) {
+                                cmd.resultSubject.onNext(value)
+                            }
+                        })
+            }
 
             else -> Completable.fromCallable {
                 socket?.emit(cmd.cmd, cmd.args, Ack {
@@ -232,6 +283,17 @@ class SignalService(val authTokenFactory: () -> String,
         })
     }
 
+}
+
+private interface SignalRestService {
+    @POST("api/location")
+    fun updateLocations(@Body locations : List<Location>) : Completable
+
+    @GET("api/contact/sync/{userId}/{version}")
+    fun syncContact(@Path("userId") userId : String, @Path("version") version : Long) : Single<JSONObject>
+
+    @GET("api/nearby")
+    fun findNearbyPeople(@Query("minLat") minLat : Double, @Query("minLng") minLng : Double, @Query("maxLat") maxLat : Double, @Query("maxLng") maxLng : Double) : Single<JSONArray>
 }
 
 interface Signal
@@ -346,6 +408,12 @@ data class SyncContactResult(val version : Long,
     }
 }
 
+class FindNearbyPeopleCommand(val latLngBounds: LatLngBounds) : Command<List<NearbyUser>, JSONArray>("") {
+    override fun convert(value: JSONArray): List<NearbyUser> {
+        return value.transform { NearbyUser.fromJSON(it as JSONObject) }
+    }
+}
+
 class SyncContactCommand(val userId : String,
                          val version : Long) : Command<SyncContactResult, JSONObject>("") {
 
@@ -454,13 +522,13 @@ class UserObject(private val obj: JSONObject) : User {
         get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
 
     val locationEnabled : Boolean
-        get() = obj.optBoolean("locationEnable", false)
+        get() = obj.optBoolean("locationEnable", true)
 
     val locationScanInterval: Long
-        get() = obj.optLong("locationScanInterval", -1L)
+        get() = obj.optLong("locationScanInterval", 1000L)
 
     val locationReportInterval: Long
-        get() = obj.optLong("locationReportInterval", -1L)
+        get() = obj.optLong("locationReportInterval", 1000L)
 
     override fun toString(): String {
         return obj.toString()
