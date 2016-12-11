@@ -522,7 +522,7 @@ class UserObject(private val obj: JSONObject) : User {
         get() = obj.optLong("enterexpTime", 0).let { if (it <= 0) null else Date(it) }
 
     val locationEnabled : Boolean
-        get() = obj.optBoolean("locationEnable", true)
+        get() = obj.optBoolean("locationEnable", false)
 
     val locationScanInterval: Long
         get() = obj.optLong("locationScanInterval", 1000L)
@@ -616,6 +616,10 @@ private fun JSONObject?.toPermissionSet(): Set<Permission> {
 
     if (has("powerInviteAble") && getBoolean("powerInviteAble")) {
         set.add(Permission.FORCE_INVITE)
+    }
+
+    if (has("viewMap") && getBoolean("viewMap")) {
+        set.add(Permission.VIEW_MAP)
     }
 
     return set

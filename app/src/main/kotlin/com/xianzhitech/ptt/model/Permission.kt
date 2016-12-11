@@ -8,5 +8,6 @@ enum class Permission {
     SPEAK,
     MUTE, // 免打扰
     FORCE_INVITE, // 强制拉人
+    VIEW_MAP, // 查看地图
     ;
 }

@@ -15,6 +15,7 @@ import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
@@ -51,6 +52,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
     private var selectedTintColor: Int = 0
     private var normalTintColor: Int = 0
     private var views: Views? = null
+    private var mapMenuItem : MenuItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +63,7 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.home, menu)
+        mapMenuItem = menu.findItem(R.id.home_nearby)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -187,6 +190,13 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
                             }
                         }
                     }
+                }
+                .bindToLifecycle()
+
+        appComponent.signalHandler.currentUserCache
+                .observeOnMainThread()
+                .subscribeSimple { user ->
+                    mapMenuItem?.isVisible = user?.permissions?.contains(Permission.VIEW_MAP) ?: false
                 }
                 .bindToLifecycle()
     }
