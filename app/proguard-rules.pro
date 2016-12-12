@@ -29,6 +29,7 @@
 # Webrtc
 -keep class org.webrtc.** { *; }
 -keepnames class org.webrtc.** { *; }
+-keep class cn.netptt.** { *; }
 
 # Retrofit
 -dontwarn retrofit2.**
