@@ -1,7 +1,9 @@
 package com.xianzhitech.ptt.service.handler
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import android.support.v4.content.WakefulBroadcastReceiver
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
@@ -19,13 +21,16 @@ import java.io.Serializable
 
 private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
-class RoomInvitationHandler() : WakefulBroadcastReceiver() {
+class RoomInvitationHandler() : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         val invite : RoomInvitation = when (intent?.action) {
             SignalServiceHandler.ACTION_ROOM_INVITATION -> intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
             else -> return
         }
+
+        val wl = (context.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RoomInvitation")
+        wl.acquire(2000)
 
         val appComponent = context.appComponent
         Single.zip(
