@@ -25,7 +25,10 @@ val defaultOnErrorAction: Action1<Throwable> = Action1 {
     if (BuildConfig.DEBUG.not()) {
         Crashlytics.logException(it)
     }
-    Toast.makeText(App.instance, it.describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
+
+    if (Thread.currentThread() == Looper.getMainLooper().thread) {
+        Toast.makeText(App.instance, it.describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
+    }
 }
 
 val defaultOnValueAction: Action1<Any?> = Action1 {  }
