@@ -326,6 +326,7 @@ data class RoomSpeakerUpdateSignal(val update : RoomSpeakerUpdate) : Signal
 data class RoomKickOutSignal(val roomId: String) : Signal
 data class UserUpdatedSignal(val user : UserObject) : Signal
 data class ForceUpdateSignal(val appConfig: AppConfig) : Signal
+object UpdateLocationSignal : Signal
 
 
 class DefaultSignalFactory : SignalFactory {
@@ -339,7 +340,8 @@ class DefaultSignalFactory : SignalFactory {
                 "s_online_member_update" to { obj -> RoomOnlineMemberUpdateSignal(RoomActiveInfoUpdate(obj.first() as JSONObject)) } ,
                 "s_speaker_changed" to { obj -> RoomSpeakerUpdateSignal(RoomSpeakerUpdateObject(obj.first() as JSONObject)) } ,
                 "s_kick_out_room" to { obj -> RoomKickOutSignal(obj.first().toString()) },
-                "s_user_updated" to { args -> UserUpdatedSignal(UserObject(args.first() as JSONObject)) }
+                "s_user_updated" to { args -> UserUpdatedSignal(UserObject(args.first() as JSONObject)) },
+                "s_user_locate" to { args -> UpdateLocationSignal }
         )
     }
 

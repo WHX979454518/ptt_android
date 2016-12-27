@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
+import com.baidu.location.LocationClient
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
 import com.baidu.mapapi.utils.CoordinateConverter
@@ -26,6 +27,7 @@ import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.util.receiveLocation
 import com.xianzhitech.ptt.util.withUser
 import org.slf4j.LoggerFactory
 import rx.*
@@ -136,7 +138,16 @@ class SignalServiceHandler(private val appContext: Context,
             is UserLoggedInSignal -> onUserLoggedIn(signal.user)
             is UserUpdatedSignal -> onUserUpdated(signal.user)
             is UserLoginFailSignal -> onUserLoginFailed(signal.err)
+            is UpdateLocationSignal -> onUpdateLocation()
         }
+    }
+
+    private fun onUpdateLocation() {
+        LocationClient(appContext)
+                .receiveLocation(true, 1000)
+                .first()
+                .onErrorResumeNext(Observable.empty())
+                .subscribe { loc -> sendLocationData(listOf(loc)) }
     }
 
     private fun onUserLoginFailed(err: Throwable) {
