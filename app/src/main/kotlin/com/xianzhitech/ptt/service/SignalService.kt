@@ -54,7 +54,6 @@ class SignalService(val appContext : Context,
     val signals : Observable<Signal>
         get() = signalSubject
 
-    private var wakeLock : PowerManager.WakeLock? = null
     private var socket : Socket? = null
     private var appConfig : AppConfig? = null
     private val restService : SignalRestService by lazy {
@@ -118,13 +117,7 @@ class SignalService(val appContext : Context,
                             it.disconnect()
                         }
 
-                        if (wakeLock == null) {
-                            wakeLock = (appContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "signal_service")
-                        }
-
-                        if (wakeLock!!.isHeld.not()) {
-                            wakeLock!!.acquire()
-                        }
+                        val wl = (appContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "signal_service")
 
                         val s = socket(uri, Options().apply {
                             multiplex = false
@@ -142,8 +135,20 @@ class SignalService(val appContext : Context,
                             signalSubject += ConnectionSignal(ConnectionEvent.CONNECTING)
                         })
 
-                        s.io().on(Manager.EVENT_PING, { logger.i { "Ping!" } })
-                        s.io().on(Manager.EVENT_PONG, { logger.i { "Pong!" } })
+                        s.io().on(Manager.EVENT_PING, {
+                            logger.i { "Ping!" }
+                            if (wl.isHeld.not()) {
+                                wl.acquire(10000)
+                                logger.i { "Acquiring wakelock" }
+                            }
+                        })
+                        s.io().on(Manager.EVENT_PONG, {
+                            logger.i { "Pong!" }
+                            if (wl.isHeld) {
+                                wl.release()
+                                logger.i { "Releasing wakelock" }
+                            }
+                        })
 
 
                         s.io().on(Manager.EVENT_TRANSPORT, {
@@ -195,8 +200,6 @@ class SignalService(val appContext : Context,
                 it.disconnect()
             }
 
-            wakeLock?.release()
-            wakeLock = null
             Unit
         }.subscribeOn(AndroidSchedulers.mainThread()).subscribeSimple()
     }
