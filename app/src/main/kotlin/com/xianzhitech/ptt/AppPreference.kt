@@ -119,7 +119,7 @@ class AppPreference(appContext : Context,
     override var shortcut: Shortcut
         get() = pref.getString(KEY_SHORTCUT, null)?.let { gson.fromJson(it, Shortcut::class.java) } ?: Shortcut()
         set(value) {
-            pref.edit().putString(KEY_SHORTCUT, value.let { gson.toJson(it) } ?: null).apply()
+            pref.edit().putString(KEY_SHORTCUT, value.let { gson.toJson(it) }).apply()
         }
 
     override var keepSession: Boolean

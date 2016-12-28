@@ -64,6 +64,7 @@ class SignalServiceHandler(private val appContext: Context,
     private val authTokenFactory = AuthTokenFactory()
 
     private val signalService = SignalService(
+            appContext,
             { authTokenFactory() },
             DefaultSignalFactory(),
             { getDeviceId() },

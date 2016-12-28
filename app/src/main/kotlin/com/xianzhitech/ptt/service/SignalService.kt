@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.service
 
+import android.content.Context
+import android.os.PowerManager
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.gson.Gson
 import com.xianzhitech.ptt.Constants
@@ -39,7 +41,8 @@ import java.util.concurrent.TimeUnit
 
 private val logger = LoggerFactory.getLogger("SignalService")
 
-class SignalService(val authTokenFactory: () -> String,
+class SignalService(val appContext : Context,
+                    val authTokenFactory: () -> String,
                     val signalFactory: SignalFactory,
                     val deviceIdFactory : () -> Single<String>,
                     val appConfigFactory : () -> Single<AppConfig>,
@@ -51,6 +54,7 @@ class SignalService(val authTokenFactory: () -> String,
     val signals : Observable<Signal>
         get() = signalSubject
 
+    private var wakeLock : PowerManager.WakeLock? = null
     private var socket : Socket? = null
     private var appConfig : AppConfig? = null
     private val restService : SignalRestService by lazy {
@@ -114,6 +118,14 @@ class SignalService(val authTokenFactory: () -> String,
                             it.disconnect()
                         }
 
+                        if (wakeLock == null) {
+                            wakeLock = (appContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "signal_service")
+                        }
+
+                        if (wakeLock!!.isHeld.not()) {
+                            wakeLock!!.acquire()
+                        }
+
                         val s = socket(uri, Options().apply {
                             multiplex = false
                             transports = arrayOf("websocket")
@@ -145,7 +157,7 @@ class SignalService(val authTokenFactory: () -> String,
                         })
 
                         s.onMainThread(Socket.EVENT_CONNECT_ERROR, {
-                            logger.i { "Error connecting to $uri: ${it.toList()}" }
+                            logger.e(it.firstOrNull() as? Throwable) { "Error connecting to $uri: ${it.toList()}" }
                             signalSubject += ConnectionSignal(ConnectionEvent.ERROR, it.firstOrNull() as? Throwable)
                             subscriber.onError(it.firstOrNull() as? Throwable)
                         })
@@ -182,6 +194,10 @@ class SignalService(val authTokenFactory: () -> String,
                 it.off()
                 it.disconnect()
             }
+
+            wakeLock?.release()
+            wakeLock = null
+            Unit
         }.subscribeOn(AndroidSchedulers.mainThread()).subscribeSimple()
     }
 
