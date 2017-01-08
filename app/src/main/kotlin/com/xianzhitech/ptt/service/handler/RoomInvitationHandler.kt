@@ -4,17 +4,17 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
-import android.support.v4.content.WakefulBroadcastReceiver
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.service.RoomInvitationObject
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.util.isDownTime
 import org.slf4j.LoggerFactory
+import org.threeten.bp.LocalTime
 import rx.Single
 import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
@@ -58,7 +58,10 @@ class RoomInvitationHandler() : BroadcastReceiver() {
         val user = appComponent.signalHandler.currentUserCache.value
         if ((user?.permissions?.contains(Permission.MUTE) ?: false) &&
                 appComponent.preference.enableDownTime &&
-                LocalTime.isDownTime(System.currentTimeMillis(), appComponent.preference.downTimeStart, appComponent.preference.downTimeEnd)) {
+                LocalTime.now().isDownTime(
+                        appComponent.preference.downTimeStart,
+                        appComponent.preference.downTimeEnd)
+                ) {
             logger.i { "User in downtime, skip inviting..." }
             return
         }

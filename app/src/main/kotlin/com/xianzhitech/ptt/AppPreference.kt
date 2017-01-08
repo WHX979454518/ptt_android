@@ -5,9 +5,9 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
+import org.threeten.bp.LocalTime
 import rx.Observable
 import rx.lang.kotlin.add
 import rx.lang.kotlin.observable
@@ -140,13 +140,13 @@ class AppPreference(appContext : Context,
         }
 
     override var downTimeStart: LocalTime
-        get() = LocalTime.fromString(pref.getString(downTimeStartKey, null)) ?: DEFAULT_DOWNTIME_START
+        get() = LocalTime.parse(pref.getString(downTimeStartKey, null), Constants.TIME_FORMAT) ?: DEFAULT_DOWNTIME_START
         set(value) {
             pref.edit().putString(downTimeStartKey, value.toString()).apply()
         }
 
     override var downTimeEnd: LocalTime
-        get() = LocalTime.fromString(pref.getString(downTimeEndKey, null)) ?: DEFAULT_DOWNTIME_END
+        get() = LocalTime.parse(pref.getString(downTimeEndKey, null), Constants.TIME_FORMAT) ?: DEFAULT_DOWNTIME_END
         set(value) {
             pref.edit().putString(downTimeEndKey, value.toString()).apply()
         }
@@ -169,7 +169,7 @@ class AppPreference(appContext : Context,
         const val KEY_SHORTCUT = "key_shortcut"
         const val KEY_LAST_EXP_PROMPT_TIME = "key_last_exp_prompt_time"
 
-        @JvmStatic val DEFAULT_DOWNTIME_START = LocalTime(minute = 0, hourOfDay = 23)
-        @JvmStatic val DEFAULT_DOWNTIME_END = LocalTime(minute = 30, hourOfDay = 7)
+        @JvmStatic val DEFAULT_DOWNTIME_START = LocalTime.of(23, 0)
+        @JvmStatic val DEFAULT_DOWNTIME_END = LocalTime.of(7, 30)
     }
 }

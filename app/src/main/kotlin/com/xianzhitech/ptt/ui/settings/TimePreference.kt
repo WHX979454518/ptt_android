@@ -7,8 +7,9 @@ import android.support.v7.preference.Preference
 import android.util.AttributeSet
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.AppPreference
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.model.LocalTime
+import org.threeten.bp.LocalTime
 
 
 class TimePreference @JvmOverloads constructor(context : Context,
@@ -25,7 +26,8 @@ class TimePreference @JvmOverloads constructor(context : Context,
     }
 
     val value : LocalTime
-    get() = LocalTime.fromString(getPersistedString(null)) ?: (if (isStart) AppPreference.DEFAULT_DOWNTIME_START else AppPreference.DEFAULT_DOWNTIME_END)
+    get() = LocalTime.parse(getPersistedString(null), Constants.TIME_FORMAT)
+            ?: (if (isStart) AppPreference.DEFAULT_DOWNTIME_START else AppPreference.DEFAULT_DOWNTIME_END)
 
     init {
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.TimePreference, defStyleResAttr, defStyleRes)
@@ -60,7 +62,7 @@ class TimePreference @JvmOverloads constructor(context : Context,
         isVisible = preference.enableDownTime
         val v = value
         if (isStart.not()) {
-            val startTime = LocalTime.fromString(sharedPreferences.getString(startKey, null)) ?: AppPreference.DEFAULT_DOWNTIME_START
+            val startTime = LocalTime.parse(sharedPreferences.getString(startKey, null), Constants.TIME_FORMAT) ?: AppPreference.DEFAULT_DOWNTIME_START
             if (startTime >= v) {
                 summary = context.getString(R.string.downtime_next_day_with_time, v.toString())
             }
