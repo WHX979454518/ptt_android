@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'io.fabric'
 
 project.ext.buildNumber = System.properties['BUILD_NUMBER'] ?: 'dev'
-project.ext.buildName = System.properties['BUILD_NAME'] ?: '2.0-snapshot'
+project.ext.buildName = System.properties['BUILD_NAME'] ?: '1.5-snapshot'
 project.ext.appServerUrl = System.properties['APP_SERVER_URL']
 
 buildscript {
@@ -40,7 +40,7 @@ android {
         applicationId "com.xianzhitech.ptt"
         minSdkVersion 15
         targetSdkVersion 25
-        versionCode 5
+        versionCode 6
         versionName buildName
 
         buildConfigField("String", "BUILD_NUMBER", "\"$buildNumber\"")
