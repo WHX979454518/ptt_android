@@ -11,7 +11,6 @@ import com.xianzhitech.ptt.util.receiveLocation
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
-import rx.functions.Func2
 import java.util.concurrent.TimeUnit
 
 class LocationHandler(private val context : Context,
@@ -21,9 +20,14 @@ class LocationHandler(private val context : Context,
 
     init {
         signalServiceHandler.currentUserCache
-                .distinctUntilChanged { user : UserObject? -> user?.let { Triple(it.locationEnabled, it.locationScanInterval, it.locationReportInterval) } }
-                .switchMap { user: UserObject? ->
-                    if (user != null && user.locationEnabled) {
+                .distinctUntilChanged()
+                .switchMap { user ->
+                    (user?.locationScanEnableObservable ?: Observable.empty())
+                            .map { enabled -> user to enabled }
+                }
+                .switchMap { result: Pair<UserObject, Boolean> ->
+                    val (user, locationEnabled) = result
+                    if (locationEnabled) {
                         //TODO: 网络不通时要把位置记录下来...
                         logger.i { "Start collecting locations every ${user.locationScanInterval} ms" }
                         locationClient.receiveLocation(false, user.locationScanInterval.toInt())

@@ -24,7 +24,10 @@ import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
-import org.threeten.bp.*
+import org.threeten.bp.DayOfWeek
+import org.threeten.bp.Duration
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.LocalTime
 import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
@@ -565,39 +568,26 @@ class UserObject(private val obj: JSONObject) : User {
     val locationReportDurationHours : Int =
             obj.optJSONObject("locationTime")?.optInt("last", 24) ?: 24
 
-    val locationScanObservable : Observable<Boolean>
+    val locationScanEnableObservable : Observable<Boolean>
         get() {
             return Observable.defer<Boolean> {
                 // Calculate the interval time
                 val now = LocalDateTime.now()
-                var currReportRange : Range<LocalDateTime>?
 
-                // Look at yesterday
-                if (locationReportWeekDays.contains(now.dayOfWeek.minus(1))) {
-                    currReportRange = now.minusDays(1).locationReportRange
-                    if (currReportRange.contains(now)) {
-                        currReportRange
-                    }
-                    nextReportTime = locationScanInterval
-                }
-                // Look at at today
-                else if (locationReportWeekDays.contains(now.dayOfWeek) &&
-                             now.locationReportRange.contains(now)) {
-                    nextReportTime = locationScanInterval
-                }
-                // Look at tomorrow to figure out waiting time
-                else if (locationReportWeekDays.contains(now.dayOfWeek.plus(1))) {
-                    nextReportTime = Duration.between(now, now.plusDays(1).with(LocalTime.MIN)).toMillis()
-                }
-                else {
-                    // No schedule yesterday, today or tomorrow. Wait 1 day to look at other thing
-                    nextReportTime = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)
-                }
+                val reportRanges = (-1..1).map { now.plusDays(it.toLong()) }
+                        .filter { locationReportWeekDays.contains(it.dayOfWeek) }
+                        .map { it.locationReportRange }
 
-                logger.i { "Next location report time is $nextReportTime" }
-                // Limit the frequency to 1s only to prevent crash
-                Observable.just(true)
+                val currRange = reportRanges.firstOrNull { it.contains(now) }
+                val enabled = currRange != null
+                val nextCheckTime = currRange?.end ?: (reportRanges.firstOrNull { it.start > now }?.start ?: now.plusHours(1))
+
+                logger.i { "Next check location enable time is $nextCheckTime" }
+                Observable.timer(Duration.between(now, nextCheckTime).toMillis(), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                        .flatMap { Observable.empty<Boolean>() }
+                        .startWith(enabled)
             }.repeat()
+                    .distinctUntilChanged()
         }
 
     private val LocalDateTime.locationReportRange : Range<LocalDateTime>
