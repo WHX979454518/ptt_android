@@ -8,6 +8,6 @@ data class Range<T : Comparable<T>>(val start : T,
     }
 
     fun contains(v : T) : Boolean {
-        return v >= start && v <= end
+        return v >= start && v < end
     }
 }

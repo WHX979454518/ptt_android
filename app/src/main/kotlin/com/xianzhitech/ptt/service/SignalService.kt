@@ -26,8 +26,8 @@ import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import org.threeten.bp.DayOfWeek
 import org.threeten.bp.Duration
-import org.threeten.bp.LocalDateTime
 import org.threeten.bp.LocalTime
+import org.threeten.bp.ZonedDateTime
 import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
@@ -556,12 +556,23 @@ class UserObject(private val obj: JSONObject) : User {
         get() = obj.optBoolean("locationEnable", false)
 
     val locationScanInterval: Long
-        get() = obj.optLong("locationScanInterval", 1000L)
+        get() = obj.optLong("locationScanInterval", 1L) * 1000
 
     val locationReportInterval: Long
-        get() = obj.optLong("locationReportInterval", 1000L)
+        get() = obj.optLong("locationReportInterval", 1L) * 1000
 
-    val locationReportWeekDays : SortedSet<DayOfWeek> = obj.optJSONArray("locationWeekly")?.transform { DayOfWeek.of((it as Number).toInt() + 1) }?.toSortedSet() ?: ALL_WEEK_DAYS
+    val locationReportWeekDays : SortedSet<DayOfWeek> by lazy {
+        val list = obj.optJSONArray("locationWeekly")?.transform { (it as Number).toInt() != 0 } ?: return@lazy ALL_WEEK_DAYS
+
+        list.mapIndexedNotNull { i, b ->
+            if (b) {
+                DayOfWeek.of(i + 1)
+            }
+            else {
+                null
+            }
+        }.toSortedSet()
+    }
     val locationReportTimeStart : LocalTime =
             obj.optJSONObject("locationTime")?.optString("from", null)?.let { LocalTime.parse(it, Constants.TIME_FORMAT) } ?: LocalTime.MIN
 
@@ -572,7 +583,7 @@ class UserObject(private val obj: JSONObject) : User {
         get() {
             return Observable.defer<Boolean> {
                 // Calculate the interval time
-                val now = LocalDateTime.now()
+                val now = ZonedDateTime.now()
 
                 val reportRanges = (-1..1).map { now.plusDays(it.toLong()) }
                         .filter { locationReportWeekDays.contains(it.dayOfWeek) }
@@ -590,7 +601,7 @@ class UserObject(private val obj: JSONObject) : User {
                     .distinctUntilChanged()
         }
 
-    private val LocalDateTime.locationReportRange : Range<LocalDateTime>
+    private val ZonedDateTime.locationReportRange : Range<ZonedDateTime>
     get() = this.with(locationReportTimeStart).let { Range(it, it.plusHours(locationReportDurationHours.toLong())) }
 
     override fun toString(): String {

@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.service.handler
 import android.content.Context
 import com.baidu.location.LocationClient
 import com.xianzhitech.ptt.ext.d
+import com.xianzhitech.ptt.ext.e
 import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.Location
@@ -33,12 +34,15 @@ class LocationHandler(private val context : Context,
                         locationClient.receiveLocation(false, user.locationScanInterval.toInt())
                                 .doOnNext { logger.d { "Got location $it" } }
                                 .distinctUntilChanged(Location::locationEquals)
-                                .buffer(Math.max(user.locationReportInterval, user.locationScanInterval), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                                .buffer(Math.max(1000, Math.max(user.locationReportInterval, user.locationScanInterval)), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                     } else {
                         Observable.never()
                     }
                 }
-                .onErrorReturn { emptyList() }
+                .onErrorReturn {
+                    logger.e(it) { "Error saving location" }
+                    emptyList()
+                }
                 .subscribeSimple {
                     logger.i { "Sending ${it.size} locations to server" }
                     signalServiceHandler.sendLocationData(it).subscribeSimple()
