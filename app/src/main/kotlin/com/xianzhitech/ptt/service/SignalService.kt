@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.service.dto.NearbyUser
 import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.service.handler.ForceUpdateException
+import com.xianzhitech.ptt.util.Range
 import io.socket.client.Ack
 import io.socket.client.IO.Options
 import io.socket.client.IO.socket
@@ -23,6 +24,7 @@ import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import org.threeten.bp.*
 import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
@@ -553,8 +555,57 @@ class UserObject(private val obj: JSONObject) : User {
     val locationReportInterval: Long
         get() = obj.optLong("locationReportInterval", 1000L)
 
+    val locationReportWeekDays : SortedSet<DayOfWeek> = obj.optJSONArray("locationWeekly")?.transform { DayOfWeek.of((it as Number).toInt() + 1) }?.toSortedSet() ?: ALL_WEEK_DAYS
+    val locationReportTimeStart : LocalTime =
+            obj.optJSONObject("locationTime")?.optString("from", null)?.let { LocalTime.parse(it, Constants.TIME_FORMAT) } ?: LocalTime.MIN
+
+    val locationReportDurationHours : Int =
+            obj.optJSONObject("locationTime")?.optInt("last", 24) ?: 24
+
+    val locationScanObservable : Observable<Boolean>
+        get() {
+            return Observable.defer<Boolean> {
+                // Calculate the interval time
+                val now = LocalDateTime.now()
+                var currReportRange : Range<LocalDateTime>?
+
+                // Look at yesterday
+                if (locationReportWeekDays.contains(now.dayOfWeek.minus(1))) {
+                    currReportRange = now.minusDays(1).locationReportRange
+                    if (currReportRange.contains(now)) {
+                        currReportRange
+                    }
+                    nextReportTime = locationScanInterval
+                }
+                // Look at at today
+                else if (locationReportWeekDays.contains(now.dayOfWeek) &&
+                             now.locationReportRange.contains(now)) {
+                    nextReportTime = locationScanInterval
+                }
+                // Look at tomorrow to figure out waiting time
+                else if (locationReportWeekDays.contains(now.dayOfWeek.plus(1))) {
+                    nextReportTime = Duration.between(now, now.plusDays(1).with(LocalTime.MIN)).toMillis()
+                }
+                else {
+                    // No schedule yesterday, today or tomorrow. Wait 1 day to look at other thing
+                    nextReportTime = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)
+                }
+
+                logger.i { "Next location report time is $nextReportTime" }
+                // Limit the frequency to 1s only to prevent crash
+                Observable.just(true)
+            }.repeat()
+        }
+
+    private val LocalDateTime.locationReportRange : Range<LocalDateTime>
+    get() = this.with(locationReportTimeStart).let { Range(it, it.plusHours(locationReportDurationHours.toLong())) }
+
     override fun toString(): String {
         return obj.toString()
+    }
+
+    companion object {
+        private val ALL_WEEK_DAYS = EnumSet.allOf(DayOfWeek::class.java).toSortedSet()
     }
 }
 

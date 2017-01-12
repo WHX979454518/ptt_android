@@ -2,6 +2,9 @@ package com.xianzhitech.ptt
 
 import android.content.Context
 import com.xianzhitech.ptt.ext.toFormattedString
+import org.threeten.bp.ZoneId
+import org.threeten.bp.format.DateTimeFormatter
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 object Constants {
@@ -15,6 +18,10 @@ object Constants {
     const val MAX_LOCATIONS_TO_SEND_VIA_WS = 20
 
     @JvmStatic val ROOM_IDLE_TIME_SECONDS: Long = if (BuildConfig.DEBUG) 3600L else 30L
+
+    @JvmStatic val UTC = ZoneId.of("UTC")
+    @JvmStatic val SERVER_TIMEZONE = UTC
+    @JvmStatic val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
 
     const val INVALID_CONTACT_VERSION = -1L
 

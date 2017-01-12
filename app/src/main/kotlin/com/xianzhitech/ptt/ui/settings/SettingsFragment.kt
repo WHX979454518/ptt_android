@@ -9,10 +9,10 @@ import com.xianzhitech.ptt.Shortcut
 import com.xianzhitech.ptt.ShortcutMode
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.model.LocalTime
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.ui.dialog.TimePickerDialogFragment
 import com.xianzhitech.ptt.util.showDialogOnce
+import org.threeten.bp.LocalTime
 import rx.Single
 import rx.subscriptions.CompositeSubscription
 
