@@ -140,13 +140,13 @@ class AppPreference(appContext : Context,
         }
 
     override var downTimeStart: LocalTime
-        get() = LocalTime.parse(pref.getString(downTimeStartKey, null), Constants.TIME_FORMAT) ?: DEFAULT_DOWNTIME_START
+        get() = pref.getString(downTimeStartKey, null)?.let { LocalTime.parse(it, Constants.TIME_FORMAT) } ?: DEFAULT_DOWNTIME_START
         set(value) {
             pref.edit().putString(downTimeStartKey, value.toString()).apply()
         }
 
     override var downTimeEnd: LocalTime
-        get() = LocalTime.parse(pref.getString(downTimeEndKey, null), Constants.TIME_FORMAT) ?: DEFAULT_DOWNTIME_END
+        get() = pref.getString(downTimeEnableKey, null)?.let { LocalTime.parse(it, Constants.TIME_FORMAT) } ?: DEFAULT_DOWNTIME_END
         set(value) {
             pref.edit().putString(downTimeEndKey, value.toString()).apply()
         }
