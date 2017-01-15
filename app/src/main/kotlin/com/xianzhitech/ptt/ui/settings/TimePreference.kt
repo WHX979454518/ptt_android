@@ -26,7 +26,7 @@ class TimePreference @JvmOverloads constructor(context : Context,
     }
 
     val value : LocalTime
-    get() = LocalTime.parse(getPersistedString(null), Constants.TIME_FORMAT)
+    get() = getPersistedString(null)?.let { LocalTime.parse(it, Constants.TIME_FORMAT) }
             ?: (if (isStart) AppPreference.DEFAULT_DOWNTIME_START else AppPreference.DEFAULT_DOWNTIME_END)
 
     init {
@@ -62,7 +62,7 @@ class TimePreference @JvmOverloads constructor(context : Context,
         isVisible = preference.enableDownTime
         val v = value
         if (isStart.not()) {
-            val startTime = LocalTime.parse(sharedPreferences.getString(startKey, null), Constants.TIME_FORMAT) ?: AppPreference.DEFAULT_DOWNTIME_START
+            val startTime = sharedPreferences.getString(startKey, null)?.let { LocalTime.parse(it, Constants.TIME_FORMAT) } ?: AppPreference.DEFAULT_DOWNTIME_START
             if (startTime >= v) {
                 summary = context.getString(R.string.downtime_next_day_with_time, v.toString())
             }

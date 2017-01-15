@@ -31,6 +31,12 @@
 -keepnames class org.webrtc.** { *; }
 -keep class cn.netptt.** { *; }
 
+# 310 datetime
+-keep class org.threeten.bp.** { *; }
+-keepnames class org.threeten.bp.** { *; }
+-keepnames class com.jakewharton.** { *; }
+-keep class com.jakewharton.** { *; }
+
 # Retrofit
 -dontwarn retrofit2.**
 

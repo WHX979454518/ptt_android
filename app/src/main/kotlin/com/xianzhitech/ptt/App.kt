@@ -11,6 +11,7 @@ import com.baidu.mapapi.SDKInitializer
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
 import com.google.gson.Gson
+import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
@@ -87,6 +88,8 @@ open class App : Application(), AppComponent {
 
         MDC.put("pid", Process.myPid().toString())
         MDC.put("version", "${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE}")
+
+        AndroidThreeTen.init(this)
 
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
 
