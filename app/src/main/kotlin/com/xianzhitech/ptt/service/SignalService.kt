@@ -578,6 +578,10 @@ class UserObject(private val obj: JSONObject) : User {
 
     val locationScanEnableObservable : Observable<Boolean>
         get() {
+            if (locationEnabled.not()) {
+                return Observable.just(false)
+            }
+
             return Observable.defer<Boolean> {
                 // Calculate the interval time
                 val now = ZonedDateTime.now()
