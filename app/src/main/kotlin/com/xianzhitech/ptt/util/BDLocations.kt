@@ -34,8 +34,10 @@ fun LocationClient.receiveLocation(gpsOnly : Boolean,
         }
 
         emitter.setCancellation {
-            unRegisterLocationListener(listener)
-            stop()
+            AndroidSchedulers.mainThread().createWorker().schedule {
+                unRegisterLocationListener(listener)
+                stop()
+            }
         }
 
         start()

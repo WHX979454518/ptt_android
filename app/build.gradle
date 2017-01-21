@@ -125,7 +125,8 @@ dependencies {
     compile 'com.belerweb:pinyin4j:2.5.1'
 
     compile(name: 'webrtc-android-release', ext: 'aar')
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+//    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':bd_loc_sdk')
 
     compile "com.android.support:appcompat-v7:$support_library_version"
     compile "com.android.support:preference-v7:$support_library_version"
