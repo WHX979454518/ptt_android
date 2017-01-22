@@ -84,3 +84,12 @@
 -keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueConsumerNodeRef {
     rx.internal.util.atomic.LinkedQueueNode consumerNode;
 }
+
+# Baidu
+-keep class com.baidu.**
+-keepnames class com.baidu.**
+-keepnames class com.baidu.** { *; }
+-keepclassmembernames class com.baidu.** { *; }
+-keepclassmembers class com.baidu.** { *; }
+-dontwarn com.baidu.**
+-keep class vi.com.** {*;}
