@@ -1,0 +1,55 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script: ./gradlew clean assembleDevDebug
+  artifacts:
+    paths:
+      - app/build/outputs
+  only:
+    - develop
+  tags:
+    - ANDROID
+
+deploy_staging:
+  stage: deploy
+  when: manual
+  variables:
+    APP_SERVER_URL: "http://netptt.cn:20002"
+    BUILD_NUMBER: ${CI_PIPELINE_ID}
+  environment:
+      name: staging
+      url: http://netptt.cn:20000
+  script:
+    - ./gradlew clean assembleDevRelease
+    - echo "Uploading to netptt..."
+  tags:
+    - ANDROID
+    - NETPTT_ACCESS
+  artifacts:
+      paths:
+        - app/build/outputs
+  only:
+      - develop
+
+deploy_production:
+  stage: deploy
+  when: manual
+  variables:
+    APP_SERVER_URL: "http://netptt.cn:20002"
+  environment:
+      name: production
+      url: http://netptt.cn:20000
+  script:
+    - ./gradlew clean assembleProdRelease
+    - echo "Uploading to netptt..."
+  tags:
+    - ANDROID
+    - NETPTT_ACCESS
+  artifacts:
+      paths:
+        - app/build/outputs
+  only:
+      - develop

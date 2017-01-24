@@ -27,7 +27,8 @@ fun LocationClient.receiveLocation(gpsOnly : Boolean,
         registerLocationListener(listener)
         locOption = LocationClientOption().apply {
             locationMode = if (gpsOnly) LocationClientOption.LocationMode.Device_Sensors else LocationClientOption.LocationMode.Hight_Accuracy
-            coorType = "bd09ll"
+//            coorType = "bd09ll"
+         //   coorType = "gcj02"
             scanSpan = intervalMills
             setNeedDeviceDirect(true)
             isNeedAltitude = true
