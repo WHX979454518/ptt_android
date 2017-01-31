@@ -214,7 +214,9 @@ class SignalServiceHandler(private val appContext: Context,
                     .switchMap {
                         val version = appComponent.preference.contactVersion
                         logger.i { "Syncing contact version with localVersion=$version" }
-                        syncContact(version).andThen(Observable.empty<Unit>())
+                        syncContact(version)
+                                .doOnError { logger.e(it) { "Error syncing contacts" } }
+                                .andThen(Observable.empty<Unit>())
                     }
                     .onErrorReturnNull()
                     .subscribeSimple()

@@ -539,7 +539,7 @@ class UserObject(private val obj: JSONObject) : User {
     override val permissions: Set<Permission>
         get() = obj.getJSONObject("privileges").toPermissionSet()
     override val priority: Int
-        get() = obj.getJSONObject("privileges").optInt("priority", Constants.DEFAULT_USER_PRIORITY)
+        get() = obj.optJSONObject("privileges").optInt("priority", Constants.DEFAULT_USER_PRIORITY)
     override val phoneNumber: String?
         get() = obj.nullOrString("phoneNumber")
     override val enterpriseId: String

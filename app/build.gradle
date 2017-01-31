@@ -124,7 +124,8 @@ dependencies {
 
     compile 'com.belerweb:pinyin4j:2.5.1'
 
-    compile(name: 'webrtc-android-release', ext: 'aar')
+    //compile(name: 'webrtc-android-release', ext: 'aar')
+    compile project(':autoim')
 //    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':bd_loc_sdk')
 

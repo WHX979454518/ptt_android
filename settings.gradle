@@ -1,1 +1,1 @@
-include ':app', ':bd_loc_sdk'
+include ':app', ':bd_loc_sdk', ':autoim'
