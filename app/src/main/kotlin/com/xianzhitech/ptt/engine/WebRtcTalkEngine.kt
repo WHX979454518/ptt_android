@@ -47,6 +47,11 @@ class WebRtcTalkEngine(context: Context,
             mediaEngine = VoiceEngine(context)
 
             channel = mediaEngine.createChannel(property[PROPERTY_PROTOCOL]?.equals("tcp") ?: false)
+
+            if (channel < 0) {
+                throw IllegalStateException("Unable to create channel: code = ${mediaEngine.lastErr}")
+            }
+
             val userId = property[PROPERTY_LOCAL_USER_ID]?.toString()?.toInt()
             mediaEngine.setLocalSSRC(channel, userId ?: throw IllegalArgumentException("User id is null"))
             mediaEngine.setSendDestination(channel,
@@ -55,6 +60,7 @@ class WebRtcTalkEngine(context: Context,
 
             mediaEngine.setLocalReceiver(channel, LOCAL_RTP_PORT, LOCAL_RTCP_PORT)
             mediaEngine.startListen(channel)
+            mediaEngine.startPlayout(channel)
 
             voiceService = Retrofit.Builder()
                     .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
@@ -95,6 +101,8 @@ class WebRtcTalkEngine(context: Context,
     fun dispose() {
         handler.post {
             mediaEngine.sendExtPacket(channel, RTP_EXT_PROTO_QUIT_ROOM, extProtoData)
+            mediaEngine.stopPlayout(channel)
+            mediaEngine.stopListen(channel)
             mediaEngine.stopSend(channel)
             mediaEngine.destroyChannel(channel)
             mediaEngine.destroy()
