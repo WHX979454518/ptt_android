@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.os.Process
 import android.preference.PreferenceManager
+import android.support.multidex.MultiDexApplication
 import android.support.v4.app.ActivityCompat
 import ch.qos.logback.classic.Level
 import com.baidu.mapapi.SDKInitializer
@@ -41,7 +42,7 @@ import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 
 
-open class App : Application(), AppComponent {
+open class App : MultiDexApplication(), AppComponent {
 
     override val httpClient : OkHttpClient by lazy { onBuildHttpClient().build() }
     override lateinit var userRepository: UserRepository
