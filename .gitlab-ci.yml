@@ -8,8 +8,6 @@ build:
   artifacts:
     paths:
       - app/build/outputs
-  only:
-    - develop
   tags:
     - ANDROID
 
