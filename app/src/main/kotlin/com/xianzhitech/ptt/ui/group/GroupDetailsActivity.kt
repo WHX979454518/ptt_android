@@ -48,6 +48,10 @@ class GroupDetailsActivity : BaseToolbarActivity() {
             joinRoom(CreateRoomRequest(groupIds = listOf(groupId)))
         }
 
+        findViewById(R.id.groupDetails_videoChat).setOnClickListener {
+            joinRoom(CreateRoomRequest(groupIds = listOf(groupId)), true)
+        }
+
         allMemberLabel.setOnClickListener {
             startActivityWithAnimation(ModelListActivity.build(this, R.string.group_members.toFormattedString(this), GroupMemberProvider(groupId)))
         }

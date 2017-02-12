@@ -23,6 +23,7 @@ import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.handler.ForceUpdateException
 import com.xianzhitech.ptt.ui.PhoneCallHandler
+import com.xianzhitech.ptt.ui.call.CallActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
@@ -64,9 +65,9 @@ abstract class BaseActivity : AppCompatActivity(),
         intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
             val fromInvitation = intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITATION, false)
             if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false)) {
-                joinRoomConfirmed(roomId, fromInvitation)
+                joinRoomConfirmed(roomId, fromInvitation, intent.getBooleanExtra(EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false))
             } else {
-                joinRoom(roomId, fromInvitation)
+                joinRoom(roomId, fromInvitation, intent.getBooleanExtra(EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false))
             }
             intent.removeExtra(EXTRA_JOIN_ROOM_ID)
             intent.removeExtra(EXTRA_JOIN_ROOM_CONFIRMED)
@@ -97,8 +98,8 @@ abstract class BaseActivity : AppCompatActivity(),
         when (fragment.tag) {
             TAG_PERMISSION_DIALOG -> ActivityCompat.requestPermissions(this, fragment.attachmentAs<List<String>>().toTypedArray(), 0)
             TAG_SWITCH_ROOM_CONFIRMATION -> {
-                val (roomId, fromInvitation) = (fragment.attachment as Pair<String, Boolean>)
-                joinRoomConfirmed(roomId, fromInvitation)
+                val (roomId, fromInvitation, isVideoChat) = (fragment.attachment as JoinRoomBundle)
+                joinRoomConfirmed(roomId, fromInvitation, isVideoChat)
             }
             TAG_UPDATE -> startDownload(fragment.attachmentAs<AppConfig>())
         }
@@ -141,25 +142,18 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    fun joinRoom(roomId: String, fromInvitation: Boolean) {
+    fun joinRoom(roomId: String, fromInvitation: Boolean, isVideoChat : Boolean = false) {
         val appComponent = application as AppComponent
 
         val currentRoomID = appComponent.signalHandler.peekRoomState().currentRoomId
 
-        // 如果用户已经加入这个房间, 直接确认这个操作
-        if (currentRoomID == roomId) {
-            joinRoomConfirmed(roomId, fromInvitation)
-            return
-        }
-
-        // 如果用户已经加入另外一个房间, 需要提示
-        if (currentRoomID != null) {
+        if ((isVideoChat && currentRoomID != null) || (currentRoomID != roomId && currentRoomID != null)) {
             AlertDialogFragment.Builder().apply {
                 title = R.string.dialog_confirm_switch_title.toFormattedString(this@BaseActivity)
                 message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
                 btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
                 btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
-                attachment = roomId to fromInvitation
+                attachment = JoinRoomBundle(roomId, fromInvitation, isVideoChat)
 
                 show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
             }
@@ -167,21 +161,23 @@ abstract class BaseActivity : AppCompatActivity(),
             return
         }
 
+        // 如果用户已经加入这个房间, 直接确认这个操作
         // 如果用户没有加入任意一个房间, 则确认操作
-        joinRoomConfirmed(roomId, fromInvitation)
+        joinRoomConfirmed(roomId, fromInvitation, isVideoChat)
     }
 
-    open fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {
-        // Base 类不知道具体怎么加入房间, 打开RoomActivity来加入房间
-        startActivityWithAnimation(
-                Intent(this, RoomActivity::class.java)
+    open fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean, isVideoChat: Boolean) {
+        val intent = if (isVideoChat) Intent(this, CallActivity::class.java) else Intent(this, RoomActivity::class.java)
+
+        // Base 类不知道具体怎么加入房间, 打开Activity来加入房间
+        startActivityWithAnimation(intent
                         .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true),
                 R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
     }
 
-    fun joinRoom(createRoomRequest: CreateRoomRequest) {
+    fun joinRoom(createRoomRequest: CreateRoomRequest, isVideoChat: Boolean = false) {
         val component = application as AppComponent
         val signalService = component.signalHandler
 
@@ -190,7 +186,7 @@ abstract class BaseActivity : AppCompatActivity(),
         signalService.createRoom(createRoomRequest.groupIds, createRoomRequest.extraMemberIds)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(CreateRoomSubscriber(applicationContext))
+                .subscribe(CreateRoomSubscriber(applicationContext, isVideoChat))
     }
 
     fun onLoginError(error: Throwable) {
@@ -306,7 +302,7 @@ abstract class BaseActivity : AppCompatActivity(),
         return this
     }
 
-    private inner class CreateRoomSubscriber(private val appContext: Context) : SingleSubscriber<Room>() {
+    private inner class CreateRoomSubscriber(private val appContext: Context, private val isVideoChat: Boolean) : SingleSubscriber<Room>() {
         override fun onError(error: Throwable) {
             defaultOnErrorAction.call(error)
 
@@ -317,10 +313,18 @@ abstract class BaseActivity : AppCompatActivity(),
             hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
             val currentActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
             if (currentActivity != null) {
-                currentActivity.joinRoom(value.id, false)
+                currentActivity.joinRoom(value.id, false, isVideoChat)
             } else {
                 startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
             }
+        }
+    }
+
+    private data class JoinRoomBundle(val roomId: String,
+                                      val fromInvitation: Boolean,
+                                      val isVideoChat : Boolean) : Serializable {
+        companion object {
+            private const val serialVersionUID = 1L
         }
     }
 
@@ -337,6 +341,7 @@ abstract class BaseActivity : AppCompatActivity(),
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
         const val EXTRA_JOIN_ROOM_FROM_INVITATION = "extra_fi"
+        const val EXTRA_JOIN_ROOM_IS_VIDEO_CHAT = "extra_isv"
 
         private const val STATE_PENDING_DENIED_PERMISSIONS = "state_pending_denied_permissions"
 
@@ -345,7 +350,8 @@ abstract class BaseActivity : AppCompatActivity(),
                 Manifest.permission.CALL_PHONE,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.CAMERA
         )
 
         fun startActivityJoiningRoom(context: Context, activity: Class<*>, roomId: String) {

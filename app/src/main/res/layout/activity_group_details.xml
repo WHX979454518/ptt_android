@@ -1,80 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools"
-            android:background="@color/grey_300"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/grey_300">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <LinearLayout
-            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/unit_three"
             android:background="@android:color/white"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:orientation="vertical">
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/groupDetails_members"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:gravity="left"
                 android:paddingLeft="@dimen/unit_one"
-                android:paddingRight="@dimen/unit_one"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:paddingRight="@dimen/unit_one" />
 
             <View style="@style/Divider.Lighter" />
 
             <TextView
                 android:id="@+id/groupDetails_allMemberLabel"
                 style="@style/Text.ProfileItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
                 android:padding="@dimen/unit_two"
-                tools:text="所有成员 (156)"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                tools:text="所有成员 (156)" />
 
         </LinearLayout>
 
         <LinearLayout
-            android:orientation="horizontal"
-            android:background="?attr/selectableItemBackground"
-            android:layout_marginTop="@dimen/unit_three"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/unit_three"
+            android:background="?attr/selectableItemBackground"
+            android:orientation="horizontal">
 
             <TextView
                 style="@style/Text.ProfileItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:background="@android:color/white"
                 android:padding="@dimen/unit_two"
-                android:text="@string/group_name"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"/>
+                android:text="@string/group_name" />
 
             <TextView
-                android:background="@android:color/white"
                 android:id="@+id/groupDetails_name"
                 style="@style/Text.ProfileItem.Value"
-                tools:text="组1"
-                android:paddingRight="@dimen/unit_two"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                android:paddingRight="@dimen/unit_two"
+                tools:text="组1" />
 
         </LinearLayout>
 
         <Button
             android:id="@+id/groupDetails_call"
             style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginLeft="@dimen/unit_one"
             android:layout_marginRight="@dimen/unit_one"
-            android:text="@string/call"
             android:layout_marginTop="@dimen/unit_three"
-            android:layout_marginBottom="@dimen/unit_two"
+            android:text="@string/chat_type_walkie_talkie" />
+
+        <Button
+            android:id="@+id/groupDetails_videoChat"
+            style="@style/Widget.AppCompat.Button"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/unit_two"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_marginTop="@dimen/unit_one"
+            android:text="@string/chat_type_video" />
+
 
     </LinearLayout>
 </ScrollView>

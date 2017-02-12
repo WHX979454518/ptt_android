@@ -28,6 +28,7 @@ import org.threeten.bp.DayOfWeek
 import org.threeten.bp.Duration
 import org.threeten.bp.LocalTime
 import org.threeten.bp.ZonedDateTime
+import org.webrtc.IceCandidate
 import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
@@ -347,6 +348,8 @@ data class RoomSpeakerUpdateSignal(val update : RoomSpeakerUpdate) : Signal
 data class RoomKickOutSignal(val roomId: String) : Signal
 data class UserUpdatedSignal(val user : UserObject) : Signal
 data class ForceUpdateSignal(val appConfig: AppConfig) : Signal
+data class IceCandidateSignal(val iceCandidate: IceCandidate) : Signal
+
 object UpdateLocationSignal : Signal
 
 
@@ -362,7 +365,13 @@ class DefaultSignalFactory : SignalFactory {
                 "s_speaker_changed" to { obj -> RoomSpeakerUpdateSignal(RoomSpeakerUpdateObject(obj.first() as JSONObject)) } ,
                 "s_kick_out_room" to { obj -> RoomKickOutSignal(obj.first().toString()) },
                 "s_user_updated" to { args -> UserUpdatedSignal(UserObject(args.first() as JSONObject)) },
-                "s_user_locate" to { args -> UpdateLocationSignal }
+                "s_user_locate" to { args -> UpdateLocationSignal },
+                "s_ice_candidate" to { args ->
+                    val obj = args.first() as JSONObject
+                    IceCandidateSignal(iceCandidate = IceCandidate(obj.getString("sdpMid"),
+                            obj.getInt("sdpMLineIndex"),
+                            obj.getString("candidate")))
+                }
         )
     }
 
@@ -427,6 +436,16 @@ class CreateRoomCommand(name : String? = null,
         return RoomObject(value)
     }
 }
+
+class JoinGroupChatCommand(roomId: String) : Command<Any, Any>("c_join_video_chat", roomId)
+class QuitGroupChatCommand(roomId: String) : Command<Any, Any>("c_quit_video_chat", roomId)
+class OfferGroupChatCommand(offer : String) : Command<String, String>("c_offer", offer)
+
+class AddIceCandidateCommand(iceCandidate: IceCandidate) : Command<Any, Any>("c_ice_candidate", JSONObject().apply {
+    put("sdpMid", iceCandidate.sdpMid)
+    put("candidate", iceCandidate.sdp)
+    put("sdpMLineIndex", iceCandidate.sdpMLineIndex)
+})
 
 data class SyncContactResult(val version : Long,
                              val users : List<User>,

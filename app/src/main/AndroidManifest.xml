@@ -22,6 +22,7 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:fullBackupContent="false"
@@ -101,6 +102,10 @@
 
         <activity android:name=".ui.map.MapActivity"
             android:label="@string/people_nearby" />
+
+        <activity android:name=".ui.call.CallActivity"
+            android:theme="@style/AppTheme.Room"
+            android:label="@string/group_chat" />
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>

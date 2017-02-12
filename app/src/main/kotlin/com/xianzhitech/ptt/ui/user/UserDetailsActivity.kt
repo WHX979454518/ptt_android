@@ -45,6 +45,11 @@ class UserDetailsActivity : BaseToolbarActivity() {
                 joinRoom(CreateRoomRequest(extraMemberIds = listOf(user!!.id)))
             }
         }
+
+        findViewById(R.id.userDetails_videoChat).setOnClickListener {
+            joinRoom(CreateRoomRequest(extraMemberIds = listOf(intent.getStringExtra(EXTRA_USER_ID))), true)
+        }
+
         callButton.setVisible((application as AppComponent).signalHandler.peekCurrentUserId != intent.getStringExtra(EXTRA_USER_ID))
     }
 

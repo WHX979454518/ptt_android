@@ -32,6 +32,8 @@ import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
+import org.webrtc.PeerConnection
+import org.webrtc.PeerConnectionFactory
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -70,6 +72,8 @@ open class App : MultiDexApplication(), AppComponent {
     override fun onCreate() {
         instance = this
         super.onCreate()
+
+        PeerConnectionFactory.initializeAndroidGlobals(this, true, true, true)
 
         RxAndroidPlugins.getInstance().registerSchedulersHook(object : RxAndroidSchedulersHook() {
             private val scheduler = ImmediateMainThreadScheduler()

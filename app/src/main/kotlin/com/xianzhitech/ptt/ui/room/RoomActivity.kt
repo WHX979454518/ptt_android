@@ -153,7 +153,7 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 .bindToLifecycle()
     }
 
-    override fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean) {
+    override fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean, isVideoChat: Boolean) {
         val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
         if (currentRoomId == roomId) {
             return

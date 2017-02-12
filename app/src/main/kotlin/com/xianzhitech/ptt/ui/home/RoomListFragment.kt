@@ -12,8 +12,6 @@ import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
-import com.crashlytics.android.answers.Answers
-import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
@@ -24,11 +22,11 @@ import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 import com.xianzhitech.ptt.util.RoomComparator
-import com.xianzhitech.ptt.util.withUser
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -37,7 +35,7 @@ import java.util.concurrent.TimeUnit
 /**
  * 显示会话列表(Room)的界面
  */
-class RoomListFragment : BaseFragment() {
+class RoomListFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonClickListener, AlertDialogFragment.OnNegativeButtonClickListener {
 
     private var listView: RecyclerView? = null
     private var errorView: View? = null
@@ -97,6 +95,18 @@ class RoomListFragment : BaseFragment() {
         }
     }
 
+    override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
+        if (fragment.tag == TAG_CHAT_TYPE) {
+            (activity as? BaseActivity)?.joinRoom(fragment.attachmentAs<String>(), false, false)
+        }
+    }
+
+    override fun onNegativeButtonClicked(fragment: AlertDialogFragment) {
+        if (fragment.tag == TAG_CHAT_TYPE) {
+            (activity as? BaseActivity)?.joinRoom(fragment.attachmentAs<String>(), false, true)
+        }
+    }
+
     override fun onDestroyView() {
         listView = null
         errorView = null
@@ -127,9 +137,7 @@ class RoomListFragment : BaseFragment() {
             }
 
             holder.itemView.setOnClickListener {
-                roomList.getOrNull(holder.adapterPosition)?.let {
-                    (activity as BaseActivity).joinRoom(it.id, false)
-                }
+                holder.room?.let { onRoomClicked(it.id) }
             }
 
             return holder
@@ -146,6 +154,17 @@ class RoomListFragment : BaseFragment() {
 
         override fun getItemCount(): Int {
             return roomList.size
+        }
+    }
+
+    private fun onRoomClicked(roomId : String) {
+        AlertDialogFragment.Builder().apply {
+            message = getString(R.string.choose_chat_type)
+            btnPositive = getString(R.string.chat_type_walkie_talkie)
+            btnNegative = getString(R.string.chat_type_video)
+            attachment = roomId
+            show(childFragmentManager, TAG_CHAT_TYPE)
+            childFragmentManager.executePendingTransactions()
         }
     }
 
@@ -237,5 +256,9 @@ class RoomListFragment : BaseFragment() {
     interface Callbacks {
         fun navigateToContactList()
         fun requestCreateNewRoom()
+    }
+
+    companion object {
+        private const val TAG_CHAT_TYPE = "tag_chat_type"
     }
 }

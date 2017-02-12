@@ -1,21 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <import type="android.text.format.DateUtils" />
+
+        <variable
+            name="elapsedTimeSeconds"
+            type="long" />
+    </data>
+
     <android.support.percent.PercentRelativeLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ImageView
-            android:id="@+id/call_back"
-            android:src="@drawable/ic_arrow_back_white"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
         <org.webrtc.SurfaceViewRenderer
             android:id="@+id/call_remoteView"
-            app:layout_aspectRatio="178%"
+            app:layout_aspectRatio="100%"
             app:layout_widthPercent="100%" />
+
+        <ImageView
+            android:id="@+id/call_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/unit_two"
+            android:src="@drawable/ic_arrow_back_white" />
+
+        <TextView
+            android:id="@+id/call_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/unit_two"
+            android:layout_below="@+id/call_remoteView"
+            tools:text="13:30"
+            android:text="@{DateUtils.formatElapsedTime(elapsedTimeSeconds)}"
+            android:layout_centerHorizontal="true" />
+
+        <ImageView
+            android:id="@+id/call_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/call_time"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/unit_four"
+            android:background="@drawable/bg_circle"
+            android:padding="@dimen/unit_one"
+            android:src="@drawable/ic_call_end_large"
+            android:tint="@color/red" />
 
     </android.support.percent.PercentRelativeLayout>
 </layout>

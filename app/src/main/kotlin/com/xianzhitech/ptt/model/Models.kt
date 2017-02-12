@@ -27,6 +27,6 @@ interface User : Model {
     val phoneNumber: String?
     val enterpriseId: String
     val enterpriseName: String
-    val enterpriseExpireDate : Date?
+    val enterpriseExpireDate: Date?
 }
 
