@@ -21,7 +21,7 @@ deploy_staging:
       name: staging
       url: http://netptt.cn:20000
   script:
-    - scp app/build/outputs/apk/app-dev-release.apk root@netptt.cn:/serverDisk/apks/test/xianzhitong-test-${CI_PIPELINE_ID}.apk
+    - scp app/build/outputs/apk/app-dev-debug.apk root@netptt.cn:/serverDisk/apks/test/xianzhitong-test-${CI_PIPELINE_ID}.apk
   tags:
     - ANDROID
     - NETPTT_ACCESS
