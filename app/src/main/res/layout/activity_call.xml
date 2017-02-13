@@ -33,6 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/unit_two"
+            android:visibility="invisible"
             android:layout_below="@+id/call_remoteView"
             tools:text="13:30"
             android:text="@{DateUtils.formatElapsedTime(elapsedTimeSeconds)}"
