@@ -485,7 +485,7 @@ class SignalServiceHandler(private val appContext: Context,
                 .subscribeSimple {
                     val factory = PeerConnectionFactory(PeerConnectionFactory.Options())
                     val mediaConstraints = MediaConstraints()
-//                    mediaConstraints.mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
+                    mediaConstraints.mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
                     mediaConstraints.mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"))
                     val p = factory.createPeerConnection(PeerConnection.RTCConfiguration(listOf(
 //                            PeerConnection.IceServer("stun:121.43.152.43:3478"),
@@ -516,7 +516,7 @@ class SignalServiceHandler(private val appContext: Context,
                                             videoTrack.addRenderer(it.remoteRenderer)
                                         }
 
-//                                        p0.audioTracks.first.setEnabled(false)
+                                        p0.audioTracks.first.setEnabled(false)
                                     }
                                 }
 
@@ -537,10 +537,10 @@ class SignalServiceHandler(private val appContext: Context,
                     val cameraName = enumerator.deviceNames.firstOrNull { enumerator.isFrontFacing(it) } ?: enumerator.deviceNames.first()
                     groupChatVideoCapturer = Camera1Capturer(cameraName, SimpleCameraEventsHandler(), false)
 
-//                    val audioTrack = factory.createAudioTrack("audio", factory.createAudioSource(MediaConstraints()))
+                    val audioTrack = factory.createAudioTrack("audio", factory.createAudioSource(MediaConstraints()))
                     val videoTrack = factory.createVideoTrack("video", factory.createVideoSource(groupChatVideoCapturer))
                     val mediaStream = factory.createLocalMediaStream("local-stream")
-//                    mediaStream.addTrack(audioTrack)
+                    mediaStream.addTrack(audioTrack)
                     mediaStream.addTrack(videoTrack)
 
                     p.addStream(mediaStream)
