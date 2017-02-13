@@ -23,6 +23,7 @@ deploy_staging:
   script:
     - ./gradlew clean assembleDevRelease
     - echo "Uploading to netptt..."
+    - scp app/build/outputs/apk/app-dev-release.apk root@netptt.cn:/serverDisk/apks/test/xianzhitong-test-${CI_PIPELINE_ID}.apk
   tags:
     - ANDROID
     - NETPTT_ACCESS
@@ -41,6 +42,7 @@ deploy_production:
   script:
     - ./gradlew clean assembleProdRelease
     - echo "Uploading to netptt..."
+    - scp app/build/outputs/apk/app-prod-release.apk root@netptt.cn:/serverDisk/apks/prod/xianzhitong-1.5.apk
   tags:
     - ANDROID
     - NETPTT_ACCESS
