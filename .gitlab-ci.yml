@@ -29,8 +29,6 @@ deploy_staging:
   artifacts:
       paths:
         - app/build/outputs
-  only:
-      - develop
 
 deploy_production:
   stage: deploy
@@ -49,5 +47,3 @@ deploy_production:
   artifacts:
       paths:
         - app/build/outputs
-  only:
-      - develop
