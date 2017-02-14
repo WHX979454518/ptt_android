@@ -516,7 +516,7 @@ class SignalServiceHandler(private val appContext: Context,
                                             videoTrack.addRenderer(it.remoteRenderer)
                                         }
 
-                                        p0.audioTracks.first.setEnabled(false)
+                                        p0.audioTracks.first.setEnabled(true)
                                     }
                                 }
 
