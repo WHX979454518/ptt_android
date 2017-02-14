@@ -537,9 +537,9 @@ class SignalServiceHandler(private val appContext: Context,
                     val cameraName = enumerator.deviceNames.firstOrNull { enumerator.isFrontFacing(it) } ?: enumerator.deviceNames.first()
                     groupChatVideoCapturer = Camera1Capturer(cameraName, SimpleCameraEventsHandler(), false)
 
+                    val mediaStream = factory.createLocalMediaStream("local-stream")
                     val audioTrack = factory.createAudioTrack("audio", factory.createAudioSource(MediaConstraints()))
                     val videoTrack = factory.createVideoTrack("video", factory.createVideoSource(groupChatVideoCapturer))
-                    val mediaStream = factory.createLocalMediaStream("local-stream")
                     mediaStream.addTrack(audioTrack)
                     mediaStream.addTrack(videoTrack)
 
