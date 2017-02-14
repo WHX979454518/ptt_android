@@ -21,6 +21,7 @@ deploy_staging:
       name: staging
       url: http://netptt.cn:20000
   script:
+    - ./gradlew clean assembleDevRelease
     - scp app/build/outputs/apk/app-dev-release.apk root@netptt.cn:/serverDisk/apks/test/xianzhitong-test-${CI_PIPELINE_ID}.apk
   tags:
     - ANDROID
@@ -39,6 +40,7 @@ deploy_production:
       url: http://netptt.cn:20000
   script:
     - echo "Uploading to netptt..."
+    - ./gradlew clean assembleProdRelease
     - scp app/build/outputs/apk/app-prod-release.apk root@netptt.cn:/serverDisk/apks/prod/xianzhitong-1.5.apk
   tags:
     - ANDROID
