@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'io.fabric'
 
-project.ext.buildNumber = System.getenv['BUILD_NUMBER'] ?: 'dev'
-project.ext.buildName = System.getenv['BUILD_NAME'] ?: '1.5-snapshot'
-project.ext.appServerUrl = System.getenv['APP_SERVER_URL']
+project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
+project.ext.buildName = System.getenv('BUILD_NAME') ?: '1.5-snapshot'
+project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
 
 buildscript {
     ext.kotlin_version = '1.0.5-2'
