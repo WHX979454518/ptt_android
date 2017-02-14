@@ -6,6 +6,8 @@ project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
 project.ext.buildName = System.getenv('BUILD_NAME') ?: '1.5-snapshot'
 project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
 
+println("Building app version $buildName($buildNumber)")
+
 buildscript {
     repositories {
         // required for this library, don't use mavenCentral()
