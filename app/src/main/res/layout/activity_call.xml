@@ -8,6 +8,10 @@
         <import type="android.text.format.DateUtils" />
 
         <variable
+            name="speakerOn"
+            type="boolean" />
+
+        <variable
             name="elapsedTimeSeconds"
             type="long" />
     </data>
@@ -32,12 +36,34 @@
             android:id="@+id/call_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/unit_two"
-            android:visibility="invisible"
             android:layout_below="@+id/call_remoteView"
-            tools:text="13:30"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/unit_two"
             android:text="@{DateUtils.formatElapsedTime(elapsedTimeSeconds)}"
-            android:layout_centerHorizontal="true" />
+            android:visibility="invisible"
+            tools:text="13:30" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/call_end"
+            android:layout_alignTop="@+id/call_end"
+            android:layout_marginRight="@dimen/unit_three"
+            android:layout_toLeftOf="@+id/call_end"
+            tools:src="@drawable/ic_headset">
+
+            <ImageView
+                android:id="@+id/call_mute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_circle"
+                android:padding="@dimen/unit_one"
+                android:src="@drawable/ic_volume_mute"
+                android:tint="@color/blue_grey" />
+
+        </FrameLayout>
+
 
         <ImageView
             android:id="@+id/call_end"
@@ -50,6 +76,29 @@
             android:padding="@dimen/unit_one"
             android:src="@drawable/ic_call_end_large"
             android:tint="@color/red" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/call_end"
+            android:layout_alignTop="@+id/call_end"
+            android:layout_marginLeft="@dimen/unit_three"
+            android:layout_toRightOf="@+id/call_end"
+            tools:src="@drawable/ic_headset">
+
+            <ImageView
+                android:id="@+id/call_speaker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_circle"
+                android:padding="@dimen/unit_one"
+                android:src="@{speakerOn ? @drawable/ic_volume_up : @drawable/ic_headset}"
+                android:tint="@{speakerOn ? @color/red : @color/blue_grey}"
+                tools:src="@drawable/ic_headset"
+                tools:tint="@color/red" />
+
+        </FrameLayout>
 
     </android.support.percent.PercentRelativeLayout>
 </layout>

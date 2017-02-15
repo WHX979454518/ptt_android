@@ -1,7 +1,11 @@
 package com.xianzhitech.ptt.ui.call
 
+import android.content.Context
+import android.media.AudioManager
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.databinding.ActivityCallBinding
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.service.handler.GroupChatView
@@ -11,6 +15,7 @@ import org.webrtc.VideoRenderer
 
 class CallActivity : BaseActivity(), GroupChatView {
     private lateinit var binding : ActivityCallBinding
+    private val audioManager : AudioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +30,20 @@ class CallActivity : BaseActivity(), GroupChatView {
         }
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        binding.speakerOn = audioManager.isSpeakerphoneOn
+
+        binding.callSpeaker.setOnClickListener {
+            val newSpeakerOn = audioManager.isSpeakerphoneOn.not()
+            audioManager.isSpeakerphoneOn = newSpeakerOn
+            if (newSpeakerOn) {
+                Toast.makeText(this, R.string.speaker_is_on, Toast.LENGTH_SHORT).show()
+            }
+            else {
+                Toast.makeText(this, R.string.speaker_is_off, Toast.LENGTH_SHORT).show()
+            }
+            binding.speakerOn = newSpeakerOn
+        }
     }
 
     override fun onDestroy() {

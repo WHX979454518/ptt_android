@@ -227,6 +227,8 @@
     <string name="choose_chat_type">选择聊天类型</string>
     <string name="chat_type_walkie_talkie">对讲</string>
     <string name="chat_type_video">视频聊天</string>
+    <string name="speaker_is_on">扬声器已经打开</string>
+    <string name="speaker_is_off">扬声器已经关闭</string>
 
     <string-array name="level_number">
         <item>管理员</item>
