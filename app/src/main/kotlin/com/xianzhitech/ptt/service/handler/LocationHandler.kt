@@ -2,10 +2,7 @@ package com.xianzhitech.ptt.service.handler
 
 import android.content.Context
 import com.baidu.location.LocationClient
-import com.xianzhitech.ptt.ext.d
-import com.xianzhitech.ptt.ext.e
-import com.xianzhitech.ptt.ext.i
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Location
 import com.xianzhitech.ptt.service.UserObject
 import com.xianzhitech.ptt.util.receiveLocation
@@ -26,14 +23,15 @@ class LocationHandler(private val context : Context,
                     (user?.locationScanEnableObservable ?: Observable.empty())
                             .map { enabled -> user to enabled }
                 }
-                .switchMap { result: Pair<UserObject, Boolean> ->
+                .flatMap { result: Pair<UserObject, Boolean> ->
                     val (user, locationEnabled) = result
                     if (locationEnabled) {
                         //TODO: 网络不通时要把位置记录下来...
                         logger.i { "Start collecting locations every ${user.locationScanInterval} ms" }
                         locationClient.receiveLocation(false, user.locationScanInterval.toInt())
                                 .doOnNext { logger.d { "Got location $it" } }
-                                .distinctUntilChanged(Location::locationEquals)
+                                .onErrorResumeNext(Observable.empty())
+//                                .distinctUntilChanged(Location::locationEquals)
                                 .buffer(Math.max(1000, Math.max(user.locationReportInterval, user.locationScanInterval)), TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                     } else {
                         Observable.never()
@@ -45,7 +43,13 @@ class LocationHandler(private val context : Context,
                 }
                 .subscribeSimple {
                     logger.i { "Sending ${it.size} locations to server" }
-                    signalServiceHandler.sendLocationData(it).subscribeSimple()
+                    signalServiceHandler
+                            .sendLocationData(it)
+                            .retryWhen { err ->
+                                err.zipWith(Observable.range(0, 10)) { e, i -> i }
+                                        .switchMap { Observable.timer(10, TimeUnit.SECONDS, AndroidSchedulers.mainThread()) }
+                            }
+                            .subscribeSimple()
                 }
     }
 
