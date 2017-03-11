@@ -188,7 +188,7 @@ dependencies {
         transitive = true;
     }
 
-    kapt 'com.android.databinding:compiler:2.2.0'
+    kapt 'com.android.databinding:compiler:2.3.0'
 }
 
 kapt {

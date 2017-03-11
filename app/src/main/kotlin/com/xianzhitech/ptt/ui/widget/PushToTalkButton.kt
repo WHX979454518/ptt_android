@@ -9,8 +9,10 @@ import android.os.Vibrator
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.ImageButton
+import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
@@ -141,7 +143,13 @@ class PushToTalkButton : ImageButton {
                     isPressingDown = true
                     postDelayed(requestFocusRunnable, 100)
                     return true
-                } else return false
+                } else {
+                    if (signalService.currentUserCache.value?.permissions?.contains(Permission.SPEAK)?.not() ?: false) {
+                        Toast.makeText(context, R.string.error_user_no_permission_to_speak, Toast.LENGTH_LONG).show()
+                    }
+
+                    return false
+                }
             }
 
             MotionEvent.ACTION_CANCEL,
