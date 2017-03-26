@@ -16,6 +16,6 @@ open class BaseAboutActivity : BaseToolbarActivity() {
 
         setContentView(R.layout.activity_about)
 
-        findView<TextView>(R.id.about_version).text = Constants.getAppFullName(this, BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)
+        findView<TextView>(R.id.about_version).text = Constants.getAppFullName(this, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toString())
     }
 }
