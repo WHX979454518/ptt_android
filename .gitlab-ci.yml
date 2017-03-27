@@ -27,7 +27,7 @@ deploy_staging:
         curl -X POST
         -H "Content-Type: application/json"
         -u admin:123654
-        -d '{"latest_version_code":${CI_PIPELINE_ID},"latest_version_name":"1.6.${CI_PIPELINE_ID}","update_message":"新版本发布","mandatory":false,"signal_server_endpoint":"https://netptt.cn:20007","signal_server_endpoint_insecure":"http://netptt.cn:20000","download_url":"http://netptt.cn:8080/test/xianzhitong-test-${CI_PIPELINE_ID}.apk"}'
+        -d "{\"latest_version_code\":${CI_PIPELINE_ID},\"latest_version_name\":\"1.6.${CI_PIPELINE_ID}\",\"update_message\":\"新版本发布\",\"mandatory\":false,\"signal_server_endpoint\":\"https://netptt.cn:20007\",\"signal_server_endpoint_insecure\":\"http://netptt.cn:20000\",\"download_url\":\"http://netptt.cn:8080/test/xianzhitong-test-${CI_PIPELINE_ID}.apk\"}"
         http://netptt.cn:20002/admin
   tags:
     - ANDROID
