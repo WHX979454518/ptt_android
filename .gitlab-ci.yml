@@ -4,7 +4,7 @@ stages:
 
 build:
   stage: build
-  script: ./gradlew clean assembleDevRelease assembleProdRelease
+  script: ./gradlew --no-daemon clean assembleDevRelease assembleProdRelease
   artifacts:
     paths:
       - app/build/outputs
@@ -23,7 +23,7 @@ deploy_staging:
   script:
     - export CHANGE_LOG="`./generate_gitlog.sh`"
     - echo $CHANGE_LOG
-    - ./gradlew clean assembleDevRelease
+    - ./gradlew --no-daemon clean assembleDevRelease
     - scp app/build/outputs/apk/app-dev-release.apk root@netptt.cn:/serverDisk/apks/test/xianzhitong-test-${CI_PIPELINE_ID}.apk
     - >
         curl -X POST
