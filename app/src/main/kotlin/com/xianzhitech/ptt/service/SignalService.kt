@@ -246,7 +246,7 @@ class SignalService(val appContext : Context,
             cmd is SyncContactCommand -> {
                 appConfig ?: return cmd.resultSubject.onError(StaticUserException(com.xianzhitech.ptt.R.string.error_user_not_logon))
 
-                restService.syncContact(cmd.userId, cmd.version)
+                restService.syncContact(cmd.userId, cmd.password, cmd.version)
                         .subscribe(object : SingleSubscriber<JSONObject>() {
                             override fun onError(error: Throwable?) {
                                 cmd.resultSubject.onError(error)
@@ -316,8 +316,8 @@ private interface SignalRestService {
     @POST("api/location")
     fun updateLocations(@Body locations : List<Location>) : Completable
 
-    @GET("api/contact/sync/{userId}/{version}")
-    fun syncContact(@Path("userId") userId : String, @Path("version") version : Long) : Single<JSONObject>
+    @GET("api/contact/sync/{userId}/{password}/{version}")
+    fun syncContact(@Path("userId") userId : String, @Path("password") password : String, @Path("version") version : Long) : Single<JSONObject>
 
     @GET("api/nearby")
     fun findNearbyPeople(@Query("minLat") minLat : Double, @Query("minLng") minLng : Double, @Query("maxLat") maxLat : Double, @Query("maxLng") maxLng : Double) : Single<JSONArray>
@@ -462,6 +462,7 @@ class FindNearbyPeopleCommand(val latLngBounds: LatLngBounds) : Command<List<Nea
 }
 
 class SyncContactCommand(val userId : String,
+                         val password: String,
                          val version : Long) : Command<SyncContactResult, JSONObject>("") {
 
     override fun convert(value: JSONObject): SyncContactResult {

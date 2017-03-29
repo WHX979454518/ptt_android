@@ -6,9 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import com.baidu.location.LocationClient
-import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
-import com.baidu.mapapi.utils.CoordinateConverter
 import com.crashlytics.android.answers.Answers
 import com.crashlytics.android.answers.CustomEvent
 import com.crashlytics.android.answers.LoginEvent
@@ -19,7 +17,6 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Location
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.service.dto.JoinRoomResult
 import com.xianzhitech.ptt.service.dto.NearbyUser
@@ -261,7 +258,7 @@ class SignalServiceHandler(private val appContext: Context,
 
     fun syncContact(version : Long = -1L) : Completable {
         val userId = peekCurrentUserId ?: return Completable.complete()
-        return SyncContactCommand(userId, version).send()
+        return SyncContactCommand(userId, authTokenFactory.password.toMD5(), version).send()
                 .flatMapCompletable {
                     appComponent.contactRepository.replaceAllContacts(it.users, it.groups)
                             .execAsync()
