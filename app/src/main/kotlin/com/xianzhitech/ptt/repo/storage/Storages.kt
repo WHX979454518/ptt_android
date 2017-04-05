@@ -1,9 +1,6 @@
 package com.xianzhitech.ptt.repo.storage
 
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Model
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.RoomModel
 import rx.Completable
 import rx.Single
@@ -40,7 +37,12 @@ interface RoomStorage {
     fun saveRooms(rooms: Iterable<Room>) : Completable
     fun removeRooms(roomIds: Iterable<String>) : Completable
     fun clear() : Completable
+}
 
+interface MessageStorage {
+    fun saveMessages(messages: Iterable<Message>) : Single<List<Message>>
+    fun getMessages(roomId: String, latestId: String?, count: Int) : Single<List<Message>>
+    fun clear() : Completable
 }
 
 /**

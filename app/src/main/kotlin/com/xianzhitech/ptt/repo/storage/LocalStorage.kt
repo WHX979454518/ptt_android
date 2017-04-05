@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.ext.perf
 import com.xianzhitech.ptt.ext.toSqlSet
 import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.RoomModel
+import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import rx.Completable
 import rx.Single
@@ -257,6 +258,96 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
     }
 }
 
+class MessageSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) : BaseSQLiteStorage<Message>(dbOpenHelper), MessageStorage {
+    override fun saveMessages(messages: Iterable<Message>): Single<List<Message>> {
+        val ids = arrayListOf<Long>()
+
+        return executeInTransaction {
+            val v = ContentValues()
+            messages.forEach {
+                v.clear()
+                it.toContentValues(v)
+                ids.add(db.insertWithOnConflict(Messages.TABLE_NAME, "", v, SQLiteDatabase.CONFLICT_REPLACE))
+            }
+        }.andThen(Single.fromCallable { queryList(Messages.MAPPER, "SELECT ${Messages.ALL} FROM ${Messages.TABLE_NAME} WHERE ${Messages.DB_ID} IN (${ids.toSqlSet()})") })
+    }
+
+    override fun getMessages(roomId: String, latestId: String?, count: Int): Single<List<Message>> {
+        val extraCriteria : String
+
+        if (latestId != null) {
+            extraCriteria = "AND ${Messages.SEND_TIME} < (SELECT ${Messages.SEND_TIME} FROM ${Messages.TABLE_NAME} WHERE ${Messages.ID} = '$latestId')"
+        }
+        else {
+            extraCriteria = ""
+        }
+
+        return Single.fromCallable {
+            queryList(Messages.MAPPER,
+                    "SELECT ${Messages.ALL} FROM ${Messages.TABLE_NAME} " +
+                            "WHERE ${Messages.ROOM_ID} = '$roomId' $extraCriteria " +
+                            "ORDER BY ${Messages.SEND_TIME} DESC " +
+                            "LIMIT $count"
+            )
+        }.subscribeOn(queryScheduler)
+    }
+
+    override fun clear(): Completable {
+        return executeInTransaction {
+            db.delete(Messages.TABLE_NAME, "1", emptyArray())
+        }
+    }
+}
+
+private object Messages {
+    const val TABLE_NAME = "messages"
+
+    const val DB_ID = "db_id"
+    const val ID = "id"
+    const val SENDER_ID = "sender_id"
+    const val SEND_TIME = "send_time"
+    const val ROOM_ID = "room_id"
+    const val READ = "read"
+    const val TYPE = "type"
+    const val BODY = "body"
+
+    const val ALL = "$ID,$SENDER_ID,$SEND_TIME,$ROOM_ID,$TYPE,$BODY,$READ"
+    const val CREATE_SQL = "CREATE TABLE $TABLE_NAME (" +
+            "$DB_ID INTEGER PRIMARY KEY AUTOINCREMENT," +
+            "$ID TEXT UNIQUE ON CONFLICT REPLACE," +
+            "$SEND_TIME INTEGER NOT NULL," +
+            "$READ INTEGER DEFAULT 0," +
+            "$ROOM_ID TEXT REFERENCES ${Rooms.TABLE_NAME}(${Rooms.ID}) ON DELETE CASCADE," +
+            "$SENDER_ID TEXT," +
+            "$TYPE TEXT," +
+            "$BODY TEXT" +
+            "); " +
+            "CREATE INDEX IF NOT EXISTS message_room_id_index ON $TABLE_NAME ($ROOM_ID); " +
+            "CREATE INDEX IF NOT EXISTS message_id_index ON $TABLE_NAME ($ID); " +
+            "CREATE INDEX IF NOT EXISTS message_sender_id_index ON $TABLE_NAME ($SENDER_ID); "
+
+    val MAPPER: (Cursor) -> Message = {
+        Message(
+                id = it.getString(0),
+                senderId = it.getString(1),
+                sendTime =  it.getLong(2),
+                roomId = it.getString(3),
+                type = it.getString(4),
+                body = JSONObject(it.getString(5)),
+                read = it.getInt(6) != 0
+        )
+    }
+}
+
+private fun Message.toContentValues(v: ContentValues) {
+    v.put(Messages.ID, id)
+    v.put(Messages.SENDER_ID, senderId)
+    v.put(Messages.SEND_TIME, sendTime)
+    v.put(Messages.ROOM_ID, roomId)
+    v.put(Messages.TYPE, type)
+    v.put(Messages.BODY, body.toString())
+}
+
 
 open class BaseSQLiteStorage<T : Model>(dbOpenHelper: SQLiteOpenHelper) {
 
@@ -348,7 +439,7 @@ open class BaseSQLiteStorage<T : Model>(dbOpenHelper: SQLiteOpenHelper) {
 
 
 fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelper {
-    return object : SQLiteOpenHelper(context, dbName, null, 2) {
+    return object : SQLiteOpenHelper(context, dbName, null, 3) {
         override fun onCreate(db: SQLiteDatabase) {
             db.beginTransaction()
             try {
@@ -356,6 +447,7 @@ fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelpe
                 db.execSQL(Groups.CREATE_SQL)
                 db.execSQL(Rooms.CREATE_SQL)
                 db.execSQL(Contacts.CREATE_SQL)
+                db.execSQL(Messages.CREATE_SQL)
                 db.setTransactionSuccessful()
             } finally {
                 db.endTransaction()
@@ -369,6 +461,16 @@ fun createSQLiteStorageHelper(context: Context, dbName: String): SQLiteOpenHelpe
                     db.beginTransaction()
                     try {
                         db.execSQL(Users.MIGRATE_SQL_V1_V2)
+                        db.setTransactionSuccessful()
+                    }
+                    finally {
+                        db.endTransaction()
+                    }
+                }
+                else if (v == 3) {
+                    db.beginTransaction()
+                    try {
+                        db.execSQL(Messages.CREATE_SQL)
                         db.setTransactionSuccessful()
                     }
                     finally {

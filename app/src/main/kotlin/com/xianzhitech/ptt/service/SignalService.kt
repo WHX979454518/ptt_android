@@ -540,6 +540,26 @@ class GroupObject(private val obj: JSONObject) : Group {
     }
 }
 
+private fun Message.toJson() : JSONObject {
+    return JSONObject().apply {
+        put("senderLocalId", localId)
+        put("type", type)
+        put("roomId", roomId)
+        put("body", body)
+    }
+}
+
+private fun JSONObject.toMessage() : Message {
+    return Message(
+            id = getString("_id"),
+            localId = getString("sendLocalId"),
+            sendTime = getLong("sendTime"),
+            body = getJSONObject("body"),
+            type = getString("type"),
+            roomId = getString("roomId")
+    )
+}
+
 private class RoomObject(obj: JSONObject) : Room, Serializable {
     override val id: String = obj.getString("idNumber")
     override val name: String = obj.getStringValue("name")
