@@ -10,7 +10,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.mapFirst
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.widget.DrawableWrapper
@@ -18,7 +18,7 @@ import rx.Subscriber
 import java.lang.ref.WeakReference
 
 private class ModelDrawable constructor(private val context: Context,
-                                        model: Model,
+                                        model: NamedModel,
                                         maxMemberDisplayCount: Int) : DrawableWrapper() {
 
     init {
@@ -74,6 +74,6 @@ private fun User.createAvatarDrawable(context: Context): Drawable {
     }
 }
 
-fun Model.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT): Drawable {
+fun NamedModel.createDrawable(context: Context, maxMemberDisplayCount: Int = Constants.MAX_MEMBER_ICON_DISPLAY_COUNT): Drawable {
     return ModelDrawable(context, this, maxMemberDisplayCount)
 }

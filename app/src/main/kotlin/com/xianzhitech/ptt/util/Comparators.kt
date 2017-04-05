@@ -1,7 +1,7 @@
 package com.xianzhitech.ptt.util
 
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
@@ -33,8 +33,8 @@ object RoomComparator : Comparator<Room> {
     private fun Date?.timeOrZero() = this?.time ?: 0
 }
 
-object ModelComparator : Comparator<Model> {
-    override fun compare(lhs: Model, rhs: Model): Int {
+object ModelComparator : Comparator<NamedModel> {
+    override fun compare(lhs: NamedModel, rhs: NamedModel): Int {
         val lhsIsGroup = lhs is Group
         val rhsIsGroup = rhs is Group
 

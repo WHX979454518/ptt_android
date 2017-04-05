@@ -49,7 +49,7 @@ interface MessageStorage {
  * 联系人接口
  */
 interface ContactStorage {
-    fun getContactItems(): Single<List<Model>>
+    fun getContactItems(): Single<List<NamedModel>>
     fun getAllContactUsers(): Single<List<User>>
     fun replaceAllContacts(users: Iterable<User>, groups: Iterable<Group>) : Completable
     fun clear() : Completable

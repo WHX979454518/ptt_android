@@ -10,7 +10,7 @@ import android.widget.TextView
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.group.GroupDetailsActivity
@@ -37,7 +37,7 @@ abstract class ModelListFragment : BaseFragment() {
                         val currCharView: TextView = rootView.findView(R.id.modelListFragment_currentChar))
 
 
-    protected abstract val allModels : rx.Observable<List<Model>>
+    protected abstract val allModels : rx.Observable<List<NamedModel>>
 
     private var views: Views? = null
 
@@ -110,7 +110,7 @@ abstract class ModelListFragment : BaseFragment() {
                         val needle = it.second.trim().toLowerCase()
                         val pinyinList = arrayListOf<String>()
                         val pinyinStringBuffer = StringBuilder()
-                        val result = arrayListOf<Model>()
+                        val result = arrayListOf<NamedModel>()
                         val matchPoint = hashMapOf<String, Int>()
 
                         it.first.forEach { model ->
@@ -157,7 +157,7 @@ abstract class ModelListFragment : BaseFragment() {
                         }
 
                         // 按查找分数对结果排序
-                        result.sortWith(Comparator<Model> { lhs, rhs ->
+                        result.sortWith(Comparator<NamedModel> { lhs, rhs ->
                             val rc = matchPoint[rhs.id]!!.compareTo(matchPoint[lhs.id]!!)
                             if (rc != 0) {
                                 rc
@@ -170,7 +170,7 @@ abstract class ModelListFragment : BaseFragment() {
                     }
                 }
                 .map {
-                    val resultList = ArrayList<Model>(it.size + Math.min(it.size, 27))
+                    val resultList = ArrayList<NamedModel>(it.size + Math.min(it.size, 27))
                     val headerPositions = hashMapOf<Char, Int>()
                     var lastChar : Char? = null
 
@@ -188,8 +188,8 @@ abstract class ModelListFragment : BaseFragment() {
                     resultList to headerPositions
                 }
                 .observeOnMainThread()
-                .subscribe(object : Subscriber<Pair<List<Model>, Map<Char, Int>>>() {
-                    override fun onNext(t: Pair<List<Model>, Map<Char, Int>>) {
+                .subscribe(object : Subscriber<Pair<List<NamedModel>, Map<Char, Int>>>() {
+                    override fun onNext(t: Pair<List<NamedModel>, Map<Char, Int>>) {
                         setData(t.first, t.second)
                         onDataLoadFinished()
                     }
@@ -202,13 +202,13 @@ abstract class ModelListFragment : BaseFragment() {
                 })
     }
 
-    fun setData(modelList: List<Model>, headerPositions: Map<Char, Int>) {
+    fun setData(modelList: List<NamedModel>, headerPositions: Map<Char, Int>) {
         adapter.headerPositions.clear()
         adapter.headerPositions.putAll(headerPositions)
         adapter.data = modelList
     }
 
-    open fun onItemClicked(viewHolder: RecyclerView.ViewHolder, model: Model) {
+    open fun onItemClicked(viewHolder: RecyclerView.ViewHolder, model: NamedModel) {
         when (model) {
             is Group -> activity.startActivityWithAnimation(GroupDetailsActivity.build(context, model.id))
             is User -> activity.startActivityWithAnimation(UserDetailsActivity.build(context, model.id))
@@ -216,9 +216,9 @@ abstract class ModelListFragment : BaseFragment() {
     }
 
     abstract fun onCreateModelViewHolder(container: ViewGroup): RecyclerView.ViewHolder
-    abstract fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: Model)
+    abstract fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: NamedModel)
 
-    private inner class Adapter : RecyclerAdapter<Model, RecyclerView.ViewHolder>() {
+    private inner class Adapter : RecyclerAdapter<NamedModel, RecyclerView.ViewHolder>() {
         val headerPositions = TreeMap<Char, Int>()
 
         override fun getItemViewType(position: Int): Int {
@@ -257,12 +257,12 @@ abstract class ModelListFragment : BaseFragment() {
     }
 
 
-    private class HeaderModel(override val name: String) : Model {
+    private class HeaderModel(override val name: String) : NamedModel {
         override val id: String
             get() = throw UnsupportedOperationException()
     }
 
-    private val Model.capitalChar : Char
+    private val NamedModel.capitalChar : Char
         get() = if (this is Group) {
             '#'
         } else {

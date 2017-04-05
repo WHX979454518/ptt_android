@@ -7,18 +7,13 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.SearchView
 import android.view.*
 import android.widget.Toast
-import com.crashlytics.android.answers.Answers
-import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.defaultOnErrorAction
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.subscribeSimple
-import com.xianzhitech.ptt.model.Model
-import com.xianzhitech.ptt.util.withUser
+import com.xianzhitech.ptt.model.NamedModel
 import rx.CompletableSubscriber
 import rx.Observable
-import rx.Subscriber
 import rx.Subscription
 
 class ContactsFragment : ModelListFragment() {
@@ -77,14 +72,14 @@ class ContactsFragment : ModelListFragment() {
         })
     }
 
-    override val allModels: Observable<List<Model>>
+    override val allModels: Observable<List<NamedModel>>
         get() = appComponent.contactRepository.getContactItems().observe()
 
     override fun onCreateModelViewHolder(container: ViewGroup): RecyclerView.ViewHolder {
         return ModelItemHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false))
     }
 
-    override fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: Model) {
+    override fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: NamedModel) {
         (viewHolder as ModelItemHolder).model = model
     }
 }

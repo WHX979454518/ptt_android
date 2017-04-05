@@ -13,7 +13,7 @@
     <string name="user_name_hint">用户号码/手机号码/邮箱地址</string>
     <string name="user_password_hint">密码</string>
     <string name="login">登录</string>
-    <string name="login_app">登录贤智通</string>
+    <string name="login_app">登录中瑞特对讲</string>
     <string name="login_failed">登录失败</string>
     <string name="getting_room_info">正在获取房间信息...</string>
     <string name="in_room_fallback">正在对讲</string>

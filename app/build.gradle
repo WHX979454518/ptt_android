@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 apply plugin: 'io.fabric'
 
 project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
@@ -45,7 +46,7 @@ android {
     buildToolsVersion build_tools_version
 
     defaultConfig {
-        applicationId "com.xianzhitech.ptt"
+        applicationId "com.xianzhitech.ptt.zrt"
         minSdkVersion min_sdk_version
         targetSdkVersion compile_sdk_version
         versionCode 6
@@ -96,7 +97,7 @@ android {
     productFlavors {
         dev {
             def appServerUrl = project.appServerUrl ?: "http://netptt.cn:20002"
-            applicationId 'com.xianzhitech.ptt.dev'
+            applicationIdSuffix ".dev"
             buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
             manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "hWdRd0tU6Fkv1BOUteDzp4HsgkUvkNuz"
             println("Using $appServerUrl as app server for dev build")
@@ -106,7 +107,6 @@ android {
 
         prod {
             def appServerUrl = project.appServerUrl ?: "http://netptt.cn:10005"
-            applicationId 'com.xianzhitech.ptt'
             buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
             manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "M7uMw7magyVuxsUSttGeQ123k10LREz4"
             println("Using $appServerUrl as app server for production build")

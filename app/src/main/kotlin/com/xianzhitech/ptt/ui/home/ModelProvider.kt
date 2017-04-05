@@ -3,11 +3,11 @@ package com.xianzhitech.ptt.ui.home
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import rx.Observable
 
 interface ModelProvider : Parcelable {
-    fun getModels(context: Context) : Observable<List<Model>>
+    fun getModels(context: Context) : Observable<List<NamedModel>>
     val selectable : Boolean
     val preselectedModelIds : Collection<String>
     val preselectedUnselectable : Boolean

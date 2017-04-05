@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.setVisible
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import rx.Observable
 import java.util.*
@@ -113,7 +113,7 @@ class ModelListFragmentImpl : ModelListFragment() {
 
     val selectedIds = hashSetOf<String>()
 
-    override val allModels: Observable<List<Model>>
+    override val allModels: Observable<List<NamedModel>>
         get() = provider.getModels(context)
 
     override fun onCreateModelViewHolder(container: ViewGroup): RecyclerView.ViewHolder {
@@ -138,7 +138,7 @@ class ModelListFragmentImpl : ModelListFragment() {
         outState.putStringArrayList(STATE_SELECTED_IDS, ArrayList(selectedIds))
     }
 
-    override fun onItemClicked(viewHolder: RecyclerView.ViewHolder, model: Model) {
+    override fun onItemClicked(viewHolder: RecyclerView.ViewHolder, model: NamedModel) {
         if (provider.selectable) {
             viewHolder as ModelItemHolder
             viewHolder.nameView as CheckedTextView
@@ -156,7 +156,7 @@ class ModelListFragmentImpl : ModelListFragment() {
         }
     }
 
-    override fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: Model) {
+    override fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: NamedModel) {
         viewHolder as ModelItemHolder
         viewHolder.model = model
         if (provider.selectable) {

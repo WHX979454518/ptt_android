@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.ui.home.BaseModelProvider
 import rx.Observable
 
@@ -27,10 +27,10 @@ class RoomMemberProvider : BaseModelProvider {
         this.excludeUserIds = source.createStringArray()
     }
 
-    override fun getModels(context: Context): Observable<List<Model>> {
+    override fun getModels(context: Context): Observable<List<NamedModel>> {
         return (context.applicationContext as AppComponent).roomRepository
                 .getRoomMembers(roomId, excludeUserIds = excludeUserIds, maxMemberCount = Int.MAX_VALUE)
-                .observe() as Observable<List<Model>>
+                .observe() as Observable<List<NamedModel>>
     }
 
 

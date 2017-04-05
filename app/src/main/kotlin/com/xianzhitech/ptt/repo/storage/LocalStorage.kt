@@ -172,8 +172,8 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<RoomModel>(db)
 
 class ContactSQLiteStorage(db: SQLiteOpenHelper,
                            private val userStorage: UserStorage,
-                           private val groupStorage: GroupStorage) : BaseSQLiteStorage<Model>(db), ContactStorage {
-    override fun getContactItems(): Single<List<Model>> {
+                           private val groupStorage: GroupStorage) : BaseSQLiteStorage<NamedModel>(db), ContactStorage {
+    override fun getContactItems(): Single<List<NamedModel>> {
         return Single.fromCallable {
             logger.perf("Getting contact items") {
                 // Get user ids and group ids
@@ -203,7 +203,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
         }.subscribeOn(queryScheduler)
                 .flatMap {
                     val (groupIds, userIds) = it
-                    val result = ArrayList<Model>(groupIds.size + userIds.size)
+                    val result = ArrayList<NamedModel>(groupIds.size + userIds.size)
                     Single.zip(
                             userStorage.getUsers(ids = userIds, out = Collections.synchronizedList(result as MutableList<User>)),
                             groupStorage.getGroups(groupIds = groupIds, out = Collections.synchronizedList(result as MutableList<Group>)),
@@ -374,7 +374,7 @@ open class BaseSQLiteStorage<T : Model>(dbOpenHelper: SQLiteOpenHelper) {
         }
     }
 
-    protected fun clearCache(models : Iterable<Model>) {
+    protected fun clearCache(models : Iterable<NamedModel>) {
         cacheLock.withLock {
             models.forEach { cache.remove(it.id) }
         }

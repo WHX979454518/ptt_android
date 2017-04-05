@@ -93,8 +93,7 @@
                 android:layout_gravity="center"
                 android:background="@drawable/bg_circle"
                 android:padding="@dimen/unit_one"
-                android:src="@{speakerOn ? @drawable/ic_volume_up : @drawable/ic_headset}"
-                android:tint="@{speakerOn ? @color/red : @color/blue_grey}"
+                app:imageDrawable="@{speakerOn ? @drawable/ic_volume_up : @drawable/ic_headset}"
                 tools:src="@drawable/ic_headset"
                 tools:tint="@color/red" />
 

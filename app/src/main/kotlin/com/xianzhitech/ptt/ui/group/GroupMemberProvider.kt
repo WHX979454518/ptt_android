@@ -5,14 +5,14 @@ import android.os.Parcel
 import android.os.Parcelable
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.home.ModelProvider
 import rx.Observable
 
 
 class GroupMemberProvider(private val groupId: String) : ModelProvider, Parcelable {
-    override fun getModels(context: Context): Observable<List<Model>> {
+    override fun getModels(context: Context): Observable<List<NamedModel>> {
         val appComponent = context.applicationContext as AppComponent
         return appComponent.groupRepository.getGroups(listOf(groupId)).observe()
                 .switchMap {

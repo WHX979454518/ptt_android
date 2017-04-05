@@ -8,7 +8,7 @@ import com.xianzhitech.ptt.ext.first
 import com.xianzhitech.ptt.ext.sizeAtLeast
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.storage.ContactStorage
@@ -228,7 +228,7 @@ class ContactRepository(private val contactStorage: ContactStorage,
                         private val userNotification: Subject<*, *>,
                         private val groupNotification: Subject<*, *>) {
 
-    fun getContactItems(): QueryResult<List<Model>> {
+    fun getContactItems(): QueryResult<List<NamedModel>> {
         return RepoQueryResult({
             contactStorage.getContactItems()
         }, userNotification, groupNotification)

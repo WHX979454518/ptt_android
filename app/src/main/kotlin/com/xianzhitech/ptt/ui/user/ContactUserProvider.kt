@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.model.Model
+import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.ui.home.BaseModelProvider
 import rx.Observable
 
@@ -14,8 +14,8 @@ class ContactUserProvider : BaseModelProvider {
                 preselectedUnselectable : Boolean = false) : super(selectable, preselectedUserIds, preselectedUnselectable)
     private constructor(source : Parcel) : super(source)
 
-    override fun getModels(context: Context): Observable<List<Model>> {
-        return (context.applicationContext as AppComponent).contactRepository.getAllContactUsers().observe() as Observable<List<Model>>
+    override fun getModels(context: Context): Observable<List<NamedModel>> {
+        return (context.applicationContext as AppComponent).contactRepository.getAllContactUsers().observe() as Observable<List<NamedModel>>
     }
 
     override fun describeContents(): Int {
