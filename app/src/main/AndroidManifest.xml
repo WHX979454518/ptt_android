@@ -107,6 +107,9 @@
             android:theme="@style/AppTheme.Room"
             android:label="@string/group_chat" />
 
+        <activity android:name=".ui.chat.ChatActivity"
+            android:exported="true" />
+
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />

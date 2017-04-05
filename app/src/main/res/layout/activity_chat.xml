@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.ui.chat.ChatViewModel" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/grey_10a" />
+
+        <View style="@style/Divider.Lighter" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@android:color/white"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/call"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@color/grey_10a"
+                android:contentDescription="@string/call"
+                android:foreground="?attr/selectableItemBackground"
+                android:padding="@dimen/unit_one"
+                android:src="@drawable/ic_call_black"
+                android:tint="?attr/colorControlNormal" />
+
+            <EditText
+                android:id="@+id/editText"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/unit_one"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="@string/type_text"
+                android:text="@={viewModel.message}" />
+
+            <ImageView
+                android:id="@+id/emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/call"
+                android:onClick="@{ignored -> viewModel.onClickEmoji()}"
+                android:paddingBottom="@dimen/unit_one"
+                android:paddingLeft="@dimen/unit_half"
+                android:paddingRight="@dimen/unit_half"
+                android:paddingTop="@dimen/unit_one"
+                android:src="@drawable/ic_mood_black_24dp"
+                android:tint="?attr/colorControlNormal" />
+
+            <ImageView
+                android:id="@+id/send"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/call"
+                android:onClick="@{ignored -> viewModel.onClickSend()}"
+                android:paddingBottom="@dimen/unit_one"
+                android:paddingLeft="@dimen/unit_half"
+                android:paddingRight="@dimen/unit_half"
+                android:paddingTop="@dimen/unit_one"
+                android:src="@drawable/ic_send_black_24dp"
+                android:tint="?attr/colorAccent"
+                app:show="@{viewModel.displaySend}"
+                tools:visibility="visible" />
+
+            <ImageView
+                android:id="@+id/more"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/call"
+                android:onClick="@{ignored -> viewModel.onClickMore()}"
+                android:paddingBottom="@dimen/unit_one"
+                android:paddingLeft="@dimen/unit_half"
+                android:paddingRight="@dimen/unit_half"
+                android:paddingTop="@dimen/unit_one"
+                app:show="@{viewModel.displayMore}"
+                android:src="@drawable/ic_add_circle_outline"
+                android:tint="?attr/colorControlNormal" />
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</layout>
