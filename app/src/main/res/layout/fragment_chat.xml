@@ -59,7 +59,7 @@
 
             <ImageView
                 android:id="@+id/emoji"
-                android:layout_width="36dp"
+                android:layout_width="40dp"
                 android:layout_height="48dp"
                 android:layout_gravity="bottom"
                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -71,7 +71,7 @@
 
             <ImageView
                 android:id="@+id/send"
-                android:layout_width="36dp"
+                android:layout_width="40dp"
                 android:layout_height="48dp"
                 android:layout_gravity="bottom"
                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -85,7 +85,7 @@
 
             <ImageView
                 android:id="@+id/more"
-                android:layout_width="36dp"
+                android:layout_width="40dp"
                 android:layout_height="48dp"
                 android:layout_gravity="bottom"
                 android:background="?attr/selectableItemBackgroundBorderless"

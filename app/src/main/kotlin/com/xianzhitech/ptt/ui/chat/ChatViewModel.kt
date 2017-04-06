@@ -6,6 +6,9 @@ import com.xianzhitech.ptt.model.Message
 import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import com.xianzhitech.ptt.ui.base.LifecycleViewModel
 import org.json.JSONObject
+import rx.Observable
+import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 
 
 class ChatViewModel(private val signalServiceHandler: SignalServiceHandler) : LifecycleViewModel() {
@@ -32,6 +35,22 @@ class ChatViewModel(private val signalServiceHandler: SignalServiceHandler) : Li
                     sendTime = System.currentTimeMillis()
             )
         }
+
+        Observable.interval(10, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                .subscribe {
+                    val id = roomMessages.size
+                    roomMessages.add(
+                            Message(
+                                    id = id.toString(),
+                                    senderId = if (id % 3 == 0) currentUserId else "500001",
+                                    body = JSONObject().put("text", "This is text message $id"),
+                                    type = "text",
+                                    read = false,
+                                    roomId = "123",
+                                    sendTime = System.currentTimeMillis()
+                            )
+                    )
+                }
     }
 
     fun onClickCall() {

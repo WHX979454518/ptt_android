@@ -19,7 +19,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/unit_three"
+        android:layout_marginBottom="@dimen/unit_two"
+        android:layout_marginTop="@dimen/unit_two"
         android:orientation="horizontal">
 
         <com.xianzhitech.ptt.ui.widget.UserIconView
