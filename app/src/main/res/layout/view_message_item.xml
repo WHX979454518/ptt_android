@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <import type="android.view.Gravity" />
+
+        <variable
+            name="userId"
+            type="String" />
+
+        <variable
+            name="isMe"
+            type="boolean" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/unit_three"
+        android:orientation="horizontal">
+
+        <com.xianzhitech.ptt.ui.widget.UserIconView
+            android:layout_width="@dimen/unit_four"
+            android:layout_height="@dimen/unit_four"
+            android:layout_gravity="top"
+            android:layout_marginLeft="@dimen/unit_one"
+            app:show="@{!isMe}"
+            app:userId="@{userId}"
+            tools:src="@color/blue" />
+
+        <LinearLayout
+            android:id="@+id/item"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_weight="1"
+            android:gravity="@{isMe ? (Gravity.RIGHT | Gravity.CENTER_VERTICAL) : (Gravity.LEFT | Gravity.CENTER_VERTICAL)}"
+            android:orientation="horizontal"
+            tools:background="@color/brown"
+            tools:layout_gravity="center"
+            tools:layout_height="30dp" />
+
+        <com.xianzhitech.ptt.ui.widget.UserIconView
+            android:layout_width="@dimen/unit_four"
+            android:layout_height="@dimen/unit_four"
+            android:layout_marginRight="@dimen/unit_one"
+            app:show="@{isMe}"
+            app:userId="@{userId}"
+            tools:src="@color/blue" />
+
+    </LinearLayout>
+</layout>

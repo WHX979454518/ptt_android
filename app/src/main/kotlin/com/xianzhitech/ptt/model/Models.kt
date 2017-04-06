@@ -40,4 +40,8 @@ data class Message(override val id : String,
                    val roomId : String,
                    val read: Boolean,
                    val type: String,
-                   val body: JSONObject) : Model
+                   val body: JSONObject) : Model {
+    fun bodyAsText() : String? {
+        return body.optString("text", null)
+    }
+}

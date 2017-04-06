@@ -28,7 +28,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/white"
-            android:minHeight="40dp"
+            android:minHeight="48dp"
             android:orientation="horizontal">
 
             <ImageView
@@ -46,18 +46,22 @@
             <EditText
                 android:id="@+id/editText"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_marginLeft="@dimen/unit_one"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="@string/type_text"
                 android:maxLines="3"
+                android:paddingBottom="@dimen/unit_one"
+                android:paddingTop="@dimen/unit_one"
                 android:text="@={viewModel.message}" />
 
             <ImageView
                 android:id="@+id/emoji"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="48dp"
+                android:layout_gravity="bottom"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/call"
                 android:onClick="@{ignored -> viewModel.onClickEmoji()}"
@@ -67,8 +71,9 @@
 
             <ImageView
                 android:id="@+id/send"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="48dp"
+                android:layout_gravity="bottom"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/call"
                 android:onClick="@{ignored -> viewModel.onClickSend()}"
@@ -80,8 +85,9 @@
 
             <ImageView
                 android:id="@+id/more"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="48dp"
+                android:layout_gravity="bottom"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/call"
                 android:onClick="@{ignored -> viewModel.onClickMore()}"

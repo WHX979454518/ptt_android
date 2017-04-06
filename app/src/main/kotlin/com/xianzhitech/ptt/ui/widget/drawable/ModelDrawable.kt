@@ -64,7 +64,7 @@ private class ModelDrawable constructor(private val context: Context,
     }
 }
 
-private fun User.createAvatarDrawable(context: Context): Drawable {
+fun User.createAvatarDrawable(context: Context): Drawable {
     if (avatar.isNullOrEmpty()) {
         return TextDrawable(name[0].toString(), context.resources.getIntArray(R.array.account_colors).let {
             it[Math.abs(name.hashCode()) % it.size]
