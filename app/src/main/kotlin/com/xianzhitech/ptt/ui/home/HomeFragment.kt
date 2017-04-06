@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -152,13 +153,13 @@ class HomeFragment : BaseFragment(), RoomListFragment.Callbacks {
         Observable.combineLatest(
                 signalService.loginStatus,
                 signalService.roomStatus,
-                signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
+                signalService.roomState.distinctUntilChanged(RoomState::currentRoomId)
                         .switchMap {
                             val currUserId = appComponent.preference.userSessionToken?.userId ?: return@switchMap Observable.never<Pair<Room, RoomName>>()
 
                             Observable.combineLatest(
                                     roomRepository.getRoom(it.currentRoomId).observe(),
-                                    roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(currUserId)).observe(),
+                                    roomRepository.getRoomName(it.currentRoomId, excludeUserIds = listOf(currUserId)).observe(),
                                     { first, second -> first to second }
                             )
                         },

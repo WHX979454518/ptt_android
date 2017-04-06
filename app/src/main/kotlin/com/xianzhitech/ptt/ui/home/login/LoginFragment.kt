@@ -56,7 +56,7 @@ class LoginFragment : BaseFragment()
                         passwordEditText.error = R.string.error_input_password.toFormattedString(context)
                     } else {
                         val signalService = (context.applicationContext as AppComponent).signalHandler
-                        signalService.login(nameEditText.getString().trim(), passwordEditText.getString().trim())
+                        signalService.login(nameEditText.string.trim(), passwordEditText.string.trim())
                                 .subscribeSimple()
                     }
                 }

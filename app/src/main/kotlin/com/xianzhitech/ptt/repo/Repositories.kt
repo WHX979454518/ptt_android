@@ -116,7 +116,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, roomNotification)
     }
 
-    fun getRoomMembers(roomId: String?, maxMemberCount: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray()): QueryResult<List<User>> {
+    fun getRoomMembers(roomId: String?, maxMemberCount: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: List<String?> = emptyList()): QueryResult<List<User>> {
         if (roomId == null) {
             return fixedResult(emptyList())
         }
@@ -151,7 +151,7 @@ class RoomRepository(private val roomStorage: RoomStorage,
         }, Observable.merge(userNotification, groupNotification, roomNotification))
     }
 
-    fun getRoomName(roomId: String?, maxDisplayMemberNames: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: Array<String?> = emptyArray(),
+    fun getRoomName(roomId: String?, maxDisplayMemberNames: Int = Constants.MAX_MEMBER_NAME_DISPLAY_COUNT, excludeUserIds: List<String?> = emptyList(),
                     separator: CharSequence = "、", ellipsizeEnd: CharSequence = " 等"): QueryResult<RoomName?> {
         if (roomId == null) {
             return fixedResult(RoomName.EMPTY)

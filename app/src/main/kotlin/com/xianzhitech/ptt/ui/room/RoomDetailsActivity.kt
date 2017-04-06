@@ -87,7 +87,7 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
         Observable.combineLatest(
                 appComponent.roomRepository.getRoom(roomId).observe().map { it ?: throw StaticUserException(R.string.error_room_not_exists) },
-                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = arrayOf(appComponent.signalHandler.peekCurrentUserId)).observe(),
+                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = listOf(appComponent.signalHandler.peekCurrentUserId)).observe(),
                 appComponent.roomRepository.getRoomMembers(roomId, maxMemberCount = Int.MAX_VALUE).observe(),
                 { room, name, members ->
                     RoomData(room, name!!, members)

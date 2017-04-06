@@ -11,20 +11,20 @@ import rx.Observable
 class RoomMemberProvider : BaseModelProvider {
 
     private val roomId : String
-    private val excludeUserIds: Array<String?>
+    private val excludeUserIds: List<String?>
 
     constructor(roomId: String,
                 selectable : Boolean,
                 preselectedModelIds : Collection<String> = emptyList(),
                 preselectedUnselectable : Boolean = false,
-                excludeUserIds: Array<String?> = arrayOf()) : super(selectable, preselectedModelIds, preselectedUnselectable) {
+                excludeUserIds: List<String?> = emptyList()) : super(selectable, preselectedModelIds, preselectedUnselectable) {
         this.roomId = roomId
         this.excludeUserIds = excludeUserIds
     }
 
     private constructor(source: Parcel) : super(source) {
         this.roomId = source.readString()
-        this.excludeUserIds = source.createStringArray()
+        this.excludeUserIds = source.createStringArrayList()
     }
 
     override fun getModels(context: Context): Observable<List<NamedModel>> {
@@ -42,7 +42,7 @@ class RoomMemberProvider : BaseModelProvider {
     override fun writeToParcel(dest: Parcel, flags: Int) {
         super.writeToParcel(dest, flags)
         dest.writeString(roomId)
-        dest.writeStringArray(excludeUserIds)
+        dest.writeStringList(excludeUserIds)
     }
 
     companion object {

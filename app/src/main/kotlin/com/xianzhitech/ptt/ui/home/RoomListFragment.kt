@@ -206,7 +206,7 @@ class RoomListFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonCli
             this.subscription?.unsubscribe()
             val appComponent = itemView.context.applicationContext as AppComponent
             this.subscription = Observable.combineLatest(
-                    appComponent.roomRepository.getRoomName(room.id, excludeUserIds = arrayOf(currentUserId)).observe(),
+                    appComponent.roomRepository.getRoomName(room.id, excludeUserIds = listOf(currentUserId)).observe(),
                     appComponent.userRepository.getUser(room.lastSpeakMemberId).observe(),
                     { first, second -> first to second })
                     .switchMap { result ->

@@ -43,7 +43,7 @@ class UserSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<User>(db), Use
     }
 
     override fun clear() : Completable = executeInTransaction {
-        db.delete(Users.TABLE_NAME, "1", arrayOf())
+        db.delete(Users.TABLE_NAME, "1", emptyArray())
         clearCache()
     }
 }
@@ -64,7 +64,7 @@ class GroupSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<Group>(db), G
     }
 
     override fun clear() : Completable = executeInTransaction {
-        db.delete(Groups.TABLE_NAME, "1", arrayOf())
+        db.delete(Groups.TABLE_NAME, "1", emptyArray())
         clearCache()
     }
 }
@@ -164,7 +164,7 @@ class RoomSQLiteStorage(db: SQLiteOpenHelper) : BaseSQLiteStorage<RoomModel>(db)
     }
 
     override fun clear() : Completable = executeInTransaction {
-        db.delete(Rooms.TABLE_NAME, "1", arrayOf())
+        db.delete(Rooms.TABLE_NAME, "1", emptyArray())
         roomIdsLock.write { roomIds = null }
         clearCache()
     }
@@ -177,7 +177,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
         return Single.fromCallable {
             logger.perf("Getting contact items") {
                 // Get user ids and group ids
-                val groupIds = db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                val groupIds = db.rawQuery("SELECT ${Contacts.GROUP_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.GROUP_ID} IS NOT NULL", emptyArray())?.use { cursor ->
                     ArrayList<String>(cursor.count).apply {
                         if (cursor.moveToFirst()) {
                             do {
@@ -188,7 +188,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
                 } ?: emptyList<String>()
 
                 // Query user ids
-                val userIds = db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+                val userIds = db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", emptyArray())?.use { cursor ->
                     ArrayList<String>(cursor.count).apply {
                         if (cursor.moveToFirst()) {
                             do {
@@ -217,7 +217,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
             val ids = arrayListOf<String>()
 
             // Query user ids
-            db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", arrayOf())?.use { cursor ->
+            db.rawQuery("SELECT ${Contacts.USER_ID} FROM ${Contacts.TABLE_NAME} WHERE ${Contacts.USER_ID} IS NOT NULL", emptyArray())?.use { cursor ->
                 ids.ensureCapacity(ids.size + cursor.count)
                 if (cursor.moveToFirst()) {
                     do {
@@ -235,7 +235,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
                 .andThen(executeInTransaction {
                     val localDb = db
 
-                    localDb.delete(Contacts.TABLE_NAME, "1", arrayOf())
+                    localDb.delete(Contacts.TABLE_NAME, "1", emptyArray())
                     val contentValues = ContentValues(2)
 
                     users.forEach {
@@ -253,7 +253,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
 
     override fun clear() : Completable {
         return executeInTransaction {
-            db.delete(Contacts.TABLE_NAME, "1", arrayOf())
+            db.delete(Contacts.TABLE_NAME, "1", emptyArray())
         }
     }
 }

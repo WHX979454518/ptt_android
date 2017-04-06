@@ -24,21 +24,21 @@ interface UserDescribableException {
 
 open class StaticUserException : UserDescribableException, RuntimeException {
     private val msg: Any
-    private val args: Array<out Any?>
+    private val args: List<Any?>
 
     constructor(@StringRes stringRes: Int, vararg args: Any?) {
         msg = stringRes
-        this.args = args
+        this.args = args.toList()
     }
 
     constructor(msg: String) : super(msg) {
         this.msg = msg
-        this.args = arrayOf()
+        this.args = emptyList()
     }
 
     override fun describe(context: Context): CharSequence {
         return when (msg) {
-            is Int -> msg.toFormattedString(context, *args)
+            is Int -> msg.toFormattedString(context, *args.toTypedArray())
             else -> msg.toString()
         }
     }

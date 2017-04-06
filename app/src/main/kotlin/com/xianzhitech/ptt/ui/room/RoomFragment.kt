@@ -202,7 +202,7 @@ class RoomFragment : BaseFragment()
         val stateByRoomId = signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
 
         Observable.combineLatest(
-                stateByRoomId.switchMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = arrayOf(signalService.peekCurrentUserId)).observe() },
+                stateByRoomId.switchMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = listOf(signalService.peekCurrentUserId)).observe() },
                 signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.map { it.onlineMemberIds },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoomMembers(it.currentRoomId, maxMemberCount = Int.MAX_VALUE).observe() },
                 stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },

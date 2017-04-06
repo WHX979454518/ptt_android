@@ -36,7 +36,7 @@ class BackgroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == BackgroundService.Companion.ACTION_UPDATE_NOTIFICATION) {
-            startForeground(1, intent!!.getParcelableExtra(BackgroundService.Companion.EXTRA_NOTIFICATION))
+            startForeground(1, intent.getParcelableExtra(BackgroundService.Companion.EXTRA_NOTIFICATION))
         }
 
         return START_STICKY
@@ -73,7 +73,7 @@ class ServiceHandler(private val appContext: Context,
                         Observable.combineLatest(
                                 signalService.roomStatus,
                                 signalService.currentRoomId.switchMap { appComponent.roomRepository.getRoom(it).observe() },
-                                signalService.currentUserId.switchMap { appComponent.roomRepository.getRoomName(it, excludeUserIds = arrayOf(appComponent.preference.userSessionToken?.userId)).observe() },
+                                signalService.currentUserId.switchMap { appComponent.roomRepository.getRoomName(it, excludeUserIds = listOf(appComponent.preference.userSessionToken?.userId)).observe() },
                                 signalService.loginStatus,
                                 signalService.currentUserId.switchMap { appComponent.userRepository.getUser(it).observe() },
                                 appContext.getConnectivity(),

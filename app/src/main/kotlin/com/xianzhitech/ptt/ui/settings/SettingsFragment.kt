@@ -118,7 +118,7 @@ class SettingsFragment : PreferenceFragmentCompat(), TimePickerDialogFragment.On
                     .map { it.firstOrNull()?.name }
             ShortcutMode.USER -> appComponent.userRepository.getUser(id).getAsync()
                     .map { it?.name }
-            ShortcutMode.ROOM -> appComponent.roomRepository.getRoomName(id, excludeUserIds = arrayOf(appComponent.signalHandler.peekCurrentUserId)).getAsync()
+            ShortcutMode.ROOM -> appComponent.roomRepository.getRoomName(id, excludeUserIds = listOf(appComponent.signalHandler.peekCurrentUserId)).getAsync()
                     .map { it?.name  }
         }
 }
