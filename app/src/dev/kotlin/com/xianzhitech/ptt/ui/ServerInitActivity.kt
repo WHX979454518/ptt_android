@@ -13,9 +13,9 @@ import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getString
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.plusAssign
+import com.xianzhitech.ptt.ext.string
 import com.xianzhitech.ptt.maintain.service.*
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import okhttp3.OkHttpClient
@@ -26,7 +26,6 @@ import rx.Subscriber
 import rx.schedulers.Schedulers
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 
@@ -47,7 +46,7 @@ class ServerInitActivity : BaseToolbarActivity() {
         endpointView.selectAll()
 
         findViewById(R.id.serverInit_ok)?.setOnClickListener {
-            start(endpointView.getString(), it)
+            start(endpointView.string, it)
         }
     }
 

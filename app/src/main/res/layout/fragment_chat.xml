@@ -26,8 +26,9 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="wrap_content"
             android:background="@android:color/white"
+            android:minHeight="40dp"
             android:orientation="horizontal">
 
             <ImageView
@@ -37,6 +38,7 @@
                 android:background="@color/grey_10a"
                 android:contentDescription="@string/call"
                 android:foreground="?attr/selectableItemBackground"
+                android:onClick="@{ignored -> viewModel.onClickCall()}"
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_call_black"
                 android:tint="?attr/colorControlNormal" />
@@ -49,33 +51,28 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="@string/type_text"
+                android:maxLines="3"
                 android:text="@={viewModel.message}" />
 
             <ImageView
                 android:id="@+id/emoji"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/call"
                 android:onClick="@{ignored -> viewModel.onClickEmoji()}"
-                android:paddingBottom="@dimen/unit_one"
-                android:paddingLeft="@dimen/unit_half"
-                android:paddingRight="@dimen/unit_half"
-                android:paddingTop="@dimen/unit_one"
+                android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_mood_black_24dp"
                 android:tint="?attr/colorControlNormal" />
 
             <ImageView
                 android:id="@+id/send"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/call"
                 android:onClick="@{ignored -> viewModel.onClickSend()}"
-                android:paddingBottom="@dimen/unit_one"
-                android:paddingLeft="@dimen/unit_half"
-                android:paddingRight="@dimen/unit_half"
-                android:paddingTop="@dimen/unit_one"
+                android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_send_black_24dp"
                 android:tint="?attr/colorAccent"
                 app:show="@{viewModel.displaySend}"
@@ -83,18 +80,15 @@
 
             <ImageView
                 android:id="@+id/more"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/call"
                 android:onClick="@{ignored -> viewModel.onClickMore()}"
-                android:paddingBottom="@dimen/unit_one"
-                android:paddingLeft="@dimen/unit_half"
-                android:paddingRight="@dimen/unit_half"
-                android:paddingTop="@dimen/unit_one"
-                app:show="@{viewModel.displayMore}"
-                android:src="@drawable/ic_add_circle_outline"
-                android:tint="?attr/colorControlNormal" />
+                android:padding="@dimen/unit_one"
+                android:src="@drawable/ic_add_circle_outline_black_24dp"
+                android:tint="?attr/colorControlNormal"
+                app:show="@{viewModel.displayMore}" />
 
 
         </LinearLayout>

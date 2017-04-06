@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.ext
 
 import android.app.Activity
+import android.databinding.BindingAdapter
+import android.databinding.InverseBindingAdapter
 import android.graphics.drawable.Drawable
 import android.support.annotation.IdRes
 import android.support.annotation.LayoutRes
@@ -16,7 +18,6 @@ import rx.Observable
 import rx.subscriptions.Subscriptions
 
 
-fun EditText.getString() = text.toString()
 fun EditText.fromTextChanged() = Observable.create<String> {
     val watcher = object : TextWatcher {
         override fun afterTextChanged(s: Editable?) {
@@ -26,7 +27,7 @@ fun EditText.fromTextChanged() = Observable.create<String> {
         }
 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            it.onNext(getString())
+            it.onNext(string)
         }
     }
     addTextChangedListener(watcher)
@@ -67,3 +68,16 @@ val TextView.compoundDrawableRight: Drawable?
 
 val TextView.compoundDrawableBottom: Drawable?
     get() = compoundDrawables[3]
+
+@set:BindingAdapter("show")
+var View.show : Boolean
+    set(value) = if (value) visibility = View.VISIBLE else visibility = View.GONE
+    get() = visibility == View.VISIBLE
+
+@set:BindingAdapter("string")
+@get:InverseBindingAdapter(attribute = "string")
+var EditText.string : String
+    set(value) {
+        setText(value)
+    }
+    get() = text.toString()

@@ -8,4 +8,5 @@
     <item name="modelItem_icon" type="id" />
 
     <item name="logo" type="id" />
+    <item name="edit_text_listener" type="id" />
 </resources>

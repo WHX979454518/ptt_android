@@ -191,8 +191,4 @@ dependencies {
     kapt 'com.android.databinding:compiler:2.3.0'
 }
 
-kapt {
-    generateStubs = true
-}
-
 
