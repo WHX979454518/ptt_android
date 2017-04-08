@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ui.chat
 import android.databinding.ObservableArrayList
 import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.model.Message
 import com.xianzhitech.ptt.ui.base.LifecycleViewModel
 import org.json.JSONObject
@@ -12,19 +13,22 @@ import java.util.concurrent.TimeUnit
 
 
 class ChatViewModel(private val appComponent: AppComponent,
-                    private val roomId : String) : LifecycleViewModel() {
+                    private val roomId : String,
+                    private val navigator: Navigator) : LifecycleViewModel() {
     val message = ObservableField<String>()
     val roomMessages = ObservableArrayList<Message>()
-    val roomTitle = ObservableField<String>()
+    val roomViewModel = addChildModel(RoomViewModel(roomId, appComponent))
+    val title = createCompositeObservable(listOf(roomViewModel.roomName)) { roomViewModel.roomName.get() }
 
     val displaySend : Boolean = true
     val displayMore : Boolean = false
+
 
     override fun onStart() {
         super.onStart()
 
         roomMessages.clear()
-        val currentUserId = signalServiceHandler.peekCurrentUserId!!
+        val currentUserId = appComponent.signalHandler.peekCurrentUserId!!
 
         (1..5000).mapTo(roomMessages) {
             Message(
@@ -41,7 +45,7 @@ class ChatViewModel(private val appComponent: AppComponent,
         Observable.interval(10, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .subscribe {
                     val id = roomMessages.size
-                    roomMessages.add(
+                    onReceiveNewMessage(
                             Message(
                                     id = id.toString(),
                                     senderId = if (id % 3 == 0) currentUserId else "500001",
@@ -53,6 +57,11 @@ class ChatViewModel(private val appComponent: AppComponent,
                             )
                     )
                 }
+    }
+
+    private fun onReceiveNewMessage(msg: Message) {
+        roomMessages.add(msg)
+        navigator.navigateToLatestMessageIfPossible()
     }
 
     fun onClickCall() {
@@ -73,6 +82,7 @@ class ChatViewModel(private val appComponent: AppComponent,
 
     interface Navigator {
         fun navigateToWalkieTalkie(roomId : String)
+        fun navigateToLatestMessageIfPossible()
     }
 
 }
