@@ -5,13 +5,23 @@ import rx.subscriptions.CompositeSubscription
 
 abstract class LifecycleViewModel {
     private var subscription : CompositeSubscription? = null
+    private val childModels = arrayListOf<LifecycleViewModel>()
 
     open fun onStart() {
+        childModels.forEach(LifecycleViewModel::onStart)
     }
 
     open fun onStop() {
+        childModels.forEach(LifecycleViewModel::onStop)
+
         subscription?.unsubscribe()
         subscription = null
+    }
+
+    fun <T : LifecycleViewModel> addChildModel(model : T) : T {
+        return model.apply {
+            this@LifecycleViewModel.childModels.add(this)
+        }
     }
 
     fun Subscription.bindToLifecycle() : Subscription {
