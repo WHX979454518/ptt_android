@@ -1,6 +1,5 @@
 package com.xianzhitech.ptt.ui.modellist
 
-import android.databinding.ObservableArrayList
 import android.databinding.ObservableArrayMap
 import android.databinding.ObservableBoolean
 import android.databinding.ObservableField
@@ -13,9 +12,9 @@ import com.xianzhitech.ptt.ui.base.LifecycleViewModel
 import com.xianzhitech.ptt.ui.home.ModelProvider
 import com.xianzhitech.ptt.ui.util.ViewModel
 import com.xianzhitech.ptt.util.ModelComparator
+import com.xianzhitech.ptt.util.ObservableArrayList
 import com.xianzhitech.ptt.util.toPinyin
 import rx.Observable
-import java.util.*
 
 
 class ModelListViewModel(private val modelProvider: ModelProvider,
@@ -127,9 +126,7 @@ class ModelListViewModel(private val modelProvider: ModelProvider,
                 .doOnLoadingState(loading::set)
                 .subscribeSimple { (list, positions) ->
                     headerViewModelPositions.set(positions)
-
-                    viewModels.clear()
-                    viewModels.addAll(list)
+                    viewModels.replaceAll(list)
                 }
                 .bindToLifecycle()
     }
