@@ -17,7 +17,7 @@ open class ModelItemHolder(itemView : View) : RecyclerView.ViewHolder(itemView) 
         if (field != value) {
             field = value
             nameView?.text = value?.name
-            iconView?.setImageDrawable(value?.createDrawable(itemView.context))
+            iconView?.setImageDrawable(value?.createDrawable())
         }
     }
 }

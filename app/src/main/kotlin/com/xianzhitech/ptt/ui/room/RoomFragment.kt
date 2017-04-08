@@ -252,7 +252,7 @@ class RoomFragment : BaseFragment()
                             }
                         } else if (speakerView.tag != speaker) {
                             speakerNameView.text = R.string.name_with_level.toFormattedString(context, speaker.name, speaker.priority.toLevelString())
-                            speakerAvatarView.setImageDrawable(speaker.createDrawable(context))
+                            speakerAvatarView.setImageDrawable(speaker.createDrawable())
                             speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalHandler.peekCurrentUserId) R.drawable.sending else R.drawable.receiving))
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 1f).apply {

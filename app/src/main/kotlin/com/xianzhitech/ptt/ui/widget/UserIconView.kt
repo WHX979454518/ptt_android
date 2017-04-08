@@ -47,7 +47,7 @@ class UserIconView @JvmOverloads constructor(context: Context,
                     .observe()
                     .observeOnMainThread()
                     .subscribe {
-                        setImageDrawable(it?.createAvatarDrawable(context))
+                        setImageDrawable(it?.createAvatarDrawable())
                     }
         }
     }

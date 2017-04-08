@@ -39,8 +39,12 @@ abstract class BaseViewModelFragment<T : LifecycleViewModel, VB : ViewDataBindin
     }
 
     override fun onDestroyView() {
-        dataBinding.unbind()
+        onDestroyViewBinding()
         super.onDestroyView()
+    }
+
+    open fun onDestroyViewBinding() {
+        dataBinding.unbind()
     }
 
     abstract fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): VB

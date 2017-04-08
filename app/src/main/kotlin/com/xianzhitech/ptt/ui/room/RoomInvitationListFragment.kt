@@ -121,7 +121,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val invitation = invitationList[position]
-            holder.inviterIconView.setImageDrawable(invitation.inviter?.createDrawable(holder.itemView.context))
+            holder.inviterIconView.setImageDrawable(invitation.inviter?.createDrawable())
             holder.inviterNameView.text = invitation.inviter?.name
             holder.inviteTimeView.text = DateUtils.getRelativeTimeSpanString(invitation.invitation.inviteTime.time)
         }

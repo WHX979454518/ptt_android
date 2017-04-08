@@ -26,4 +26,7 @@ abstract class BaseModelProvider(override val selectable : Boolean,
         dest.writeByte(if (preselectedUnselectable) 1 else 0)
     }
 
+    override fun describeContents(): Int {
+        return 0
+    }
 }

@@ -60,7 +60,7 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
                 }
                 .subscribeSimple { user ->
                     nameView.text = user.name
-                    avatarImage.setImageDrawable(user.createDrawable(this))
+                    avatarImage.setImageDrawable(user.createDrawable())
                 }
                 .bindToLifecycle()
     }

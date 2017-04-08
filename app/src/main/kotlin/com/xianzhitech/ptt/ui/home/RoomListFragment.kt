@@ -243,7 +243,7 @@ class RoomListFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonCli
                         }
                     }
 
-            iconView.setImageDrawable(room.createDrawable(itemView.context))
+            iconView.setImageDrawable(room.createDrawable())
         }
 
         fun clear() {

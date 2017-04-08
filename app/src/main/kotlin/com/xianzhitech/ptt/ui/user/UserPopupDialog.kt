@@ -54,7 +54,7 @@ class UserPopupDialog : BottomSheetDialogFragment() {
                         views?.let {
                             it.name.text = user.name
                             it.level.text = user.priority.toLevelString()
-                            it.icon.setImageDrawable(user.createDrawable(context))
+                            it.icon.setImageDrawable(user.createDrawable())
                         }
                     }
                 }

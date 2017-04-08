@@ -201,7 +201,7 @@ class MapFragment : BaseFragment() {
 
     private fun NearbyUser.toMarker(marker: Marker) : Marker {
         marker.position = latLng
-        val drawable = user?.createDrawable(context) ?: TextDrawable("?", Color.TRANSPARENT)
+        val drawable = user?.createDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
         val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
         view.setImageDrawable(drawable)
         marker.icon = BitmapDescriptorFactory.fromView(view)
@@ -223,7 +223,7 @@ class MapFragment : BaseFragment() {
     private fun NearbyUser.toMarkerOption() : MarkerOptions {
         return MarkerOptions().apply {
             position(latLng)
-            val drawable = user?.createDrawable(context) ?: TextDrawable("?", Color.TRANSPARENT)
+            val drawable = user?.createDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
             val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
             view.setImageDrawable(drawable)
             icon(BitmapDescriptorFactory.fromView(view))

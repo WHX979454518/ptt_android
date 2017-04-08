@@ -27,7 +27,7 @@ class UserItemHolder(rootView: View,
     fun setUser(user: User) {
         if (this.userId != user.id) {
             this.user = user
-            avatarView?.setImageDrawable(user.createDrawable(itemView.context))
+            avatarView?.setImageDrawable(user.createDrawable())
             nameView?.text = user.name
         }
     }

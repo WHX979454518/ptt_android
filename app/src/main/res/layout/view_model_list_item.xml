@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <import type="com.xianzhitech.ptt.ui.widget.drawable.ModelDrawableKt" />
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.ui.modellist.NamedModelViewModel" />
+    </data>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/icon"
+            android:layout_width="@dimen/user_list_icon_size"
+            android:layout_height="@dimen/user_list_icon_size"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginBottom="@dimen/unit_one"
+            android:layout_marginLeft="@dimen/unit_two"
+            android:layout_marginTop="@dimen/unit_one"
+            android:contentDescription="@{viewModel.model.name}"
+            app:imageDrawable="@{ModelDrawableKt.createDrawable(viewModel.model)}"
+            tools:src="@color/blue" />
+
+
+        <CheckedTextView
+            style="@style/Text.Body1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_three"
+            android:layout_toRightOf="@+id/icon"
+            android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+            android:checked="@{viewModel.checkedIds[viewModel.model.id]}"
+            android:duplicateParentState="true"
+            android:gravity="left|center_vertical"
+            android:text="@{viewModel.model.name}"
+            app:show="@{viewModel.checkable}"
+            tools:text="用户2"
+            tools:visibility="gone" />
+
+
+        <TextView
+            style="@style/Text.Body1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_three"
+            android:layout_toRightOf="@+id/icon"
+            android:duplicateParentState="true"
+            android:gravity="left|center_vertical"
+            android:text="@{viewModel.model.name}"
+            app:show="@{!viewModel.checkable}"
+            tools:text="用户2 不可选" />
+
+        <View
+            style="@style/Divider.Lighter"
+            android:layout_below="@+id/icon" />
+
+    </RelativeLayout>
+</layout>

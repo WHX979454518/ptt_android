@@ -1,9 +1,10 @@
 package com.xianzhitech.ptt.ui.base
 
+import com.xianzhitech.ptt.ui.util.ViewModel
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
 
-abstract class LifecycleViewModel {
+abstract class LifecycleViewModel : ViewModel {
     private var subscription : CompositeSubscription? = null
     private val childModels = arrayListOf<LifecycleViewModel>()
 

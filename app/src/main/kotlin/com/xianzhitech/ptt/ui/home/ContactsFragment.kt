@@ -1,9 +1,9 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.content.Context
 import android.os.Bundle
 import android.support.v4.view.MenuItemCompat
 import android.support.v4.widget.SwipeRefreshLayout
-import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.SearchView
 import android.view.*
 import android.widget.Toast
@@ -11,13 +11,22 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.defaultOnErrorAction
 import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.toRx
 import com.xianzhitech.ptt.model.NamedModel
+import com.xianzhitech.ptt.ui.modellist.ModelListAdapter
+import com.xianzhitech.ptt.ui.modellist.NewModelListFragment
 import rx.CompletableSubscriber
 import rx.Observable
 import rx.Subscription
 
-class ContactsFragment : ModelListFragment() {
+class ContactsFragment : NewModelListFragment() {
     private var swipeRefreshLayout : SwipeRefreshLayout? = null
+
+    override val modelProvider: ModelProvider = object : BaseModelProvider(false, emptyList(), false) {
+        override fun getModels(context: Context): Observable<List<NamedModel>> {
+            return appComponent.contactRepository.getContactItems().observe()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +34,11 @@ class ContactsFragment : ModelListFragment() {
         setHasOptionsMenu(true)
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateModelListAdapter(): ModelListAdapter {
+        return ModelListAdapter(this, R.layout.view_contact_item)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         swipeRefreshLayout = SwipeRefreshLayout(context)
         swipeRefreshLayout!!.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         swipeRefreshLayout!!.addView(super.onCreateView(inflater, swipeRefreshLayout, savedInstanceState))
@@ -34,6 +47,8 @@ class ContactsFragment : ModelListFragment() {
         }
         return swipeRefreshLayout
     }
+
+
 
     private fun refresh() {
         swipeRefreshLayout?.isRefreshing = true
@@ -66,20 +81,15 @@ class ContactsFragment : ModelListFragment() {
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
-                search(newText)
+                if (viewModel.searchTerm.get() != newText) {
+                    viewModel.searchTerm.set(newText)
+                }
                 return true
             }
         })
-    }
 
-    override val allModels: Observable<List<NamedModel>>
-        get() = appComponent.contactRepository.getContactItems().observe()
-
-    override fun onCreateModelViewHolder(container: ViewGroup): RecyclerView.ViewHolder {
-        return ModelItemHolder(LayoutInflater.from(container.context).inflate(R.layout.view_contact_item, container, false))
-    }
-
-    override fun onBindModelViewHolder(viewHolder: RecyclerView.ViewHolder, model: NamedModel) {
-        (viewHolder as ModelItemHolder).model = model
+        viewModel.searchTerm.toRx()
+                .subscribe { searchView.setQuery(it, false) }
+                .bindToLifecycle()
     }
 }
