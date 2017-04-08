@@ -19,7 +19,7 @@ import java.util.*
 
 
 class ModelListViewModel(private val modelProvider: ModelProvider,
-                         private val navigator: ModelListViewModel.Navigator? = null) : LifecycleViewModel() {
+                         private val navigator: Navigator? = null) : LifecycleViewModel() {
 
     val viewModels = ObservableArrayList<ViewModel>()
     val headerViewModelPositions = ObservableField<Map<Char, Int>>(emptyMap())
@@ -34,7 +34,7 @@ class ModelListViewModel(private val modelProvider: ModelProvider,
     override fun onStart() {
         super.onStart()
 
-        rx.Observable.combineLatest(
+        Observable.combineLatest(
                 modelProvider.getModels(App.instance)
                         .map { it.sortedWith(ModelComparator) }
                         .doOnLoadingState(loading::set),

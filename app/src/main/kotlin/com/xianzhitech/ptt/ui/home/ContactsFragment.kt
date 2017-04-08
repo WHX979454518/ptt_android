@@ -2,36 +2,29 @@ package com.xianzhitech.ptt.ui.home
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.view.MenuItemCompat
 import android.support.v4.widget.SwipeRefreshLayout
-import android.support.v7.widget.SearchView
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.defaultOnErrorAction
 import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.toRx
 import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.ui.modellist.ModelListAdapter
-import com.xianzhitech.ptt.ui.modellist.NewModelListFragment
+import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import rx.CompletableSubscriber
 import rx.Observable
 import rx.Subscription
 
-class ContactsFragment : NewModelListFragment() {
+class ContactsFragment : ModelListFragment() {
     private var swipeRefreshLayout : SwipeRefreshLayout? = null
 
     override val modelProvider: ModelProvider = object : BaseModelProvider(false, emptyList(), false) {
         override fun getModels(context: Context): Observable<List<NamedModel>> {
             return appComponent.contactRepository.getContactItems().observe()
         }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateModelListAdapter(): ModelListAdapter {
@@ -47,8 +40,6 @@ class ContactsFragment : NewModelListFragment() {
         }
         return swipeRefreshLayout
     }
-
-
 
     private fun refresh() {
         swipeRefreshLayout?.isRefreshing = true
@@ -69,27 +60,5 @@ class ContactsFragment : NewModelListFragment() {
                         d.bindToLifecycle()
                     }
                 })
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-        inflater.inflate(R.menu.contacts, menu)
-        val searchView = MenuItemCompat.getActionView(menu.findItem(R.id.contacts_search)) as SearchView
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String): Boolean {
-                return true
-            }
-
-            override fun onQueryTextChange(newText: String): Boolean {
-                if (viewModel.searchTerm.get() != newText) {
-                    viewModel.searchTerm.set(newText)
-                }
-                return true
-            }
-        })
-
-        viewModel.searchTerm.toRx()
-                .subscribe { searchView.setQuery(it, false) }
-                .bindToLifecycle()
     }
 }

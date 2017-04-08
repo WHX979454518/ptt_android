@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ext
 
+import android.databinding.ObservableMap
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -14,6 +15,7 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.exceptions.OnErrorNotImplementedException
 import rx.functions.Action0
 import rx.functions.Action1
+import rx.lang.kotlin.add
 import rx.plugins.RxJavaHooks
 import rx.subscriptions.Subscriptions
 import java.util.concurrent.TimeUnit
@@ -152,4 +154,18 @@ fun <T> Single<T>.doOnLoadingState(action1 : (Boolean) -> Unit) : Single<T> {
 fun Completable.doOnLoadingState(action1 : (Boolean) -> Unit) : Completable {
     return doOnSubscribe { action1(true) }
             .doOnEach { action1(false) }
+}
+
+fun <K, V> ObservableMap<K, V>.observe() : Observable<ObservableMap<K, V>> {
+    return Observable.create { emitter ->
+        val listener = object : ObservableMap.OnMapChangedCallback<ObservableMap<K, V>, K, V>() {
+            override fun onMapChanged(p0: ObservableMap<K, V>?, k: K) {
+                emitter.onNext(this@observe)
+            }
+        }
+
+        emitter.onNext(this@observe)
+        addOnMapChangedCallback(listener)
+        emitter.add { removeOnMapChangedCallback(listener) }
+    }
 }
