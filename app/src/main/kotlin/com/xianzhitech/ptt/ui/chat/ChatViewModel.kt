@@ -2,8 +2,8 @@ package com.xianzhitech.ptt.ui.chat
 
 import android.databinding.ObservableArrayList
 import android.databinding.ObservableField
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.model.Message
-import com.xianzhitech.ptt.service.handler.SignalServiceHandler
 import com.xianzhitech.ptt.ui.base.LifecycleViewModel
 import org.json.JSONObject
 import rx.Observable
@@ -11,9 +11,11 @@ import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
 
-class ChatViewModel(private val signalServiceHandler: SignalServiceHandler) : LifecycleViewModel() {
+class ChatViewModel(private val appComponent: AppComponent,
+                    private val roomId : String) : LifecycleViewModel() {
     val message = ObservableField<String>()
     val roomMessages = ObservableArrayList<Message>()
+    val roomTitle = ObservableField<String>()
 
     val displaySend : Boolean = true
     val displayMore : Boolean = false
@@ -67,6 +69,10 @@ class ChatViewModel(private val signalServiceHandler: SignalServiceHandler) : Li
 
     fun onClickMore() {
 
+    }
+
+    interface Navigator {
+        fun navigateToWalkieTalkie(roomId : String)
     }
 
 }

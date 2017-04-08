@@ -11,10 +11,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.storage.ContactStorage
-import com.xianzhitech.ptt.repo.storage.GroupStorage
-import com.xianzhitech.ptt.repo.storage.RoomStorage
-import com.xianzhitech.ptt.repo.storage.UserStorage
+import com.xianzhitech.ptt.repo.storage.*
 import rx.Completable
 import rx.Observable
 import rx.Observer
@@ -251,6 +248,11 @@ class ContactRepository(private val contactStorage: ContactStorage,
             contactStorage.clear()
         }, userNotification, groupNotification)
     }
+}
+
+class MessageRepository(private val messageStorage: MessageStorage,
+                        private val messageNotification: Subject<*, *>) {
+
 }
 
 interface QueryResult<T> {
