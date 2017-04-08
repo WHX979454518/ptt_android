@@ -4,6 +4,8 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
             name="label"
             type="CharSequence" />
@@ -17,31 +19,43 @@
             type="android.view.View.OnClickListener" />
     </data>
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/white"
-        android:orientation="horizontal"
+        android:foreground="?attr/selectableItemBackground"
         android:onClick="@{onClick}"
-        android:paddingLeft="@dimen/unit_two"
-        android:paddingRight="@dimen/unit_two">
+        android:orientation="horizontal"
+        android:visibility="@{value == null || value.length() == 0 ? View.GONE : View.VISIBLE}">
 
         <TextView
+            android:id="@+id/label"
             style="@style/Text.ProfileItem"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="@dimen/unit_two"
             android:layout_marginRight="@dimen/unit_two"
-            android:layout_weight="1"
+            android:layout_toLeftOf="@+id/value"
             android:text="@{label}"
             tools:text="@string/level" />
 
         <TextView
+            android:id="@+id/value"
             style="@style/Text.ProfileItem.Value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="@dimen/unit_two"
+            android:layout_marginRight="@dimen/unit_two"
             android:text="@{value}"
             tools:text="七级" />
 
-    </LinearLayout>
+        <View
+            style="@style/Divider.Lighter"
+            android:layout_below="@+id/value" />
+
+    </RelativeLayout>
 
 </layout>
