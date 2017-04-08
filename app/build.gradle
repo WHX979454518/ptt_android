@@ -54,6 +54,9 @@ android {
         multiDexEnabled true
 
         buildConfigField("String", "BUILD_NUMBER", "\"$buildNumber\"")
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86'
+        }
     }
 
     dataBinding {
@@ -140,7 +143,7 @@ dependencies {
     compile 'com.belerweb:pinyin4j:2.5.1'
 
     //compile(name: 'webrtc-android-release', ext: 'aar')
-    compile(group: 'cn.netptt', name: 'engine', version: '2.0.0-20170131.234914-1', ext: 'aar')
+    compile(group: 'cn.netptt', name: 'engine', version: '2.0.0-20170408.030101-1', ext: 'aar')
 //    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':bd_loc_sdk')
 
