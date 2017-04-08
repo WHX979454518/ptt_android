@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="label"
+            type="CharSequence" />
+
+        <variable
+            name="value"
+            type="CharSequence" />
+
+        <variable
+            name="onClick"
+            type="android.view.View.OnClickListener" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:orientation="horizontal"
+        android:onClick="@{onClick}"
+        android:paddingLeft="@dimen/unit_two"
+        android:paddingRight="@dimen/unit_two">
+
+        <TextView
+            style="@style/Text.ProfileItem"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/unit_two"
+            android:layout_weight="1"
+            android:text="@{label}"
+            tools:text="@string/level" />
+
+        <TextView
+            style="@style/Text.ProfileItem.Value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{value}"
+            tools:text="七级" />
+
+    </LinearLayout>
+
+</layout>

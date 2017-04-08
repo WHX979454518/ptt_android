@@ -138,3 +138,18 @@ class ImmediateMainThreadScheduler : Scheduler() {
         }
     }
 }
+
+fun <T> Observable<T>.doOnLoadingState(action1 : (Boolean) -> Unit) : Observable<T> {
+    return doOnSubscribe { action1(true) }
+            .doOnEach { action1(false) }
+}
+
+fun <T> Single<T>.doOnLoadingState(action1 : (Boolean) -> Unit) : Single<T> {
+    return doOnSubscribe { action1(true) }
+            .doOnEach { action1(false) }
+}
+
+fun Completable.doOnLoadingState(action1 : (Boolean) -> Unit) : Completable {
+    return doOnSubscribe { action1(true) }
+            .doOnEach { action1(false) }
+}

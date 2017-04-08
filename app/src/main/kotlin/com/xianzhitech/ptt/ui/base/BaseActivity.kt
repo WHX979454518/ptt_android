@@ -189,6 +189,10 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribe(CreateRoomSubscriber(applicationContext, isVideoChat))
     }
 
+    fun navigateToDialPhone(phoneNumber : String) {
+        startActivity(Intent(Intent.ACTION_DIAL).setData(Uri.parse("tel:$phoneNumber")))
+    }
+
     fun onLoginError(error: Throwable) {
         if (error is ForceUpdateException) {
             handleUpdate(error.appParams)

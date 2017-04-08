@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.ui.user.UserDetailsViewModel" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/grey_300"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/unit_two"
+            android:background="@android:color/white"
+            android:orientation="horizontal">
+
+            <com.xianzhitech.ptt.ui.widget.UserIconView
+                android:layout_width="@dimen/profile_icon_size"
+                android:layout_height="@dimen/profile_icon_size"
+                android:layout_margin="@dimen/unit_two"
+                app:userId="@{viewModel.user.id}"
+                tools:src="@color/blue" />
+
+            <TextView
+                style="@style/Text.Subhead"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/unit_two"
+                android:layout_weight="1"
+                android:paddingBottom="@dimen/unit_half"
+                android:paddingTop="@dimen/unit_half"
+                android:text="@{viewModel.user.name}"
+                tools:text="User 1" />
+        </LinearLayout>
+
+        <View style="@style/Divider.Lighter" />
+
+        <include
+            app:onClick="@{ignored -> viewModel.onClickPhoneNumber()}"
+            layout="@layout/view_profile_row"
+            app:label="@{@string/phone_number}"
+            app:value="@{viewModel.user.phoneNumber}" />
+
+        <View style="@style/Divider.Lighter" />
+
+        <include
+            layout="@layout/view_profile_row"
+            app:label="@{@string/level}"
+            app:value="@{viewModel.userLevel}" />
+
+        <Button
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:onClick="@{ignored -> viewModel.onClickStartWalkieTalkie()}"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_marginTop="@dimen/unit_two"
+            android:text="@string/chat_type_walkie_talkie" />
+
+        <Button
+            style="@style/Widget.AppCompat.Button"
+            android:onClick="@{ignored -> viewModel.onClickStartVideoChat()}"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_marginTop="@dimen/unit_two"
+            android:text="@string/chat_type_video" />
+
+
+
+    </LinearLayout>
+
+</layout>

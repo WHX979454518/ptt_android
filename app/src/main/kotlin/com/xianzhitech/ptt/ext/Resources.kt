@@ -9,6 +9,7 @@ import android.support.v4.content.ContextCompat
 import android.support.v4.graphics.drawable.DrawableCompat
 import android.text.format.DateFormat
 import android.text.format.DateUtils
+import com.xianzhitech.ptt.App
 import com.xianzhitech.ptt.R
 import java.util.*
 
@@ -51,10 +52,11 @@ fun Date.formatInvite(context: Context): CharSequence {
     }
 }
 
-fun Int.toLevelString(context: Context) : CharSequence {
+fun Int.toLevelString(): CharSequence {
+    val context = App.instance
     val arr = context.resources.getStringArray(R.array.level_number)
     if (this < 0 || this >= arr.size) {
-        return context.getString(R.string.level_with_number, this)
+        return context.getString(R.string.level_with_number, this.toString())
     } else {
         return arr[this]
     }

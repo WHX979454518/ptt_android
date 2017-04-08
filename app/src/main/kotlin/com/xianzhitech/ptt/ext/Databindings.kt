@@ -23,8 +23,13 @@ fun <T> ObservableField<T>.toRx(): Observable<T> {
     }
 }
 
+fun <T> createCompositeObservable(observable : android.databinding.Observable,
+                                  valueGetter: () -> T) : ObservableField<T> {
+    return createCompositeObservable(listOf(observable), valueGetter)
+}
+
 fun <T> createCompositeObservable(observables: List<android.databinding.Observable>,
-                                  valueGetter: () -> T): ObservableField<T> {
+                                  valueGetter: () -> T) : ObservableField<T> {
     return object : ObservableField<T>() {
         val changeListener = object : android.databinding.Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(p0: android.databinding.Observable?, p1: Int) {
