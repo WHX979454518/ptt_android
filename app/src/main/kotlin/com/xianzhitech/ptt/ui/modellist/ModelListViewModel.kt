@@ -131,7 +131,7 @@ open class ModelListViewModel(private val modelProvider: ModelProvider,
                 .bindToLifecycle()
     }
 
-    fun onClickItem(model: NamedModel) {
+    open fun onClickItem(model: NamedModel) {
         if (modelProvider.selectable) {
             if (modelProvider.preselectedModelIds.contains(model.id).not() ||
                     modelProvider.preselectedUnselectable.not()) {

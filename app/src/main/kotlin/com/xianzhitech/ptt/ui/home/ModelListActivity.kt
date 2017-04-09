@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
+import com.xianzhitech.ptt.ui.modellist.ModelListViewModel
 
 
 class ModelListActivity : BaseToolbarActivity(), ModelListFragment.Callbacks {
@@ -18,7 +19,7 @@ class ModelListActivity : BaseToolbarActivity(), ModelListFragment.Callbacks {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.baseToolbar_root, ModelListFragment().apply {
+                .replace(R.id.baseToolbar_root, ModelListFragment<ModelListViewModel>().apply {
                     arguments = Bundle(1).apply {
                         putParcelable(ModelListFragment.ARG_MODEL_PROVIDER, intent.getParcelableExtra<ModelProvider>(EXTRA_MODEL_PROVIDER))
                     }

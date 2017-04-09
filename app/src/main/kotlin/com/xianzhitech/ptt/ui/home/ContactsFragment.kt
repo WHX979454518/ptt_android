@@ -12,19 +12,29 @@ import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.defaultOnErrorAction
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.model.NamedModel
+import com.xianzhitech.ptt.model.Room
+import com.xianzhitech.ptt.ui.chat.ChatActivity
 import com.xianzhitech.ptt.ui.modellist.ModelListAdapter
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import rx.CompletableSubscriber
 import rx.Observable
 import rx.Subscription
 
-class ContactsFragment : ModelListFragment() {
+class ContactsFragment : ModelListFragment<ContactsViewModel>(), ContactsViewModel.Navigator {
     private var swipeRefreshLayout : SwipeRefreshLayout? = null
 
     override val modelProvider: ModelProvider = object : BaseModelProvider(false, emptyList(), false) {
         override fun getModels(context: Context): Observable<List<NamedModel>> {
             return appComponent.contactRepository.getContactItems().observe()
         }
+    }
+
+    override fun navigateToChatRoom(room: Room) {
+        startActivity(ChatActivity.createIntent(room.id))
+    }
+
+    override fun onCreateViewModel(): ContactsViewModel {
+        return ContactsViewModel(modelProvider, appComponent, this)
     }
 
     override fun onCreateModelListAdapter(): ModelListAdapter {
