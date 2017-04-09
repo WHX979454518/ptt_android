@@ -1,26 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    >
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/roomList_recyclerView"
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.ui.roomlist.RoomListViewModel" />
+    </data>
+
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:listitem="@layout/view_room_item" />
+        android:layout_height="match_parent">
 
-    <TextView
-        style="@style/Text.Headline"
-        android:drawablePadding="@dimen/unit_one"
-        android:gravity="center"
-        android:textColor="@color/grey_300"
-        android:id="@+id/roomList_emptyView"
-        android:layout_gravity="center"
-        android:text="@string/error_no_rooms"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/roomList_recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/view_room_item" />
 
-</FrameLayout>
+        <TextView
+            android:id="@+id/roomList_emptyView"
+            style="@style/Text.Headline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:drawablePadding="@dimen/unit_one"
+            android:gravity="center"
+            android:text="@string/error_no_rooms"
+            android:textColor="@color/grey_300"
+            app:show="@{!viewModel.roomViewModels.isEmpty()}" />
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:show="@{viewModel.loading}" />
+
+    </FrameLayout>
+</layout>

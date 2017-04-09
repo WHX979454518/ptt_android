@@ -1,12 +1,12 @@
 package com.xianzhitech.ptt.ui.chat
 
-import android.databinding.ObservableArrayList
 import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.util.ObservableArrayList
 
 
 class RoomViewModel(val roomId : String,
@@ -38,10 +38,7 @@ class RoomViewModel(val roomId : String,
             appComponent.roomRepository
                     .getRoomMembers(roomId)
                     .observe()
-                    .subscribe {
-                        roomMembers.clear()
-                        roomMembers.addAll(it)
-                    }
+                    .subscribe(roomMembers::replaceAll)
                     .bindToLifecycle()
         }
     }
