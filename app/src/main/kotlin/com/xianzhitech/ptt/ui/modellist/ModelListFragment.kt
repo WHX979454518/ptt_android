@@ -6,7 +6,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.SearchView
 import android.view.*
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.databinding.FragmentNewModelListBinding
+import com.xianzhitech.ptt.databinding.FragmentModelListBinding
 import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.observe
 import com.xianzhitech.ptt.ext.show
@@ -16,7 +16,9 @@ import com.xianzhitech.ptt.ui.home.ModelProvider
 import com.xianzhitech.ptt.ui.widget.SideNavigationView
 
 
-open class ModelListFragment : BaseViewModelFragment<ModelListViewModel, FragmentNewModelListBinding>(), ModelListAdapter.Callbacks {
+open class ModelListFragment<T : ModelListViewModel> :
+        BaseViewModelFragment<T, FragmentModelListBinding>(),
+        ModelListAdapter.Callbacks {
     protected lateinit var adapter: ModelListAdapter
 
     open val modelProvider: ModelProvider
@@ -81,11 +83,11 @@ open class ModelListFragment : BaseViewModelFragment<ModelListViewModel, Fragmen
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentNewModelListBinding {
+    override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentModelListBinding {
         adapter = onCreateModelListAdapter()
         viewModel.viewModels.addOnListChangedCallback(adapter.listChangeListener)
 
-        return FragmentNewModelListBinding.inflate(inflater, container, false).apply {
+        return FragmentModelListBinding.inflate(inflater, container, false).apply {
             recyclerView.layoutManager = LinearLayoutManager(context)
             recyclerView.adapter = this@ModelListFragment.adapter
 
@@ -117,8 +119,9 @@ open class ModelListFragment : BaseViewModelFragment<ModelListViewModel, Fragmen
         return ModelListAdapter(this, R.layout.view_model_list_item)
     }
 
-    override fun onCreateViewModel(): ModelListViewModel {
-        return ModelListViewModel(modelProvider, callbacks())
+    override fun onCreateViewModel(): T {
+        @Suppress("UNCHECKED_CAST")
+        return ModelListViewModel(modelProvider, callbacks()) as T
     }
 
     override fun onClickModelItem(model: NamedModel) {

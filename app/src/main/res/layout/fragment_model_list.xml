@@ -1,35 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/modelListFragment_list"
+    <data>
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.ui.modellist.ModelListViewModel" />
+    </data>
+
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:listitem="@layout/view_contact_item" />
+        android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/modelListFragment_currentChar"
-        style="@style/Text.Display3"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:layout_gravity="center"
-        android:background="@drawable/bg_char_display"
-        android:gravity="center"
-        android:lineSpacingExtra="0dp"
-        android:visibility="gone"
-        tools:text="C"
-        tools:visibility="visible" />
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/view_contact_item" />
 
-    <com.xianzhitech.ptt.ui.widget.SideNavigationView
-        android:id="@+id/modelListFragment_sidebar"
-        android:layout_width="@dimen/unit_three"
-        android:layout_height="match_parent"
-        android:layout_gravity="right"
-        android:background="@drawable/bg_sidebar"
-        android:paddingBottom="@dimen/unit_one"
-        android:paddingTop="@dimen/unit_one" />
+        <TextView
+            android:id="@+id/currentChar"
+            style="@style/Text.Display3"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_char_display"
+            android:gravity="center"
+            android:lineSpacingExtra="0dp"
+            android:visibility="gone"
+            tools:text="C"
+            tools:visibility="visible" />
 
-</FrameLayout>
+        <com.xianzhitech.ptt.ui.widget.SideNavigationView
+            android:id="@+id/sideBar"
+            android:layout_width="@dimen/unit_three"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:background="@drawable/bg_sidebar"
+            android:paddingBottom="@dimen/unit_one"
+            android:paddingTop="@dimen/unit_one" />
+
+        <include
+            layout="@layout/view_progress"
+            app:loading="@{viewModel.loading}" />
+
+    </FrameLayout>
+</layout>

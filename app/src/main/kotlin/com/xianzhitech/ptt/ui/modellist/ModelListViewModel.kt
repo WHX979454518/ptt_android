@@ -17,8 +17,8 @@ import com.xianzhitech.ptt.util.toPinyin
 import rx.Observable
 
 
-class ModelListViewModel(private val modelProvider: ModelProvider,
-                         private val navigator: Navigator? = null) : LifecycleViewModel() {
+open class ModelListViewModel(private val modelProvider: ModelProvider,
+                              private val navigator: Navigator? = null) : LifecycleViewModel() {
 
     val viewModels = ObservableArrayList<ViewModel>()
     val headerViewModelPositions = ObservableField<Map<Char, Int>>(emptyMap())
@@ -131,7 +131,7 @@ class ModelListViewModel(private val modelProvider: ModelProvider,
                 .bindToLifecycle()
     }
 
-    fun onClickItem(model : NamedModel) {
+    fun onClickItem(model: NamedModel) {
         if (modelProvider.selectable) {
             if (modelProvider.preselectedModelIds.contains(model.id).not() ||
                     modelProvider.preselectedUnselectable.not()) {
@@ -141,11 +141,10 @@ class ModelListViewModel(private val modelProvider: ModelProvider,
                     selectedItemIds.put(model.id, true)
                 }
             }
-        }
-        else if (model is User) {
+            return
+        } else if (model is User) {
             navigator?.navigateToUser(model)
-        }
-        else if (model is Group) {
+        } else if (model is Group) {
             navigator?.navigateToGroup(model)
         }
     }
