@@ -82,6 +82,7 @@
                 android:src="@drawable/ic_send_black_24dp"
                 android:tint="?attr/colorAccent"
                 app:show="@{viewModel.displaySend}"
+                app:enabled="@{viewModel.sendButtonEnabled}"
                 tools:visibility="visible" />
 
             <ImageView

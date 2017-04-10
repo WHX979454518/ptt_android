@@ -7,10 +7,7 @@ import com.xianzhitech.ptt.ext.addAllLimited
 import com.xianzhitech.ptt.ext.first
 import com.xianzhitech.ptt.ext.sizeAtLeast
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.NamedModel
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.model.*
 import com.xianzhitech.ptt.repo.storage.*
 import rx.Completable
 import rx.Observable
@@ -252,6 +249,20 @@ class ContactRepository(private val contactStorage: ContactStorage,
 
 class MessageRepository(private val messageStorage: MessageStorage,
                         private val messageNotification: Subject<*, *>) {
+
+    fun getAllMessages(roomId: String,
+                       latestId : String?,
+                       count : Int) : QueryResult<List<Message>> {
+        return RepoQueryResult({
+            messageStorage.getMessages(roomId, latestId, count)
+        }, messageNotification)
+    }
+
+    fun saveMessage(messages : List<Message>) : UpdateResult {
+        return RepoUpdateResult({
+            Completable.fromSingle(messageStorage.saveMessages(messages))
+        }, messageNotification)
+    }
 
 }
 

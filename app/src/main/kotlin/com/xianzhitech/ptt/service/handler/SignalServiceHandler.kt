@@ -15,6 +15,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Location
+import com.xianzhitech.ptt.model.Message
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.*
@@ -279,6 +280,13 @@ class SignalServiceHandler(private val appContext: Context,
         val userId = peekCurrentUserId ?: return Completable.complete()
         return UpdateLocationCommand(locations = locations, userId = userId).send()
                 .toCompletable()
+    }
+
+    fun sendMessage(msg : Message) : Single<Message> {
+        return SendMessageCommand(msg).send()
+                .doOnSuccess { message ->
+                    appComponent.messageRepository.saveMessage(listOf(message)).execAsync().subscribeSimple()
+                }
     }
 
     fun logout() {

@@ -1,7 +1,6 @@
 package com.xianzhitech.ptt
 
 import android.Manifest
-import android.app.Application
 import android.content.pm.PackageManager
 import android.os.Process
 import android.preference.PreferenceManager
@@ -16,10 +15,7 @@ import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
-import com.xianzhitech.ptt.repo.ContactRepository
-import com.xianzhitech.ptt.repo.GroupRepository
-import com.xianzhitech.ptt.repo.RoomRepository
-import com.xianzhitech.ptt.repo.UserRepository
+import com.xianzhitech.ptt.repo.*
 import com.xianzhitech.ptt.repo.storage.*
 import com.xianzhitech.ptt.service.AppService
 import com.xianzhitech.ptt.service.handler.*
@@ -32,7 +28,6 @@ import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
@@ -51,6 +46,7 @@ open class App : MultiDexApplication(), AppComponent {
     override lateinit var groupRepository: GroupRepository
     override lateinit var roomRepository: RoomRepository
     override lateinit var contactRepository: ContactRepository
+    override lateinit var messageRepository: MessageRepository
     override lateinit var preference: Preference
     override lateinit var signalHandler: SignalServiceHandler
     override lateinit var activityProvider: ActivityProvider
@@ -110,6 +106,7 @@ open class App : MultiDexApplication(), AppComponent {
         roomRepository = RoomRepository(RoomSQLiteStorage(helper), groupStorage,
                 userStorage, roomNotification, userNotification, groupNotification)
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
+        messageRepository = MessageRepository(MessageSQLiteStorage(helper), PublishSubject.create<Unit>())
 
         signalHandler = SignalServiceHandler(this, this)
 

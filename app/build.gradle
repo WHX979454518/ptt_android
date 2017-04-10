@@ -99,7 +99,7 @@ android {
 
     productFlavors {
         dev {
-            def appServerUrl = project.appServerUrl ?: "http://netptt.cn:20002"
+            def appServerUrl = project.appServerUrl ?: "http://netptt.cn:25002"
             applicationIdSuffix ".dev"
             buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
             manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "hWdRd0tU6Fkv1BOUteDzp4HsgkUvkNuz"

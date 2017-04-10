@@ -1,15 +1,14 @@
 package com.xianzhitech.ptt.ui.chat
 
-import android.databinding.ObservableArrayList
 import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.createCompositeObservable
+import com.xianzhitech.ptt.ext.observeOnMainThread
+import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.Message
 import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.util.ObservableArrayList
 import org.json.JSONObject
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import java.util.concurrent.TimeUnit
 
 
 class ChatViewModel(private val appComponent: AppComponent,
@@ -19,6 +18,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     val roomMessages = ObservableArrayList<Message>()
     val roomViewModel = addChildModel(RoomViewModel(roomId, appComponent))
     val title = createCompositeObservable(listOf(roomViewModel.roomName)) { roomViewModel.roomName.get() }
+    val sendButtonEnabled = createCompositeObservable(message) { message.get()?.isNotEmpty() ?: false }
 
     val displaySend : Boolean = true
     val displayMore : Boolean = false
@@ -27,45 +27,20 @@ class ChatViewModel(private val appComponent: AppComponent,
     override fun onStart() {
         super.onStart()
 
-        roomMessages.clear()
-        val currentUserId = appComponent.signalHandler.peekCurrentUserId!!
-
-        (1..5000).mapTo(roomMessages) {
-            Message(
-                    id = it.toString(),
-                    senderId = if (it % 3 == 0) currentUserId else "500001",
-                    body = JSONObject().put("text", "这是消息 $it"),
-                    type = "text",
-                    read = false,
-                    roomId = "123",
-                    sendTime = System.currentTimeMillis()
-            )
-        }
-
-        Observable.interval(10, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                .subscribe {
-                    val id = roomMessages.size
-                    onReceiveNewMessage(
-                            Message(
-                                    id = id.toString(),
-                                    senderId = if (id % 3 == 0) currentUserId else "500001",
-                                    body = JSONObject().put("text", "这是消息wec $id"),
-                                    type = "text",
-                                    read = false,
-                                    roomId = "123",
-                                    sendTime = System.currentTimeMillis()
-                            )
-                    )
-                }
+        appComponent.messageRepository
+                .getAllMessages(roomId, null, 512)
+                .observe()
+                .observeOnMainThread()
+                .subscribe(this::onMessageUpdated)
+                .bindToLifecycle()
     }
 
-    private fun onReceiveNewMessage(msg: Message) {
-        roomMessages.add(msg)
+    private fun onMessageUpdated(messages : List<Message>) {
+        roomMessages.replaceAll(messages)
         navigator.navigateToLatestMessageIfPossible()
     }
 
     fun onClickCall() {
-
     }
 
     fun onClickEmoji() {
@@ -73,7 +48,21 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickSend() {
+        val msg = Message(
+                id = System.currentTimeMillis().toString(),
+                senderId = appComponent.signalHandler.peekCurrentUserId!!,
+                roomId = roomId,
+                sendTime = System.currentTimeMillis(),
+                read = false,
+                type = "text",
+                body = JSONObject().put("text", message.get())
+        )
 
+        appComponent.messageRepository.saveMessage(listOf(msg))
+                .execAsync()
+                .subscribeSimple()
+
+        message.set("")
     }
 
     fun onClickMore() {

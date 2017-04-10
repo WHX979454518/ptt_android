@@ -483,6 +483,12 @@ class UpdateLocationCommand(val locations : List<Location>,
     }
 }
 
+class SendMessageCommand(val msg : Message) : Command<Message, JSONObject>("c_send_message", msg.toJson()) {
+    override fun convert(value: JSONObject): Message {
+        return value.toMessage()
+    }
+}
+
 class JoinRoomCommand(roomId : String, fromInvitation: Boolean) : Command<JoinRoomResponse, JSONObject>("c_join_room", roomId, fromInvitation) {
     override fun convert(value: JSONObject): JoinRoomResponse {
         return JoinRoomResponse(value)
