@@ -22,6 +22,7 @@ import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.chat.ChatActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
@@ -158,14 +159,7 @@ class RoomListFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonCli
     }
 
     private fun onRoomClicked(roomId : String) {
-        AlertDialogFragment.Builder().apply {
-            message = getString(R.string.choose_chat_type)
-            btnPositive = getString(R.string.chat_type_walkie_talkie)
-            btnNegative = getString(R.string.chat_type_video)
-            attachment = roomId
-            show(childFragmentManager, TAG_CHAT_TYPE)
-            childFragmentManager.executePendingTransactions()
-        }
+        startActivity(ChatActivity.createIntent(roomId))
     }
 
     private fun onLongClickOnRoom(anchorView: View, room: Room): Boolean {
