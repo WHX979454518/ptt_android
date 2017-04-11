@@ -259,7 +259,7 @@ class ContactSQLiteStorage(db: SQLiteOpenHelper,
 }
 
 class MessageSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) : BaseSQLiteStorage<Message>(dbOpenHelper), MessageStorage {
-    override fun saveMessages(messages: Iterable<Message>): Single<List<Message>> {
+    override fun saveMessages(messages: Iterable<Message>): Completable {
         val ids = arrayListOf<Long>()
 
         return executeInTransaction {
@@ -269,14 +269,14 @@ class MessageSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) : BaseSQLiteStorage<M
                 it.toContentValues(v)
                 ids.add(db.insertWithOnConflict(Messages.TABLE_NAME, "", v, SQLiteDatabase.CONFLICT_REPLACE))
             }
-        }.andThen(Single.fromCallable { queryList(Messages.MAPPER, "SELECT ${Messages.ALL} FROM ${Messages.TABLE_NAME} WHERE ${Messages.DB_ID} IN (${ids.toSqlSet()})") })
+        }
     }
 
     override fun getMessages(roomId: String, latestId: String?, count: Int): Single<List<Message>> {
         val extraCriteria : String
 
         if (latestId != null) {
-            extraCriteria = "AND ${Messages.SEND_TIME} < (SELECT ${Messages.SEND_TIME} FROM ${Messages.TABLE_NAME} WHERE ${Messages.ID} = '$latestId')"
+            extraCriteria = "AND ${Messages.SEND_TIME} < (SELECT ${Messages.SEND_TIME} FROM ${Messages.TABLE_NAME} WHERE ${Messages.REMOTE_ID} = '$latestId')"
         }
         else {
             extraCriteria = ""
@@ -302,8 +302,8 @@ class MessageSQLiteStorage(dbOpenHelper: SQLiteOpenHelper) : BaseSQLiteStorage<M
 private object Messages {
     const val TABLE_NAME = "messages"
 
-    const val DB_ID = "db_id"
-    const val ID = "id"
+    const val LOCAL_ID = "local_id"
+    const val REMOTE_ID = "remote_id"
     const val SENDER_ID = "sender_id"
     const val SEND_TIME = "send_time"
     const val ROOM_ID = "room_id"
@@ -311,10 +311,10 @@ private object Messages {
     const val TYPE = "type"
     const val BODY = "body"
 
-    const val ALL = "$ID,$SENDER_ID,$SEND_TIME,$ROOM_ID,$TYPE,$BODY,$READ"
+    const val ALL = "$LOCAL_ID,$REMOTE_ID,$SENDER_ID,$SEND_TIME,$ROOM_ID,$TYPE,$BODY,$READ"
     const val CREATE_SQL = "CREATE TABLE $TABLE_NAME (" +
-            "$DB_ID INTEGER PRIMARY KEY AUTOINCREMENT," +
-            "$ID TEXT UNIQUE ON CONFLICT REPLACE," +
+            "$LOCAL_ID TEXT," +
+            "$REMOTE_ID TEXT," +
             "$SEND_TIME INTEGER NOT NULL," +
             "$READ INTEGER DEFAULT 0," +
             "$ROOM_ID TEXT REFERENCES ${Rooms.TABLE_NAME}(${Rooms.ID}) ON DELETE CASCADE," +
@@ -323,24 +323,26 @@ private object Messages {
             "$BODY TEXT" +
             "); " +
             "CREATE INDEX IF NOT EXISTS message_room_id_index ON $TABLE_NAME ($ROOM_ID); " +
-            "CREATE INDEX IF NOT EXISTS message_id_index ON $TABLE_NAME ($ID); " +
+            "CREATE INDEX IF NOT EXISTS message_id_index ON $TABLE_NAME ($LOCAL_ID); " +
             "CREATE INDEX IF NOT EXISTS message_sender_id_index ON $TABLE_NAME ($SENDER_ID); "
 
     val MAPPER: (Cursor) -> Message = {
         Message(
                 id = it.getString(0),
-                senderId = it.getString(1),
-                sendTime =  it.getLong(2),
-                roomId = it.getString(3),
-                type = it.getString(4),
-                body = JSONObject(it.getString(5)),
-                read = it.getInt(6) != 0
+                remoteId = it.getString(1),
+                senderId = it.getString(2),
+                sendTime =  it.getLong(3),
+                roomId = it.getString(4),
+                type = it.getString(5),
+                body = JSONObject(it.getString(6)),
+                read = it.getInt(7) != 0
         )
     }
 }
 
 private fun Message.toContentValues(v: ContentValues) {
-    v.put(Messages.ID, id)
+    v.put(Messages.LOCAL_ID, id)
+    v.put(Messages.REMOTE_ID, remoteId)
     v.put(Messages.SENDER_ID, senderId)
     v.put(Messages.SEND_TIME, sendTime)
     v.put(Messages.ROOM_ID, roomId)

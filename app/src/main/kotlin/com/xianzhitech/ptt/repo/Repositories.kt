@@ -260,7 +260,7 @@ class MessageRepository(private val messageStorage: MessageStorage,
 
     fun saveMessage(messages : List<Message>) : UpdateResult {
         return RepoUpdateResult({
-            Completable.fromSingle(messageStorage.saveMessages(messages))
+            messageStorage.saveMessages(messages)
         }, messageNotification)
     }
 

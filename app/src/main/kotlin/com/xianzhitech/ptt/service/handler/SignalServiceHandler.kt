@@ -139,6 +139,7 @@ class SignalServiceHandler(private val appContext: Context,
             is UserKickOutSignal -> onUserKickOut()
             is RoomKickOutSignal -> onRoomKickedOut(signal.roomId)
             is RoomSpeakerUpdateSignal -> onRoomSpeakerUpdate(signal.update)
+            is RoomMessageSignal -> onReceiveRoomMessage(signal.message)
             is RoomOnlineMemberUpdateSignal -> onRoomOnlineMemberUpdate(signal.update)
             is RoomInviteSignal -> onReceiveInvitation(signal.invitation)
             is UserLoggedInSignal -> onUserLoggedIn(signal.user)
@@ -146,6 +147,12 @@ class SignalServiceHandler(private val appContext: Context,
             is UserLoginFailSignal -> onUserLoginFailed(signal.err)
             is UpdateLocationSignal -> onUpdateLocation()
             is IceCandidateSignal -> onReceiveIceCandidate(signal.iceCandidate)
+        }
+    }
+
+    private fun onReceiveRoomMessage(message: Message) {
+        mainThread {
+            appComponent.messageRepository.saveMessage(listOf(message)).execAsync().subscribeSimple()
         }
     }
 

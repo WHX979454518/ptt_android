@@ -35,6 +35,7 @@ interface User : NamedModel {
 }
 
 data class Message(override val id : String,
+                   val remoteId: String?,
                    val senderId: String,
                    val sendTime : Long,
                    val roomId : String,

@@ -13,9 +13,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
 
     override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentChatBinding {
         val binding = FragmentChatBinding.inflate(inflater, container, false)
-        binding.recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false).apply {
-            stackFromEnd = true
-        }
+        binding.recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true)
         binding.recyclerView.adapter = chatAdapter
         return binding
     }

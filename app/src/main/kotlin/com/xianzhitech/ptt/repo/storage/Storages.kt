@@ -40,7 +40,7 @@ interface RoomStorage {
 }
 
 interface MessageStorage {
-    fun saveMessages(messages: Iterable<Message>) : Single<List<Message>>
+    fun saveMessages(messages: Iterable<Message>) : Completable
     fun getMessages(roomId: String, latestId: String?, count: Int) : Single<List<Message>>
     fun clear() : Completable
 }

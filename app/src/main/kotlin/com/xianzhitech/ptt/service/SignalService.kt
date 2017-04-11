@@ -550,7 +550,7 @@ class GroupObject(private val obj: JSONObject) : Group {
 
 private fun Message.toJson() : JSONObject {
     return JSONObject().apply {
-        put("id", id)
+        put("localId", id)
         put("type", type)
         put("roomId", roomId)
         put("body", body)
@@ -559,12 +559,13 @@ private fun Message.toJson() : JSONObject {
 
 private fun JSONObject.toMessage() : Message {
     return Message(
-            id = getString("_id"),
-            sendTime = getLong("sendTime"),
+            id = optString("localId", null),
+            sendTime = ZonedDateTime.parse(getString("sendTime")).toEpochSecond() * 1000L,
             body = getJSONObject("body"),
             type = getString("type"),
             roomId = getString("roomId"),
             read = false,
+            remoteId = optString("_id", null),
             senderId = getString("senderId")
     )
 }

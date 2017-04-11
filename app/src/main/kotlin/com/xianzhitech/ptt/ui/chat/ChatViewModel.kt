@@ -9,6 +9,7 @@ import com.xianzhitech.ptt.model.Message
 import com.xianzhitech.ptt.ui.base.LifecycleViewModel
 import com.xianzhitech.ptt.util.ObservableArrayList
 import org.json.JSONObject
+import java.util.*
 
 
 class ChatViewModel(private val appComponent: AppComponent,
@@ -18,10 +19,8 @@ class ChatViewModel(private val appComponent: AppComponent,
     val roomMessages = ObservableArrayList<Message>()
     val roomViewModel = addChildModel(RoomViewModel(roomId, appComponent))
     val title = createCompositeObservable(listOf(roomViewModel.roomName)) { roomViewModel.roomName.get() }
-    val sendButtonEnabled = createCompositeObservable(message) { message.get()?.isNotEmpty() ?: false }
-
-    val displaySend : Boolean = true
-    val displayMore : Boolean = false
+    val displaySendButton = createCompositeObservable(message) { message.get()?.isNotEmpty() ?: false }
+    val displayMoreButton = createCompositeObservable(message) { message.get().isNullOrEmpty() }
 
 
     override fun onStart() {
@@ -49,19 +48,17 @@ class ChatViewModel(private val appComponent: AppComponent,
 
     fun onClickSend() {
         val msg = Message(
-                id = System.currentTimeMillis().toString(),
+                id = UUID.randomUUID().toString(),
+                remoteId = null,
                 senderId = appComponent.signalHandler.peekCurrentUserId!!,
                 roomId = roomId,
                 sendTime = System.currentTimeMillis(),
-                read = false,
+                read = true,
                 type = "text",
                 body = JSONObject().put("text", message.get())
         )
 
-        appComponent.messageRepository.saveMessage(listOf(msg))
-                .execAsync()
-                .subscribeSimple()
-
+        appComponent.signalHandler.sendMessage(msg).subscribeSimple()
         message.set("")
     }
 
