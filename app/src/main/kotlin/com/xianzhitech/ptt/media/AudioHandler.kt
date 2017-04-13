@@ -25,7 +25,6 @@ import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Single
-import rx.lang.kotlin.single
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.atomic.AtomicReference
 
@@ -303,7 +302,7 @@ class AudioHandler(private val appContext: Context,
     }
 
     private fun getBluetoothProfileConnectedDevices(btAdapter: BluetoothAdapter, profileRequested: Int): Single<MutableSet<BluetoothDevice>> {
-        return single { subscriber ->
+        return Single.create { subscriber ->
             btAdapter.getProfileProxy(appContext, object : BluetoothProfile.ServiceListener {
                 override fun onServiceDisconnected(profile: Int) {
                 }

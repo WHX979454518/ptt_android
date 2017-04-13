@@ -15,7 +15,6 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.exceptions.OnErrorNotImplementedException
 import rx.functions.Action0
 import rx.functions.Action1
-import rx.lang.kotlin.add
 import rx.plugins.RxJavaHooks
 import rx.subscriptions.Subscriptions
 import java.util.concurrent.TimeUnit
@@ -157,7 +156,7 @@ fun Completable.doOnLoadingState(action1 : (Boolean) -> Unit) : Completable {
 }
 
 fun <K, V> ObservableMap<K, V>.observe() : Observable<ObservableMap<K, V>> {
-    return Observable.create { emitter ->
+    return Observable.create({ emitter ->
         val listener = object : ObservableMap.OnMapChangedCallback<ObservableMap<K, V>, K, V>() {
             override fun onMapChanged(p0: ObservableMap<K, V>?, k: K) {
                 emitter.onNext(this@observe)
@@ -166,6 +165,6 @@ fun <K, V> ObservableMap<K, V>.observe() : Observable<ObservableMap<K, V>> {
 
         emitter.onNext(this@observe)
         addOnMapChangedCallback(listener)
-        emitter.add { removeOnMapChangedCallback(listener) }
-    }
+        emitter.setCancellation { removeOnMapChangedCallback(listener) }
+    }, Emitter.BackpressureMode.LATEST)
 }

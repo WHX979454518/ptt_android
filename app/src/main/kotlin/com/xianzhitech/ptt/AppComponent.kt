@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.xianzhitech.ptt.data.Storage
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.*
 import com.xianzhitech.ptt.service.AppService
@@ -19,6 +21,9 @@ interface AppComponent {
     val httpClient: OkHttpClient
     val preference: Preference
     val gson: Gson
+
+    val storage : Storage
+    val objectMapper : ObjectMapper
 
     val appServerEndpoint : String
     val appService: AppService

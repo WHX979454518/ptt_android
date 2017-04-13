@@ -8,9 +8,8 @@ import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.AppConfig
 import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
+import rx.Emitter
 import rx.Observable
-import rx.lang.kotlin.add
-import rx.lang.kotlin.observable
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
@@ -45,7 +44,7 @@ class AppPreference(appContext : Context,
 
     override val userSessionTokenSubject: Observable<UserToken>
         get() {
-            return observable<UserToken> { subscriber ->
+            return Observable.create<UserToken>({ subscriber ->
                 val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
                     if (key == KEY_USER_TOKEN) {
                         subscriber.onNext(userSessionToken)
@@ -53,8 +52,8 @@ class AppPreference(appContext : Context,
                 }
 
                 pref.registerOnSharedPreferenceChangeListener(listener)
-                subscriber.add { pref.unregisterOnSharedPreferenceChangeListener(listener) }
-            }.startWith(userSessionToken)
+                subscriber.setCancellation { pref.unregisterOnSharedPreferenceChangeListener(listener) }
+            }, Emitter.BackpressureMode.LATEST).startWith(userSessionToken)
         }
 
 

@@ -37,9 +37,9 @@ import retrofit2.http.*
 import rx.*
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
-import rx.lang.kotlin.PublishSubject
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
+import rx.subjects.PublishSubject
 import java.io.Serializable
 import java.lang.reflect.Type
 import java.util.*
@@ -55,7 +55,7 @@ class SignalService(val appContext : Context,
                     val okHttpClient: OkHttpClient,
                     val gson: Gson) {
 
-    private val signalSubject = PublishSubject<Signal>()
+    private val signalSubject = PublishSubject.create<Signal>()
 
     val signals : Observable<Signal>
         get() = signalSubject

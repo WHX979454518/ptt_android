@@ -10,8 +10,12 @@ import ch.qos.logback.classic.Level
 import com.baidu.mapapi.SDKInitializer
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.Gson
 import com.jakewharton.threetenabp.AndroidThreeTen
+import com.xianzhitech.ptt.data.Models
+import com.xianzhitech.ptt.data.Storage
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
@@ -23,6 +27,7 @@ import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.util.ActivityProviderImpl
 import io.fabric.sdk.android.Fabric
+import io.requery.jackson.EntityMapper
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
@@ -52,6 +57,8 @@ open class App : MultiDexApplication(), AppComponent {
     override lateinit var activityProvider: ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
     override lateinit var mediaButtonHandler: MediaButtonHandler
+    override lateinit var storage: Storage
+    override lateinit var objectMapper: ObjectMapper
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
     override val gson: Gson = Gson()
 
@@ -107,6 +114,12 @@ open class App : MultiDexApplication(), AppComponent {
                 userStorage, roomNotification, userNotification, groupNotification)
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
         messageRepository = MessageRepository(MessageSQLiteStorage(helper), PublishSubject.create<Unit>())
+
+        storage = Storage(this)
+
+        objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply {
+            registerModule(KotlinModule())
+        }
 
         signalHandler = SignalServiceHandler(this, this)
 
