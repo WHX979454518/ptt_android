@@ -66,6 +66,10 @@ class MainActivity : BaseToolbarActivity(),
         )
     }
 
+    override fun navigateToHome() {
+
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CODE_CREATE_ROOM && resultCode == RESULT_OK && data != null) {
             pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS).toList())

@@ -8,9 +8,9 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.ui.home.ModelProvider
-import com.xianzhitech.ptt.ui.util.ViewModel
+import com.xianzhitech.ptt.viewmodel.ViewModel
 import com.xianzhitech.ptt.util.ModelComparator
 import com.xianzhitech.ptt.util.ObservableArrayList
 import com.xianzhitech.ptt.util.toPinyin

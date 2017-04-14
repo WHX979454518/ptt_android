@@ -6,7 +6,7 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.ui.util.ViewBindingAdapter
 import com.xianzhitech.ptt.ui.util.ViewBindingHolder
-import com.xianzhitech.ptt.ui.util.ViewModel
+import com.xianzhitech.ptt.viewmodel.ViewModel
 
 
 class ModelListAdapter(private val callbacks: Callbacks,

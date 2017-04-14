@@ -2,7 +2,7 @@ package com.xianzhitech.ptt.ui.roomlist
 
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.ui.util.ViewModel
+import com.xianzhitech.ptt.viewmodel.ViewModel
 
 
 class RoomItemViewModel(val room : RoomModel,

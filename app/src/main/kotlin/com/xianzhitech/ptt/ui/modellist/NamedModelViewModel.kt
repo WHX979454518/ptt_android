@@ -2,7 +2,7 @@ package com.xianzhitech.ptt.ui.modellist
 
 import android.databinding.ObservableMap
 import com.xianzhitech.ptt.model.NamedModel
-import com.xianzhitech.ptt.ui.util.ViewModel
+import com.xianzhitech.ptt.viewmodel.ViewModel
 
 
 data class NamedModelViewModel(val model : NamedModel,

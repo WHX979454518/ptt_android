@@ -6,6 +6,7 @@ import android.support.annotation.LayoutRes
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import com.xianzhitech.ptt.viewmodel.ViewModel
 
 
 abstract class ViewBindingAdapter : RecyclerView.Adapter<ViewBindingHolder>() {

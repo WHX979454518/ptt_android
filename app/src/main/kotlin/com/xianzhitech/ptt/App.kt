@@ -16,6 +16,7 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.GlideModule
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.Gson
@@ -115,7 +116,10 @@ open class App : MultiDexApplication(), AppComponent {
         AndroidThreeTen.init(this)
 
         storage = Storage(this)
-        objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply { registerModule(KotlinModule()) }
+        objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply {
+            registerModule(KotlinModule())
+            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        }
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson(), objectMapper)
         appApi = Retrofit.Builder()
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(io.reactivex.schedulers.Schedulers.io()))
@@ -141,7 +145,6 @@ open class App : MultiDexApplication(), AppComponent {
         messageRepository = MessageRepository(MessageSQLiteStorage(helper), PublishSubject.create<Unit>())
 
         signalHandler = SignalServiceHandler(this, this)
-
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

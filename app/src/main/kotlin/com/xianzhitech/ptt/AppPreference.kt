@@ -168,7 +168,7 @@ class AppPreference(appContext : Context,
         }
 
     override var currentUser: CurrentUser? by sharePreference("current_user")
-    override val currentUserCredentials: Pair<String, String>? by sharePreference("current_user_credentials")
+    override var currentUserCredentials: Pair<String, String>? by sharePreference("current_user_credentials")
 
     private inline fun <reified T> sharePreference(key: String) : SharedPreferenceDelegate<T> {
         return SharedPreferenceDelegate(key, pref, T::class.java, objectMapper)

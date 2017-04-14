@@ -91,21 +91,21 @@ class SignalServiceHandler(private val appContext: Context,
 
     init {
         val token = appComponent.preference.userSessionToken
-        if (token != null) {
-            authTokenFactory.set(token.userId, token.password)
-            signalService.login().subscribe(object : CompletableSubscriber {
-                override fun onSubscribe(d: Subscription?) { }
-
-                override fun onError(e: Throwable?) {
-                    logger.e(e) { "Error logging in" }
-                }
-
-                override fun onCompleted() {
-                }
-            })
-        }
-
-        signalService.signals.observeOnMainThread().subscribeSimple { dispatchSignal(it) }
+//        if (token != null) {
+//            authTokenFactory.set(token.userId, token.password)
+//            signalService.login().subscribe(object : CompletableSubscriber {
+//                override fun onSubscribe(d: Subscription?) { }
+//
+//                override fun onError(e: Throwable?) {
+//                    logger.e(e) { "Error logging in" }
+//                }
+//
+//                override fun onCompleted() {
+//                }
+//            })
+//        }
+//
+//        signalService.signals.observeOnMainThread().subscribeSimple { dispatchSignal(it) }
     }
 
     fun peekLoginStatus(): LoginStatus = loginStatusSubject.value
@@ -126,9 +126,7 @@ class SignalServiceHandler(private val appContext: Context,
     }
 
     private fun getDeviceId() : Single<String> {
-        return appComponent.preference.deviceId?.let { Single.just(it) }
-                ?: appComponent.appService.registerDevice(AppInfo(appContext)).doOnSuccess { appComponent.preference.deviceId = it }
-
+        return Single.just(null)
     }
 
     private fun dispatchSignal(signal: Signal) {

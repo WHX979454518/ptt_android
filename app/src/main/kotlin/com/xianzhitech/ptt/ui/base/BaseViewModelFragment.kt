@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.xianzhitech.ptt.BR
+import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 
 abstract class BaseViewModelFragment<T : LifecycleViewModel, VB : ViewDataBinding> : BaseFragment() {
     lateinit var viewModel : T

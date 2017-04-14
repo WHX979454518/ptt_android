@@ -3,36 +3,37 @@ package com.xianzhitech.ptt.ext
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
-import io.reactivex.Single
 import org.slf4j.LoggerFactory
 
 
 private val logger = LoggerFactory.getLogger("RxJava")
 
-fun <T> Observable<T>.logErrorAndForget(extraAction : () -> Unit = {}) : Observable<T> {
-    return doOnError { throwable ->
+fun <T> Observable<T>.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {}) : Observable<T> {
+    return onErrorResumeNext{ throwable : Throwable ->
         logger.e(throwable) { "Ignored error" }
-        extraAction()
+        extraAction(throwable)
+        Observable.empty<T>()
     }
 }
 
-fun <T> Single<T>.logErrorAndForget(extraAction : () -> Unit = {}) : Single<T> {
-    return doOnError { throwable ->
+fun <T> Maybe<T>.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {}) : Maybe<T> {
+    return onErrorResumeNext{ throwable : Throwable ->
         logger.e(throwable) { "Ignored error" }
-        extraAction()
+        extraAction(throwable)
+        Maybe.empty<T>()
     }
 }
 
-fun <T> Maybe<T>.logErrorAndForget(extraAction : () -> Unit = {}) : Maybe<T> {
-    return doOnError { throwable ->
+
+fun Completable.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {}) : Completable {
+    return onErrorResumeNext { throwable ->
         logger.e(throwable) { "Ignored error" }
-        extraAction()
+        extraAction(throwable)
+        Completable.complete()
     }
 }
 
-fun Completable.logErrorAndForget(extraAction : () -> Unit = {}) : Completable {
-    return doOnError { throwable ->
-        logger.e(throwable) { "Ignored error" }
-        extraAction()
-    }
+fun Completable.doOnLoading(action : (Boolean) -> Unit) : Completable {
+    return doOnSubscribe { action(true) }
+            .doOnEvent { action(false) }
 }

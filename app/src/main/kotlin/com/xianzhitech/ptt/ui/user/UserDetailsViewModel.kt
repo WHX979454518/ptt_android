@@ -8,7 +8,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.util.withUser
 
 

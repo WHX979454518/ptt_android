@@ -11,7 +11,6 @@ data class AppConfig(@JsonProperty("latest_version_code") val latestVersionCode:
                      @JsonProperty("update_message") val updateMessage: String?,
                      @JsonProperty("mandatory") val mandatory: Boolean,
                      @JsonProperty("signal_server_endpoint") val signalServerEndpoint: String,
-                     @JsonProperty("push_server_endpoint") val pushServerEndpoint: String,
                      @JsonProperty("download_url") val downloadUrl: String?) : Serializable {
     val hasUpdate: Boolean
         get() {

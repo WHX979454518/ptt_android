@@ -61,7 +61,7 @@ class SignalApi(private val appComponent: AppComponent,
         Preconditions.checkState(socket == null &&
                 currentUserCredentials != null &&
                 retrieveAppConfigDisposable == null &&
-                Looper.myLooper() != Looper.getMainLooper())
+                Looper.myLooper() == Looper.getMainLooper())
 
         val (name, password) = currentUserCredentials!!
 
@@ -75,8 +75,9 @@ class SignalApi(private val appComponent: AppComponent,
 
         appComponent.appApi.retrieveAppConfig(currentUser.value.orNull()?.id ?: "")
                 .observeOn(AndroidSchedulers.mainThread())
+                .toMaybe()
+                .logErrorAndForget(this::onSocketError)
                 .doOnSubscribe { retrieveAppConfigDisposable = it }
-                .doOnError(this::onSocketError)
                 .subscribe { config ->
                     logger.i { "Got app config $config" }
 
@@ -119,7 +120,7 @@ class SignalApi(private val appComponent: AppComponent,
                         onSocketError(it as? Throwable)
                     }
 
-                    socket.listenOnce<CurrentUser>("s_logon") { user ->
+                    socket.listenOnce("s_logon", CurrentUser::class.java) { user ->
                         currentUser.onNext(user.toOptional())
                         currentUserCredentials = name to password
                         appComponent.preference.currentUser = user
@@ -128,11 +129,11 @@ class SignalApi(private val appComponent: AppComponent,
                         connectionState.onNext(ConnectionState.CONNECTED)
                     }
 
-                    socket.listenOnce<Unit>("s_login_failed") {
+                    socket.listenOnce("s_login_failed", Unit::class.java) {
                         logout()
                     }
 
-                    socket.listenOnce<Unit>("s_kick_out") {
+                    socket.listenOnce("s_kick_out", Unit::class.java) {
                         logout()
                     }
                 }
@@ -140,10 +141,22 @@ class SignalApi(private val appComponent: AppComponent,
 
     fun logout() {
         logger.i { "User request logging out" }
+
+        retrieveAppConfigDisposable?.dispose()
+        retrieveAppConfigDisposable = null
+
+        socket?.off()
+        socket?.close()
+        socket = null
+
+        retryDisposable?.dispose()
+        retryDisposable = null
+
         currentUserCredentials = null
         currentUser.onNext(Optional.absent())
         appComponent.preference.currentUserCredentials = null
         appComponent.preference.currentUser = null
+
     }
 
     fun syncContacts(version: Long): Single<Contact> {
@@ -187,7 +200,7 @@ class SignalApi(private val appComponent: AppComponent,
         return currentUser.value.isPresent
     }
 
-    private inline fun <reified T : Any> Socket.listenOnce(name: String, crossinline callback: (arg: T?) -> Unit) {
+    private fun <T> Socket.listenOnce(name: String, clazz : Class<T>, callback: (arg: T?) -> Unit) {
         once(name) { args ->
             logger.i { "Received raw event name = $name, args = ${args.toList()}" }
 
@@ -197,10 +210,10 @@ class SignalApi(private val appComponent: AppComponent,
                     return@scheduleDirect
                 }
 
-                if (T::class.java == Unit::class.java) {
+                if (clazz == Unit::class.java) {
                     callback(null)
                 } else {
-                    callback(args.firstOrNull()?.let { appComponent.objectMapper.convertValue(it, T::class.java) })
+                    callback(args.firstOrNull()?.let { appComponent.objectMapper.convertValue(it, clazz) })
                 }
             }
         }

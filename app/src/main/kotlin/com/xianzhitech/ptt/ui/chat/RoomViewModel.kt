@@ -5,7 +5,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.util.ObservableArrayList
 
 

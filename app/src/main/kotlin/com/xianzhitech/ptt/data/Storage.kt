@@ -69,16 +69,12 @@ class Storage(context: Context) {
         )
     }
 
-    fun saveRooms(rooms: Iterable<Room>) {
-        data.upsert(rooms)
-                .logErrorAndForget()
-                .subscribe()
+    fun saveRooms(rooms: Iterable<Room>) : Completable {
+        return data.upsert(rooms).toCompletable()
     }
 
-    fun saveMessages(messages: Iterable<Message>) {
-        data.upsert(messages)
-                .logErrorAndForget()
-                .subscribe()
+    fun saveMessages(messages: Iterable<Message>) : Completable {
+        return data.upsert(messages).toCompletable()
     }
 
     private fun <T> Return<ReactiveResult<T>>.observeList(): Observable<List<T>> {

@@ -4,7 +4,7 @@ import android.databinding.ObservableBoolean
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.doOnLoadingState
 import com.xianzhitech.ptt.repo.RoomName
-import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.util.ObservableArrayList
 import rx.Observable
 import rx.Single

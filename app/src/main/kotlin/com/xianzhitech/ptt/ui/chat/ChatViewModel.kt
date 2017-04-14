@@ -6,7 +6,7 @@ import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.model.Message
-import com.xianzhitech.ptt.ui.base.LifecycleViewModel
+import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.util.ObservableArrayList
 import org.json.JSONObject
 import java.util.*
