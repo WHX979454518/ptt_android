@@ -132,3 +132,15 @@ inline fun <T> MutableCollection<T>.addAllLimited(maxSize : Int, input : Iterabl
 
     return false
 }
+
+fun <E> List<E>.atMost(count: Int): List<E> {
+    return subList(0, Math.min(count, size))
+}
+
+fun <E> Collection<E>.without(element: E?): List<E> {
+    if (element != null) {
+        return filterNot { it == element }
+    }
+
+    return toList()
+}

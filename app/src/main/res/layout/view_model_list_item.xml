@@ -18,7 +18,7 @@
         android:background="?attr/selectableItemBackground"
         android:orientation="vertical">
 
-        <ImageView
+        <com.xianzhitech.ptt.ui.widget.ModelView
             android:id="@+id/icon"
             android:layout_width="@dimen/user_list_icon_size"
             android:layout_height="@dimen/user_list_icon_size"
@@ -28,7 +28,7 @@
             android:layout_marginLeft="@dimen/unit_two"
             android:layout_marginTop="@dimen/unit_one"
             android:contentDescription="@{viewModel.model.name}"
-            app:imageDrawable="@{ModelDrawableKt.createDrawable(viewModel.model)}"
+            app:model="@{viewModel.model}"
             tools:src="@color/blue" />
 
 
@@ -62,7 +62,6 @@
             android:layout_toRightOf="@+id/icon"
             android:duplicateParentState="true"
             android:gravity="left|center_vertical"
-            android:text="@{viewModel.model.name}"
             app:show="@{!viewModel.checkable}"
             tools:text="用户2 不可选" />
 

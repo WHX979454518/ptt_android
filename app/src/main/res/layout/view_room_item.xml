@@ -11,7 +11,7 @@
 
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.ui.roomlist.RoomItemViewModel" />
+            type="com.xianzhitech.ptt.viewmodel.RoomItemViewModel" />
     </data>
 
     <RelativeLayout
@@ -21,13 +21,13 @@
         android:longClickable="true"
         android:onClick="@{ignored -> viewModel.onClickRoom()}">
 
-        <ImageView
+        <com.xianzhitech.ptt.ui.widget.ModelView
             android:id="@+id/roomItem_icon"
             android:layout_width="@dimen/group_list_icon_size"
             android:layout_height="@dimen/group_list_icon_size"
             android:layout_centerVertical="true"
             android:layout_marginLeft="@dimen/unit_one"
-            app:imageDrawable="@{ModelDrawableKt.createDrawable(viewModel.room)}"
+            app:model="@{viewModel.room}"
             tools:src="@color/blue" />
 
         <LinearLayout
@@ -47,7 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/unit_one"
-                android:text="@{viewModel.roomName.name}"
+                android:text="@{viewModel.roomName}"
                 tools:text="群组1" />
 
             <TextView
@@ -58,8 +58,7 @@
                 android:layout_marginLeft="@dimen/unit_one"
                 android:layout_marginTop="@dimen/unit_one"
                 android:drawablePadding="@dimen/unit_half"
-                android:text="@{DateUtils.getRelativeTimeSpanString(viewModel.room.lastSpeakTime.time)}"
-                app:show="@{viewModel.room.lastSpeakTime != null}"
+                android:text="@{DateUtils.getRelativeTimeSpanString(viewModel.roomMessage[viewModel.room.id].sendTime.time)}"
                 tools:text="1分钟以前" />
 
         </LinearLayout>

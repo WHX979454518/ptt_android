@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import com.xianzhitech.ptt.databinding.FragmentRoomListBinding
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
+import com.xianzhitech.ptt.viewmodel.RoomListViewModel
 
 
 class RoomListFragment : BaseViewModelFragment<RoomListViewModel, FragmentRoomListBinding>() {

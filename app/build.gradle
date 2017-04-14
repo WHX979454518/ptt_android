@@ -124,6 +124,8 @@ android {
         exclude 'META-INF/NOTICE.txt'
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/rxjava.properties'
+        exclude 'META-INF/rxkotlin.properties'
+        exclude 'META-INF/rxkotlin_main.kotlin_module'
     }
 }
 
@@ -179,6 +181,7 @@ dependencies {
     // https://mvnrepository.com/artifact/io.reactivex.rxjava2/rxjava
     compile group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.0.8'
     compile group: 'io.reactivex.rxjava2', name: 'rxandroid', version: '2.0.1'
+    compile group: 'io.reactivex.rxjava2', name: 'rxkotlin', version: '2.0.0'
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compile group: 'com.google.guava', name: 'guava', version: '20.0'

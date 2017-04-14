@@ -37,3 +37,8 @@ fun Completable.doOnLoading(action : (Boolean) -> Unit) : Completable {
     return doOnSubscribe { action(true) }
             .doOnEvent { action(false) }
 }
+
+fun <T> Observable<T>.doOnLoading(action : (Boolean) -> Unit) : Observable<T> {
+    return doOnSubscribe { action(true) }
+            .doOnEach { action(false) }
+}

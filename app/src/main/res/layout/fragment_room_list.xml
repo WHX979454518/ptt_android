@@ -7,7 +7,7 @@
 
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.ui.roomlist.RoomListViewModel" />
+            type="com.xianzhitech.ptt.viewmodel.RoomListViewModel" />
     </data>
 
     <FrameLayout

@@ -44,6 +44,15 @@ abstract class LifecycleViewModel : ViewModel {
         return this
     }
 
+    fun Disposable.bindToLifecycle() : Disposable {
+        if (disposable == null) {
+            disposable = CompositeDisposable()
+        }
+
+        disposable!!.add(this)
+        return this
+    }
+
     fun bindToLifecycle(disposable: Disposable) {
         if (this.disposable == null) {
             this.disposable = CompositeDisposable()

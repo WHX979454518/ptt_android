@@ -115,7 +115,6 @@ open class App : MultiDexApplication(), AppComponent {
 
         AndroidThreeTen.init(this)
 
-        storage = Storage(this)
         objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule())
             registerModule(JsonOrgModule())
@@ -124,6 +123,7 @@ open class App : MultiDexApplication(), AppComponent {
             configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)
         }
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson(), objectMapper)
+        storage = Storage(this, preference)
         appApi = Retrofit.Builder()
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(io.reactivex.schedulers.Schedulers.io()))
                 .addConverterFactory(JacksonConverterFactory.create(objectMapper))
