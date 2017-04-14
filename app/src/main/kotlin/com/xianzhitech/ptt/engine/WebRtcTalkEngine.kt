@@ -55,7 +55,7 @@ class WebRtcTalkEngine(context: Context,
             val userId = property[PROPERTY_LOCAL_USER_ID]?.toString()?.toInt()
 
             mediaEngine.setSendCodec(channel, mediaEngine.availableCodecs.first { it.name == "opus" })
-            mediaEngine.setLocalSSRC(channel, userId ?: throw IllegalArgumentException("User id is null"))
+            mediaEngine.setLocalSSRC(channel, userId ?: throw IllegalArgumentException("ContactUser id is null"))
             mediaEngine.setSendDestination(channel,
                     property[PROPERTY_REMOTE_SERVER_ADDRESS]?.toString()?.resolveToIPAddress() ?: throw IllegalArgumentException("No server ip specified"),
                     property[PROPERTY_REMOTE_SERVER_PORT]?.toString()?.toInt() ?: throw IllegalArgumentException("No report port specified"))

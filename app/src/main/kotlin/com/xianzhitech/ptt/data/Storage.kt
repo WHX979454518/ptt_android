@@ -28,21 +28,21 @@ class Storage(context: Context) {
         return Observable.empty()
     }
 
-    fun getAllUsers(): Observable<List<User>> {
-        return data.select(User::class.java).observeList()
+    fun getAllUsers(): Observable<List<ContactUser>> {
+        return data.select(ContactUser::class.java).observeList()
     }
 
-    fun getAllGroups(): Observable<List<Group>> {
-        return data.select(Group::class.java).observeList()
+    fun getAllGroups(): Observable<List<ContactGroup>> {
+        return data.select(ContactGroup::class.java).observeList()
     }
 
     fun getMessagesUpTo(date: Date?,
                         roomId: String,
                         limit: Int): Single<List<Message>> {
 
-        var lookup = data.select(Message::class.java).where(MessageEntity.ROOM_ID.eq(roomId))
+        var lookup = data.select(Message::class.java).where(MessageType.ROOM_ID.eq(roomId))
         if (date != null) {
-            lookup = lookup.and(MessageEntity.SEND_TIME.lte(date))
+            lookup = lookup.and(MessageType.SEND_TIME.lte(date))
         }
 
         return lookup.limit(limit).observeList().firstOrError()
@@ -50,21 +50,30 @@ class Storage(context: Context) {
 
     fun getMessageFrom(date: Date?,
                        roomId: String): Observable<List<Message>> {
-        var lookup = data.select(Message::class.java).where(MessageEntity.ROOM_ID.eq(roomId))
+        var lookup = data.select(Message::class.java).where(MessageType.ROOM_ID.eq(roomId))
         if (date != null) {
-            lookup = lookup.and(MessageEntity.SEND_TIME.gte(date))
+            lookup = lookup.and(MessageType.SEND_TIME.gte(date))
         }
 
         return lookup.observeList()
     }
 
-    fun replaceAllUsersAndGroups(users: Iterable<User>, groups: Iterable<Group>): Completable {
+    fun replaceAllUsersAndGroups(users: Iterable<ContactUser>, groups: Iterable<ContactGroup>): Completable {
         return Completable.fromObservable(
                 data.runInTransaction(
-                        data.delete(User::class.java).get().single(),
-                        data.delete(Group::class.java).get().single(),
+                        data.delete(ContactUser::class.java).get().single(),
+                        data.delete(ContactGroup::class.java).get().single(),
                         data.upsert(users),
                         data.upsert(groups)
+                )
+        )
+    }
+
+    fun clearUsersAndGroups() : Completable {
+        return Completable.fromObservable(
+                data.runInTransaction(
+                        data.delete(ContactUser::class.java).get().single(),
+                        data.delete(ContactGroup::class.java).get().single()
                 )
         )
     }

@@ -12,7 +12,9 @@ import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
 import rx.Emitter
 import rx.Observable
+import java.lang.ref.WeakReference
 import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.isSubtypeOf
 
@@ -178,8 +180,14 @@ class AppPreference(appContext : Context,
                                               val pref: SharedPreferences,
                                               val clazz : Class<T>,
                                               val objectMapper: ObjectMapper) {
+        private var cacheValue : AtomicReference<T?>? = null
+
         operator fun getValue(thisRef: Any?, property : KProperty<*>) : T? {
-            return pref.getString(key, null)?.let { objectMapper.readValue(it, clazz) }
+            if (cacheValue == null) {
+                cacheValue = AtomicReference(pref.getString(key, null)?.let { objectMapper.readValue(it, clazz) })
+            }
+
+            return cacheValue!!.get()
         }
 
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value : T?) {
@@ -192,6 +200,7 @@ class AppPreference(appContext : Context,
             }
 
             editor.apply()
+            cacheValue?.set(value)
         }
     }
 

@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.broker
 
+import android.content.Context
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.SignalApi
@@ -9,25 +10,29 @@ import com.xianzhitech.ptt.api.exception.ServerException
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import rx.lang.kotlin.toSingle
 import java.util.concurrent.TimeUnit
 
 
-class SignalBroker(private val appComponent: AppComponent) {
+class SignalBroker(private val appComponent: AppComponent,
+                   appContext: Context) {
+
+    val signalApi = SignalApi(appComponent, appContext)
 
     val isLoggedIn: Boolean
-        get() = appComponent.signalApi.currentUser.value.isPresent
+        get() = signalApi.currentUser.value.isPresent
 
     init {
-        appComponent.signalApi.connectionState
+        signalApi.connectionState
                 .distinctUntilChanged()
                 .switchMap { state ->
                     if (state == SignalApi.ConnectionState.CONNECTED) {
                         Observable.interval(0, 15, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                                 .switchMap { syncContacts().logErrorAndForget().toObservable<Unit>() }
-                    }
-                    else {
+                    } else {
                         Observable.empty()
                     }
                 }
@@ -37,30 +42,35 @@ class SignalBroker(private val appComponent: AppComponent) {
     fun login(name: String, password: String): Completable {
         Preconditions.checkState(isLoggedIn.not())
 
-        return appComponent.signalApi.events
-                .filter { it is CurrentUser || it is LoginFailedEvent || it is ConnectionErrorEvent }
-                .flatMapCompletable {
+        @Suppress("UNCHECKED_CAST")
+        return Completable.fromObservable((signalApi.events as Observable<Any>)
+                .mergeWith(signalApi.connectionState)
+                .filter { it == SignalApi.ConnectionState.CONNECTED || it is ConnectionErrorEvent || it is LoginFailedEvent }
+                .firstOrError()
+                .flatMapObservable {
                     when (it) {
-                        is CurrentUser -> Completable.complete()
-                        is ConnectionErrorEvent -> Completable.error(it.err)
-                        is LoginFailedEvent -> Completable.error(ServerException(it.name, it.message))
+                        SignalApi.ConnectionState.CONNECTED -> Observable.empty<Unit>()
+                        is ConnectionErrorEvent -> Observable.error(it.err)
+                        is LoginFailedEvent -> Observable.error(ServerException(it.name, it.message))
                         else -> throw IllegalStateException()
                     }
-                }
-                .doOnSubscribe { appComponent.signalApi.login(name, password) }
+                })
+                .doOnSubscribe { signalApi.login(name, password) }
+
     }
 
     fun logout() {
-        appComponent.signalApi.logout()
+        appComponent.storage.clearUsersAndGroups()
+        signalApi.logout()
     }
 
     fun syncContacts(): Completable {
-        return appComponent.signalApi
+        return signalApi
                 .syncContacts(appComponent.preference.contactVersion)
-                .flatMapCompletable { (users, groups, version) ->
+                .flatMapCompletable { contact ->
                     appComponent.storage
-                            .replaceAllUsersAndGroups(users, groups)
-                            .doOnComplete { appComponent.preference.contactVersion = version }
+                            .replaceAllUsersAndGroups(contact.members, contact.groups)
+                            .doOnComplete { appComponent.preference.contactVersion = contact.version }
                 }
     }
 }

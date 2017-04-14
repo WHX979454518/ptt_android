@@ -64,12 +64,12 @@ class ServiceHandler(private val appContext: Context,
                 .observeOn(AndroidSchedulers.mainThread())
                 .switchMap { userHasLoggedIn ->
                     if (userHasLoggedIn.not()) {
-                        logger.i { "User has logged out, stopping PushService" }
+                        logger.i { "ContactUser has logged out, stopping PushService" }
                         appContext.stopService(Intent(appContext, BackgroundService::class.java))
                         Observable.never<State>()
                     }
                     else {
-                        logger.i { "User has logged in/logging in. Start monitoring events." }
+                        logger.i { "ContactUser has logged in/logging in. Start monitoring events." }
                         Observable.combineLatest(
                                 signalService.roomStatus,
                                 signalService.currentRoomId.switchMap { appComponent.roomRepository.getRoom(it).observe() },
@@ -100,7 +100,7 @@ class ServiceHandler(private val appContext: Context,
         logger.d { "State changed to $state" }
 
         if (appComponent.preference.userSessionToken == null) {
-            logger.w { "User session has ended. Stopping service" }
+            logger.w { "ContactUser session has ended. Stopping service" }
             return
         }
 

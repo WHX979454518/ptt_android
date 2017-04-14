@@ -73,7 +73,6 @@ open class App : MultiDexApplication(), AppComponent {
     override lateinit var mediaButtonHandler: MediaButtonHandler
     override lateinit var storage: Storage
     override lateinit var objectMapper: ObjectMapper
-    override lateinit var signalApi: SignalApi
     override lateinit var appApi: AppApi
     override lateinit var signalBroker: SignalBroker
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
@@ -117,7 +116,7 @@ open class App : MultiDexApplication(), AppComponent {
         AndroidThreeTen.init(this)
 
         storage = Storage(this)
-        objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply {
+        objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule())
             registerModule(JsonOrgModule())
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -131,8 +130,7 @@ open class App : MultiDexApplication(), AppComponent {
                 .baseUrl(BuildConfig.APP_SERVER_ENDPOINT)
                 .build()
                 .create(AppApi::class.java)
-        signalApi = SignalApi(this, this)
-        signalBroker = SignalBroker(this)
+        signalBroker = SignalBroker(this, this)
 
         val helper = createSQLiteStorageHelper(this, "data")
         val userStorage = UserSQLiteStorage(helper)

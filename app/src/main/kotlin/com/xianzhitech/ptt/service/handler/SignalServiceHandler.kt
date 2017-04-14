@@ -321,7 +321,7 @@ class SignalServiceHandler(private val appContext: Context,
 
             if (userId != null) {
                 Answers.getInstance()
-                        .logCustom(CustomEvent("User log out").apply {
+                        .logCustom(CustomEvent("ContactUser log out").apply {
                             putCustomAttribute("userId", userId)
                             putCustomAttribute("userName", userName)
                         })
@@ -751,7 +751,7 @@ class SignalServiceHandler(private val appContext: Context,
     private fun onUserKickOut() {
         mainThread {
             Answers.getInstance()
-                    .logCustom(CustomEvent("User kicked out").apply {
+                    .logCustom(CustomEvent("ContactUser kicked out").apply {
                         withUser(peekCurrentUserId, currentUserCache.value)
                     })
 

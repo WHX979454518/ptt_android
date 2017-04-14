@@ -28,7 +28,6 @@ interface AppComponent {
     val storage : Storage
     val objectMapper : ObjectMapper
 
-    val signalApi : SignalApi
     val appApi : AppApi
     val signalBroker : SignalBroker
 

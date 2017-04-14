@@ -62,21 +62,21 @@ class RoomInvitationHandler() : BroadcastReceiver() {
                         appComponent.preference.downTimeStart,
                         appComponent.preference.downTimeEnd)
                 ) {
-            logger.i { "User in downtime, skip inviting..." }
+            logger.i { "ContactUser in downtime, skip inviting..." }
             return
         }
 
         if ((user?.permissions?.contains(Permission.RECEIVE_INDIVIDUAL_CALL)?.not() ?: false) &&
                 invitation.room.associatedGroupIds.isEmpty() &&
                 invitation.room.extraMemberIds.size <= 2) {
-            logger.w { "User has no permission to receive individual call" }
+            logger.w { "ContactUser has no permission to receive individual call" }
             return
         }
 
         if ((user?.permissions?.contains(Permission.RECEIVE_TEMPORARY_GROUP_CALL)?.not() ?: false) &&
                 invitation.room.associatedGroupIds.isEmpty() &&
                 invitation.room.extraMemberIds.size > 2) {
-            logger.w { "User has no permission to receive temporary group call" }
+            logger.w { "ContactUser has no permission to receive temporary group call" }
         }
 
         logger.d { "Receive room invitation $invitation, currRoom: $currentRoom" }

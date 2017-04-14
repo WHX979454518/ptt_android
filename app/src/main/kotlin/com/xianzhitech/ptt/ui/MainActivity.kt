@@ -117,7 +117,7 @@ class MainActivity : BaseToolbarActivity(),
         appComponent.signalHandler.loggedIn
                 .observeOnMainThread()
                 .subscribeSimple { loggedIn ->
-                    logger.d { "User login state changed to $loggedIn" }
+                    logger.d { "ContactUser login state changed to $loggedIn" }
                     if (loggedIn.not()) {
                         displayFragment(LoginFragment::class.java)
                     } else {

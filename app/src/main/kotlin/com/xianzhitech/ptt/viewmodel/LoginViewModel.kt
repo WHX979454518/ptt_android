@@ -32,7 +32,7 @@ class LoginViewModel(private val appComponent: AppComponent,
     override fun onStop() {
         super.onStop()
 
-        if (appComponent.signalApi.connectionState.value == SignalApi.ConnectionState.CONNECTING) {
+        if (appComponent.signalBroker.signalApi.connectionState.value == SignalApi.ConnectionState.CONNECTING) {
             appComponent.signalBroker.logout()
         }
     }

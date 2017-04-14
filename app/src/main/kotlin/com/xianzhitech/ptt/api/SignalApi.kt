@@ -129,6 +129,8 @@ class SignalApi(private val appComponent: AppComponent,
                         appComponent.preference.currentUser = user
                         appComponent.preference.currentUserCredentials = currentUserCredentials
 
+                        events.onNext(user)
+
                         connectionState.onNext(ConnectionState.CONNECTED)
                     }
 
@@ -156,7 +158,7 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     fun logout() {
-        logger.i { "User request logging out" }
+        logger.i { "ContactUser request logging out" }
 
         retrieveAppConfigDisposable?.dispose()
         retrieveAppConfigDisposable = null
