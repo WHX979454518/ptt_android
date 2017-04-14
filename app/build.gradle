@@ -169,7 +169,8 @@ dependencies {
     }
 
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-ws
-    compile group: 'com.squareup.okhttp3', name: 'okhttp-ws', version: '3.4.2'
+//    compile group: 'com.squareup.okhttp3', name: 'okhttp-ws', version: '3.4.2'
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.6.0'
 
     compile 'io.reactivex:rxandroid:1.2.1'
     compile 'io.reactivex:rxjava:1.2.9'

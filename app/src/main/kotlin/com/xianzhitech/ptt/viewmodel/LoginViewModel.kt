@@ -10,6 +10,7 @@ import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.exception.ServerException
 import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.doOnLoading
+import com.xianzhitech.ptt.ext.e
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -18,8 +19,8 @@ import java.util.concurrent.TimeoutException
 class LoginViewModel(private val appComponent: AppComponent,
                      private val navigator : Navigator) : LifecycleViewModel() {
 
-    val name = ObservableField<String>()
-    val password = ObservableField<String>()
+    val name = ObservableField<String>("500033")
+    val password = ObservableField<String>("000000")
     val isLogging = ObservableBoolean()
     val loginButtonEnabled = createCompositeObservable(listOf<Observable>(name, password, isLogging)) {
         name.get().isNullOrBlank().not() && password.get().isNullOrBlank().not() && isLogging.get().not()
@@ -50,6 +51,8 @@ class LoginViewModel(private val appComponent: AppComponent,
     }
 
     private fun onLoginError(throwable: Throwable) {
+        logger.e(throwable) { "Login error" }
+
         if (throwable is TimeoutException) {
             appComponent.signalBroker.logout()
             navigator.displayTimeoutError()

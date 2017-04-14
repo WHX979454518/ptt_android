@@ -20,13 +20,16 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 import io.socket.client.IO
+import io.socket.client.Manager
 import io.socket.client.Socket
+import io.socket.engineio.client.Transport
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.PATCH
+import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
 
@@ -136,6 +139,19 @@ class SignalApi(private val appComponent: AppComponent,
                     socket.listenOnce("s_kick_out", Unit::class.java) {
                         logout()
                     }
+
+                    socket.io().on(Manager.EVENT_TRANSPORT, {
+                        val transport = it.first() as Transport
+                        transport.on(Transport.EVENT_REQUEST_HEADERS, {
+                            @Suppress("UNCHECKED_CAST")
+                            val headers = it.first() as MutableMap<String, List<String>>
+                            val token = "$name:${password.toMD5()}${name.guessLoginPostfix()}"
+                            headers["Authorization"] = listOf("Basic ${token.toBase64()}")
+                            headers["X-Device-Id"] = listOf(appComponent.preference.deviceId)
+                        })
+                    })
+
+                    socket.connect()
                 }
     }
 
@@ -162,7 +178,7 @@ class SignalApi(private val appComponent: AppComponent,
     fun syncContacts(version: Long): Single<Contact> {
         return Single.defer {
             Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
-            restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.second, version)
+            restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.second.toMD5(), version)
         }
     }
 
@@ -234,11 +250,19 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
+    private fun String.guessLoginPostfix() : String {
+        return when {
+            matches(PHONE_MATCHER) -> ":PHONE"
+            matches(EMAIL_MATCHER) -> ":MAIL"
+            else -> ""
+        }
+    }
+
     private interface RestfulApi {
-        @GET("/contact/sync/{idNumber}/{password}/{version}")
-        fun syncContact(idNumber: String,
-                        password: String,
-                        version: Long): Single<Contact>
+        @GET("/api/contact/sync/{idNumber}/{password}/{version}")
+        fun syncContact(@Path("idNumber") idNumber: String,
+                        @Path("password") password: String,
+                        @Path("version") version: Long): Single<Contact>
     }
 
     enum class ConnectionState {
@@ -250,6 +274,9 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     companion object {
+        private val PHONE_MATCHER = Regex("^1[2-9]\\d{9}$")
+        private val EMAIL_MATCHER = Regex(".+@.+\\..+$")
+
         private val logger = LoggerFactory.getLogger("Signal")
         private val SIGNAL_MAPS: Map<String, Any> = mapOf(
                 "s_update_location" to RequestLocationUpdateEvent,

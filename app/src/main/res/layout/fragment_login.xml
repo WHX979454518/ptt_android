@@ -32,6 +32,7 @@
                 android:id="@+id/login_nameField"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:error="@{viewModel.nameError}"
                 android:layout_marginLeft="@dimen/unit_two"
                 android:layout_marginRight="@dimen/unit_two"
                 android:layout_marginTop="@dimen/unit_two">
@@ -53,6 +54,7 @@
                 android:id="@+id/login_passwordField"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:error="@{viewModel.passwordError}"
                 android:layout_marginLeft="@dimen/unit_two"
                 android:layout_marginRight="@dimen/unit_two"
                 android:layout_marginTop="@dimen/unit_one">

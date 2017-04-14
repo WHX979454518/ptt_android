@@ -844,9 +844,7 @@ private class AuthTokenFactory() {
         get() = auth.get().second
 
     operator fun invoke() : String {
-        val (name, pass) = auth.get() ?: return ""
-        val token = "$name:${pass.toMD5()}${name.guessLoginPostfix()}"
-        return "Basic ${token.toBase64()}"
+        return ""
     }
 
     fun set(loginName : String, password : String) {
@@ -864,16 +862,8 @@ private class AuthTokenFactory() {
         auth.set(null)
     }
 
-    private fun String.guessLoginPostfix() : String {
-        return when {
-            matches(PHONE_MATCHER) -> ":PHONE"
-            matches(EMAIL_MATCHER) -> ":MAIL"
-            else -> ""
-        }
-    }
+
 
     companion object {
-        private val PHONE_MATCHER = Regex("^1[2-9]\\d{9}$")
-        private val EMAIL_MATCHER = Regex(".+@.+\\..+$")
     }
 }

@@ -2,10 +2,12 @@ package com.xianzhitech.ptt.broker
 
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.event.ConnectionErrorEvent
 import com.xianzhitech.ptt.api.event.LoginFailedEvent
 import com.xianzhitech.ptt.api.exception.ServerException
 import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.ext.logErrorAndForget
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -18,14 +20,15 @@ class SignalBroker(private val appComponent: AppComponent) {
         get() = appComponent.signalApi.currentUser.value.isPresent
 
     init {
-        appComponent.signalApi.currentUser
-                .distinctUntilChanged { user -> user.orNull()?.id }
-                .flatMapCompletable { user ->
-                    if (user.isPresent) {
+        appComponent.signalApi.connectionState
+                .distinctUntilChanged()
+                .switchMap { state ->
+                    if (state == SignalApi.ConnectionState.CONNECTED) {
                         Observable.interval(0, 15, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                                .flatMapCompletable { syncContacts() }
-                    } else {
-                        Completable.complete()
+                                .switchMap { syncContacts().logErrorAndForget().toObservable<Unit>() }
+                    }
+                    else {
+                        Observable.empty()
                     }
                 }
                 .subscribe()
@@ -48,7 +51,7 @@ class SignalBroker(private val appComponent: AppComponent) {
     }
 
     fun logout() {
-        appComponent.signalHandler
+        appComponent.signalApi.logout()
     }
 
     fun syncContacts(): Completable {

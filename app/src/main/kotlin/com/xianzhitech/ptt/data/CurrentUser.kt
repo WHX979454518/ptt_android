@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.data
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.event.Event
 import org.threeten.bp.DayOfWeek
@@ -9,6 +10,7 @@ import org.threeten.bp.LocalTime
 import java.util.*
 
 
+@JsonDeserialize(`as` = CurrentUser::class)
 class CurrentUser : User, Event {
     @get:JsonProperty("idNumber")
     override lateinit var id: String

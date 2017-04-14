@@ -2,10 +2,14 @@ package com.xianzhitech.ptt.viewmodel
 
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
 
 abstract class LifecycleViewModel : ViewModel {
+    val logger : Logger = LoggerFactory.getLogger(javaClass)
+
     private var disposable: CompositeDisposable? = null
     private var subscription : CompositeSubscription? = null
 

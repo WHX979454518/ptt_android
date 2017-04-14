@@ -18,6 +18,7 @@ import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.Gson
 import com.jakewharton.threetenabp.AndroidThreeTen
@@ -118,7 +119,10 @@ open class App : MultiDexApplication(), AppComponent {
         storage = Storage(this)
         objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply {
             registerModule(KotlinModule())
+            registerModule(JsonOrgModule())
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+            configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)
         }
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson(), objectMapper)
         appApi = Retrofit.Builder()

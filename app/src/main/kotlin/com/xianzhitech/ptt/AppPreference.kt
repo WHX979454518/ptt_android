@@ -179,7 +179,7 @@ class AppPreference(appContext : Context,
                                               val clazz : Class<T>,
                                               val objectMapper: ObjectMapper) {
         operator fun getValue(thisRef: Any?, property : KProperty<*>) : T? {
-            return pref.getString(key, null)?.let { objectMapper.convertValue(it, clazz) }
+            return pref.getString(key, null)?.let { objectMapper.readValue(it, clazz) }
         }
 
         operator fun setValue(thisRef: Any?, property: KProperty<*>, value : T?) {
@@ -188,7 +188,7 @@ class AppPreference(appContext : Context,
                 editor.remove(key)
             }
             else {
-                editor.putString(key, objectMapper.convertValue(value, String::class.java))
+                editor.putString(key, objectMapper.writeValueAsString(value))
             }
 
             editor.apply()
