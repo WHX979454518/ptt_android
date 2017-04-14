@@ -2,7 +2,8 @@ package com.xianzhitech.ptt
 
 import android.net.Uri
 import com.google.gson.annotations.SerializedName
-import com.xianzhitech.ptt.service.AppConfig
+import com.xianzhitech.ptt.api.dto.AppConfig
+import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
 import rx.Observable
@@ -17,7 +18,7 @@ interface Preference {
     var lastIgnoredUpdateUrl : String?
     var lastExpPromptTime : Long?
     var contactVersion : Long
-    var deviceId : String?
+    val deviceId : String
     var autoExit: Boolean
     var blockCalls: Boolean
     var playIndicatorSound : Boolean
@@ -27,6 +28,9 @@ interface Preference {
     var downTimeStart : LocalTime
     var downTimeEnd : LocalTime
     val userSessionTokenSubject : Observable<UserToken>
+
+    var currentUser : CurrentUser?
+    var currentUserCredentials : Pair<String, String>?
 }
 
 

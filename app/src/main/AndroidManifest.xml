@@ -39,7 +39,7 @@
             />
 
         <meta-data
-            android:name="com.xianzhitech.ptt.AppGlideModule"
+            android:name="com.xianzhitech.ptt.App$AppGlideModule"
             android:value="GlideModule" />
 
         <activity

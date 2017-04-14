@@ -1,25 +1,18 @@
-package com.xianzhitech.ptt.service
+package com.xianzhitech.ptt.api
 
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.api.dto.AppConfig
-import com.xianzhitech.ptt.api.dto.AppInfo
 import com.xianzhitech.ptt.api.dto.Feedback
+import io.reactivex.Completable
+import io.reactivex.Single
 import okhttp3.RequestBody
 import retrofit2.http.*
-import rx.Completable
-import rx.Single
 
 
-interface AppService {
+interface AppApi {
     @GET("/app_config/{userId}/{version}")
     fun retrieveAppConfig(@Path("userId") userId: String,
                           @Path("version") appVersion: String = BuildConfig.BUILD_NUMBER): Single<AppConfig>
-
-    /**
-     * Register a device and get a device id
-     */
-    @PUT("/device")
-    fun registerDevice(@Body appInfo: AppInfo): Single<String>
 
     @PUT("/feedback")
     fun submitFeedback(@Body feedback: Feedback): Completable

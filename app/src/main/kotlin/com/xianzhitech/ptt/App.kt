@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Process
 import android.preference.PreferenceManager
@@ -8,12 +9,20 @@ import android.support.multidex.MultiDexApplication
 import android.support.v4.app.ActivityCompat
 import ch.qos.logback.classic.Level
 import com.baidu.mapapi.SDKInitializer
+import com.bumptech.glide.Glide
+import com.bumptech.glide.GlideBuilder
+import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.module.GlideModule
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.Gson
 import com.jakewharton.threetenabp.AndroidThreeTen
+import com.xianzhitech.ptt.api.AppApi
+import com.xianzhitech.ptt.api.SignalApi
+import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Models
 import com.xianzhitech.ptt.data.Storage
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
@@ -36,12 +45,15 @@ import org.slf4j.MDC
 import org.webrtc.PeerConnectionFactory
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.jackson.JacksonConverterFactory
 import rx.Scheduler
 import rx.android.plugins.RxAndroidPlugins
 import rx.android.plugins.RxAndroidSchedulersHook
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
+import java.io.InputStream
 
 
 open class App : MultiDexApplication(), AppComponent {
@@ -59,6 +71,9 @@ open class App : MultiDexApplication(), AppComponent {
     override lateinit var mediaButtonHandler: MediaButtonHandler
     override lateinit var storage: Storage
     override lateinit var objectMapper: ObjectMapper
+    override lateinit var signalApi: SignalApi
+    override lateinit var appApi: AppApi
+    override lateinit var signalBroker: SignalBroker
     override val appServerEndpoint = BuildConfig.APP_SERVER_ENDPOINT
     override val gson: Gson = Gson()
 
@@ -99,7 +114,17 @@ open class App : MultiDexApplication(), AppComponent {
 
         AndroidThreeTen.init(this)
 
-        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson())
+        storage = Storage(this)
+        objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply { registerModule(KotlinModule()) }
+        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson(), objectMapper)
+        appApi = Retrofit.Builder()
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(io.reactivex.schedulers.Schedulers.io()))
+                .addConverterFactory(JacksonConverterFactory.create(objectMapper))
+                .baseUrl(BuildConfig.APP_SERVER_ENDPOINT)
+                .build()
+                .create(AppApi::class.java)
+        signalApi = SignalApi(this, this)
+        signalBroker = SignalBroker(this)
 
         val helper = createSQLiteStorageHelper(this, "data")
         val userStorage = UserSQLiteStorage(helper)
@@ -114,12 +139,6 @@ open class App : MultiDexApplication(), AppComponent {
                 userStorage, roomNotification, userNotification, groupNotification)
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
         messageRepository = MessageRepository(MessageSQLiteStorage(helper), PublishSubject.create<Unit>())
-
-        storage = Storage(this)
-
-        objectMapper = EntityMapper(Models.DEFAULT, storage.store).apply {
-            registerModule(KotlinModule())
-        }
 
         signalHandler = SignalServiceHandler(this, this)
 
@@ -145,6 +164,15 @@ open class App : MultiDexApplication(), AppComponent {
 
     open protected fun onBuildHttpClient(): OkHttpClient.Builder {
         return OkHttpClient.Builder().cache(Cache(cacheDir, Constants.HTTP_MAX_CACHE_SIZE))
+    }
+
+    class AppGlideModule : GlideModule {
+        override fun applyOptions(p0: Context?, p1: GlideBuilder?) {
+        }
+
+        override fun registerComponents(context: Context, glide: Glide) {
+            glide.register(GlideUrl::class.java, InputStream::class.java, OkHttpUrlLoader.Factory((context.applicationContext as AppComponent).httpClient))
+        }
     }
 
     companion object {

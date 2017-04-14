@@ -13,6 +13,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.service.ConnectivityException
 import com.xianzhitech.ptt.ui.base.BaseActivity
+import io.reactivex.Completable
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.Subscriber
@@ -56,6 +57,22 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
     }
 }
 
+fun Context.receiveBroadcasts(vararg actions: String): io.reactivex.Observable<Intent> {
+    return io.reactivex.Observable.create<Intent> { subscriber ->
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                subscriber.onNext(intent)
+            }
+        }
+
+        val filter = IntentFilter()
+        actions.forEach(filter::addAction)
+        registerReceiver(receiver, filter)
+
+        subscriber.setCancellable { unregisterReceiver(receiver) }
+    }
+}
+
 fun ConnectivityManager.hasActiveConnection(): Boolean {
     return activeNetworkInfo?.isConnected ?: false
 }
@@ -63,6 +80,22 @@ fun ConnectivityManager.hasActiveConnection(): Boolean {
 
 fun Context.hasActiveConnection() : Boolean {
     return (getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).hasActiveConnection()
+}
+
+fun Context.waitForConnection() : Completable {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+
+    return Completable.defer {
+        if (connectivityManager.hasActiveConnection()) {
+            return@defer Completable.complete()
+        }
+
+        receiveBroadcasts(ConnectivityManager.CONNECTIVITY_ACTION)
+                .filter { hasActiveConnection() }
+                .firstOrError()
+                .toCompletable()
+    }
 }
 
 fun Context.getConnectivity(immediateResult : Boolean = true): Observable<Boolean> {

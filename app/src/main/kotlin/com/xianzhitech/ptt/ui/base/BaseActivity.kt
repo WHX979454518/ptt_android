@@ -18,7 +18,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.service.AppConfig
+import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.handler.ForceUpdateException

@@ -3,17 +3,23 @@ package com.xianzhitech.ptt
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.service.AppConfig
+import com.xianzhitech.ptt.api.dto.AppConfig
+import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
 import rx.Emitter
 import rx.Observable
+import java.util.*
+import kotlin.reflect.KProperty
+import kotlin.reflect.full.isSubtypeOf
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
-                    private val gson : Gson) : Preference {
+                    private val gson : Gson,
+                    private val objectMapper: ObjectMapper) : Preference {
 
     private val blockCallsKey = R.string.key_block_calls.toFormattedString(appContext)
     private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
@@ -102,10 +108,15 @@ class AppPreference(appContext : Context,
             }
         }
 
-    override var deviceId: String?
-        get() = pref.getString(KEY_DEVICE_ID, null)
-        set(value) {
-            pref.edit().putString(KEY_DEVICE_ID, value).apply()
+    override val deviceId: String
+        get() {
+            var id = pref.getString(KEY_DEVICE_ID, null)
+            if (id == null) {
+                id = UUID.randomUUID().toString()
+                pref.edit().putString(KEY_DEVICE_ID, id).apply()
+            }
+
+            return id
         }
 
     override var playIndicatorSound: Boolean
@@ -155,6 +166,34 @@ class AppPreference(appContext : Context,
         set(value) {
             pref.edit().putBoolean(downTimeEnableKey, value).apply()
         }
+
+    override var currentUser: CurrentUser? by sharePreference("current_user")
+    override val currentUserCredentials: Pair<String, String>? by sharePreference("current_user_credentials")
+
+    private inline fun <reified T> sharePreference(key: String) : SharedPreferenceDelegate<T> {
+        return SharedPreferenceDelegate(key, pref, T::class.java, objectMapper)
+    }
+
+    private class SharedPreferenceDelegate<T>(val key : String,
+                                              val pref: SharedPreferences,
+                                              val clazz : Class<T>,
+                                              val objectMapper: ObjectMapper) {
+        operator fun getValue(thisRef: Any?, property : KProperty<*>) : T? {
+            return pref.getString(key, null)?.let { objectMapper.convertValue(it, clazz) }
+        }
+
+        operator fun setValue(thisRef: Any?, property: KProperty<*>, value : T?) {
+            val editor = pref.edit()
+            if (value == null) {
+                editor.remove(key)
+            }
+            else {
+                editor.putString(key, objectMapper.convertValue(value, String::class.java))
+            }
+
+            editor.apply()
+        }
+    }
 
     companion object {
         const val KEY_USER_TOKEN = "current_user_token"

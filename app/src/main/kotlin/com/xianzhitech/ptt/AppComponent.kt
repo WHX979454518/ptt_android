@@ -2,6 +2,9 @@ package com.xianzhitech.ptt
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.xianzhitech.ptt.api.AppApi
+import com.xianzhitech.ptt.api.SignalApi
+import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Storage
 import com.xianzhitech.ptt.media.MediaButtonHandler
 import com.xianzhitech.ptt.repo.*
@@ -24,6 +27,10 @@ interface AppComponent {
 
     val storage : Storage
     val objectMapper : ObjectMapper
+
+    val signalApi : SignalApi
+    val appApi : AppApi
+    val signalBroker : SignalBroker
 
     val appServerEndpoint : String
     val appService: AppService

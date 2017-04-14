@@ -5,12 +5,10 @@ import android.os.PowerManager
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.gson.Gson
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.*
-import com.xianzhitech.ptt.service.dto.JoinRoomResult
-import com.xianzhitech.ptt.service.dto.NearbyUser
-import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
-import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
+import com.xianzhitech.ptt.service.dto.*
 import com.xianzhitech.ptt.service.handler.ForceUpdateException
 import com.xianzhitech.ptt.util.Range
 import io.socket.client.Ack

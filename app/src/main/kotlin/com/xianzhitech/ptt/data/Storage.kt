@@ -1,29 +1,30 @@
 package com.xianzhitech.ptt.data
 
 import android.content.Context
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import io.reactivex.Completable
+import io.reactivex.Observable
+import io.reactivex.Single
 import io.requery.Persistable
 import io.requery.android.sqlite.DatabaseSource
 import io.requery.query.Return
-import io.requery.rx.RxResult
-import io.requery.rx.RxSupport
+import io.requery.reactivex.ReactiveResult
+import io.requery.reactivex.ReactiveSupport
 import io.requery.sql.ConfigurationBuilder
 import io.requery.sql.EntityDataStore
-import rx.Observable
-import rx.Single
+import rx.lang.kotlin.toSingle
 import java.util.*
-
 
 class Storage(context: Context) {
     private val configuration = ConfigurationBuilder(DatabaseSource(context, Models.DEFAULT, 1), Models.DEFAULT).build()
     val store = EntityDataStore<Persistable>(configuration)
-    private val data = RxSupport.toReactiveStore(store)
+    private val data = ReactiveSupport.toReactiveStore(store)
 
     fun getAllRooms(): Observable<List<Room>> {
         return data.select(Room::class.java).observeList()
     }
 
-    fun getAllRoomLatestMessage() : Observable<Pair<String, Message>> {
+    fun getAllRoomLatestMessage(): Observable<Pair<String, Message>> {
         return Observable.empty()
     }
 
@@ -44,7 +45,7 @@ class Storage(context: Context) {
             lookup = lookup.and(MessageEntity.SEND_TIME.lte(date))
         }
 
-        return lookup.limit(limit).observeList().first().toSingle()
+        return lookup.limit(limit).observeList().firstOrError()
     }
 
     fun getMessageFrom(date: Date?,
@@ -57,19 +58,30 @@ class Storage(context: Context) {
         return lookup.observeList()
     }
 
-    fun saveUsersAndGroups(users: Iterable<User>, groups: Iterable<Group>) {
-        data.runInTransaction(data.upsert(users), data.upsert(groups)).subscribeSimple()
+    fun replaceAllUsersAndGroups(users: Iterable<User>, groups: Iterable<Group>): Completable {
+        return Completable.fromObservable(
+                data.runInTransaction(
+                        data.delete(User::class.java).get().single(),
+                        data.delete(Group::class.java).get().single(),
+                        data.upsert(users),
+                        data.upsert(groups)
+                )
+        )
     }
 
     fun saveRooms(rooms: Iterable<Room>) {
-        data.upsert(rooms).subscribeSimple()
+        data.upsert(rooms)
+                .logErrorAndForget()
+                .subscribe()
     }
 
     fun saveMessages(messages: Iterable<Message>) {
-        data.upsert(messages).subscribeSimple()
+        data.upsert(messages)
+                .logErrorAndForget()
+                .subscribe()
     }
 
-    private fun <T> Return<RxResult<T>>.observeList(): Observable<List<T>> {
-        return get().toSelfObservable().map { it.toList() }
+    private fun <T> Return<ReactiveResult<T>>.observeList(): Observable<List<T>> {
+        return get().observableResult().map { it.toList() }
     }
 }
