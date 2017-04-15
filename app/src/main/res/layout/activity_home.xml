@@ -9,28 +9,36 @@
             type="com.xianzhitech.ptt.viewmodel.HomeViewModel" />
     </data>
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
         <include
+            android:id="@+id/topBar"
             layout="@layout/view_top_banner"
+            android:visibility="gone"
             app:viewModel="@{viewModel.topBannerViewModel}" />
 
-        <FrameLayout
-            android:id="@+id/content"
+        <android.support.v4.view.ViewPager
+            android:id="@+id/viewPager"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/tabBar"
+            android:layout_alignWithParentIfMissing="true"
+            android:layout_below="@+id/topBar" />
 
-        <View style="@style/Divider.Lighter" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/unit_half"
+            android:layout_above="@+id/tabBar"
+            android:background="@drawable/bg_top_shadow" />
 
         <android.support.design.widget.BottomNavigationView
             android:id="@+id/tabBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
             app:menu="@menu/home_bottom_bar" />
 
-    </LinearLayout>
+    </RelativeLayout>
 </layout>

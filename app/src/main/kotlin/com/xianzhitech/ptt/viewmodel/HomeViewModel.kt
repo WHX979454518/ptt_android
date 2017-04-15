@@ -13,9 +13,5 @@ class HomeViewModel(appComponent: AppComponent,
     val currentTab = ObservableField(R.id.home_rooms)
     val topBannerViewModel = TopBannerViewModel(appComponent, appContext, navigator).let(this::addChildModel)
 
-    fun onClickTab(id : Int) {
-        currentTab.set(id)
-    }
-
     interface Navigator : TopBannerViewModel.Navigator
 }

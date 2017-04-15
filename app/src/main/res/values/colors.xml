@@ -24,6 +24,7 @@
 
     <color name="black_50a">#80000000</color>
     <color name="black_30a">#4d000000</color>
+    <color name="black_5a">#0d000000</color>
 
     <color name="dark_grey">#333333</color>
     <color name="darker_grey">#222222</color>
