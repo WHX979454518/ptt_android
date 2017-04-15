@@ -6,10 +6,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.databinding.FragmentContactsBinding
 import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.chat.ChatActivity
 import com.xianzhitech.ptt.ui.modellist.ModelListAdapter
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
@@ -18,9 +19,7 @@ import com.xianzhitech.ptt.ui.widget.SideNavigationView
 class ContactsFragment : ModelListFragment<ContactsViewModel, FragmentContactsBinding>(), ContactsViewModel.Navigator {
 
 
-    override fun navigateToChatRoom(room: Room) {
-        startActivity(ChatActivity.createIntent(room.id))
-    }
+
 
     override fun onCreateViewModel(): ContactsViewModel {
         return ContactsViewModel(appComponent, this)
@@ -49,6 +48,14 @@ class ContactsFragment : ModelListFragment<ContactsViewModel, FragmentContactsBi
     }
 
     override fun displayContactSyncError(err: Throwable) {
-        Toast.makeText(context, err.describeInHumanMessage(context), Toast.LENGTH_LONG).show()
+        err.toast()
+    }
+
+    override fun navigateToChatRoom(room: Room) {
+        startActivity(ChatActivity.createIntent(room.id))
+    }
+
+    override fun displayCreateRoomError(err: Throwable) {
+        err.toast()
     }
 }

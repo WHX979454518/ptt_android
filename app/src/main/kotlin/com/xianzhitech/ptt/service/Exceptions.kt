@@ -2,6 +2,8 @@ package com.xianzhitech.ptt.service
 
 import android.content.Context
 import android.support.annotation.StringRes
+import android.widget.Toast
+import com.xianzhitech.ptt.App
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.toFormattedString
@@ -92,4 +94,8 @@ fun Throwable?.describeInHumanMessage(context: Context): CharSequence {
             }
         }
     }
+}
+
+fun Throwable?.toast() {
+    Toast.makeText(App.instance, describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
 }

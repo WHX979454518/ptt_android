@@ -173,8 +173,8 @@ class Storage(context: Context,
         )
     }
 
-    fun saveRooms(rooms: Iterable<Room>): Completable {
-        return data.upsert(rooms).subscribeOn(writeScheduler).toCompletable()
+    fun saveRoom(room: Room): Single<Room> {
+        return data.upsert(room).subscribeOn(writeScheduler)
     }
 
     fun saveMessages(messages: Iterable<Message>): Completable {

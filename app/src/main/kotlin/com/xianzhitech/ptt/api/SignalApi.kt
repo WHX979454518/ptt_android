@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Looper
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
+import com.google.common.primitives.Primitives
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.dto.Contact
 import com.xianzhitech.ptt.api.event.Event
@@ -11,8 +12,11 @@ import com.xianzhitech.ptt.api.event.LoginFailedEvent
 import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
 import com.xianzhitech.ptt.api.event.UserKickedOutEvent
 import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.exception.ServerException
 import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -23,7 +27,10 @@ import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.Transport
+import org.json.JSONArray
+import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
@@ -176,10 +183,12 @@ class SignalApi(private val appComponent: AppComponent,
 
     }
 
-    fun syncContacts(version: Long): Single<Contact> {
-        return Single.defer {
+    fun syncContacts(version: Long): Maybe<Contact> {
+        return Maybe.defer {
             Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
             restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.second.toMD5(), version)
+                    .toMaybe()
+                    .onErrorComplete { it is HttpException && it.code() == 304 }
         }
     }
 
@@ -259,25 +268,75 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
+    fun createRoom(userIds: List<String>, groupIds: List<String>): Single<Room> {
+        Preconditions.checkArgument(userIds.isNotEmpty() || groupIds.isNotEmpty())
+        Preconditions.checkState(socket != null)
+
+        return rpc<Room>("c_create_room", groupIds, userIds).toSingle()
+    }
+
+    private inline fun <reified T> rpc(name : String, vararg args : Any?) : Maybe<T> {
+        return Maybe.create { emitter ->
+            Preconditions.checkState(socket != null)
+
+            val convertedArgs = Array(args.size) { index ->
+                val arg = args[index]
+                when {
+                    arg == null -> null
+                    Primitives.isWrapperType(arg.javaClass) || arg.javaClass == String::class.java -> arg
+                    Iterable::class.java.isAssignableFrom(arg.javaClass) || arg.javaClass.isArray -> appComponent.objectMapper.convertValue(arg, JSONArray::class.java)
+                    else -> appComponent.objectMapper.convertValue(arg, JSONObject::class.java)
+                }
+            }
+
+            logger.i { "Calling RPC(name=$name, args=${args.toList()}, convertedArgs=${convertedArgs.toList()})" }
+            socket!!.emit(name, convertedArgs) { responses ->
+                val response = responses.firstOrNull() as? JSONObject
+                logger.i { "Calling RPC(name=$name), Response = $response" }
+                try {
+                    if (response != null && response.optBoolean("success", false)) {
+                        if (response.has("data")) {
+                            val data = response["data"]
+                            when {
+                                data == null -> emitter.onComplete()
+                                T::class.java.isAssignableFrom(data::class.java) -> emitter.onSuccess(data as T)
+                                else -> emitter.onSuccess(appComponent.objectMapper.convertValue(data, T::class.java))
+                            }
+
+                        } else {
+                            emitter.onComplete()
+                        }
+                    } else if (response != null && response.get("error") is JSONObject) {
+                        throw appComponent.objectMapper.convertValue(response.getJSONObject("error"), ServerException::class.java)
+                    } else {
+                        throw RuntimeException("Server's response for API call $name is invalid: $response")
+                    }
+                } catch (err : Throwable) {
+                    emitter.onError(err)
+                }
+            }
+        }
+    }
+
     private interface RestfulApi {
         @GET("/api/contact/sync/{idNumber}/{password}/{version}")
         fun syncContact(@Path("idNumber") idNumber: String,
                         @Path("password") password: String,
                         @Path("version") version: Long): Single<Contact>
-    }
 
+    }
     enum class ConnectionState {
         IDLE,
         CONNECTING,
         CONNECTED,
         RECONNECTING,
         DISCONNECTED,
-    }
 
+    }
     companion object {
         private val PHONE_MATCHER = Regex("^1[2-9]\\d{9}$")
-        private val EMAIL_MATCHER = Regex(".+@.+\\..+$")
 
+        private val EMAIL_MATCHER = Regex(".+@.+\\..+$")
         private val logger = LoggerFactory.getLogger("Signal")
         private val SIGNAL_MAPS: Map<String, Any> = mapOf(
                 "s_update_location" to RequestLocationUpdateEvent,
@@ -285,5 +344,6 @@ class SignalApi(private val appComponent: AppComponent,
                 "s_kick_out" to UserKickedOutEvent,
                 "s_logon" to CurrentUser::class.java
         )
+
     }
 }

@@ -7,10 +7,12 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.event.ConnectionErrorEvent
 import com.xianzhitech.ptt.api.event.LoginFailedEvent
-import com.xianzhitech.ptt.api.exception.ServerException
+import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.exception.ServerException
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
@@ -25,8 +27,8 @@ class SignalBroker(private val appComponent: AppComponent,
     val connectionState = signalApi.connectionState
     val currentUser = signalApi.currentUser
 
-    val currentVideoRoom : BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
-    val currentWalkieTalkieRoom : BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
+    val currentVideoRoom: BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
+    val currentWalkieTalkieRoom: BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
 
     val isLoggedIn: Boolean
         get() = signalApi.currentUser.value.isPresent
@@ -78,5 +80,11 @@ class SignalBroker(private val appComponent: AppComponent,
                             .replaceAllUsersAndGroups(contact.members, contact.groups)
                             .doOnComplete { appComponent.preference.contactVersion = contact.version }
                 }
+    }
+
+    fun createRoom(userIds: List<String> = emptyList(),
+                   groupIds: List<String> = emptyList()): Single<Room> {
+        return signalApi.createRoom(userIds, groupIds)
+                .flatMap(appComponent.storage::saveRoom)
     }
 }

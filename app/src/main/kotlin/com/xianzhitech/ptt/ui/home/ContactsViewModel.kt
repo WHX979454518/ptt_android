@@ -4,14 +4,14 @@ import android.databinding.ObservableBoolean
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.data.ContactGroup
 import com.xianzhitech.ptt.data.ContactUser
+import com.xianzhitech.ptt.data.NamedModel
+import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Group
-import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.ui.modellist.ModelListViewModel
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.BiFunction
-import rx.Single
 
 
 class ContactsViewModel(private val appComponent: AppComponent,
@@ -19,7 +19,7 @@ class ContactsViewModel(private val appComponent: AppComponent,
 
     val refreshing = ObservableBoolean()
 
-    override val contactModels: Observable<List<com.xianzhitech.ptt.data.NamedModel>>
+    override val contactModels: Observable<List<NamedModel>>
         get() = Observable.combineLatest(
                 appComponent.storage.getAllGroups(),
                 appComponent.storage.getAllUsers(),
@@ -36,18 +36,20 @@ class ContactsViewModel(private val appComponent: AppComponent,
         onClick(group)
     }
 
-    private fun onClick(model: com.xianzhitech.ptt.data.NamedModel) {
+    private fun onClick(model: NamedModel) {
         val roomResponse: Single<Room>
-        if (model is Group) {
-            roomResponse = appComponent.signalHandler.createRoom(groupIds = listOf(model.id))
+        if (model is ContactGroup) {
+            roomResponse = appComponent.signalBroker.createRoom(groupIds = listOf(model.id))
         } else {
-            roomResponse = appComponent.signalHandler.createRoom(userIds = listOf(model.id))
+            roomResponse = appComponent.signalBroker.createRoom(userIds = listOf(model.id))
         }
 
         roomResponse
-                .doOnLoadingState(loading::set)
-                .observeOnMainThread()
-                .subscribeSimple(contactsNavigator::navigateToChatRoom)
+                .doOnLoading(loading::set)
+                .observeOn(AndroidSchedulers.mainThread())
+                .toMaybe()
+                .logErrorAndForget(contactsNavigator::displayCreateRoomError)
+                .subscribe(contactsNavigator::navigateToChatRoom)
                 .bindToLifecycle()
     }
 
@@ -62,6 +64,7 @@ class ContactsViewModel(private val appComponent: AppComponent,
     interface Navigator {
         fun navigateToChatRoom(room: Room)
         fun displayContactSyncSuccess()
-        fun displayContactSyncError(err : Throwable)
+        fun displayContactSyncError(err: Throwable)
+        fun displayCreateRoomError(err: Throwable)
     }
 }

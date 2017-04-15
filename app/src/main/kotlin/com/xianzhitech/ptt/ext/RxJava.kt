@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ext
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 import org.slf4j.LoggerFactory
 
 
@@ -41,4 +42,9 @@ fun Completable.doOnLoading(action : (Boolean) -> Unit) : Completable {
 fun <T> Observable<T>.doOnLoading(action : (Boolean) -> Unit) : Observable<T> {
     return doOnSubscribe { action(true) }
             .doOnEach { action(false) }
+}
+
+fun <T> Single<T>.doOnLoading(action : (Boolean) -> Unit) : Single<T> {
+    return doOnSubscribe { action(true) }
+            .doOnEvent { _, _ -> action(false) }
 }

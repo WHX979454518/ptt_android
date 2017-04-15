@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.xianzhitech.ptt.api.event.Event;
 
 import java.util.Map;
@@ -44,6 +46,36 @@ public abstract class CurrentUser implements User, Event, NamedModel {
     @JsonIgnore
     public final int getPriority() {
         return Integer.parseInt(getPrivileges().get("priority").toString());
+    }
+
+    public final boolean hasPermission(Permission perm) {
+        Preconditions.checkArgument(perm != null);
+
+        final Map<String, Object> map = getPrivileges();
+        if (map == null) {
+            return false;
+        }
+
+        switch (perm) {
+            case CALL_INDIVIDUAL:
+                return Boolean.TRUE.equals(map.get("callAble"));
+            case CALL_TEMP_GROUP:
+                return Boolean.TRUE.equals(map.get("groupAble"));
+            case RECEIVE_INDIVIDUAL_CALL:
+                return Boolean.TRUE.equals(map.get("calledAble"));
+            case RECEIVE_TEMP_GROUP_CALL:
+                return Boolean.TRUE.equals(map.get("joinAble"));
+            case SPEAK:
+                return Boolean.FALSE.equals(map.get("forbidSpeak"));
+            case MUTE:
+                return Boolean.TRUE.equals(map.get("muteAble"));
+            case FORCE_INVITE:
+                return Boolean.TRUE.equals(map.get("powerInviteAble"));
+            case VIEW_MAP:
+                return Boolean.TRUE.equals(map.get("viewMap"));
+        }
+
+        return false;
     }
 
     @JsonProperty("privileges")
