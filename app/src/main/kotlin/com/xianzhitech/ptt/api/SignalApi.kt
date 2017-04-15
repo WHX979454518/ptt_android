@@ -272,7 +272,7 @@ class SignalApi(private val appComponent: AppComponent,
         Preconditions.checkArgument(userIds.isNotEmpty() || groupIds.isNotEmpty())
         Preconditions.checkState(socket != null)
 
-        return rpc<Room>("c_create_room", groupIds, userIds).toSingle()
+        return rpc<Room>("c_create_room", userIds, groupIds).toSingle()
     }
 
     private inline fun <reified T> rpc(name : String, vararg args : Any?) : Maybe<T> {

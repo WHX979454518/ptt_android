@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.auto.value.AutoValue;
 import com.xianzhitech.ptt.util.SetConverter;
 
+import java.util.Collections;
 import java.util.Set;
 
 import io.requery.Convert;
@@ -36,7 +37,9 @@ public abstract class Room implements Persistable {
     public abstract String getName();
 
     public static Builder builder() {
-        return new AutoValue_Room.Builder();
+        return new AutoValue_Room.Builder()
+                .setGroups(Collections.<String>emptySet())
+                .setExtraMembers(Collections.<String>emptySet());
     }
 
     @AutoValue.Builder

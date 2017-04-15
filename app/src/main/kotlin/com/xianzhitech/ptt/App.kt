@@ -16,6 +16,7 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.GlideModule
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
+import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
@@ -121,6 +122,7 @@ open class App : MultiDexApplication(), AppComponent {
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
             configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)
+            setDefaultSetterInfo(JsonSetter.Value.construct(JsonSetter.Nulls.SKIP, JsonSetter.Nulls.DEFAULT))
         }
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson(), objectMapper)
         storage = Storage(this, preference)

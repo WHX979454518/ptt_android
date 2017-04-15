@@ -137,6 +137,14 @@ fun <E> List<E>.atMost(count: Int): List<E> {
     return subList(0, Math.min(count, size))
 }
 
+fun <E, T : MutableCollection<E>> T.keepAtMost(count: Int) : T {
+    val i = 0
+    val iter = iterator()
+    while (iter.hasNext() && i.inc() <= count) { }
+    while (iter.hasNext()) { iter.remove() }
+    return this
+}
+
 fun <E> Collection<E>.without(element: E?): List<E> {
     if (element != null) {
         return filterNot { it == element }

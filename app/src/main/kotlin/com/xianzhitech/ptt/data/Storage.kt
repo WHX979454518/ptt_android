@@ -3,9 +3,7 @@ package com.xianzhitech.ptt.data
 import android.content.Context
 import com.google.common.base.Optional
 import com.xianzhitech.ptt.Preference
-import com.xianzhitech.ptt.ext.atMost
-import com.xianzhitech.ptt.ext.toOptional
-import com.xianzhitech.ptt.ext.without
+import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -19,12 +17,16 @@ import io.requery.reactivex.ReactiveResult
 import io.requery.reactivex.ReactiveSupport
 import io.requery.sql.ConfigurationBuilder
 import io.requery.sql.EntityDataStore
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
+import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashSet
 
 class Storage(context: Context,
               val pref: Preference) {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val configuration = ConfigurationBuilder(DatabaseSource(context, Models.DEFAULT, 1), Models.DEFAULT).let {
         it.setEntityCache(EntityCacheBuilder(Models.DEFAULT).useReferenceCache(true).build())
@@ -41,9 +43,7 @@ class Storage(context: Context,
                 .switchMap { rooms ->
                     if (rooms.isNotEmpty()) {
                         Observable.combineLatest(rooms.map(this::getRoomName)) { names ->
-                            List(rooms.size) { index ->
-                                rooms[index] to (names[index].toString())
-                            }
+                            names.mapIndexed { index, name -> rooms[index] to (name as String) }
                         }
                     } else {
                         Observable.empty()
@@ -52,25 +52,27 @@ class Storage(context: Context,
     }
 
     fun getRoomName(room: Room): Observable<String> {
-        if (room.name != null) {
-            return Observable.just(room.name)
-        }
+        return Observable.defer {
+            if (room.name != null) {
+                return@defer Observable.just(room.name)
+            }
 
-        val membersWithoutCurrentUser = room.extraMembers.without(pref.currentUser?.id)
+            val membersWithoutCurrentUser = room.extraMembers.without(pref.currentUser?.id)
 
-        if (room.groups.isNotEmpty() && membersWithoutCurrentUser.isEmpty()) {
-            return getGroups(room.groups)
-                    .map { it.firstOrNull()?.name ?: "会话名称未知" }
-        }
+            if (room.groups.isNotEmpty() && membersWithoutCurrentUser.isEmpty()) {
+                return@defer getGroups(room.groups)
+                        .map { it.firstOrNull()?.name ?: "会话名称未知" }
+            }
 
-        return getRoomMembers(room, 4)
-                .map { users ->
-                    val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = { it.name })
-                    if (users.size == 4) {
-                        sb.append("等")
+            getRoomMembers(room, 4)
+                    .map { users ->
+                        val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = ContactUser::getName)
+                        if (users.size == 4) {
+                            sb.append("等")
+                        }
+                        sb.toString()
                     }
-                    sb.toString()
-                }
+        }
     }
 
     fun getRoom(roomId: String): Observable<Optional<Room>> {
@@ -104,13 +106,14 @@ class Storage(context: Context,
         return getGroups(room.groups)
                 .switchMap { groups ->
                     val userIds = LinkedHashSet<String>()
-                    groups.forEach { userIds.addAll(it.memberIds) }
+                    groups.flatMapTo(userIds, ContactGroup::getMemberIds)
                     userIds.addAll(room.extraMembers)
+
 
                     if (limit == null) {
                         getUsers(userIds)
                     } else {
-                        getUsers(userIds.toList().atMost(limit))
+                        getUsers(userIds.keepAtMost(limit))
                     }
                 }
     }
@@ -188,6 +191,7 @@ class Storage(context: Context,
     private fun <T> Return<ReactiveResult<T>>.observeList(): Observable<List<T>> {
         return get().observableResult()
                 .subscribeOn(readScheduler)
+                .doOnError { logger.e(it) { "Error executing storage query: " } }
                 .map { it.toList() }
     }
 }
