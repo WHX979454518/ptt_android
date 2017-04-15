@@ -16,7 +16,7 @@ import io.requery.Table;
 @AutoValue
 @Entity
 @Table(name = "users")
-public abstract class ContactUser implements User, Persistable {
+public abstract class ContactUser implements User, Persistable, NamedModel {
     @Override
     @Key
     @JsonIgnore

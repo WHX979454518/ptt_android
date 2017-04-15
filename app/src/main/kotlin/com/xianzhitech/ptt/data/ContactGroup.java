@@ -17,7 +17,7 @@ import io.requery.Table;
 @Entity
 @Table(name = "groups")
 @AutoValue
-public abstract class ContactGroup implements Persistable {
+public abstract class ContactGroup implements Persistable, NamedModel {
     @Key
     public abstract String getId();
 

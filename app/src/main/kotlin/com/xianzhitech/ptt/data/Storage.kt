@@ -87,7 +87,7 @@ class Storage(context: Context,
         )
     }
 
-    fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<User>> {
+    fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<ContactUser>> {
         return getGroups(room.groups)
                 .switchMap { groups ->
                     val userIds = LinkedHashSet<String>()

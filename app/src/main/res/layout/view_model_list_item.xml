@@ -9,7 +9,7 @@
 
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.ui.modellist.NamedModelViewModel" />
+            type="com.xianzhitech.ptt.ui.modellist.ContactModelViewModel" />
     </data>
 
     <RelativeLayout

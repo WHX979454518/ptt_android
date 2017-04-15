@@ -27,7 +27,7 @@ import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.home.ModelListActivity
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
@@ -186,9 +186,9 @@ class RoomFragment : BaseFragment()
         view.findViewById(R.id.roomOnlineInfo_all)!!.setOnClickListener {
             val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
             if (currentRoomId != null) {
+                val args = Bundle(1).apply { putString(RoomMemberListFragment.ARG_ROOM_ID, currentRoomId) }
                 activity.startActivityWithAnimation(
-                        ModelListActivity.build(context, R.string.room_members.toFormattedString(context),
-                                RoomMemberProvider(currentRoomId, false))
+                        FragmentDisplayActivity.createIntent(RoomMemberListFragment::class.java, args)
                 )
             }
         }

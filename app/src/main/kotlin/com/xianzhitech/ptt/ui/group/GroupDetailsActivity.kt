@@ -17,7 +17,7 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import com.xianzhitech.ptt.ui.home.ModelListActivity
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.util.withUser
 import rx.Subscriber
@@ -53,7 +53,8 @@ class GroupDetailsActivity : BaseToolbarActivity() {
         }
 
         allMemberLabel.setOnClickListener {
-            startActivityWithAnimation(ModelListActivity.build(this, R.string.group_members.toFormattedString(this), GroupMemberProvider(groupId)))
+            val fragmentArgs = Bundle(1).apply { putString(GroupMemberListFragment.ARG_GROUP_ID, groupId) }
+            startActivityWithAnimation(FragmentDisplayActivity.createIntent(GroupMemberListFragment::class.java, fragmentArgs))
         }
     }
 

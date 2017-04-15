@@ -13,9 +13,7 @@ import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
-import com.xianzhitech.ptt.ui.home.ModelListActivity
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
-import com.xianzhitech.ptt.ui.user.ContactUserProvider
 
 class MainActivity : BaseToolbarActivity(),
         LoginFragment.Callbacks,
@@ -60,10 +58,11 @@ class MainActivity : BaseToolbarActivity(),
     }
 
     override fun requestCreateNewRoom() {
-        startActivityForResultWithAnimation(
-                ModelListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(true)),
-                REQUEST_CODE_CREATE_ROOM
-        )
+        //TODO:
+//        startActivityForResultWithAnimation(
+//                ModelListActivity.build(this, R.string.create_room.toFormattedString(this), ContactUserProvider(true)),
+//                REQUEST_CODE_CREATE_ROOM
+//        )
     }
 
     override fun navigateToHome() {
@@ -72,7 +71,8 @@ class MainActivity : BaseToolbarActivity(),
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CODE_CREATE_ROOM && resultCode == RESULT_OK && data != null) {
-            pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS).toList())
+            //TODO:
+//            pendingCreateRoomRequest = CreateRoomRequest(extraMemberIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS).toList())
         } else {
             super.onActivityResult(requestCode, resultCode, data)
         }

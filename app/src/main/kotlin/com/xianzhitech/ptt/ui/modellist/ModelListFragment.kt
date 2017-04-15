@@ -1,53 +1,56 @@
 package com.xianzhitech.ptt.ui.modellist
 
+import android.databinding.ViewDataBinding
 import android.os.Bundle
 import android.support.v4.view.MenuItemCompat
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.SearchView
 import android.view.*
+import android.widget.TextView
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.databinding.FragmentModelListBinding
+import com.xianzhitech.ptt.data.NamedModel
 import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.observe
 import com.xianzhitech.ptt.ext.show
-import com.xianzhitech.ptt.model.NamedModel
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
-import com.xianzhitech.ptt.ui.home.ModelProvider
 import com.xianzhitech.ptt.ui.widget.SideNavigationView
 
 
-open class ModelListFragment<T : ModelListViewModel> :
-        BaseViewModelFragment<T, FragmentModelListBinding>(),
+abstract class ModelListFragment<VM : ModelListViewModel, VB : ViewDataBinding> :
+        BaseViewModelFragment<VM, VB>(),
         ModelListAdapter.Callbacks {
     protected lateinit var adapter: ModelListAdapter
-
-    open val modelProvider: ModelProvider
-        get() = arguments.getParcelable(ARG_MODEL_PROVIDER)
 
     private var doneItem: MenuItem? = null
     private var searchItem: MenuItem? = null
 
+    protected abstract val recyclerView : RecyclerView
+    protected abstract val sideNavigationView : SideNavigationView
+    protected abstract val currentCharView : TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setHasOptionsMenu(true)
+        setHasOptionsMenu(viewModel.selectable)
     }
 
     override fun onStart() {
         super.onStart()
 
-        viewModel.selectedItemIds
-                .observe()
-                .subscribe {
-                    doneItem?.isEnabled = it.isNotEmpty()
-                    doneItem?.title = if (it.isEmpty()) {
-                        getString(R.string.finish)
+        if (viewModel.selectable) {
+            viewModel.selectedItemIds
+                    .observe()
+                    .subscribe {
+                        doneItem?.isEnabled = it.isNotEmpty()
+                        doneItem?.title = if (it.isEmpty()) {
+                            getString(R.string.finish)
+                        } else {
+                            getString(R.string.finish_with_number, viewModel.selectedItemIds.size)
+                        }
                     }
-                    else {
-                        getString(R.string.finish_with_number, viewModel.selectedItemIds.size)
-                    }
-                }
-                .bindToLifecycle()
+                    .bindToLifecycle()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -56,7 +59,7 @@ open class ModelListFragment<T : ModelListViewModel> :
         inflater.inflate(R.menu.model_list, menu)
 
         searchItem = menu.findItem(R.id.modelList_search)
-        doneItem = menu.findItem(R.id.modelList_done).apply { isVisible = modelProvider.selectable }
+        doneItem = menu.findItem(R.id.modelList_done).apply { isVisible = viewModel.selectable }
 
         val searchView = MenuItemCompat.getActionView(searchItem) as SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -83,31 +86,29 @@ open class ModelListFragment<T : ModelListViewModel> :
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentModelListBinding {
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         adapter = onCreateModelListAdapter()
         viewModel.viewModels.addOnListChangedCallback(adapter.listChangeListener)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        recyclerView.adapter = this@ModelListFragment.adapter
 
-        return FragmentModelListBinding.inflate(inflater, container, false).apply {
-            recyclerView.layoutManager = LinearLayoutManager(context)
-            recyclerView.adapter = this@ModelListFragment.adapter
-
-            sideBar.onNavigateListener = object : SideNavigationView.OnNavigationListener {
-                override fun onNavigateTo(c: String) {
-                    currentChar.show = true
-                    currentChar.text = c
-                    val position = viewModel.headerViewModelPositions.get()[c.toLowerCase()[0]]
-                    if (position != null) {
-                        (recyclerView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(position, 0)
-                    }
+        sideNavigationView.onNavigateListener = object : SideNavigationView.OnNavigationListener {
+            override fun onNavigateTo(c: String) {
+                currentCharView.show = true
+                currentCharView.text = c
+                val position = viewModel.headerViewModelPositions.get()[c.toLowerCase()[0]]
+                if (position != null) {
+                    (recyclerView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(position, 0)
                 }
+            }
 
-                override fun onNavigateCancel() {
-                    currentChar.show = false
-                }
+            override fun onNavigateCancel() {
+                currentCharView.show = false
             }
         }
     }
-
 
     override fun onDestroyViewBinding() {
         super.onDestroyViewBinding()
@@ -119,20 +120,11 @@ open class ModelListFragment<T : ModelListViewModel> :
         return ModelListAdapter(this, R.layout.view_model_list_item)
     }
 
-    override fun onCreateViewModel(): T {
-        @Suppress("UNCHECKED_CAST")
-        return ModelListViewModel(modelProvider, callbacks()) as T
-    }
-
     override fun onClickModelItem(model: NamedModel) {
         viewModel.onClickItem(model)
     }
 
-    interface Callbacks : ModelListViewModel.Navigator {
+    interface Callbacks {
         fun onSelectionDone(selected: List<String>)
-    }
-
-    companion object {
-        const val ARG_MODEL_PROVIDER = "model_provider"
     }
 }

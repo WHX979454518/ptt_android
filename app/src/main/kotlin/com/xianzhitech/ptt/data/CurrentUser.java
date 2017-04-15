@@ -15,7 +15,7 @@ import java.util.Map;
 
 @AutoValue
 @JsonDeserialize(builder = CurrentUser.Builder.class)
-public abstract class CurrentUser implements User, Event {
+public abstract class CurrentUser implements User, Event, NamedModel {
     @Override
     @JsonProperty("idNumber")
     public abstract String getId();

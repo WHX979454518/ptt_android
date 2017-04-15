@@ -5,11 +5,9 @@
 
     <data>
 
-        <import type="com.xianzhitech.ptt.ui.widget.drawable.ModelDrawableKt" />
-
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.ui.modellist.NamedModelViewModel" />
+            type="com.xianzhitech.ptt.ui.modellist.ContactModelViewModel" />
     </data>
 
     <LinearLayout
@@ -19,15 +17,14 @@
         android:background="?attr/selectableItemBackground"
         android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/modelItem_icon"
+        <com.xianzhitech.ptt.ui.widget.ModelView
             android:layout_width="@dimen/contact_list_icon_size"
             android:layout_height="@dimen/contact_list_icon_size"
             android:layout_marginBottom="@dimen/unit_one"
             android:layout_marginLeft="@dimen/unit_two"
             android:layout_marginTop="@dimen/unit_one"
             android:contentDescription="@{viewModel.model.name}"
-            app:imageDrawable="@{ModelDrawableKt.createDrawable(viewModel.model)}"
+            app:model="@{viewModel.model}"
             tools:src="@color/blue" />
 
         <TextView
@@ -35,11 +32,11 @@
             style="@style/Text.Subhead"
             android:layout_width="0dip"
             android:layout_height="wrap_content"
-            android:text="@{viewModel.model.name}"
             android:layout_gravity="center"
             android:layout_marginLeft="@dimen/unit_one"
             android:layout_marginRight="@dimen/unit_two"
             android:layout_weight="1"
+            android:text="@{viewModel.model.name}"
             tools:text="User 1" />
 
     </LinearLayout>

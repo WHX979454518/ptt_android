@@ -91,6 +91,9 @@
             android:windowSoftInputMode="adjustPan" />
 
         <activity
+            android:name=".ui.base.FragmentDisplayActivity" />
+
+        <activity
             android:name=".ui.user.UserDetailsActivity"
             android:label="@string/user_info" />
 

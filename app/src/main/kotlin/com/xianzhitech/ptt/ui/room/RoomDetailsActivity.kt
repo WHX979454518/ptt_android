@@ -22,8 +22,7 @@ import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
-import com.xianzhitech.ptt.ui.home.ModelListActivity
-import com.xianzhitech.ptt.ui.user.ContactUserProvider
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
@@ -129,8 +128,10 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         allMemberLabelView.text = R.string.all_member_with_number.toFormattedString(this, roomMembers.size)
         // Set up all member views
         allMemberLabelView.setOnClickListener {
+            val args = Bundle(1).apply { putString(RoomMemberListFragment.ARG_ROOM_ID, room.id) }
+
             startActivityWithAnimation(
-                    ModelListActivity.build(this, R.string.room_members.toFormattedString(this), RoomMemberProvider(room.id, false))
+                    FragmentDisplayActivity.createIntent(RoomMemberListFragment::class.java, args)
             )
         }
 
@@ -156,11 +157,12 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
-            val selectedUserIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS)
-            appComponent.signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
-                    .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
+            //TODO:
+//            val selectedUserIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS)
+//            appComponent.signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
+//                    .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
         } else if (requestCode == REQUEST_UPDATE_ROOM_NAME && resultCode == RESULT_OK && data != null) {
             val roomName = data.getStringExtra(TextInputActivity.RESULT_EXTRA_TEXT)
             if (roomName.isNullOrBlank()) {
@@ -214,11 +216,12 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
                 holder.nameView?.text = ""
                 holder.avatarView!!.setImageDrawable(holder.itemView.context.getTintedDrawable(R.drawable.ic_person_add_24dp, holder.nameView!!.currentTextColor))
                 holder.itemView.setOnClickListener {
-                    startActivityForResultWithAnimation(
-                            ModelListActivity.build(this@RoomDetailsActivity, R.string.add_members.toFormattedString(parent.context),
-                                    ContactUserProvider(true, roomMembers.map { it.id }.toSet(), false)),
-                            REQUEST_SELECT_USER
-                    )
+                    //TODO:
+//                    startActivityForResultWithAnimation(
+//                            ModelListActivity.build(this@RoomDetailsActivity, R.string.add_members.toFormattedString(parent.context),
+//                                    ContactUserProvider(true, roomMembers.map { it.id }.toSet(), false)),
+//                            REQUEST_SELECT_USER
+//                    )
                 }
                 holder
             } else {
