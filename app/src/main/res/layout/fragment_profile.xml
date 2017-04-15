@@ -1,76 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:fillViewport="true"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingLeft="@dimen/unit_two"
-        android:paddingRight="@dimen/unit_two"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:paddingRight="@dimen/unit_two">
 
-        <ImageView
-            android:layout_marginTop="@dimen/unit_two"
-            android:layout_gravity="center"
+        <com.xianzhitech.ptt.ui.widget.ModelView
+            android:id="@+id/profile_icon"
             android:layout_width="@dimen/profile_icon_size"
             android:layout_height="@dimen/profile_icon_size"
-            android:id="@+id/profile_icon"/>
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/unit_two" />
 
         <TextView
+            android:id="@+id/profile_name"
             style="@style/Text.Body2"
-            android:gravity="center"
-            android:layout_marginTop="@dimen/unit_one"
-            android:maxLines="1"
-            android:layout_gravity="center"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:text="刘某人"
-            android:id="@+id/profile_name"/>
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/unit_one"
+            android:gravity="center"
+            android:maxLines="1"
+            tools:text="刘某人" />
 
         <TextView
             android:id="@+id/profile_number"
-            tools:text="500003"
             style="@style/Text.Caption"
-            android:layout_marginTop="@dimen/unit_half"
-            android:layout_gravity="center"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/unit_half"
+            tools:text="500003" />
 
 
         <TextView
+            android:id="@+id/profile_company"
             style="@style/Text.Caption"
-            android:gravity="center"
-            android:layout_marginTop="@dimen/unit_one"
-            android:maxLines="1"
-            android:layout_gravity="center"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/profile_company"/>
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/unit_one"
+            android:gravity="center"
+            android:maxLines="1" />
 
         <LinearLayout
-            android:orientation="horizontal"
-            android:layout_marginTop="@dimen/unit_one"
-            android:layout_gravity="center"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/unit_one"
+            android:orientation="horizontal">
 
             <Button
-                android:layout_gravity="center"
-                android:text="@string/profile_edit"
                 android:id="@+id/profile_edit"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/profile_edit" />
 
             <Button
                 android:id="@+id/profile_logout"
                 style="@style/Widget.AppCompat.Button.Colored"
-                android:text="@string/log_out_current_user"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:text="@string/log_out_current_user" />
 
         </LinearLayout>
 
@@ -84,32 +83,28 @@
             style="@style/ProfileButton"
             android:text="@string/settings" />
 
-        <View
-            style="@style/Divider.Lighter" />
+        <View style="@style/Divider.Lighter" />
 
         <Button
-            style="@style/ProfileButton"
             android:id="@+id/profile_feedback"
+            style="@style/ProfileButton"
             android:text="@string/feedback" />
 
-        <View
-            style="@style/Divider.Lighter" />
+        <View style="@style/Divider.Lighter" />
 
         <Button
             android:id="@+id/profile_share"
             style="@style/ProfileButton"
             android:text="@string/share" />
 
-        <View
-            style="@style/Divider.Lighter" />
+        <View style="@style/Divider.Lighter" />
 
         <Button
             android:id="@+id/profile_logUpload"
             style="@style/ProfileButton"
             android:text="@string/log_upload" />
 
-        <View
-            style="@style/Divider.Lighter" />
+        <View style="@style/Divider.Lighter" />
 
         <Button
             android:id="@+id/profile_about"

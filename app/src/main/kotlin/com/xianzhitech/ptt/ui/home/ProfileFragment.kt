@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
@@ -22,16 +21,16 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.EditProfileActivity
-import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import com.xianzhitech.ptt.ui.widget.ModelView
+import io.reactivex.Completable
+import io.reactivex.CompletableObserver
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
-import rx.Completable
-import rx.CompletableSubscriber
-import rx.Single
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import java.io.File
 
 private val logger = LoggerFactory.getLogger("ProfileFragment")
@@ -94,13 +93,12 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
     override fun onStart() {
         super.onStart()
 
-        appComponent.signalHandler.currentUserId
-                .switchMap { appComponent.userRepository.getUser(it).observe() }
-                .observeOnMainThread()
-                .subscribeSimple {
-                    views?.iconView?.setImageDrawable(it?.createDrawable())
-                    views?.nameView?.text = it?.name
-                    views?.numberView?.text = it?.id
+        appComponent.signalBroker.currentUser
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    views?.iconView?.model = it.orNull()
+                    views?.nameView?.text = it.orNull()?.name
+                    views?.numberView?.text = it.orNull()?.id
                 }
     }
 
@@ -129,25 +127,26 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             map["userId"] = RequestBody.create(plainText, appComponent.signalHandler.peekCurrentUserId ?: "unknown")
             map["model"] = RequestBody.create(plainText, "${Build.MANUFACTURER} - ${Build.MODEL}")
 
-            dst.listFiles()?.forEachIndexed { i, file ->
+            dst.listFiles()?.forEachIndexed { _, file ->
                 map["log_file\"; filename=\"${file.name}"] = RequestBody.create(plainText, file)
             }
 
-            appComponent.appService.submitLogs(map)
+            appComponent.appApi.submitLogs(map)
         }.subscribeOn(Schedulers.io())
-                .observeOnMainThread()
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(LogUploadSubscriber(activity.applicationContext))
     }
 
-    private class LogUploadSubscriber(private val appContext: Context) : CompletableSubscriber {
-        override fun onSubscribe(d: Subscription?) { }
+    private class LogUploadSubscriber(private val appContext: Context) : CompletableObserver {
+
+        override fun onSubscribe(d: Disposable?) {}
 
         override fun onError(e: Throwable?) {
             Toast.makeText(appContext, e.describeInHumanMessage(appContext), Toast.LENGTH_LONG).show()
             logger.e(e) { "Error uploading logs" }
         }
 
-        override fun onCompleted() {
+        override fun onComplete() {
             Toast.makeText(appContext, R.string.log_upload_success, Toast.LENGTH_LONG).show()
         }
     }
@@ -183,15 +182,13 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             // Counting log files
             File(app.filesDir, "log").listFiles()
                     ?.fold(initialValue, { result, file -> result.first + 1 to result.second + file.length() }) ?: initialValue
-        }.subscribeOn(Schedulers.io())
-                .subscribeOn(AndroidSchedulers.mainThread())
-                .observeOnMainThread()
-                .subscribeSimple {
-                    val (count, totalFileSize) = it
+        }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { (count, totalFileSize) ->
                     if (count == 0 || totalFileSize == 0L) {
                         Toast.makeText(context, R.string.no_upload, Toast.LENGTH_LONG).show()
-                    }
-                    else {
+                    } else {
                         AlertDialogFragment.Builder().apply {
                             val sizeKB = Math.round(totalFileSize / 1024f)
                             message = getString(R.string.total_log_files, count, "$sizeKB KB")
@@ -205,7 +202,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
 
     private class Views(rootView: View,
-                        val iconView: ImageView = rootView.findView(R.id.profile_icon),
+                        val iconView: ModelView = rootView.findView(R.id.profile_icon),
                         val nameView: TextView = rootView.findView(R.id.profile_name),
                         val numberView: TextView = rootView.findView(R.id.profile_number))
 

@@ -21,6 +21,9 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 
 
+/**
+ * 显示一个用户、组或者会话的图标
+ */
 class ModelView @JvmOverloads constructor(context: Context,
                                           attributeSet: AttributeSet? = null,
                                           defStyle: Int = 0) : AppCompatImageView(context, attributeSet, defStyle) {
