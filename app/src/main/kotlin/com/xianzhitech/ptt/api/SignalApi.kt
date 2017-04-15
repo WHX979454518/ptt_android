@@ -28,7 +28,6 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
 import retrofit2.http.GET
-import retrofit2.http.PATCH
 import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 

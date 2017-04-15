@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/home_rooms"
+        android:icon="@drawable/ic_chat_bubble"
+        android:title="@string/tab_conversation"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/home_contact"
+        android:icon="@drawable/ic_people"
+        android:title="@string/tab_contacts"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/home_profile"
+        android:icon="@drawable/ic_person"
+        android:title="@string/tab_me"
+        app:showAsAction="always" />
+</menu>

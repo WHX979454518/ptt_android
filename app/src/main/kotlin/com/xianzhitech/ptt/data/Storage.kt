@@ -1,12 +1,15 @@
 package com.xianzhitech.ptt.data
 
 import android.content.Context
+import com.google.common.base.Optional
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.ext.atMost
+import com.xianzhitech.ptt.ext.toOptional
 import com.xianzhitech.ptt.ext.without
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.functions.BiFunction
 import io.requery.Persistable
 import io.requery.android.sqlite.DatabaseSource
 import io.requery.query.Return
@@ -55,6 +58,33 @@ class Storage(context: Context,
                     }
                     sb.toString()
                 }
+    }
+
+    fun getRoom(roomId : String) : Observable<Optional<Room>> {
+        return data.select(Room::class.java)
+                .where(RoomType.ID.eq(roomId))
+                .observeList()
+                .map { it.firstOrNull().toOptional() }
+    }
+
+    fun getRoomWithName(roomId: Optional<String>) : Observable<Optional<Pair<Room, String>>> {
+        if (roomId.isPresent.not()) {
+            return Observable.empty()
+        }
+
+        val roomObservable = getRoom(roomId.get()).share()
+
+        return Observable.combineLatest(
+                roomObservable,
+                roomObservable.switchMap { room ->
+                    if (room.isPresent) {
+                        getRoomName(room.get())
+                    } else {
+                        Observable.empty()
+                    }
+                },
+                BiFunction { room, name -> room.transform { it!! to name } }
+        )
     }
 
     fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<User>> {

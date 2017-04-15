@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.viewmodel.TopBannerViewModel" />
+    </data>
+
+    <TextView
+        style="@style/Text.Body1"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/unit_four"
+        android:background="@android:color/holo_orange_light"
+        android:gravity="center"
+        android:text="@{viewModel.text}"
+        android:onClick="@{ignored -> viewModel.onClick()}"
+        app:show="@{viewModel.visible}"
+        tools:text="@string/connecting_to_server" />
+
+</layout>

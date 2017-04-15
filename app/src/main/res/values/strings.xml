@@ -234,6 +234,8 @@
     <string name="start_chat">开始聊天</string>
     <string name="phone_number">电话号码</string>
     <string name="error_login_timeout">登录超时，请检查网络连接</string>
+    <string name="video_chatting">正在语音/视频聊天 - %1$s</string>
+    <string name="is_in_walkie_talkie">正在对讲 - %1$s</string>
 
     <string-array name="level_number">
         <item>管理员</item>

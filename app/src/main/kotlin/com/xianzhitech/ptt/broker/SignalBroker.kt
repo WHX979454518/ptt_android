@@ -1,26 +1,32 @@
 package com.xianzhitech.ptt.broker
 
 import android.content.Context
+import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.event.ConnectionErrorEvent
 import com.xianzhitech.ptt.api.event.LoginFailedEvent
 import com.xianzhitech.ptt.api.exception.ServerException
-import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import io.reactivex.Completable
-import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
-import rx.lang.kotlin.toSingle
+import io.reactivex.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 
 
 class SignalBroker(private val appComponent: AppComponent,
                    appContext: Context) {
 
-    val signalApi = SignalApi(appComponent, appContext)
+    private val signalApi = SignalApi(appComponent, appContext)
+
+    val events = signalApi.events
+    val connectionState = signalApi.connectionState
+    val currentUser = signalApi.currentUser
+
+    val currentVideoRoom : BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
+    val currentWalkieTalkieRoom : BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
 
     val isLoggedIn: Boolean
         get() = signalApi.currentUser.value.isPresent
