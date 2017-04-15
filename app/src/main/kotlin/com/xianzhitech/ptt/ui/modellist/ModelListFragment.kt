@@ -32,7 +32,7 @@ abstract class ModelListFragment<VM : ModelListViewModel, VB : ViewDataBinding> 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setHasOptionsMenu(viewModel.selectable)
+        setHasOptionsMenu(true)
     }
 
     override fun onStart() {

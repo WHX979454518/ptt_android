@@ -29,12 +29,12 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
 
         viewModel.currentTab.toRxObservable()
                 .subscribe { id ->
-                    val index = adapter.fragments.indexOfFirst { it.first == id }
+                    val index = adapter.fragments.indexOfFirst { it.first == id.get() }
                     if (index != binding.viewPager.currentItem) {
                         binding.viewPager.setCurrentItem(index, true)
                     }
 
-                    val item = binding.tabBar.menu.findItem(id)
+                    val item = binding.tabBar.menu.findItem(id.get())
                     if (item.isChecked.not()) {
                         item.isChecked = true
                     }

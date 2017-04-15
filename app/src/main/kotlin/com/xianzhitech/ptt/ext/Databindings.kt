@@ -43,13 +43,13 @@ private open class CompositeObservable<T>(private val observables: List<android.
     }
 }
 
-fun <T> ObservableField<T>.toRxObservable(): io.reactivex.Observable<T> {
+fun <T> ObservableField<T>.toRxObservable(): io.reactivex.Observable<Optional<T>> {
     return io.reactivex.Observable.create { emitter ->
-        emitter.onNext(get())
+        emitter.onNext(Optional.fromNullable(get()))
 
         val callback = object : android.databinding.Observable.OnPropertyChangedCallback() {
             override fun onPropertyChanged(p0: android.databinding.Observable?, p1: Int) {
-                emitter.onNext(get())
+                emitter.onNext(Optional.fromNullable(get()))
             }
         }
 

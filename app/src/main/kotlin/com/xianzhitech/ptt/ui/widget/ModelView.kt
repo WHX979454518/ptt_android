@@ -30,6 +30,7 @@ class ModelView @JvmOverloads constructor(context: Context,
     var model: Any? = null
         set(value) {
             if (field != value) {
+                field = value
                 disposable?.dispose()
                 setImageDrawable(null)
                 subscribeIfNeeded()
@@ -44,7 +45,7 @@ class ModelView @JvmOverloads constructor(context: Context,
             when (model) {
                 is User -> drawable = getUserDrawable(model)
                 is ContactGroup -> {
-                    drawable = context.appComponent.storage.getUsers(model.memberIds.atMost(9))
+                    drawable = context.appComponent.storage.getUsers(model.memberIds.toList().atMost(9))
                             .switchMap {
                                 Observable.combineLatest(it.map(this::getUserDrawable)) {
                                     @Suppress("UNCHECKED_CAST")
@@ -71,9 +72,9 @@ class ModelView @JvmOverloads constructor(context: Context,
     private fun getUserDrawable(model: User): Observable<Drawable> {
         return context.appComponent.storage.getUsers(listOf(model.id))
                 .flatMap { it.firstOrNull()?.let { Observable.just(it as User) } ?: Observable.empty() }
+                .observeOn(AndroidSchedulers.mainThread())
                 .startWith(model)
                 .distinctUntilChanged()
-                .observeOn(AndroidSchedulers.mainThread())
                 .map {
                     if (model.avatar.isNullOrEmpty()) {
                         TextDrawable(model.name[0].toString(), resources.getIntArray(R.array.account_colors).let {

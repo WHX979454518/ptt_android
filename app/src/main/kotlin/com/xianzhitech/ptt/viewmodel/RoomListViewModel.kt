@@ -13,7 +13,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 class RoomListViewModel(private val appComponent: AppComponent) : LifecycleViewModel(), RoomItemViewModel.Navigator {
     val roomViewModels = ObservableArrayList<RoomItemViewModel>()
     val roomMessages = ObservableArrayMap<String, Message>()
-    val loading = ObservableBoolean()
+    val emptyViewVisible = ObservableBoolean()
 
     override fun onStart() {
         super.onStart()
@@ -28,11 +28,11 @@ class RoomListViewModel(private val appComponent: AppComponent) : LifecycleViewM
 
         appComponent.storage.getAllRooms()
                 .observeOn(AndroidSchedulers.mainThread())
+                .doOnError { emptyViewVisible.set(roomViewModels.isEmpty()) }
                 .logErrorAndForget()
-                .doOnLoading(loading::set)
                 .subscribe { rooms ->
-                    val newViewModels = rooms.map { (room, name) -> RoomItemViewModel(room, name, roomMessages, this) }
-                    roomViewModels.replaceAll(newViewModels)
+                    roomViewModels.replaceAll(rooms.map { (room, name) -> RoomItemViewModel(room, name, roomMessages, this) })
+                    emptyViewVisible.set(roomViewModels.isEmpty())
                 }
                 .bindToLifecycle()
     }

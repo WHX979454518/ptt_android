@@ -10,7 +10,7 @@ private val logger = LoggerFactory.getLogger("RxJava")
 
 fun <T> Observable<T>.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {}) : Observable<T> {
     return onErrorResumeNext{ throwable : Throwable ->
-        logger.e(throwable) { "Ignored error" }
+        logger.e(throwable) { "Ignored error: " }
         extraAction(throwable)
         Observable.empty<T>()
     }
@@ -18,7 +18,7 @@ fun <T> Observable<T>.logErrorAndForget(extraAction : (err : Throwable) -> Unit 
 
 fun <T> Maybe<T>.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {}) : Maybe<T> {
     return onErrorResumeNext{ throwable : Throwable ->
-        logger.e(throwable) { "Ignored error" }
+        logger.e(throwable) { "Ignored error: " }
         extraAction(throwable)
         Maybe.empty<T>()
     }
@@ -27,7 +27,7 @@ fun <T> Maybe<T>.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {})
 
 fun Completable.logErrorAndForget(extraAction : (err : Throwable) -> Unit = {}) : Completable {
     return onErrorResumeNext { throwable ->
-        logger.e(throwable) { "Ignored error" }
+        logger.e(throwable) { "Ignored error: " }
         extraAction(throwable)
         Completable.complete()
     }

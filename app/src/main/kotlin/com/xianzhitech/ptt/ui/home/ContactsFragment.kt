@@ -30,9 +30,15 @@ class ContactsFragment : ModelListFragment<ContactsViewModel, FragmentContactsBi
         return ModelListAdapter(this, R.layout.view_contact_item)
     }
 
-    override val recyclerView : RecyclerView = dataBinding.modelList.recyclerView
-    override val sideNavigationView : SideNavigationView = dataBinding.modelList.sideBar
-    override val currentCharView : TextView = dataBinding.modelList.currentChar
+    override val recyclerView : RecyclerView
+    get() = dataBinding.modelList.recyclerView
+
+    override val sideNavigationView : SideNavigationView
+    get() = dataBinding.modelList.sideBar
+
+    override val currentCharView : TextView
+    get() = dataBinding.modelList.currentChar
+
 
     override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentContactsBinding {
         return FragmentContactsBinding.inflate(inflater, container, false)

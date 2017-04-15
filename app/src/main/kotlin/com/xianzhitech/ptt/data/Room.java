@@ -8,9 +8,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.auto.value.AutoValue;
+import com.xianzhitech.ptt.util.SetConverter;
 
 import java.util.Set;
 
+import io.requery.Convert;
 import io.requery.Entity;
 import io.requery.Persistable;
 import io.requery.Table;
@@ -22,8 +24,10 @@ import io.requery.Table;
 public abstract class Room implements Persistable {
     public abstract String getId();
 
+    @Convert(SetConverter.class)
     public abstract Set<String> getGroups();
 
+    @Convert(SetConverter.class)
     public abstract Set<String> getExtraMembers();
 
     public abstract String getOwnerId();

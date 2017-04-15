@@ -3,9 +3,10 @@ package com.xianzhitech.ptt.ui.modellist
 import android.databinding.ObservableArrayMap
 import android.databinding.ObservableBoolean
 import android.databinding.ObservableField
+import com.google.common.base.Optional
 import com.xianzhitech.ptt.data.ContactGroup
-import com.xianzhitech.ptt.data.NamedModel
 import com.xianzhitech.ptt.data.ContactUser
+import com.xianzhitech.ptt.data.NamedModel
 import com.xianzhitech.ptt.ext.containsOnlyAsciiChars
 import com.xianzhitech.ptt.ext.doOnLoading
 import com.xianzhitech.ptt.ext.logErrorAndForget
@@ -42,9 +43,9 @@ abstract class ModelListViewModel(val selectable: Boolean = false,
         Observable.combineLatest(
                 contactModels.map { it.sortedWith(ContactModelComparator) }.doOnLoading(loading::set),
                 searchTerm.toRxObservable(),
-                BiFunction<List<NamedModel>, String, List<NamedModel>> { models, _ -> models })
+                BiFunction<List<NamedModel>, Optional<String>, List<NamedModel>> { models, _ -> models })
                 .map { models ->
-                    if (searchTerm.get() == null || searchTerm.get().trim().isNullOrBlank()) {
+                    if (searchTerm.get().isNullOrBlank()) {
                         return@map models
                     }
 
