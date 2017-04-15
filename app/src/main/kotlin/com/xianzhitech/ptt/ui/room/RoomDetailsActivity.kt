@@ -21,7 +21,7 @@ import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.ui.app.TextInputActivity
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
@@ -34,7 +34,7 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
-class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
+class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
     private lateinit var memberView: RecyclerView
     private lateinit var allMemberLabelView: TextView
     private lateinit var roomNameView: TextView
@@ -52,6 +52,8 @@ class RoomDetailsActivity : BaseToolbarActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_room_details)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         memberView = findView(R.id.roomDetails_members)
         allMemberLabelView = findView(R.id.roomDetails_allMemberLabel)

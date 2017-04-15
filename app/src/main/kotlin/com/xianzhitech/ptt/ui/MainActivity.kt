@@ -10,12 +10,12 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.ui.base.BackPressable
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.home.HomeFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
-class MainActivity : BaseToolbarActivity(),
+class MainActivity : BaseActivity(),
         LoginFragment.Callbacks,
         HomeFragment.Callbacks,
         AlertDialogFragment.OnNegativeButtonClickListener,
@@ -34,8 +34,6 @@ class MainActivity : BaseToolbarActivity(),
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-
-        toolbar.navigationIcon = null
 
         if (savedInstanceState == null) {
             handleIntent(intent)

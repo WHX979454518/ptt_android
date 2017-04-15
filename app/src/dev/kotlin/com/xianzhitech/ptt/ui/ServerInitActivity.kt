@@ -17,7 +17,7 @@ import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ext.plusAssign
 import com.xianzhitech.ptt.ext.string
 import com.xianzhitech.ptt.maintain.service.*
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -29,7 +29,7 @@ import java.io.PrintStream
 import java.util.concurrent.TimeUnit
 
 
-class ServerInitActivity : BaseToolbarActivity() {
+class ServerInitActivity : BaseActivity() {
     private val adapter = Adapter()
     private lateinit var recyclerView : RecyclerView
 

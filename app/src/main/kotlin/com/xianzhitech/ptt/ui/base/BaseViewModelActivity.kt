@@ -10,7 +10,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 
 
-abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBinding> : AppCompatActivity() {
+abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBinding> : BaseActivity() {
     private var disposable : CompositeDisposable? = null
 
     protected lateinit var binding: VB

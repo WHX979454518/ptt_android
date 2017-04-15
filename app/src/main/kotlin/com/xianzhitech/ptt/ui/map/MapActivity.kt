@@ -2,16 +2,18 @@ package com.xianzhitech.ptt.ui.map
 
 import android.os.Bundle
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 
-class MapActivity : BaseToolbarActivity() {
+class MapActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(R.id.baseToolbar_root, MapFragment())
+                    .replace(android.R.id.content, MapFragment())
                     .commit()
         }
     }

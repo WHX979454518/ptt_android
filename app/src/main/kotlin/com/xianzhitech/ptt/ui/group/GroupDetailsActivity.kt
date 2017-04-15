@@ -16,13 +16,13 @@ import com.xianzhitech.ptt.model.Group
 import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.service.CreateRoomRequest
 import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.util.withUser
 import rx.Subscriber
 
-class GroupDetailsActivity : BaseToolbarActivity() {
+class GroupDetailsActivity : BaseActivity() {
 
     private lateinit var allMemberLabel: TextView
     private lateinit var groupNameView: TextView
@@ -35,6 +35,8 @@ class GroupDetailsActivity : BaseToolbarActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_group_details)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val memberView = findView<RecyclerView>(R.id.groupDetails_members)
         memberView.layoutManager = GridLayoutManager(this, resources.getInteger(R.integer.horizontal_member_item_count))

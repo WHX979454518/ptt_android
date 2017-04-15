@@ -11,11 +11,11 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.describeInHumanMessage
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
 
-class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutralButtonClickListener, View.OnClickListener {
+class EditProfileActivity : BaseActivity(), AlertDialogFragment.OnNeutralButtonClickListener, View.OnClickListener {
     private lateinit var avatarImage: ImageView
     private lateinit var nameView: TextView
 
@@ -26,6 +26,8 @@ class EditProfileActivity : BaseToolbarActivity(), AlertDialogFragment.OnNeutral
         setContentView(R.layout.activity_edit_profile)
 
         title = R.string.edit_profile.toFormattedString(this)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         avatarImage = findView(R.id.editProfile_avatarDisplay)
         nameView = findView(R.id.editProfile_nameDisplay)

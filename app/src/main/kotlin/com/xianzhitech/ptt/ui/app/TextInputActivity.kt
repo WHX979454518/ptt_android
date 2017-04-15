@@ -10,16 +10,18 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.isEmpty
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 
 
-class TextInputActivity : BaseToolbarActivity() {
+class TextInputActivity : BaseActivity() {
     private lateinit var editText: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_text_input)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         editText = findView<EditText>(R.id.textInput_text)
         editText.hint = intent.getStringExtra(EXTRA_HINT)

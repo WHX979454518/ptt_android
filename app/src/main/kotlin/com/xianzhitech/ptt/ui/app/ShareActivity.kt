@@ -10,10 +10,10 @@ import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 
 
-class ShareActivity : BaseToolbarActivity() {
+class ShareActivity : BaseActivity() {
     private lateinit var barcodeView : ImageView
     private lateinit var shareButton : View
 
@@ -21,6 +21,8 @@ class ShareActivity : BaseToolbarActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_share)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         barcodeView = findView(R.id.share_barCode)
         shareButton = findViewById(R.id.share_btn)

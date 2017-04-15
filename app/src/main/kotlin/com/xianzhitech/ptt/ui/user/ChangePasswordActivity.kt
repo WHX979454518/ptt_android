@@ -2,18 +2,19 @@ package com.xianzhitech.ptt.ui.user
 
 import android.os.Bundle
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 
 
-class ChangePasswordActivity : BaseToolbarActivity(), ChangePasswordFragment.Callbacks {
+class ChangePasswordActivity : BaseActivity(), ChangePasswordFragment.Callbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_change_password)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .add(R.id.content, ChangePasswordFragment(), TAG_FRAGMENT)
+                    .add(android.R.id.content, ChangePasswordFragment(), TAG_FRAGMENT)
                     .commit()
         }
     }

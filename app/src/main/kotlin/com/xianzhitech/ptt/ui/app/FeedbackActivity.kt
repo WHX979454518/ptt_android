@@ -14,14 +14,14 @@ import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.isEmpty
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.api.dto.Feedback
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import rx.CompletableSubscriber
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 
 
-class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveButtonClickListener {
+class FeedbackActivity : BaseActivity(), AlertDialogFragment.OnPositiveButtonClickListener {
     private lateinit var titleView : EditText
     private lateinit var messageView : EditText
 
@@ -31,6 +31,8 @@ class FeedbackActivity : BaseToolbarActivity(), AlertDialogFragment.OnPositiveBu
         setContentView(R.layout.activity_feedback)
         titleView = findView(R.id.feedback_title)
         messageView = findView(R.id.feedback_content)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         messageView.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { }

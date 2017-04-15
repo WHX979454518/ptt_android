@@ -4,16 +4,18 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ui.base.BaseToolbarActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 
-class UserDetailsActivity : BaseToolbarActivity(), UserDetailsFragment.Callbacks {
+class UserDetailsActivity : BaseActivity(), UserDetailsFragment.Callbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(R.id.baseToolbar_root, UserDetailsFragment.createInstance(intent.extras.getString(EXTRA_USER_ID)))
+                    .replace(android.R.id.content, UserDetailsFragment.createInstance(intent.extras.getString(EXTRA_USER_ID)))
                     .commit()
         }
     }

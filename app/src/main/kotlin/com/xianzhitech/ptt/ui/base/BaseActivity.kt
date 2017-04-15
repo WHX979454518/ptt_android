@@ -11,6 +11,7 @@ import android.os.Environment
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
@@ -54,6 +55,15 @@ abstract class BaseActivity : AppCompatActivity(),
         } else {
             pendingDeniedPermissions = savedInstanceState.getSerializable(STATE_PENDING_DENIED_PERMISSIONS) as? List<String>
         }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            onBackPressed()
+            return true
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onNewIntent(intent: Intent) {
