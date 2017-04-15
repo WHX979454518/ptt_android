@@ -8,11 +8,13 @@ import android.support.v7.app.AppCompatActivity
 import com.xianzhitech.ptt.App
 
 
-class FragmentDisplayActivity : AppCompatActivity() {
+class FragmentDisplayActivity : BaseActivity() {
 
     @SuppressLint("CommitTransaction")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         if (savedInstanceState == null) {
             val fragment = Fragment.instantiate(this, intent.getStringExtra(EXTRA_FRAGMENT), intent.getBundleExtra(EXTRA_FRAGMENT_BUNDLE))
@@ -31,6 +33,12 @@ class FragmentDisplayActivity : AppCompatActivity() {
             return Intent(App.instance, FragmentDisplayActivity::class.java)
                     .putExtra(EXTRA_FRAGMENT, fragmentClass.name)
                     .putExtra(EXTRA_FRAGMENT_BUNDLE, args)
+        }
+
+        fun createIntent(fragmentClass: Class<out Fragment>, firstKey : String, firstValue : String): Intent {
+            return Intent(App.instance, FragmentDisplayActivity::class.java)
+                    .putExtra(EXTRA_FRAGMENT, fragmentClass.name)
+                    .putExtra(EXTRA_FRAGMENT_BUNDLE, Bundle(1).apply { putString(firstKey, firstValue) })
         }
     }
 }

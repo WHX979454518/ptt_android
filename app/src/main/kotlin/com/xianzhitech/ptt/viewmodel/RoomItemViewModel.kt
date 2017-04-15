@@ -11,7 +11,7 @@ class RoomItemViewModel(val room: Room,
                         val navigator: Navigator) : ViewModel {
 
     fun onClickRoom() {
-
+        navigator.navigateToRoom(room)
     }
 
     fun onLongClickRoom() {
@@ -19,5 +19,6 @@ class RoomItemViewModel(val room: Room,
     }
 
     interface Navigator {
+        fun navigateToRoom(room: Room)
     }
 }

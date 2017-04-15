@@ -30,6 +30,12 @@ abstract class ViewBindingAdapter : RecyclerView.Adapter<ViewBindingHolder>() {
         return ViewBindingHolder(DataBindingUtil.inflate(LayoutInflater.from(parent.context), viewType, parent, false))
     }
 
+    override fun onViewRecycled(holder: ViewBindingHolder) {
+        super.onViewRecycled(holder)
+
+        holder.dataBinding.unbind()
+    }
+
     private inner class ListChangeListener : ObservableList.OnListChangedCallback<ObservableList<ViewModel>>() {
         override fun onItemRangeRemoved(list: ObservableList<ViewModel>, startIndex: Int, itemCount: Int) {
             this@ViewBindingAdapter.viewModels = list

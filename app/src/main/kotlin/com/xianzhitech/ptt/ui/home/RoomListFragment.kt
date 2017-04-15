@@ -22,7 +22,8 @@ import com.xianzhitech.ptt.repo.RoomModel
 import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.chat.ChatActivity
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
+import com.xianzhitech.ptt.ui.chat.ChatFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
@@ -159,7 +160,9 @@ class RoomListFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonCli
     }
 
     private fun onRoomClicked(roomId : String) {
-        startActivity(ChatActivity.createIntent(roomId))
+        activity.startActivityWithAnimation(
+                FragmentDisplayActivity.createIntent(ChatFragment::class.java, ChatFragment.ARG_ROOM_ID, roomId)
+        )
     }
 
     private fun onLongClickOnRoom(anchorView: View, room: Room): Boolean {

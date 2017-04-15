@@ -6,7 +6,9 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.xianzhitech.ptt.databinding.FragmentChatBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 
 class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>(), ChatViewModel.Navigator {
     private val chatAdapter = ChatAdapter()
@@ -22,6 +24,16 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         val model = ChatViewModel(appComponent, arguments.getString(ARG_ROOM_ID), this)
         model.roomMessages.addOnListChangedCallback(chatAdapter.listChangeListener)
         return model
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        if (activity is FragmentDisplayActivity) {
+            viewModel.title.toRxObservable()
+                    .subscribe { activity.title = it.orNull() }
+                    .bindToLifecycle()
+        }
     }
 
     override fun navigateToWalkieTalkie(roomId: String) {

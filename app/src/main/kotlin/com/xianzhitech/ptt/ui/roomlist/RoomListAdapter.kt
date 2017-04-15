@@ -14,5 +14,6 @@ class RoomListAdapter : ViewBindingAdapter() {
 
     override fun onBindViewHolder(holder: ViewBindingHolder, position: Int) {
         holder.dataBinding.setVariable(BR.viewModel, viewModels[position])
+        holder.dataBinding.executePendingBindings()
     }
 }
