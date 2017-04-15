@@ -269,10 +269,20 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     fun createRoom(userIds: List<String>, groupIds: List<String>): Single<Room> {
-        Preconditions.checkArgument(userIds.isNotEmpty() || groupIds.isNotEmpty())
-        Preconditions.checkState(socket != null)
+        return Single.defer {
+            Preconditions.checkArgument(userIds.isNotEmpty() || groupIds.isNotEmpty())
+            Preconditions.checkState(socket != null && hasUser())
 
-        return rpc<Room>("c_create_room", userIds, groupIds).toSingle()
+            val finalUserIds : List<String>
+            val currentUserId = currentUser.value.get().id
+            if (userIds.isNotEmpty() && userIds.contains(currentUserId).not()) {
+                finalUserIds = userIds + currentUserId
+            } else {
+                finalUserIds = userIds
+            }
+
+            rpc<Room>("c_create_room", finalUserIds, groupIds).toSingle()
+        }
     }
 
     private inline fun <reified T> rpc(name : String, vararg args : Any?) : Maybe<T> {

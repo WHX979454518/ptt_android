@@ -138,9 +138,13 @@ fun <E> List<E>.atMost(count: Int): List<E> {
 }
 
 fun <E, T : MutableCollection<E>> T.keepAtMost(count: Int) : T {
-    val i = 0
+    var i = 0
     val iter = iterator()
-    while (iter.hasNext() && i.inc() <= count) { }
+    while (iter.hasNext() && i < count) {
+        i = i.inc();
+        iter.next()
+    }
+    
     while (iter.hasNext()) { iter.remove() }
     return this
 }

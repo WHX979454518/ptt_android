@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory
 import org.webrtc.*
 import rx.*
 import rx.android.schedulers.AndroidSchedulers
-import rx.lang.kotlin.onErrorReturnNull
 import rx.schedulers.Schedulers
 import rx.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
@@ -234,7 +233,7 @@ class SignalServiceHandler(private val appContext: Context,
                                 .doOnError { logger.e(it) { "Error syncing contacts" } }
                                 .andThen(Observable.empty<Unit>())
                     }
-                    .onErrorReturnNull()
+                    .onErrorReturn { null }
                     .subscribeSimple()
         }
 

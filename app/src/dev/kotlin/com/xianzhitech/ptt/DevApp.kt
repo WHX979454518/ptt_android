@@ -2,6 +2,7 @@ package com.xianzhitech.ptt
 
 import android.app.Activity
 import android.os.Handler
+import android.os.StrictMode
 import android.preference.PreferenceManager
 import com.xianzhitech.ptt.service.AppService
 import com.xianzhitech.ptt.util.SimpleActivityLifecycleCallbacks
@@ -44,6 +45,10 @@ class DevApp : App() {
                 }, 1000)
             }
         })
+
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyDeath().penaltyDeathOnNetwork().build())
+        }
     }
 
 }
