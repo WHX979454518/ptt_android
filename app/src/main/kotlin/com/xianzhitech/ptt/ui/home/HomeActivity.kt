@@ -21,7 +21,7 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
     }
 
     override fun onCreateViewModel(): HomeViewModel {
-        return HomeViewModel(appComponent, this)
+        return HomeViewModel(appComponent, applicationContext, this)
     }
 
     @SuppressLint("CommitTransaction")

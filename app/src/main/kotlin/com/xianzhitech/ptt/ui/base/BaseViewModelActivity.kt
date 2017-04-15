@@ -36,8 +36,16 @@ abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBindi
         return this
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        viewModel.onStart()
+    }
+
     override fun onStop() {
         super.onStop()
+
+        viewModel.onStop()
 
         disposable?.dispose()
         disposable = null

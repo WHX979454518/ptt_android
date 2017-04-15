@@ -6,9 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.support.v4.app.*
 import android.support.v4.content.LocalBroadcastManager
 import android.view.View
+import com.github.pwittchen.reactivenetwork.library.rx2.ConnectivityPredicate
+import com.github.pwittchen.reactivenetwork.library.rx2.ReactiveNetwork
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.service.ConnectivityException
@@ -58,18 +61,17 @@ fun Context.receiveBroadcasts(useLocalBroadcast: Boolean, vararg actions: String
 }
 
 fun Context.receiveBroadcasts(vararg actions: String): io.reactivex.Observable<Intent> {
-    return io.reactivex.Observable.create<Intent> { subscriber ->
+    return io.reactivex.Observable.create<Intent> { emitter ->
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                subscriber.onNext(intent)
+                emitter.onNext(intent)
             }
         }
 
-        val filter = IntentFilter()
-        actions.forEach(filter::addAction)
+        val filter = IntentFilter().apply { actions.forEach(this::addAction) }
         registerReceiver(receiver, filter)
 
-        subscriber.setCancellable { unregisterReceiver(receiver) }
+        emitter.setCancellable { unregisterReceiver(receiver) }
     }
 }
 
@@ -125,6 +127,12 @@ fun Context.getConnectivity(immediateResult : Boolean = true): Observable<Boolea
                     }))
         }
     }
+}
+
+fun Context.getConnectivityObservable() : io.reactivex.Observable<Boolean> {
+    return ReactiveNetwork.observeNetworkConnectivity(this)
+            .map(ConnectivityPredicate.hasState(NetworkInfo.State.CONNECTED))
+            .distinctUntilChanged()
 }
 
 fun Context.ensureConnectivity(): Observable<Unit> {
