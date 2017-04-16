@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.service
 
+import com.xianzhitech.ptt.api.dto.VoiceServerConfig
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.User
 
@@ -17,9 +18,9 @@ data class RoomState(val status: RoomStatus,
                      val speakerId: String?,
                      val speakerPriority : Int?,
                      val onlineMemberIds: Set<String>,
-                     val voiceServer: Map<String, Any?>) {
+                     val voiceServer: VoiceServerConfig?) {
     companion object {
-        @JvmStatic val EMPTY = RoomState(RoomStatus.IDLE, null, null, null, null, emptySet(), emptyMap())
+        @JvmStatic val EMPTY = RoomState(RoomStatus.IDLE, null, null, null, null, emptySet(), null)
     }
 
     init {

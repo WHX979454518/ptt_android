@@ -104,7 +104,10 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
     override fun onPositiveButtonClicked(fragment: AlertDialogFragment) {
         when (fragment.tag) {
-            TAG_LOGOUT_CONFIRMATION -> appComponent.signalHandler.logout()
+            TAG_LOGOUT_CONFIRMATION -> {
+                appComponent.signalBroker.logout()
+                callbacks<Callbacks>()!!.onLoggedOut()
+            }
             TAG_UPLOAD_LOG_CONFIRMATION -> handleLogUpload()
         }
     }
@@ -205,6 +208,10 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                         val iconView: ModelView = rootView.findView(R.id.profile_icon),
                         val nameView: TextView = rootView.findView(R.id.profile_name),
                         val numberView: TextView = rootView.findView(R.id.profile_number))
+
+    interface Callbacks {
+        fun onLoggedOut()
+    }
 
     companion object {
         private const val TAG_LOGOUT_CONFIRMATION = "tag_logout_confirmation"

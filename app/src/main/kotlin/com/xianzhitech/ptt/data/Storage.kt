@@ -177,10 +177,13 @@ class Storage(context: Context,
         )
     }
 
-    fun clearUsersAndGroups(): Completable {
+    fun clear(): Completable {
         return runInTransaction(
                 data.delete(ContactUser::class.java).get().single(),
-                data.delete(ContactGroup::class.java).get().single()
+                data.delete(ContactGroup::class.java).get().single(),
+                data.delete(RoomInfo::class.java).get().single(),
+                data.delete(Room::class.java).get().single(),
+                data.delete(Message::class.java).get().single()
         )
     }
 

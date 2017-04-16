@@ -11,6 +11,8 @@ import com.xianzhitech.ptt.data.exception.NoPermissionException
 import com.xianzhitech.ptt.data.exception.NoSuchRoomException
 import com.xianzhitech.ptt.data.exception.ServerException
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.RoomState
+import com.xianzhitech.ptt.service.RoomStatus
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -23,7 +25,7 @@ import java.util.concurrent.TimeUnit
 
 
 class SignalBroker(private val appComponent: AppComponent,
-                   appContext: Context) {
+                   private val appContext: Context) {
     private val logger = LoggerFactory.getLogger("SignalBroker")
 
     private val signalApi = SignalApi(appComponent, appContext)
@@ -33,7 +35,10 @@ class SignalBroker(private val appComponent: AppComponent,
     val currentUser = signalApi.currentUser
 
     val currentVideoRoomId: BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
-    val currentWalkieRoom : BehaviorSubject<Optional<CurrentWalkieRoom>> = BehaviorSubject.createDefault(Optional.absent())
+    val currentWalkieRoomState: BehaviorSubject<RoomState> = BehaviorSubject.createDefault(RoomState.EMPTY)
+
+    val currentWalkieRoomId : Observable<Optional<String>>
+    get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
 
     private var joinWalkieDisposable: Disposable? = null
 
@@ -83,11 +88,11 @@ class SignalBroker(private val appComponent: AppComponent,
             quitVideoRoom()
         }
 
-        if (currentWalkieRoom.value.isPresent) {
+        if (currentWalkieRoomState.value.currentRoomId != null) {
             quitWalkieRoom()
         }
 
-        appComponent.storage.clearUsersAndGroups()
+        appComponent.storage.clear().logErrorAndForget().subscribe()
         signalApi.logout()
     }
 
@@ -132,23 +137,23 @@ class SignalBroker(private val appComponent: AppComponent,
 
         when (event) {
             is WalkieRoomActiveInfoUpdateEvent -> {
-                val currentRoom = currentWalkieRoom.value.orNull()
-                if (currentRoom?.roomId == event.roomId) {
-                    currentWalkieRoom.onNext(currentRoom.copy(
-                            currentSpeakerId = event.speakerId,
-                            currentSpeakerPriority = event.speakerPriority,
+                val state = currentWalkieRoomState.value
+                if (state.currentRoomId == event.roomId) {
+                    currentWalkieRoomState.onNext(state.copy(
+                            speakerId = event.speakerId,
+                            speakerPriority = event.speakerPriority,
                             onlineMemberIds = event.onlineMemberIds
-                    ).toOptional())
+                    ))
                 }
             }
 
             is WalkieRoomSpeakerUpdateEvent -> {
-                val currentRoom = currentWalkieRoom.value.orNull()
-                if (currentRoom?.roomId == event.roomId) {
-                    currentWalkieRoom.onNext(currentRoom.copy(
-                            currentSpeakerId = event.speakerId,
-                            currentSpeakerPriority = event.speakerPriority
-                    ).toOptional())
+                val state = currentWalkieRoomState.value
+                if (state.currentRoomId == event.roomId) {
+                    currentWalkieRoomState.onNext(state.copy(
+                            speakerId = event.speakerId,
+                            speakerPriority = event.speakerPriority
+                    ))
                 }
             }
 
@@ -157,11 +162,6 @@ class SignalBroker(private val appComponent: AppComponent,
             }
 
             is Room -> {
-                val currentRoom = currentWalkieRoom.value.orNull()
-                if (currentRoom?.roomId == event.id) {
-                    currentWalkieRoom.onNext(currentRoom.copy(room = event).toOptional())
-                }
-
                 appComponent.storage.saveRoom(event)
                         .toMaybe()
                         .logErrorAndForget()
@@ -186,7 +186,7 @@ class SignalBroker(private val appComponent: AppComponent,
             quitWalkieRoom()
         }
 
-        currentVideoRoomId.onNext(roomId.toOptional())
+        currentWalkieRoomState.onNext(RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId))
 
         joinWalkieDisposable = appComponent.storage.getRoom(roomId)
                 .firstOrError()
@@ -206,15 +206,19 @@ class SignalBroker(private val appComponent: AppComponent,
                     appComponent.storage.saveRoom(response.room).map { response }
                 }
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { (room, initiatorUserId, onlineMemberIds, speakerId, speakerPriority) ->
-                    currentWalkieRoom.onNext(CurrentWalkieRoom(
-                            roomId = roomId,
-                            room = room,
-                            initiatorUserId = initiatorUserId,
-                            onlineMemberIds = onlineMemberIds,
-                            currentSpeakerId = speakerId,
-                            currentSpeakerPriority = speakerPriority
-                    ).toOptional())
+                .subscribe { (room, initiatorUserId, onlineMemberIds, speakerId, speakerPriority, voiceServerConfig) ->
+                    val currState = currentWalkieRoomState.value
+
+                    if (room.id == currState.currentRoomId) {
+                        currentWalkieRoomState.onNext(currState.copy(
+                                status = if (peekUserId() == speakerId) RoomStatus.ACTIVE else RoomStatus.JOINED,
+                                speakerId = speakerId,
+                                speakerPriority = speakerPriority,
+                                currentRoomInitiatorUserId = initiatorUserId,
+                                onlineMemberIds = onlineMemberIds,
+                                voiceServer = voiceServerConfig
+                        ))
+                    }
                 }
     }
 
@@ -224,12 +228,21 @@ class SignalBroker(private val appComponent: AppComponent,
 
         val walkieRoomId = peekWalkieRoomId()
 
-        currentWalkieRoom.onNext(Optional.absent())
+        currentWalkieRoomState.onNext(RoomState.EMPTY)
 
         if (walkieRoomId != null) {
             signalApi.leaveWalkieRoom(walkieRoomId)
                     .logErrorAndForget()
                     .subscribe()
+        }
+    }
+
+    fun grabWalkieMic() {
+        val walkieRoomId = peekWalkieRoomId()
+
+        if (walkieRoomId != null) {
+            signalApi.grabWalkieMic(walkieRoomId)
+
         }
     }
 
@@ -242,7 +255,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
     private fun peekUserId(): String? = currentUser.value.orNull()?.id
     private fun peekVideoRoomId(): String? = currentVideoRoomId.value.orNull()
-    private fun peekWalkieRoomId(): String? = currentWalkieRoom.value.orNull()?.roomId
+    private fun peekWalkieRoomId(): String? = currentWalkieRoomState.value.currentRoomId
 
     fun sendMessage(message: Message): Single<Message> {
         return appComponent.storage.saveMessage(message)

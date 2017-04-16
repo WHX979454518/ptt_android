@@ -181,6 +181,8 @@ class SignalApi(private val appComponent: AppComponent,
         appComponent.preference.currentUserCredentials = null
         appComponent.preference.currentUser = null
 
+        connectionState.onNext(ConnectionState.IDLE)
+
     }
 
     fun syncContacts(version: Long): Maybe<Contact> {
@@ -284,6 +286,14 @@ class SignalApi(private val appComponent: AppComponent,
         return rpc<Unit>("c_leave_room", roomId).ignoreElement()
     }
 
+    fun grabWalkieMic(roomId: String) : Single<Boolean> {
+        return rpc<Boolean>("c_control_mic", roomId).toSingle()
+    }
+
+    fun releaseWalkieMic(roomId: String) : Completable {
+        return rpc<Unit>("c_release_mic", roomId).ignoreElement()
+    }
+
     fun sendMessage(msg : Message) : Single<Message> {
         return rpc<Message>("c_send_message", msg).toSingle()
     }
@@ -307,7 +317,7 @@ class SignalApi(private val appComponent: AppComponent,
                 val response = responses.firstOrNull() as? JSONObject
                 logger.i { "Calling RPC(name=$name), Response = $response" }
 
-                if (T::class.java != Unit::class.java) {
+                if (T::class.java == Unit::class.java) {
                     emitter.onComplete()
                     return@emit
                 }

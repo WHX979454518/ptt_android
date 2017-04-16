@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.content.Intent
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import com.xianzhitech.ptt.data.Room
@@ -10,11 +11,12 @@ import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BaseViewModelActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.chat.ChatFragment
+import com.xianzhitech.ptt.ui.login.LoginActivity
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment
 import com.xianzhitech.ptt.viewmodel.HomeViewModel
 
 
-class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>(), HomeViewModel.Navigator, RoomListFragment.Callbacks {
+class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>(), HomeViewModel.Navigator, RoomListFragment.Callbacks, ProfileFragment.Callbacks {
     private lateinit var adapter : HomePagerAdapter
 
     override fun onCreateViewModel(): HomeViewModel {
@@ -37,6 +39,11 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
                     }
                 }
 
+    }
+
+    override fun onLoggedOut() {
+        startActivity(Intent(this, LoginActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
+        finish()
     }
 
     override fun onCreateViewBinding(layoutInflater: LayoutInflater): ActivityHomeBinding {
