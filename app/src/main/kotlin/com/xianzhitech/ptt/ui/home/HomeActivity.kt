@@ -2,23 +2,20 @@ package com.xianzhitech.ptt.ui.home
 
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
+import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.databinding.ActivityHomeBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BaseViewModelActivity
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
+import com.xianzhitech.ptt.ui.chat.ChatFragment
+import com.xianzhitech.ptt.ui.roomlist.RoomListFragment
 import com.xianzhitech.ptt.viewmodel.HomeViewModel
 
 
-class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>(), HomeViewModel.Navigator {
+class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>(), HomeViewModel.Navigator, RoomListFragment.Callbacks {
     private lateinit var adapter : HomePagerAdapter
-
-    override fun navigateToWalkieTalkiePage() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun navigateToVideoChatPage() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
 
     override fun onCreateViewModel(): HomeViewModel {
         return HomeViewModel(appComponent, applicationContext, this)
@@ -63,5 +60,19 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
                 true
             }
         }
+    }
+
+    override fun navigateToWalkieTalkiePage() {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun navigateToVideoChatPage() {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun navigateToChatRoomPage(room: Room) {
+        startActivityWithAnimation(
+                FragmentDisplayActivity.createIntent(ChatFragment::class.java, ChatFragment.ARG_ROOM_ID, room.id)
+        )
     }
 }

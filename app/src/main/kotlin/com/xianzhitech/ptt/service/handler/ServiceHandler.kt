@@ -15,7 +15,6 @@ import com.xianzhitech.ptt.repo.RoomName
 import com.xianzhitech.ptt.repo.getInRoomDescription
 import com.xianzhitech.ptt.service.LoginStatus
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.ui.MainActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -113,7 +112,8 @@ class ServiceHandler(private val appContext: Context,
         if (state.roomStatus.inRoom) {
             builder.setContentIntent(PendingIntent.getActivity(appContext, 0, Intent(appContext, RoomActivity::class.java), 0))
         } else {
-            builder.setContentIntent(PendingIntent.getActivity(appContext, 0, Intent(appContext, MainActivity::class.java), 0))
+            //TODO:
+//            builder.setContentIntent(PendingIntent.getActivity(appContext, 0, Intent(appContext, MainActivity::class.java), 0))
         }
 
         when (state.loginStatus) {

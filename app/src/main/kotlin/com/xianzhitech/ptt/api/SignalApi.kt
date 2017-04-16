@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.api.event.LoginFailedEvent
 import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
 import com.xianzhitech.ptt.api.event.UserKickedOutEvent
 import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.data.UserCredentials
 import com.xianzhitech.ptt.data.exception.ServerException
@@ -275,6 +276,14 @@ class SignalApi(private val appComponent: AppComponent,
             Preconditions.checkState(socket != null && hasUser())
 
             rpc<Room>("c_create_room", null, groupIds, userIds).toSingle()
+        }
+    }
+
+    fun sendMessage(msg : Message) : Single<Message> {
+        return Single.defer {
+            Preconditions.checkState(socket != null && hasUser())
+
+            rpc<Message>("c_send_message", msg).toSingle()
         }
     }
 

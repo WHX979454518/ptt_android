@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.databinding.FragmentRoomListBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
@@ -29,9 +30,11 @@ class RoomListFragment : BaseViewModelFragment<RoomListViewModel, FragmentRoomLi
         }
     }
 
+    interface Callbacks {
+        fun navigateToChatRoomPage(room: Room)
+    }
+
     override fun navigateToRoom(room: Room) {
-        activity.startActivityWithAnimation(
-                FragmentDisplayActivity.createIntent(ChatFragment::class.java, ChatFragment.ARG_ROOM_ID, room.id)
-        )
+        callbacks<Callbacks>()?.navigateToChatRoomPage(room)
     }
 }

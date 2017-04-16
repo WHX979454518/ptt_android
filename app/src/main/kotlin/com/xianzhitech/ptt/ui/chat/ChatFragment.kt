@@ -4,8 +4,12 @@ import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.Toast
+import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.exception.NoPermissionException
 import com.xianzhitech.ptt.databinding.FragmentChatBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
@@ -21,7 +25,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     }
 
     override fun onCreateViewModel(): ChatViewModel {
-        val model = ChatViewModel(appComponent, arguments.getString(ARG_ROOM_ID), this)
+        val model = ChatViewModel(appComponent, context.applicationContext, arguments.getString(ARG_ROOM_ID), this)
         model.roomMessages.addOnListChangedCallback(chatAdapter.listChangeListener)
         return model
     }
@@ -37,6 +41,19 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     }
 
     override fun navigateToWalkieTalkie(roomId: String) {
+        callbacks<Callbacks>()?.navigateToWalkieTalkiePage(roomId)
+    }
+
+    override fun displayNoPermissionToCall() {
+        Toast.makeText(context, R.string.error_no_permission, Toast.LENGTH_LONG).show()
+    }
+
+    override fun openMoreDrawer() {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun openEmojiDrawer() {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun navigateToLatestMessageIfPossible() {
@@ -44,6 +61,20 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         if (position == chatAdapter.itemCount - 2) {
             dataBinding.recyclerView.smoothScrollToPosition(chatAdapter.itemCount - 1)
         }
+    }
+
+    override fun navigateToWalkieTalkiePage() {
+        callbacks<Callbacks>()?.navigateToWalkieTalkiePage()
+    }
+
+    override fun navigateToVideoChatPage() {
+        callbacks<Callbacks>()?.navigateToVideoChatPage()
+    }
+
+    interface Callbacks {
+        fun navigateToWalkieTalkiePage(roomId: String)
+        fun navigateToWalkieTalkiePage()
+        fun navigateToVideoChatPage()
     }
 
     companion object {

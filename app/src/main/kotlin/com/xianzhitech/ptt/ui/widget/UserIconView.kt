@@ -6,15 +6,16 @@ import android.util.AttributeSet
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.observeOnMainThread
 import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
+import io.reactivex.disposables.Disposable
 import rx.Subscription
 
 
 class UserIconView @JvmOverloads constructor(context: Context,
                                              attrs: AttributeSet? = null,
-                                             defStyle: Int = 0) : AppCompatImageView(context, attrs, defStyle) {
+                                             defStyle: Int = 0) : ModelView(context, attrs, defStyle) {
 
     private var attachedToWindow: Boolean = false
-    private var subscription: Subscription? = null
+    private var subscription: Disposable? = null
 
     var userId: String? = null
         set(value) {
@@ -42,18 +43,17 @@ class UserIconView @JvmOverloads constructor(context: Context,
 
         if (attachedToWindow && userId != null) {
             setImageDrawable(null)
-            subscription = context.appComponent.userRepository
-                    .getUser(userId!!)
-                    .observe()
-                    .observeOnMainThread()
-                    .subscribe {
-                        setImageDrawable(it?.createAvatarDrawable())
+            subscription = context.appComponent.storage
+                    .getUsers(listOf(userId!!))
+                    .firstElement()
+                    .subscribe { users ->
+                        model = users.firstOrNull()
                     }
         }
     }
 
     private fun stopLoadingUser() {
-        subscription?.unsubscribe()
+        subscription?.dispose()
         subscription = null
     }
 

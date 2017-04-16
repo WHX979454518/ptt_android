@@ -121,7 +121,18 @@ class Storage(context: Context,
     }
 
     fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
+        //TODO:
         return Observable.empty()
+    }
+
+    fun getAllRoomInfo() : Observable<Map<String, RoomInfo>> {
+        return data.select(RoomInfo::class.java)
+                .get()
+                .observableResult()
+                .subscribeOn(readScheduler)
+                .map {
+                    it.toMap(RoomInfoEntity.ROOM_ID)
+                }
     }
 
     fun getAllUsers(): Observable<List<ContactUser>> {
@@ -184,6 +195,10 @@ class Storage(context: Context,
 
     fun saveMessages(messages: Iterable<Message>): Completable {
         return data.upsert(messages).subscribeOn(writeScheduler).toCompletable()
+    }
+
+    fun saveMessage(message : Message) : Single<Message> {
+        return data.upsert(message).subscribeOn(writeScheduler)
     }
 
     private fun runInTransaction(vararg actions: Single<*>): Completable {

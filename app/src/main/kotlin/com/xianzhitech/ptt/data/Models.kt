@@ -88,6 +88,19 @@ interface Room : Persistable, Parcelable {
 }
 
 @Entity
+@Table(name = "room_info")
+interface RoomInfo : Persistable, Parcelable {
+    @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
+    @get:Index
+    val roomId : String
+
+    @get:ForeignKey(references = Message::class, referencedColumn = "remoteId", delete = ReferentialAction.CASCADE)
+    @get:Index
+    val latestReadMessageRemoteId : String?
+}
+
+
+@Entity
 @Table(name = "messages")
 @JsonDeserialize(`as` = MessageEntity::class)
 interface Message : Persistable, Parcelable {
@@ -109,7 +122,7 @@ interface Message : Persistable, Parcelable {
     val sendTime : Date
 
     @get:JsonProperty("type")
-    val type : String
+    val type : MessageType?
 
     @get:JsonProperty("body")
     val body : String?
@@ -120,5 +133,6 @@ interface Message : Persistable, Parcelable {
 
     @get:Index
     @get:JsonProperty("roomId")
+    @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
     val roomId : String
 }

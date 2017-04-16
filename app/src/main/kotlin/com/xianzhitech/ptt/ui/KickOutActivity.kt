@@ -8,9 +8,10 @@ class KickOutActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        startActivity(Intent(this, MainActivity::class.java)
-                .putExtra(MainActivity.EXTRA_KICKED_OUT, true)
-                .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT))
+        //TODO:
+//        startActivity(Intent(this, MainActivity::class.java)
+//                .putExtra(MainActivity.EXTRA_KICKED_OUT, true)
+//                .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT))
 
         finish()
     }

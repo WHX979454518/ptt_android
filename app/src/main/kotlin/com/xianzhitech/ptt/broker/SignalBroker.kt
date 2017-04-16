@@ -7,14 +7,16 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.event.ConnectionErrorEvent
 import com.xianzhitech.ptt.api.event.LoginFailedEvent
-import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.data.exception.ServerException
 import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.without
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.BehaviorSubject
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -82,9 +84,53 @@ class SignalBroker(private val appComponent: AppComponent,
                 }
     }
 
+    fun hasRoomPermission(room: Room) : Boolean {
+        val user = currentUser.value.orNull() ?: return false
+
+        if (room.extraMemberIds.without(user.id).isNotEmpty()) {
+            if (room.extraMemberIds.size <= 2) {
+                return user.hasPermission(Permission.CALL_INDIVIDUAL)
+            }
+
+            return user.hasPermission(Permission.CALL_TEMP_GROUP)
+        }
+
+        return true
+    }
+
+    fun sendMessage(message: Message) : Single<Message> {
+        return appComponent.storage.saveMessage(message)
+                .flatMap(signalApi::sendMessage)
+                .flatMap(appComponent.storage::saveMessage)
+    }
+
+    fun createMessage(roomId : String, init : MessageEntity.() -> Unit) : Message {
+        val entity = MessageEntity()
+        entity.setSendTime(Date())
+
+        entity.init()
+
+        if (entity.localId == null) {
+            entity.setLocalId(UUID.randomUUID().toString())
+        }
+
+        entity.setRoomId(roomId)
+        entity.setSenderId(currentUser.value.get().id)
+        entity.setRemoteId(null)
+
+        return entity
+    }
+
     fun createRoom(userIds: List<String> = emptyList(),
                    groupIds: List<String> = emptyList()): Single<Room> {
         return signalApi.createRoom(userIds, groupIds)
                 .flatMap(appComponent.storage::saveRoom)
+                .doOnSuccess { room ->
+                    val msg = createMessage(room.id) {
+                        setType(MessageType.NOTIFY_CREATE_ROOM)
+                    }
+
+                    sendMessage(msg).toMaybe().logErrorAndForget().subscribe()
+                }
     }
 }
