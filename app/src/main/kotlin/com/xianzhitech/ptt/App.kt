@@ -16,7 +16,6 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.GlideModule
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.answers.Answers
-import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
@@ -24,7 +23,6 @@ import com.google.gson.Gson
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xianzhitech.ptt.api.AppApi
 import com.xianzhitech.ptt.broker.SignalBroker
-import com.xianzhitech.ptt.data.Models
 import com.xianzhitech.ptt.data.Storage
 import com.xianzhitech.ptt.ext.ImmediateMainThreadScheduler
 import com.xianzhitech.ptt.media.AudioHandler
@@ -37,7 +35,6 @@ import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.util.ActivityProviderImpl
 import io.fabric.sdk.android.Fabric
-import io.requery.jackson.EntityMapper
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
@@ -66,7 +63,7 @@ open class App : MultiDexApplication(), AppComponent {
     override lateinit var contactRepository: ContactRepository
     override lateinit var messageRepository: MessageRepository
     override lateinit var preference: Preference
-    override lateinit var signalHandler: SignalServiceHandler
+//    override lateinit var signalHandler: SignalServiceHandler
     override lateinit var activityProvider: ActivityProvider
     override lateinit var statisticCollector: StatisticCollector
     override lateinit var mediaButtonHandler: MediaButtonHandler
@@ -145,7 +142,7 @@ open class App : MultiDexApplication(), AppComponent {
         contactRepository = ContactRepository(ContactSQLiteStorage(helper, userStorage, groupStorage), userNotification, groupNotification)
         messageRepository = MessageRepository(MessageSQLiteStorage(helper), PublishSubject.create<Unit>())
 
-        signalHandler = SignalServiceHandler(this, this)
+//        signalHandler = SignalServiceHandler(this, this)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {

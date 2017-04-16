@@ -149,14 +149,14 @@ class AudioHandler(private val appContext: Context,
         signalService.roomState
                 .distinctUntilChanged( { it -> it.voiceServer })
                 .subscribeSimple {
-                    if (it.voiceServer.isNotEmpty()) {
+                    if (it.voiceServer != null) {
                         currentTalkEngine?.dispose()
                         currentTalkEngine = WebRtcTalkEngine(appContext, httpClient).apply {
                             connect(it.currentRoomId!!, mapOf(WebRtcTalkEngine.PROPERTY_LOCAL_USER_ID to signalService.peekCurrentUserId,
-                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to it.voiceServer["host"],
-                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to it.voiceServer["port"],
-                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_TCP_PORT to it.voiceServer["tcpPort"],
-                                    WebRtcTalkEngine.PROPERTY_PROTOCOL to it.voiceServer["protocol"]))
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_ADDRESS to it.voiceServer.host,
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_PORT to it.voiceServer.port,
+                                    WebRtcTalkEngine.PROPERTY_REMOTE_SERVER_TCP_PORT to it.voiceServer.tcpPort,
+                                    WebRtcTalkEngine.PROPERTY_PROTOCOL to it.voiceServer.protocol))
                         }
                     } else {
                         currentTalkEngine?.dispose()

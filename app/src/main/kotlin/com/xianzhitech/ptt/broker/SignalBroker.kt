@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.*
@@ -13,6 +14,7 @@ import com.xianzhitech.ptt.data.exception.ServerException
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.toast
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -171,55 +173,70 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
 
-    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean) {
-        if (peekVideoRoomId() != null) {
-            logger.i { "Quitting video room before joining walkie room" }
-            quitVideoRoom()
-        }
+    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean) : Completable {
+        return Completable.defer {
+            if (peekVideoRoomId() != null) {
+                logger.i { "Quitting video room before joining walkie room" }
+                quitVideoRoom()
+            }
 
-        if (peekWalkieRoomId() == roomId) {
-            logger.w { "Joining same room" }
-        }
+            if (peekWalkieRoomId() == roomId) {
+                logger.w { "Joining same room" }
+            }
 
-        if (peekWalkieRoomId() != null) {
-            logger.i { "Quiting walkie room before joining different room $roomId" }
-            quitWalkieRoom()
-        }
+            if (peekWalkieRoomId() != null) {
+                logger.i { "Quiting walkie room before joining different room $roomId" }
+                quitWalkieRoom()
+            }
 
-        currentWalkieRoomState.onNext(RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId))
+            currentWalkieRoomState.onNext(RoomState.EMPTY.copy(status = RoomStatus.JOINING, currentRoomId = roomId))
 
-        joinWalkieDisposable = appComponent.storage.getRoom(roomId)
-                .firstOrError()
-                .flatMap {
-                    if (it.isPresent.not()) {
-                        throw NoSuchRoomException(roomId)
+            appComponent.storage.getRoom(roomId)
+                    .firstOrError()
+                    .flatMap {
+                        if (it.isPresent.not()) {
+                            throw NoSuchRoomException(roomId)
+                        }
+
+                        val exception = getRoomPermissionException(it.get())
+                        if (exception != null) {
+                            throw exception
+                        }
+
+                        signalApi.joinWalkieRoom(roomId, fromInvitation)
                     }
-
-                    val exception = getRoomPermissionException(it.get())
-                    if (exception != null) {
-                        throw exception
+                    .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .flatMap { response ->
+                        appComponent.storage.saveRoom(response.room).map { response }
                     }
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError {
+                        if (peekWalkieRoomId() == roomId) {
+                            quitWalkieRoom()
+                        }
 
-                    signalApi.joinWalkieRoom(roomId, fromInvitation)
-                }
-                .flatMap { response ->
-                    appComponent.storage.saveRoom(response.room).map { response }
-                }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { (room, initiatorUserId, onlineMemberIds, speakerId, speakerPriority, voiceServerConfig) ->
-                    val currState = currentWalkieRoomState.value
+                        if (it is ServerException && it.name == "room_not_exists") {
+                            appComponent.storage.removeRoom(roomId).logErrorAndForget().subscribe()
+                        }
 
-                    if (room.id == currState.currentRoomId) {
-                        currentWalkieRoomState.onNext(currState.copy(
-                                status = if (peekUserId() == speakerId) RoomStatus.ACTIVE else RoomStatus.JOINED,
-                                speakerId = speakerId,
-                                speakerPriority = speakerPriority,
-                                currentRoomInitiatorUserId = initiatorUserId,
-                                onlineMemberIds = onlineMemberIds,
-                                voiceServer = voiceServerConfig
-                        ))
+                        it.toast()
                     }
-                }
+                    .doOnSuccess { (room, initiatorUserId, onlineMemberIds, speakerId, speakerPriority, voiceServerConfig) ->
+                        val currState = currentWalkieRoomState.value
+
+                        if (room.id == currState.currentRoomId) {
+                            currentWalkieRoomState.onNext(currState.copy(
+                                    status = if (peekUserId() == speakerId) RoomStatus.ACTIVE else RoomStatus.JOINED,
+                                    speakerId = speakerId,
+                                    speakerPriority = speakerPriority,
+                                    currentRoomInitiatorUserId = initiatorUserId,
+                                    onlineMemberIds = onlineMemberIds,
+                                    voiceServer = voiceServerConfig
+                            ))
+                        }
+                    }
+                    .toCompletable()
+        }
     }
 
     fun quitWalkieRoom() {
@@ -237,13 +254,75 @@ class SignalBroker(private val appComponent: AppComponent,
         }
     }
 
-    fun grabWalkieMic() {
-        val walkieRoomId = peekWalkieRoomId()
+    fun grabWalkieMic() : Single<Boolean> {
+        return Single.defer {
+            val currentUser = currentUser.value.get()
+            val roomState = currentWalkieRoomState.value
 
-        if (walkieRoomId != null) {
-            signalApi.grabWalkieMic(walkieRoomId)
+            Preconditions.checkState(roomState.status == RoomStatus.JOINED || roomState.status == RoomStatus.ACTIVE)
+            Preconditions.checkState(roomState.currentRoomId != null && roomState.status != RoomStatus.REQUESTING_MIC)
 
-        }
+            if (roomState.speakerId == currentUser.id) {
+                return@defer Single.just(true)
+            }
+
+            if (currentUser.hasPermission(Permission.SPEAK).not()) {
+                throw NoPermissionException(Permission.SPEAK)
+            }
+
+
+            if (roomState.currentRoomId != null && roomState.speakerPriority!! <= currentUser.priority) {
+                return@defer Single.just(false)
+            }
+
+            currentWalkieRoomState.onNext(roomState.copy(status = RoomStatus.REQUESTING_MIC))
+            signalApi.grabWalkieMic(roomState.currentRoomId!!)
+                    .timeout(Constants.REQUEST_MIC_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnSuccess { hasMic ->
+                        if (hasMic) {
+                            val newRoomState = currentWalkieRoomState.value
+                            if (newRoomState.status == RoomStatus.REQUESTING_MIC &&
+                                    newRoomState.currentRoomId == roomState.currentRoomId &&
+                                    peekUserId() == currentUser.id)
+                                currentWalkieRoomState.onNext(newRoomState.copy(
+                                        speakerId = currentUser.id,
+                                        speakerPriority = currentUser.priority,
+                                        status = RoomStatus.ACTIVE
+                                ))
+                        }
+                    }
+                    .doOnError {
+                        val newRoomState = currentWalkieRoomState.value
+                        if (newRoomState.status == RoomStatus.REQUESTING_MIC &&
+                                newRoomState.currentRoomId == roomState.currentRoomId &&
+                                peekUserId() == currentUser.id) {
+                            val newStatus = if (newRoomState.speakerId == null) {
+                                RoomStatus.JOINED
+                            } else {
+                                RoomStatus.ACTIVE
+                            }
+
+                            currentWalkieRoomState.onNext(newRoomState.copy(status = newStatus))
+                        }
+                    }
+        }.subscribeOn(AndroidSchedulers.mainThread())
+    }
+
+    fun releaseMic() {
+        Completable.defer {
+            val roomState = currentWalkieRoomState.value
+
+            if (roomState.currentRoomId != null &&
+                    (roomState.speakerId == peekUserId()) || roomState.status == RoomStatus.REQUESTING_MIC) {
+                currentWalkieRoomState.onNext(roomState.copy(speakerPriority = null, speakerId = null, status = RoomStatus.JOINED))
+                signalApi.releaseWalkieMic(roomState.currentRoomId!!)
+            } else {
+                Completable.complete()
+            }
+        }.subscribeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget()
+                .subscribe()
     }
 
     fun joinVideoRoom(roomId: String, audioOnly: Boolean): Completable {

@@ -199,6 +199,15 @@ class Storage(context: Context,
         return data.upsert(message).subscribeOn(writeScheduler)
     }
 
+    fun removeRoom(roomId: String) : Completable {
+        return data.delete(Room::class.java)
+                .where(RoomEntity.ID.eq(roomId))
+                .get()
+                .single()
+                .subscribeOn(writeScheduler)
+                .toCompletable()
+    }
+
     private fun runInTransaction(vararg actions: Single<*>): Completable {
         return Completable.fromObservable(data.runInTransaction(*actions).subscribeOn(writeScheduler))
     }

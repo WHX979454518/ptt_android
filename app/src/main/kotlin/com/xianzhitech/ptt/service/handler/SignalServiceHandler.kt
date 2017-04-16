@@ -14,14 +14,16 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.dto.AppConfig
-import com.xianzhitech.ptt.api.dto.AppInfo
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.model.Location
 import com.xianzhitech.ptt.model.Message
 import com.xianzhitech.ptt.model.Permission
 import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.service.*
-import com.xianzhitech.ptt.service.dto.*
+import com.xianzhitech.ptt.service.dto.JoinRoomResult
+import com.xianzhitech.ptt.service.dto.NearbyUser
+import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
+import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 import com.xianzhitech.ptt.ui.KickOutActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.*
@@ -444,7 +446,7 @@ class SignalServiceHandler(private val appContext: Context,
                                                     currentRoomInitiatorUserId = value.initiatorUserId,
                                                     speakerId = value.speakerId,
                                                     speakerPriority = value.speakerPriority,
-                                                    voiceServer = value.voiceServerConfiguration)
+                                                    voiceServer = null)
                                         }
 
                                         Answers.getInstance()
