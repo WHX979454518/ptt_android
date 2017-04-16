@@ -33,7 +33,7 @@ class SideNavigationView @JvmOverloads constructor(context : Context,
 
     override fun getHitRect(outRect: Rect) {
         super.getHitRect(outRect)
-        outRect.inset(-resources.getDimensionPixelSize(R.dimen.unit_four), 0)
+        outRect.inset(-resources.getDimensionPixelSize(R.dimen.unit_five), 0)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {

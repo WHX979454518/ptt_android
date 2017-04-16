@@ -85,11 +85,6 @@
             android:label="@string/room_info" />
 
         <activity
-            android:name=".ui.home.ModelListActivity"
-            android:label="@string/user_list"
-            android:windowSoftInputMode="adjustPan" />
-
-        <activity
             android:name=".ui.base.FragmentDisplayActivity" />
 
         <activity
@@ -119,9 +114,6 @@
             android:label="@string/group_chat"
             android:theme="@style/AppTheme.Room" />
 
-        <activity
-            android:name=".ui.chat.ChatActivity"
-            android:exported="true" />
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>

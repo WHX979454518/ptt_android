@@ -45,9 +45,9 @@
                 android:foreground="?attr/selectableItemBackground"
                 android:onClick="@{ignored -> viewModel.onClickCall()}"
                 android:padding="@dimen/unit_one"
-                android:src="@drawable/ic_call_black"
-                tools:tint="@color/accent"
-                android:tint="@{viewModel.callAvailable ? @color/accent : @color/secondary_text}" />
+                android:src="@drawable/ic_voice"
+                android:tint="@{viewModel.walkieAvailable ? @color/accent : @color/secondary_text}"
+                tools:tint="@color/accent" />
 
             <EditText
                 android:id="@+id/editText"
@@ -103,8 +103,78 @@
                 app:show="@{viewModel.displayMoreButton}" />
 
 
-
         </LinearLayout>
+
+        <View style="@style/Divider.Lighter" />
+
+        <android.support.v7.widget.GridLayout
+            android:id="@+id/bottom_selection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/unit_two"
+            android:paddingLeft="@dimen/unit_three"
+            android:paddingRight="@dimen/unit_three"
+            android:paddingTop="@dimen/unit_two"
+            android:visibility="gone"
+            app:columnCount="4">
+
+            <include
+                layout="@layout/view_chat_more_item"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:iconDrawable="@{@drawable/ic_voice_30dp}"
+                app:labelText="@{@string/chat_type_walkie_talkie}"
+                app:layout_columnWeight="1"
+                app:onClickListener="@{ignored -> viewModel.onClickWalkieTalkie()}" />
+
+            <include
+                layout="@layout/view_chat_more_item"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:iconDrawable="@{@drawable/ic_videocam_black_30dp}"
+                app:labelText="@{@string/chat_type_video}"
+                app:layout_columnWeight="1"
+                app:onClickListener="@{ignored -> viewModel.onClickVideo()}" />
+
+            <include
+                layout="@layout/view_chat_more_item"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:iconDrawable="@{@drawable/ic_call_black}"
+                app:labelText="@{@string/chat_type_voice}"
+                app:layout_columnWeight="1"
+                app:onClickListener="@{ignored -> viewModel.onClickVoice()}" />
+
+            <include
+                layout="@layout/view_chat_more_item"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:iconDrawable="@{@drawable/ic_image_black_30dp}"
+                app:labelText="@{@string/album}"
+                app:layout_columnWeight="1"
+                app:onClickListener="@{ignored -> viewModel.onClickAlbum()}" />
+
+            <include
+                layout="@layout/view_chat_more_item"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:iconDrawable="@{@drawable/ic_camera_alt_black_30dp}"
+                app:labelText="@{@string/camera}"
+                app:layout_columnWeight="1"
+                app:onClickListener="@{ignored -> viewModel.onClickCamera()}" />
+
+            <include
+                layout="@layout/view_chat_more_item"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:iconDrawable="@{@drawable/ic_location_on_black_30dp}"
+                app:labelText="@{@string/location}"
+                app:layout_columnWeight="1"
+                app:onClickListener="@{ignored -> viewModel.onClickLocation()}" />
+
+
+
+        </android.support.v7.widget.GridLayout>
 
     </LinearLayout>
 

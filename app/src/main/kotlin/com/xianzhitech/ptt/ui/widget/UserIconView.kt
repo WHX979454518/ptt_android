@@ -42,13 +42,19 @@ class UserIconView @JvmOverloads constructor(context: Context,
         stopLoadingUser()
 
         if (attachedToWindow && userId != null) {
-            setImageDrawable(null)
-            subscription = context.appComponent.storage
-                    .getUsers(listOf(userId!!))
-                    .firstElement()
-                    .subscribe { users ->
-                        model = users.firstOrNull()
-                    }
+            val currentUser = context.appComponent.signalBroker.currentUser.value.orNull()
+            if (currentUser?.id == userId) {
+                model = currentUser
+            }
+            else {
+                setImageDrawable(null)
+                subscription = context.appComponent.storage
+                        .getUsers(listOf(userId!!))
+                        .firstElement()
+                        .subscribe { users ->
+                            model = users.firstOrNull()
+                        }
+            }
         }
     }
 

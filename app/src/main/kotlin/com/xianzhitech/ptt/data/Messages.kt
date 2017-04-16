@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.data
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.ObjectMapper
 
 
 enum class MessageType(val bodyClass : Class<*>? = null) {
@@ -12,3 +13,12 @@ enum class MessageType(val bodyClass : Class<*>? = null) {
 }
 
 data class TextMessage(@param:JsonProperty("text") val text : String)
+
+fun <T> Message.convertBody(objectMapper: ObjectMapper) : T? {
+    if (body == null || type == null || type!!.bodyClass == null) {
+        return null
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    return objectMapper.readValue(body, type!!.bodyClass) as? T
+}

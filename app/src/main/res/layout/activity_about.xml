@@ -10,7 +10,7 @@
         android:id="@id/logo"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="@dimen/unit_four"
+        android:layout_marginTop="@dimen/unit_five"
         android:layout_weight="1"
         android:scaleType="centerInside"
         android:src="@drawable/logo" />
@@ -20,7 +20,7 @@
         style="@style/Text.Body1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/unit_four"
+        android:layout_marginTop="@dimen/unit_five"
         android:gravity="center"
         tools:text="CTalk 0.1 (dev)" />
 
@@ -28,7 +28,7 @@
         style="@style/Text.Caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/unit_four"
+        android:layout_marginBottom="@dimen/unit_five"
         android:layout_marginTop="@dimen/unit_two"
         android:gravity="center"
         android:text="@string/copy_right" />

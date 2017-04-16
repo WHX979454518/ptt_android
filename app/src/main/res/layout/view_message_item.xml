@@ -24,8 +24,8 @@
         android:orientation="horizontal">
 
         <com.xianzhitech.ptt.ui.widget.UserIconView
-            android:layout_width="@dimen/unit_four"
-            android:layout_height="@dimen/unit_four"
+            android:layout_width="@dimen/unit_five"
+            android:layout_height="@dimen/unit_five"
             android:layout_gravity="top"
             android:layout_marginLeft="@dimen/unit_one"
             app:show="@{!isMe}"
@@ -46,8 +46,8 @@
             tools:layout_height="30dp" />
 
         <com.xianzhitech.ptt.ui.widget.UserIconView
-            android:layout_width="@dimen/unit_four"
-            android:layout_height="@dimen/unit_four"
+            android:layout_width="@dimen/unit_five"
+            android:layout_height="@dimen/unit_five"
             android:layout_marginRight="@dimen/unit_one"
             app:show="@{isMe}"
             app:userId="@{userId}"

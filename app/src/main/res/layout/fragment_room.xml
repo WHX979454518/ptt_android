@@ -81,7 +81,7 @@
 
     <FrameLayout
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="@dimen/unit_four"
+        android:layout_marginBottom="@dimen/unit_five"
         android:orientation="horizontal"
         android:layout_centerHorizontal="true"
         android:layout_width="wrap_content"

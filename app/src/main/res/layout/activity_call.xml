@@ -71,7 +71,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/call_time"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="@dimen/unit_four"
+            android:layout_marginTop="@dimen/unit_five"
             android:background="@drawable/bg_circle"
             android:padding="@dimen/unit_one"
             android:src="@drawable/ic_call_end_large"

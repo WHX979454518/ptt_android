@@ -163,8 +163,7 @@ class Storage(context: Context,
         return lookup.limit(limit).observeList().firstOrError()
     }
 
-    fun getMessageFrom(date: Date?,
-                       roomId: String): Observable<List<Message>> {
+    fun getMessagesFrom(date: Date?, roomId: String): Observable<List<Message>> {
         var lookup = data.select(Message::class.java).where(MessageEntity.ROOM_ID.eq(roomId))
         if (date != null) {
             lookup = lookup.and(MessageEntity.SEND_TIME.gte(date))

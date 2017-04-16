@@ -91,11 +91,9 @@ interface Room : Persistable, Parcelable {
 @Table(name = "room_info")
 interface RoomInfo : Persistable, Parcelable {
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
-    @get:Index
     val roomId : String
 
     @get:ForeignKey(references = Message::class, referencedColumn = "remoteId", delete = ReferentialAction.CASCADE)
-    @get:Index
     val latestReadMessageRemoteId : String?
 }
 
@@ -110,11 +108,11 @@ interface Message : Persistable, Parcelable {
     val id : Long?
 
     @get:JsonProperty("localId")
-    @get:Column(unique = true)
+    @get:Column(definition = "UNIQUE ON CONFLICT REPLACE")
     val localId : String?
 
-    @get:JsonProperty("remoteId")
-    @get:Column(unique = true)
+    @get:JsonProperty("_id")
+    @get:Column(definition = "UNIQUE ON CONFLICT REPLACE")
     val remoteId : String?
 
     @get:Index
@@ -131,7 +129,6 @@ interface Message : Persistable, Parcelable {
     @get:Index
     val senderId : String
 
-    @get:Index
     @get:JsonProperty("roomId")
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
     val roomId : String

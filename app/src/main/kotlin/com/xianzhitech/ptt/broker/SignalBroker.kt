@@ -104,19 +104,18 @@ class SignalBroker(private val appComponent: AppComponent,
                 .flatMap(appComponent.storage::saveMessage)
     }
 
-    fun createMessage(roomId : String, init : MessageEntity.() -> Unit) : Message {
+    fun createMessage(roomId : String, type: MessageType, body: Any? = null) : Message {
         val entity = MessageEntity()
         entity.setSendTime(Date())
-
-        entity.init()
-
-        if (entity.localId == null) {
-            entity.setLocalId(UUID.randomUUID().toString())
-        }
-
+        entity.setLocalId(UUID.randomUUID().toString())
         entity.setRoomId(roomId)
         entity.setSenderId(currentUser.value.get().id)
-        entity.setRemoteId(null)
+        entity.setType(type)
+
+        if (body != null && type.bodyClass != null) {
+            Preconditions.checkArgument(type.bodyClass.isAssignableFrom(body.javaClass))
+            entity.setBody(appComponent.objectMapper.writeValueAsString(body))
+        }
 
         return entity
     }
@@ -126,11 +125,7 @@ class SignalBroker(private val appComponent: AppComponent,
         return signalApi.createRoom(userIds, groupIds)
                 .flatMap(appComponent.storage::saveRoom)
                 .doOnSuccess { room ->
-                    val msg = createMessage(room.id) {
-                        setType(MessageType.NOTIFY_CREATE_ROOM)
-                    }
-
-                    sendMessage(msg).toMaybe().logErrorAndForget().subscribe()
+                    sendMessage(createMessage(room.id, MessageType.NOTIFY_CREATE_ROOM)).toMaybe().logErrorAndForget().subscribe()
                 }
     }
 }

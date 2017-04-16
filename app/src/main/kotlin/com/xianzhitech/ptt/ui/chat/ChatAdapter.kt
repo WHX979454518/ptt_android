@@ -1,54 +1,66 @@
 package com.xianzhitech.ptt.ui.chat
 
 import android.databinding.DataBindingUtil
-import android.databinding.ObservableList
-import android.databinding.ObservableList.OnListChangedCallback
 import android.databinding.ViewDataBinding
+import android.support.v7.util.SortedList
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.util.SortedListAdapterCallback
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import com.google.common.base.Objects
+import com.google.common.collect.ComparisonChain
 import com.xianzhitech.ptt.BR
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.MessageType
+import com.xianzhitech.ptt.data.convertBody
 import com.xianzhitech.ptt.databinding.ViewMessageItemBinding
 import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.model.Message
 
 
 class ChatAdapter : RecyclerView.Adapter<ChatAdapter.MessageHolder>() {
-    private var messages = emptyList<Message>()
-
-    val listChangeListener = object : OnListChangedCallback<ObservableList<Message>>() {
-        override fun onItemRangeRemoved(list: ObservableList<Message>, position: Int, itemCount: Int) {
-            messages = list
-            notifyItemRangeRemoved(position, itemCount)
+    val messages = SortedList<Message>(Message::class.java, object : SortedListAdapterCallback<Message>(this) {
+        override fun areContentsTheSame(oldItem: Message?, newItem: Message): Boolean {
+            return oldItem == newItem
         }
 
-        override fun onItemRangeMoved(list: ObservableList<Message>, position: Int, itemCount: Int, p3: Int) {
-            messages = list
-            notifyDataSetChanged()
+        override fun compare(o1: Message, o2: Message): Int {
+            if (areItemsTheSame(o1, o2)) {
+                return 0
+            }
+
+            return ComparisonChain.start()
+                    .compare(o2.sendTime, o1.sendTime)
+                    .compare(o2.id, o1.id)
+                    .result()
         }
 
-        override fun onItemRangeChanged(list: ObservableList<Message>, position: Int, itemCount: Int) {
-            messages = list
-            notifyItemRangeChanged(position, itemCount)
+        override fun areItemsTheSame(item1: Message, item2: Message): Boolean {
+            if (hasNonNullItem(item1.id, item2.id) && item1.id == item2.id) {
+                return true
+            }
+
+            if (hasNonNullItem(item1.localId, item2.localId) && item1.localId == item2.localId) {
+                return true
+            }
+
+            if (hasNonNullItem(item1.remoteId, item2.remoteId) && item1.remoteId == item2.remoteId) {
+                return true
+            }
+
+            return false
         }
 
-        override fun onChanged(list: ObservableList<Message>) {
-            messages = list
-            notifyDataSetChanged()
+        private fun hasNonNullItem(o1 : Any?, o2 : Any?) : Boolean {
+            return o1 != null || o2 != null
         }
-
-        override fun onItemRangeInserted(list: ObservableList<Message>, position: Int, itemCount: Int) {
-            messages = list
-            notifyItemRangeInserted(position, itemCount)
-        }
-    }
+    })
 
     override fun getItemViewType(position: Int): Int {
         val msg = messages[position]
         return when (msg.type) {
-            "text" -> R.layout.view_message_text
+            MessageType.TEXT -> R.layout.view_message_text
             else -> R.layout.view_message_text
         }
     }
@@ -59,6 +71,7 @@ class ChatAdapter : RecyclerView.Adapter<ChatAdapter.MessageHolder>() {
 
     override fun onBindViewHolder(holder: ChatAdapter.MessageHolder, position: Int) {
         val msg = messages[position]
+        holder.actualBinding.setVariable(BR.body, msg.convertBody(holder.itemBinding.root.context.appComponent.objectMapper))
         holder.actualBinding.setVariable(BR.message, msg)
         holder.itemBinding.userId = msg.senderId
         holder.itemBinding.isMe = holder.itemView.context.appComponent.signalHandler.peekCurrentUserId == msg.senderId
@@ -72,7 +85,7 @@ class ChatAdapter : RecyclerView.Adapter<ChatAdapter.MessageHolder>() {
     }
 
     override fun getItemCount(): Int {
-        return messages.size
+        return messages.size()
     }
 
     class MessageHolder(parent: ViewGroup, layout : Int) : RecyclerView.ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.view_message_item, parent, false)) {

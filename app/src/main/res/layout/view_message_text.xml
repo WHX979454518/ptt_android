@@ -5,8 +5,12 @@
     <data>
 
         <variable
+            name="body"
+            type="com.xianzhitech.ptt.data.TextMessage" />
+
+        <variable
             name="message"
-            type="com.xianzhitech.ptt.model.Message" />
+            type="com.xianzhitech.ptt.data.Message" />
     </data>
 
     <TextView
@@ -16,6 +20,6 @@
         android:background="@drawable/bg_chat_message"
         android:maxWidth="250dp"
         android:padding="@dimen/unit_one"
-        android:text="@{message.bodyAsText()}"
+        android:text="@{body.text}"
         tools:text="This is a very long text. No, it is not." />
 </layout>

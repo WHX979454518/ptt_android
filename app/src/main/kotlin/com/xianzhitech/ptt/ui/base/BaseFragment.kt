@@ -3,12 +3,15 @@ package com.xianzhitech.ptt.ui.base
 import android.support.v7.app.AppCompatDialogFragment
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
+import org.slf4j.LoggerFactory
 import rx.Subscription
 import rx.subscriptions.CompositeSubscription
 
 abstract class BaseFragment : AppCompatDialogFragment() {
     private var subscriptions : CompositeSubscription? = null
     private var disposable : CompositeDisposable? = null
+
+    val logger = LoggerFactory.getLogger(javaClass)
 
     override fun onStop() {
         super.onStop()
