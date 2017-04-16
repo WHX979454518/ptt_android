@@ -11,9 +11,9 @@ import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 
 
-class RoomViewModel(val roomId: String,
-                    val appComponent: AppComponent,
-                    val needsRoomMembers: Boolean = true) : LifecycleViewModel() {
+class WalkieViewModel(val roomId: String,
+                      val appComponent: AppComponent,
+                      val needsRoomMembers: Boolean = true) : LifecycleViewModel() {
     val roomName = ObservableField<String>()
     val roomMembers = ObservableArrayList<User>()
     val room = ObservableField<Room>()
@@ -22,7 +22,7 @@ class RoomViewModel(val roomId: String,
         super.onStart()
 
         appComponent.storage
-                .getRoomWithName(roomId.toOptional())
+                .getRoomWithName(roomId)
                 .observeOn(AndroidSchedulers.mainThread())
                 .logErrorAndForget()
                 .subscribe {

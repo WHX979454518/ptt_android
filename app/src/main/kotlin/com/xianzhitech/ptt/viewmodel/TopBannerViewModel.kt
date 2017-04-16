@@ -32,8 +32,8 @@ class TopBannerViewModel(appComponent: AppComponent,
         val notification: Observable<Triple<Optional<Pair<Room, String>>, Optional<Pair<Room, String>>, Boolean>> = Observable.combineLatest(
                 signalBroker.connectionState,
                 signalBroker.currentUser,
-                signalBroker.currentVideoRoom.switchMap(storage::getRoomWithName),
-                signalBroker.currentWalkieTalkieRoom.switchMap(storage::getRoomWithName),
+                signalBroker.currentVideoRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  } ,
+                signalBroker.currentWalkieRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  },
                 appContext.getConnectivityObservable(),
                 Function5 { _, _, video, wt, connected -> Triple(video, wt, connected) }
         )
@@ -81,10 +81,10 @@ class TopBannerViewModel(appComponent: AppComponent,
     }
 
     fun onClick() {
-        if (signalBroker.currentWalkieTalkieRoom.value.isPresent) {
+        if (signalBroker.currentWalkieRoomId.value.isPresent) {
             navigator.navigateToWalkieTalkiePage()
         }
-        else if (signalBroker.currentVideoRoom.value.isPresent) {
+        else if (signalBroker.currentVideoRoomId.value.isPresent) {
             navigator.navigateToVideoChatPage()
         }
     }

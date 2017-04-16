@@ -85,12 +85,8 @@ class Storage(context: Context,
                 .map { it.firstOrNull().toOptional() }
     }
 
-    fun getRoomWithName(roomId: Optional<String>): Observable<Optional<Pair<Room, String>>> {
-        if (roomId.isPresent.not()) {
-            return Observable.just(Optional.absent())
-        }
-
-        val roomObservable = getRoom(roomId.get()).share()
+    fun getRoomWithName(roomId: String): Observable<Optional<Pair<Room, String>>> {
+        val roomObservable = getRoom(roomId).share()
 
         return Observable.combineLatest(
                 roomObservable,

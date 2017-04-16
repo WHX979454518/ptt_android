@@ -4,6 +4,7 @@ import android.os.Parcelable
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.xianzhitech.ptt.api.event.Event
 import com.xianzhitech.ptt.util.SetConverter
 import io.requery.*
 import java.util.*
@@ -67,7 +68,7 @@ interface ContactGroup : Persistable, NamedModel, Parcelable {
 @Entity
 @Table(name = "rooms")
 @JsonDeserialize(`as` = RoomEntity::class)
-interface Room : Persistable, Parcelable {
+interface Room : Persistable, Parcelable, Event {
     @get:JsonProperty("idNumber")
     @get:Key
     val id: String
@@ -101,7 +102,7 @@ interface RoomInfo : Persistable, Parcelable {
 @Entity
 @Table(name = "messages")
 @JsonDeserialize(`as` = MessageEntity::class)
-interface Message : Persistable, Parcelable {
+interface Message : Persistable, Parcelable, Event {
     @get:JsonIgnore
     @get:Key
     @get:Generated

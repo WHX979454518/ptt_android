@@ -46,7 +46,7 @@
                 android:onClick="@{ignored -> viewModel.onClickCall()}"
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_voice"
-                android:tint="@{viewModel.walkieAvailable ? @color/accent : @color/secondary_text}"
+                android:tint="@color/accent"
                 tools:tint="@color/accent" />
 
             <EditText

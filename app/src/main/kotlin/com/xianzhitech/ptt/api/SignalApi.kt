@@ -7,10 +7,8 @@ import com.google.common.base.Preconditions
 import com.google.common.primitives.Primitives
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.dto.Contact
-import com.xianzhitech.ptt.api.event.Event
-import com.xianzhitech.ptt.api.event.LoginFailedEvent
-import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
-import com.xianzhitech.ptt.api.event.UserKickedOutEvent
+import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
+import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.Room
@@ -273,23 +271,26 @@ class SignalApi(private val appComponent: AppComponent,
     fun createRoom(userIds: List<String>, groupIds: List<String>): Single<Room> {
         return Single.defer {
             Preconditions.checkArgument(userIds.isNotEmpty() || groupIds.isNotEmpty())
-            Preconditions.checkState(socket != null && hasUser())
 
             rpc<Room>("c_create_room", null, groupIds, userIds).toSingle()
         }
     }
 
-    fun sendMessage(msg : Message) : Single<Message> {
-        return Single.defer {
-            Preconditions.checkState(socket != null && hasUser())
+    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean) : Single<JoinWalkieRoomResponse> {
+        return rpc<JoinWalkieRoomResponse>("c_join_room", roomId, fromInvitation).toSingle()
+    }
 
-            rpc<Message>("c_send_message", msg).toSingle()
-        }
+    fun leaveWalkieRoom(roomId: String) : Completable {
+        return rpc<Unit>("c_leave_room", roomId).ignoreElement()
+    }
+
+    fun sendMessage(msg : Message) : Single<Message> {
+        return rpc<Message>("c_send_message", msg).toSingle()
     }
 
     private inline fun <reified T> rpc(name : String, vararg args : Any?) : Maybe<T> {
         return Maybe.create { emitter ->
-            Preconditions.checkState(socket != null)
+            Preconditions.checkState(socket != null && hasUser())
 
             val convertedArgs = Array(args.size) { index ->
                 val arg = args[index]
@@ -305,8 +306,15 @@ class SignalApi(private val appComponent: AppComponent,
             socket!!.emit(name, convertedArgs) { responses ->
                 val response = responses.firstOrNull() as? JSONObject
                 logger.i { "Calling RPC(name=$name), Response = $response" }
+
+                if (T::class.java != Unit::class.java) {
+                    emitter.onComplete()
+                    return@emit
+                }
+
                 try {
-                    if (response != null && response.optBoolean("success", false)) {
+                    if (response != null &&
+                            response.optBoolean("success", false)) {
                         if (response.has("data")) {
                             val data = response["data"]
                             when {
@@ -354,7 +362,12 @@ class SignalApi(private val appComponent: AppComponent,
                 "s_update_location" to RequestLocationUpdateEvent,
                 "s_login_failed" to LoginFailedEvent::class.java,
                 "s_kick_out" to UserKickedOutEvent,
-                "s_logon" to CurrentUser::class.java
+                "s_logon" to CurrentUser::class.java,
+                "s_invite_to_join" to WalkieRoomInvitationEvent::class.java,
+                "s_online_member_update" to WalkieRoomActiveInfoUpdateEvent::class.java,
+                "s_member_update" to Room::class.java,
+                "s_user_update" to CurrentUser::class.java,
+                "s_room_message" to Message::class.java
         )
 
     }
