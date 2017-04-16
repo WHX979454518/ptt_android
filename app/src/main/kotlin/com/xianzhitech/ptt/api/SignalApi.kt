@@ -13,6 +13,7 @@ import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
 import com.xianzhitech.ptt.api.event.UserKickedOutEvent
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.UserCredentials
 import com.xianzhitech.ptt.data.exception.ServerException
 import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
@@ -46,7 +47,7 @@ class SignalApi(private val appComponent: AppComponent,
     private var retryDisposable: Disposable? = null
     private var socket: Socket? = null
     private var restfulApi: RestfulApi? = null
-    private var currentUserCredentials: Pair<String, String>? = null
+    private var currentUserCredentials: UserCredentials? = null
 
     val currentUser: BehaviorSubject<Optional<CurrentUser>> = BehaviorSubject.createDefault(Optional.absent())
     val connectionState: BehaviorSubject<ConnectionState> = BehaviorSubject.createDefault(ConnectionState.IDLE)
@@ -62,7 +63,7 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     fun login(name: String, password: String) {
-        currentUserCredentials = name to password
+        currentUserCredentials = UserCredentials(name, password)
         login()
     }
 
@@ -131,7 +132,7 @@ class SignalApi(private val appComponent: AppComponent,
 
                     socket.listenOnce("s_logon", CurrentUser::class.java) { user ->
                         currentUser.onNext(user.toOptional())
-                        currentUserCredentials = name to password
+                        currentUserCredentials = UserCredentials(name, password)
                         appComponent.preference.currentUser = user
                         appComponent.preference.currentUserCredentials = currentUserCredentials
 
@@ -186,7 +187,7 @@ class SignalApi(private val appComponent: AppComponent,
     fun syncContacts(version: Long): Maybe<Contact> {
         return Maybe.defer {
             Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
-            restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.second.toMD5(), version)
+            restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.password.toMD5(), version)
                     .toMaybe()
                     .onErrorComplete { it is HttpException && it.code() == 304 }
         }
@@ -273,15 +274,7 @@ class SignalApi(private val appComponent: AppComponent,
             Preconditions.checkArgument(userIds.isNotEmpty() || groupIds.isNotEmpty())
             Preconditions.checkState(socket != null && hasUser())
 
-            val finalUserIds : List<String>
-            val currentUserId = currentUser.value.get().id
-            if (userIds.isNotEmpty() && userIds.contains(currentUserId).not()) {
-                finalUserIds = userIds + currentUserId
-            } else {
-                finalUserIds = userIds
-            }
-
-            rpc<Room>("c_create_room", finalUserIds, groupIds).toSingle()
+            rpc<Room>("c_create_room", null, groupIds, userIds).toSingle()
         }
     }
 

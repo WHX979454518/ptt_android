@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.data
 
 import android.content.Context
 import com.google.common.base.Optional
+import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
@@ -20,11 +21,13 @@ import io.requery.sql.EntityDataStore
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
-import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashSet
 
 class Storage(context: Context,
-              val pref: Preference) {
+              val appComponent: AppComponent) {
+
+    private val pref : Preference
+    get() = appComponent.preference
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -57,16 +60,16 @@ class Storage(context: Context,
                 return@defer Observable.just(room.name)
             }
 
-            val membersWithoutCurrentUser = room.extraMembers.without(pref.currentUser?.id)
+            val membersWithoutCurrentUser = room.extraMemberIds.without(pref.currentUser?.id)
 
-            if (room.groups.isNotEmpty() && membersWithoutCurrentUser.isEmpty()) {
-                return@defer getGroups(room.groups)
+            if (room.groupIds.isNotEmpty() && membersWithoutCurrentUser.isEmpty()) {
+                return@defer getGroups(room.groupIds)
                         .map { it.firstOrNull()?.name ?: "会话名称未知" }
             }
 
             getRoomMembers(room, 4)
                     .map { users ->
-                        val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = ContactUser::getName)
+                        val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = ContactUser::name)
                         if (users.size == 4) {
                             sb.append("等")
                         }
@@ -77,7 +80,7 @@ class Storage(context: Context,
 
     fun getRoom(roomId: String): Observable<Optional<Room>> {
         return data.select(Room::class.java)
-                .where(RoomType.ID.eq(roomId))
+                .where(RoomEntity.ID.eq(roomId))
                 .observeList()
                 .map { it.firstOrNull().toOptional() }
     }
@@ -103,12 +106,11 @@ class Storage(context: Context,
     }
 
     fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<ContactUser>> {
-        return getGroups(room.groups)
+        return getGroups(room.groupIds)
                 .switchMap { groups ->
                     val userIds = LinkedHashSet<String>()
-                    groups.flatMapTo(userIds, ContactGroup::getMemberIds)
-                    userIds.addAll(room.extraMembers)
-
+                    groups.flatMapTo(userIds, ContactGroup::memberIds)
+                    userIds.addAll(room.extraMemberIds)
 
                     if (limit == null) {
                         getUsers(userIds)
@@ -131,20 +133,20 @@ class Storage(context: Context,
     }
 
     fun getGroups(groupIds: Collection<String>): Observable<List<ContactGroup>> {
-        return data.select(ContactGroup::class.java).where(ContactGroupType.ID.`in`(groupIds)).observeList()
+        return data.select(ContactGroup::class.java).where(ContactGroupEntity.ID.`in`(groupIds)).observeList()
     }
 
     fun getUsers(userIds: Collection<String>): Observable<List<ContactUser>> {
-        return data.select(ContactUser::class.java).where(ContactUserType.ID.`in`(userIds)).observeList()
+        return data.select(ContactUser::class.java).where(ContactUserEntity.ID.`in`(userIds)).observeList()
     }
 
     fun getMessagesUpTo(date: Date?,
                         roomId: String,
                         limit: Int): Single<List<Message>> {
 
-        var lookup = data.select(Message::class.java).where(MessageType.ROOM_ID.eq(roomId))
+        var lookup = data.select(Message::class.java).where(MessageEntity.ROOM_ID.eq(roomId))
         if (date != null) {
-            lookup = lookup.and(MessageType.SEND_TIME.lte(date))
+            lookup = lookup.and(MessageEntity.SEND_TIME.lte(date))
         }
 
         return lookup.limit(limit).observeList().firstOrError()
@@ -152,9 +154,9 @@ class Storage(context: Context,
 
     fun getMessageFrom(date: Date?,
                        roomId: String): Observable<List<Message>> {
-        var lookup = data.select(Message::class.java).where(MessageType.ROOM_ID.eq(roomId))
+        var lookup = data.select(Message::class.java).where(MessageEntity.ROOM_ID.eq(roomId))
         if (date != null) {
-            lookup = lookup.and(MessageType.SEND_TIME.gte(date))
+            lookup = lookup.and(MessageEntity.SEND_TIME.gte(date))
         }
 
         return lookup.observeList()

@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.gson.annotations.SerializedName
 import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.UserCredentials
 import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
 import rx.Observable
@@ -30,7 +31,7 @@ interface Preference {
     val userSessionTokenSubject : Observable<UserToken>
 
     var currentUser : CurrentUser?
-    var currentUserCredentials : Pair<String, String>?
+    var currentUserCredentials : UserCredentials?
 }
 
 

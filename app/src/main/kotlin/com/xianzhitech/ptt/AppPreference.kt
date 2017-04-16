@@ -5,23 +5,28 @@ import android.content.SharedPreferences
 import android.net.Uri
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
-import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.UserCredentials
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
 import rx.Emitter
 import rx.Observable
-import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.isSubtypeOf
 
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
-                    private val gson : Gson,
-                    private val objectMapper: ObjectMapper) : Preference {
+                    private val appComponent: AppComponent) : Preference {
+
+    private val gson : Gson
+    get() = appComponent.gson
+
+    private val objectMapper : ObjectMapper
+    get() = appComponent.objectMapper
+
 
     private val blockCallsKey = R.string.key_block_calls.toFormattedString(appContext)
     private val autoExitKey = R.string.key_auto_exit.toFormattedString(appContext)
@@ -170,7 +175,7 @@ class AppPreference(appContext : Context,
         }
 
     override var currentUser: CurrentUser? by sharePreference("current_user")
-    override var currentUserCredentials: Pair<String, String>? by sharePreference("current_user_credentials")
+    override var currentUserCredentials: UserCredentials? by sharePreference("current_user_credentials")
 
     private inline fun <reified T> sharePreference(key: String) : SharedPreferenceDelegate<T> {
         return SharedPreferenceDelegate(key, pref, T::class.java, objectMapper)

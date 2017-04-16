@@ -11,7 +11,7 @@ class SetConverter<T> : Converter<Set<T>, String> {
     }
 
     override fun convertToMapped(type: Class<out Set<T>>?, value: String?): Set<T> {
-        return App.instance.objectMapper.readValue(value, type)
+        return App.instance.objectMapper.readValue(value, type) ?: emptySet()
     }
 
     override fun getPersistedType(): Class<String> {

@@ -8,6 +8,7 @@ import android.util.AttributeSet
 import com.bumptech.glide.Glide
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.ContactGroup
+import com.xianzhitech.ptt.data.ContactUser
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.appComponent
@@ -44,7 +45,7 @@ class ModelView @JvmOverloads constructor(context: Context,
     private fun subscribeIfNeeded() {
         val model = this.model
         if (isAttached && model != null) {
-            val drawable: Single<Drawable>
+            val users: Single<out List<User>>
 
             when (model) {
                 is User -> {
@@ -52,21 +53,30 @@ class ModelView @JvmOverloads constructor(context: Context,
                     return
                 }
                 is ContactGroup -> {
-                    drawable = context.appComponent.storage.getUsers(model.memberIds.toList().atMost(9))
-                            .firstOrError()
-                            .map { MultiDrawable(context, it.map(this::createUserDrawable)) }
+                    if (model.avatar != null) {
+                        setImageDrawable(UriDrawable(Glide.with(context), Uri.parse(model.avatar)))
+                        return
+                    }
+
+                    users = context.appComponent.storage.getUsers(model.memberIds.toList().atMost(9)).firstOrError()
                 }
                 is Room -> {
-                    drawable = context.appComponent.storage.getRoomMembers(model, 9)
-                            .firstOrError()
-                            .map { MultiDrawable(context, it.map(this::createUserDrawable)) }
+                    users = context.appComponent.storage.getRoomMembers(model, 9).firstOrError()
                 }
                 else -> throw IllegalStateException("Unknown model type $model")
             }
 
-            disposable = drawable
+            disposable = users
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(this::setImageDrawable)
+                    .subscribe { users ->
+                        val drawable = when (users.size) {
+                            0 -> null
+                            1 -> createUserDrawable(users.first())
+                            else -> MultiDrawable(context, children = users.map(this::createUserDrawable))
+                        }
+
+                        setImageDrawable(drawable)
+                    }
         }
     }
 

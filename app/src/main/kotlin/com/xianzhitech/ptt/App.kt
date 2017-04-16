@@ -20,11 +20,9 @@ import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.Gson
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xianzhitech.ptt.api.AppApi
-import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Models
 import com.xianzhitech.ptt.data.Storage
@@ -116,16 +114,15 @@ open class App : MultiDexApplication(), AppComponent {
 
         AndroidThreeTen.init(this)
 
+        storage = Storage(this, this)
         objectMapper = ObjectMapper().apply {
-            registerModule(KotlinModule())
             registerModule(JsonOrgModule())
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-            configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false)
-            setDefaultSetterInfo(JsonSetter.Value.construct(JsonSetter.Nulls.SKIP, JsonSetter.Nulls.DEFAULT))
         }
-        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), Gson(), objectMapper)
-        storage = Storage(this, preference)
+
+        preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), this)
+
         appApi = Retrofit.Builder()
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(io.reactivex.schedulers.Schedulers.io()))
                 .addConverterFactory(JacksonConverterFactory.create(objectMapper))
