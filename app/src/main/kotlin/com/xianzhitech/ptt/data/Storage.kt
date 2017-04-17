@@ -9,6 +9,7 @@ import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.functions.BiFunction
+import io.reactivex.functions.Function3
 import io.reactivex.schedulers.Schedulers
 import io.requery.Persistable
 import io.requery.android.sqlite.DatabaseSource
@@ -69,13 +70,24 @@ class Storage(context: Context,
 
             getRoomMembers(room, 4)
                     .map { users ->
-                        val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = ContactUser::name)
+                        val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = User::name)
                         if (users.size == 4) {
                             sb.append("等")
                         }
                         sb.toString()
                     }
         }
+    }
+
+    fun getRoomName(roomId: String) : Observable<String> {
+        return getRoom(roomId)
+                .switchMap { room ->
+                    if (room.isPresent) {
+                        getRoomName(room.get())
+                    } else {
+                        Observable.just("")
+                    }
+                }
     }
 
     fun getRoom(roomId: String): Observable<Optional<Room>> {
@@ -101,7 +113,33 @@ class Storage(context: Context,
         )
     }
 
-    fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<ContactUser>> {
+    fun getRoomWithInfo(roomId: String) : Observable<Optional<Pair<Room, RoomInfo?>>> {
+        return Observable.combineLatest(
+                getRoom(roomId),
+                getRoomInfo(roomId),
+                BiFunction { room, info -> room.transform { it!! to info.orNull() } }
+        )
+    }
+
+    fun getRoomInfo(roomId: String) : Observable<Optional<RoomInfo>> {
+        return data.select(RoomInfo::class.java)
+                .where(RoomInfoEntity.ROOM_ID.eq(roomId))
+                .observeList()
+                .map { it.firstOrNull().toOptional() }
+    }
+
+    fun updateRoomLastWalkieActiveTime(roomId : String,
+                                       date: Date = Date()) : Completable {
+        return data.update(RoomInfo::class.java)
+                .set(RoomInfoEntity.LAST_WALKIE_ACTIVE_TIME, date)
+                .where(RoomInfoEntity.ROOM_ID.eq(roomId))
+                .get()
+                .single()
+                .subscribeOn(writeScheduler)
+                .toCompletable()
+    }
+
+    fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<User>> {
         return getGroups(room.groupIds)
                 .switchMap { groups ->
                     val userIds = LinkedHashSet<String>()
@@ -114,6 +152,39 @@ class Storage(context: Context,
                         getUsers(userIds.keepAtMost(limit))
                     }
                 }
+    }
+
+    fun getRoomMembers(roomId : String, limit: Int? = null) : Observable<List<User>> {
+        return getRoom(roomId)
+                .switchMap { room ->
+                    if (room.isPresent) {
+                        getRoomMembers(room.get(), limit)
+                    } else {
+                        Observable.just(emptyList())
+                    }
+                }
+    }
+
+    fun getRoomDetails(roomId: String, memberLimit : Int? = null) : Observable<Optional<RoomDetails>> {
+        val room = getRoom(roomId).share()
+        return Observable.combineLatest(
+                room,
+                room.switchMap {
+                    if (it.isPresent) {
+                        getRoomName(it.get())
+                    } else {
+                        Observable.empty()
+                    }
+                },
+                room.switchMap {
+                    if (it.isPresent) {
+                        getRoomMembers(it.get(), memberLimit)
+                    } else {
+                        Observable.empty()
+                    }
+                },
+                Function3 { room, name, members -> room.transform { RoomDetails(it!!, name, members) } }
+        )
     }
 
     fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
@@ -143,8 +214,28 @@ class Storage(context: Context,
         return data.select(ContactGroup::class.java).where(ContactGroupEntity.ID.`in`(groupIds)).observeList()
     }
 
-    fun getUsers(userIds: Collection<String>): Observable<List<ContactUser>> {
-        return data.select(ContactUser::class.java).where(ContactUserEntity.ID.`in`(userIds)).observeList()
+    fun getGroup(groupId : String) : Observable<Optional<ContactGroup>> {
+        return getGroups(listOf(groupId))
+                .map { it.firstOrNull().toOptional() }
+    }
+
+    fun getUsers(userIds: Collection<String>): Observable<List<User>> {
+        return data.select(ContactUser::class.java)
+                .where(ContactUserEntity.ID.`in`(userIds))
+                .observeList()
+                .map {
+                    val currentUser = appComponent.signalBroker.currentUser.value.orNull()
+                    if (currentUser != null && userIds.contains(currentUser.id)) {
+                        it + currentUser
+                    } else {
+                        it
+                    }
+                }
+    }
+
+    fun getUser(userId: String) : Observable<Optional<User>> {
+        return getUsers(listOf(userId))
+                .map { it.firstOrNull().toOptional() }
     }
 
     fun getMessagesUpTo(date: Date?,
@@ -201,6 +292,16 @@ class Storage(context: Context,
 
     fun removeRoom(roomId: String) : Completable {
         return data.delete(Room::class.java)
+                .where(RoomEntity.ID.eq(roomId))
+                .get()
+                .single()
+                .subscribeOn(writeScheduler)
+                .toCompletable()
+    }
+
+    fun updateRoomName(roomId: String, roomName: String?): Completable {
+        return data.update(Room::class.java)
+                .set(RoomEntity.NAME, roomName)
                 .where(RoomEntity.ID.eq(roomId))
                 .get()
                 .single()

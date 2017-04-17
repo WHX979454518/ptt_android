@@ -7,7 +7,7 @@ import com.xianzhitech.ptt.App
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.SignalApi
-import com.xianzhitech.ptt.data.exception.ServerException
+import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.doOnLoading
 import com.xianzhitech.ptt.ext.e

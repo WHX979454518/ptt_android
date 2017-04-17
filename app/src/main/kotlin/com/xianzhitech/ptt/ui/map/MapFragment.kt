@@ -7,19 +7,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import com.baidu.location.LocationClient
-import com.baidu.mapapi.map.*
+import com.baidu.mapapi.map.BitmapDescriptorFactory
+import com.baidu.mapapi.map.MapStatusUpdateFactory
+import com.baidu.mapapi.map.MapView
+import com.baidu.mapapi.map.Marker
+import com.baidu.mapapi.map.MarkerOptions
+import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.model.LatLng
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.dto.NearbyUser
+import com.xianzhitech.ptt.api.dto.NearbyUser
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.toColorValue
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.user.UserPopupDialog
 import com.xianzhitech.ptt.ui.widget.drawable.TextDrawable
-import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
 import com.xianzhitech.ptt.util.receiveLocation
 import com.xianzhitech.ptt.util.receiveMapStatus
+import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
-import rx.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 
 class MapFragment : BaseFragment() {
@@ -117,20 +127,21 @@ class MapFragment : BaseFragment() {
                     .distinctUntilChanged()
                     // 最小请求间隔为1秒
                     .debounce(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                    .switchMap { appComponent.signalHandler.searchNearbyUsers(it) }
+                    .switchMapSingle { appComponent.signalBroker.searchNearbyUsers(it) }
                     .map { users ->
-                        val currentUserId = appComponent.signalHandler.peekCurrentUserId
+                        val currentUserId = appComponent.signalBroker.peekUserId()
                         users.filterNot { it.userId == currentUserId }
                     }
                     .switchMap { users ->
                         val userMaps : Map<String, NearbyUser> = users.associateBy { it.userId }
-                        appComponent.userRepository.getUsers(userMaps.keys).observe()
+                        appComponent.storage.getUsers(userMaps.keys)
                                 .map { userObjects ->
                                     userObjects.forEach { userMaps[it.id]!!.user = it }
                                     userMaps
                                 }
                     }
-                    .subscribeSimple { users ->
+                    .logErrorAndForget()
+                    .subscribe { users ->
                         logger.i { "Got ${users.size} users within current boundaries. Existing marker size ${userMarkers.size}" }
 
                         val removingMarkers = arrayListOf<MarkerData>()
@@ -168,8 +179,9 @@ class MapFragment : BaseFragment() {
         }
 
         LocationClient(context).receiveLocation(false, 1000)
-                .observeOnMainThread()
-                .subscribeSimple {
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget()
+                .subscribe {
                     val firstLocation = myLocation == null
                     myLocation = MyLocationData.Builder()
                             .latitude(it.lat)
@@ -201,7 +213,7 @@ class MapFragment : BaseFragment() {
 
     private fun NearbyUser.toMarker(marker: Marker) : Marker {
         marker.position = latLng
-        val drawable = user?.createDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
+        val drawable = user?.createAvatarDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
         val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
         view.setImageDrawable(drawable)
         marker.icon = BitmapDescriptorFactory.fromView(view)
@@ -223,7 +235,7 @@ class MapFragment : BaseFragment() {
     private fun NearbyUser.toMarkerOption() : MarkerOptions {
         return MarkerOptions().apply {
             position(latLng)
-            val drawable = user?.createDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
+            val drawable = user?.createAvatarDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
             val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
             view.setImageDrawable(drawable)
             icon(BitmapDescriptorFactory.fromView(view))

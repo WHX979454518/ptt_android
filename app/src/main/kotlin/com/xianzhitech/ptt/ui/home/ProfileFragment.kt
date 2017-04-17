@@ -127,7 +127,7 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
 
             val map = hashMapOf<String, RequestBody>()
 
-            map["userId"] = RequestBody.create(plainText, appComponent.signalHandler.peekCurrentUserId ?: "unknown")
+            map["userId"] = RequestBody.create(plainText, appComponent.signalBroker.peekUserId() ?: "unknown")
             map["model"] = RequestBody.create(plainText, "${Build.MANUFACTURER} - ${Build.MODEL}")
 
             dst.listFiles()?.forEachIndexed { _, file ->

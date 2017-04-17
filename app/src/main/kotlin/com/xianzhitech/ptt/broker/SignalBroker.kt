@@ -1,17 +1,33 @@
 package com.xianzhitech.ptt.broker
 
 import android.content.Context
+import com.baidu.mapapi.model.LatLngBounds
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.SignalApi
-import com.xianzhitech.ptt.api.event.*
-import com.xianzhitech.ptt.data.*
-import com.xianzhitech.ptt.data.exception.NoPermissionException
-import com.xianzhitech.ptt.data.exception.NoSuchRoomException
-import com.xianzhitech.ptt.data.exception.ServerException
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.api.dto.NearbyUser
+import com.xianzhitech.ptt.api.event.ConnectionErrorEvent
+import com.xianzhitech.ptt.api.event.Event
+import com.xianzhitech.ptt.api.event.LoginFailedEvent
+import com.xianzhitech.ptt.api.event.WalkieRoomActiveInfoUpdateEvent
+import com.xianzhitech.ptt.api.event.WalkieRoomSpeakerUpdateEvent
+import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.Location
+import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.MessageEntity
+import com.xianzhitech.ptt.data.MessageType
+import com.xianzhitech.ptt.data.Permission
+import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.service.NoPermissionException
+import com.xianzhitech.ptt.service.NoSuchRoomException
+import com.xianzhitech.ptt.service.ServerException
+import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.toOptional
+import com.xianzhitech.ptt.ext.w
+import com.xianzhitech.ptt.ext.without
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.toast
@@ -41,6 +57,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
     val currentWalkieRoomId : Observable<Optional<String>>
     get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
+
 
     private var joinWalkieDisposable: Disposable? = null
 
@@ -156,6 +173,8 @@ class SignalBroker(private val appComponent: AppComponent,
                             speakerId = event.speakerId,
                             speakerPriority = event.speakerPriority
                     ))
+
+                    recordWalkieRoomActive(event.roomId)
                 }
             }
 
@@ -225,6 +244,8 @@ class SignalBroker(private val appComponent: AppComponent,
                         val currState = currentWalkieRoomState.value
 
                         if (room.id == currState.currentRoomId) {
+                            recordWalkieRoomActive(roomId)
+
                             currentWalkieRoomState.onNext(currState.copy(
                                     status = if (peekUserId() == speakerId) RoomStatus.ACTIVE else RoomStatus.JOINED,
                                     speakerId = speakerId,
@@ -239,6 +260,10 @@ class SignalBroker(private val appComponent: AppComponent,
         }
     }
 
+    private fun recordWalkieRoomActive(roomId: String) {
+        appComponent.storage.updateRoomLastWalkieActiveTime(roomId).logErrorAndForget().subscribe()
+    }
+
     fun quitWalkieRoom() {
         joinWalkieDisposable?.dispose()
         joinWalkieDisposable = null
@@ -248,6 +273,7 @@ class SignalBroker(private val appComponent: AppComponent,
         currentWalkieRoomState.onNext(RoomState.EMPTY)
 
         if (walkieRoomId != null) {
+            recordWalkieRoomActive(walkieRoomId)
             signalApi.leaveWalkieRoom(walkieRoomId)
                     .logErrorAndForget()
                     .subscribe()
@@ -285,6 +311,7 @@ class SignalBroker(private val appComponent: AppComponent,
                             if (newRoomState.status == RoomStatus.REQUESTING_MIC &&
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
                                     peekUserId() == currentUser.id)
+                                recordWalkieRoomActive(newRoomState.currentRoomId)
                                 currentWalkieRoomState.onNext(newRoomState.copy(
                                         speakerId = currentUser.id,
                                         speakerPriority = currentUser.priority,
@@ -316,7 +343,8 @@ class SignalBroker(private val appComponent: AppComponent,
             if (roomState.currentRoomId != null &&
                     (roomState.speakerId == peekUserId()) || roomState.status == RoomStatus.REQUESTING_MIC) {
                 currentWalkieRoomState.onNext(roomState.copy(speakerPriority = null, speakerId = null, status = RoomStatus.JOINED))
-                signalApi.releaseWalkieMic(roomState.currentRoomId!!)
+                recordWalkieRoomActive(roomState.currentRoomId!!)
+                signalApi.releaseWalkieMic(roomState.currentRoomId)
             } else {
                 Completable.complete()
             }
@@ -332,9 +360,9 @@ class SignalBroker(private val appComponent: AppComponent,
     fun quitVideoRoom() {
     }
 
-    private fun peekUserId(): String? = currentUser.value.orNull()?.id
+    fun peekUserId(): String? = currentUser.value.orNull()?.id
     private fun peekVideoRoomId(): String? = currentVideoRoomId.value.orNull()
-    private fun peekWalkieRoomId(): String? = currentWalkieRoomState.value.currentRoomId
+    fun peekWalkieRoomId(): String? = currentWalkieRoomState.value.currentRoomId
 
     fun sendMessage(message: Message): Single<Message> {
         return appComponent.storage.saveMessage(message)
@@ -365,6 +393,34 @@ class SignalBroker(private val appComponent: AppComponent,
                 .doOnSuccess { room ->
                     sendMessage(createMessage(room.id, MessageType.NOTIFY_CREATE_ROOM)).toMaybe().logErrorAndForget().subscribe()
                 }
+    }
+
+    fun sendLocationData(locations: List<Location>): Completable {
+        return signalApi.sendLocationData(locations)
+    }
+
+    fun quitGroupChat() {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    fun updateRoom(roomId: String): Single<Room> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    fun updateRoomMembers(roomId: String, toList: List<String>): Single<Room> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    fun  searchNearbyUsers(bounds: LatLngBounds): Single<List<NearbyUser>> {
+        TODO("not implemented")
+    }
+
+    fun inviteRoomMembers(roomId: String): Single<Int> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    fun changePassword(oldPassword: String, password: String): Completable {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }
 

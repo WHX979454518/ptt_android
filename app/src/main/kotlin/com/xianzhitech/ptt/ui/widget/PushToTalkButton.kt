@@ -11,15 +11,21 @@ import android.view.MotionEvent
 import android.widget.ImageButton
 import android.widget.Toast
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.service.LoginStatus
+import com.xianzhitech.ptt.api.SignalApi
+import com.xianzhitech.ptt.broker.SignalBroker
+import com.xianzhitech.ptt.data.Permission
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.d
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.toColorValue
+import com.xianzhitech.ptt.ext.toDimen
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.handler.SignalServiceHandler
+import com.xianzhitech.ptt.service.toast
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import org.slf4j.LoggerFactory
-import rx.Subscription
-import rx.subscriptions.CompositeSubscription
 
 
 private val logger = LoggerFactory.getLogger("PushToTalkButton")
@@ -31,10 +37,10 @@ private val logger = LoggerFactory.getLogger("PushToTalkButton")
  * Created by fanchao on 12/12/15.
  */
 class PushToTalkButton : ImageButton {
-    private lateinit var signalService: SignalServiceHandler
-    private var subscription: Subscription? = null
+    private lateinit var signalService: SignalBroker
+    private var subscription: Disposable? = null
     private var paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val requestFocusRunnable = Runnable { signalService.requestMic().subscribeSimple() }
+    private val requestFocusRunnable = Runnable { signalService.grabWalkieMic().toMaybe().logErrorAndForget(Throwable::toast).subscribe() }
     private var vibrator: Vibrator? = null
     private var isPressingDown = false
     private var ringPadding: Float = 0f
@@ -72,7 +78,7 @@ class PushToTalkButton : ImageButton {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = R.dimen.button_stroke.toDimen(context)
         if (isInEditMode.not()) {
-            signalService = context.appComponent.signalHandler
+            signalService = context.appComponent.signalBroker
             applyRoomStatus()
         }
     }
@@ -81,22 +87,22 @@ class PushToTalkButton : ImageButton {
         super.onAttachedToWindow()
 
         if (isInEditMode.not()) {
-            subscription = CompositeSubscription().apply {
+            subscription = CompositeDisposable().apply {
                 if (vibrator != null) {
-                    this.add(signalService.roomState.distinctUntilChanged(RoomState::status)
-                            .observeOnMainThread()
-                            .subscribeSimple {
-                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.peekCurrentUserId) {
+                    this.add(signalService.currentWalkieRoomState.distinctUntilChanged(RoomState::status)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe {
+                                if (isPressingDown && it.status == RoomStatus.ACTIVE && it.speakerId == signalService.peekUserId()) {
                                     vibrator!!.vibrate(120)
                                 }
                             })
                 }
 
-                add(signalService.roomStatus
+                add(signalService.currentWalkieRoomState
                         .cast(Any::class.java)
-                        .mergeWith(signalService.loginStatus)
-                        .observeOnMainThread()
-                        .subscribeSimple {
+                        .mergeWith(signalService.connectionState)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe {
                             applyRoomStatus()
                             invalidate()
                         })
@@ -105,28 +111,28 @@ class PushToTalkButton : ImageButton {
     }
 
     override fun onDetachedFromWindow() {
-        subscription?.unsubscribe()
+        subscription?.dispose()
         subscription = null
         super.onDetachedFromWindow()
     }
 
     private fun applyRoomStatus() {
-        isEnabled = signalService.peekRoomState().canRequestMic(signalService.currentUserCache.value) &&
-                signalService.peekLoginStatus() == LoginStatus.LOGGED_IN
+        isEnabled = signalService.currentWalkieRoomState.value.canRequestMic(signalService.currentUser.value.orNull()) &&
+                signalService.connectionState.value == SignalApi.ConnectionState.CONNECTED
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         if (isInEditMode.not()) {
-            val roomState = signalService.peekRoomState()
+            val roomState = signalService.currentWalkieRoomState.value
             val roomStatus = roomState.status
-            val loginStatus = signalService.peekLoginStatus()
+            val connectionState = signalService.connectionState.value
             logger.d { "Paint ptt button roomStatus: $roomStatus" }
 
             paint.color = when {
-                loginStatus != LoginStatus.LOGGED_IN -> android.R.color.darker_gray
-                signalService.peekRoomState().canRequestMic(signalService.currentUserCache.value) -> android.R.color.holo_green_dark
+                connectionState != SignalApi.ConnectionState.CONNECTED -> android.R.color.darker_gray
+                roomState.canRequestMic(signalService.currentUser.value.orNull()) -> android.R.color.holo_green_dark
                 roomStatus == RoomStatus.ACTIVE -> android.R.color.holo_red_dark
                 roomStatus == RoomStatus.REQUESTING_MIC -> android.R.color.holo_orange_dark
                 else -> android.R.color.darker_gray
@@ -143,8 +149,8 @@ class PushToTalkButton : ImageButton {
                     isPressingDown = true
                     postDelayed(requestFocusRunnable, 100)
                     return true
-                } else {
-                    if (signalService.currentUserCache.value?.permissions?.contains(Permission.SPEAK)?.not() ?: false) {
+                } else if (signalService.isLoggedIn) {
+                    if (signalService.currentUser.value.get().hasPermission(Permission.SPEAK).not()) {
                         Toast.makeText(context, R.string.error_user_no_permission_to_speak, Toast.LENGTH_LONG).show()
                     }
 

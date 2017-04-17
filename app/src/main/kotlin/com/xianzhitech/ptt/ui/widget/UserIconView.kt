@@ -1,13 +1,9 @@
 package com.xianzhitech.ptt.ui.widget
 
 import android.content.Context
-import android.support.v7.widget.AppCompatImageView
 import android.util.AttributeSet
 import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
 import io.reactivex.disposables.Disposable
-import rx.Subscription
 
 
 class UserIconView @JvmOverloads constructor(context: Context,

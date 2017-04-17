@@ -9,16 +9,17 @@ import android.view.MenuItem
 import android.widget.EditText
 import android.widget.Toast
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.api.dto.Feedback
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.isEmpty
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.api.dto.Feedback
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
-import rx.CompletableSubscriber
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
+import io.reactivex.CompletableObserver
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 
 
 class FeedbackActivity : BaseActivity(), AlertDialogFragment.OnPositiveButtonClickListener {
@@ -82,10 +83,10 @@ class FeedbackActivity : BaseActivity(), AlertDialogFragment.OnPositiveButtonCli
 
             Toast.makeText(this, R.string.thanks_for_feedback, Toast.LENGTH_LONG).show()
 
-            appComponent.appService.submitFeedback(Feedback(
+            appComponent.appApi.submitFeedback(Feedback(
                     title = titleView.text.toString(),
                     message = messageView.text.toString(),
-                    userId = appComponent.signalHandler.peekCurrentUserId))
+                    userId = appComponent.signalBroker.peekUserId()))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(FeedbackSubscriber(applicationContext))
 
@@ -101,14 +102,15 @@ class FeedbackActivity : BaseActivity(), AlertDialogFragment.OnPositiveButtonCli
     }
 }
 
-private class FeedbackSubscriber(private val appContext : Context) : CompletableSubscriber {
-    override fun onSubscribe(d: Subscription?) {
+private class FeedbackSubscriber(private val appContext : Context) : CompletableObserver {
+    override fun onComplete() {
+        Toast.makeText(appContext, R.string.feedback_complete, Toast.LENGTH_LONG).show()
+    }
+
+    override fun onSubscribe(d: Disposable?) {
     }
 
     override fun onError(e: Throwable?) {
-    }
-
-    override fun onCompleted() {
-        Toast.makeText(appContext, R.string.feedback_complete, Toast.LENGTH_LONG).show()
+        e.toast()
     }
 }

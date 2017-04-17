@@ -6,7 +6,8 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.ext.receiveBroadcasts
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
-import rx.Observable
+import io.reactivex.Observable
+import io.reactivex.functions.BiFunction
 import java.lang.reflect.Method
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
@@ -51,14 +52,10 @@ class PhoneCallHandler private constructor(private val appContext: Context) {
     init {
         val appComponent = appContext as AppComponent
         Observable.combineLatest(
-                appContext.receiveBroadcasts(false, TelephonyManager.ACTION_PHONE_STATE_CHANGED)
-                        .map { telephonyManager.callState }
-                        .startWith(telephonyManager.callState),
-                appComponent.signalHandler.roomState,
-                { callState, roomState -> callState to roomState }
-        ).subscribe {
-            onCallStateChanged(it.first, it.second)
-        }
+                appContext.receiveBroadcasts(TelephonyManager.ACTION_PHONE_STATE_CHANGED).map { telephonyManager.callState }.startWith(telephonyManager.callState),
+                appComponent.signalBroker.currentWalkieRoomState.distinctUntilChanged(RoomState::status),
+                BiFunction<Int, RoomState, Pair<Int, RoomState>> { callState, roomState -> callState to roomState }
+        ).subscribe { (callState, roomState) -> onCallStateChanged(callState, roomState) }
     }
 
     private fun onCallStateChanged(callState: Int, roomState: RoomState) {

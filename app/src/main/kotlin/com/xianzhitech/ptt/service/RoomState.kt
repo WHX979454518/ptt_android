@@ -1,8 +1,8 @@
 package com.xianzhitech.ptt.service
 
 import com.xianzhitech.ptt.api.dto.VoiceServerConfig
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.Permission
 
 enum class RoomStatus(val inRoom: Boolean) {
     IDLE(false),
@@ -31,8 +31,8 @@ data class RoomState(val status: RoomStatus,
         }
     }
 
-    fun canRequestMic(user : User?) : Boolean {
-        if (user == null || currentRoomId == null || speakerId == user.id || user.permissions.contains(Permission.SPEAK).not()) {
+    fun canRequestMic(user : CurrentUser?) : Boolean {
+        if (user == null || currentRoomId == null || speakerId == user.id || user.hasPermission(Permission.SPEAK).not()) {
             return false
         }
 

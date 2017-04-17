@@ -8,20 +8,22 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentTransaction
 import android.view.WindowManager
 import android.widget.Toast
-import com.crashlytics.android.answers.Answers
-import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.LoginStatus
-import com.xianzhitech.ptt.service.RoomInvitation
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import com.xianzhitech.ptt.util.withUser
-import rx.CompletableSubscriber
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
+import com.xianzhitech.ptt.ui.home.HomeActivity
+import io.reactivex.CompletableObserver
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
 
 /**
@@ -72,11 +74,11 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                         .commit()
             }
 
-            frag.addInvitations(intent.getSerializableExtra(EXTRA_INVITATIONS) as List<RoomInvitation>)
+            frag.addInvitations(intent.getSerializableExtra(EXTRA_INVITATIONS) as List<WalkieRoomInvitationEvent>)
         }
     }
 
-    override fun showInvitationList(invitations: List<RoomInvitation>) {
+    override fun showInvitationList(invitations: List<WalkieRoomInvitationEvent>) {
         RoomInvitationListFragment.build(invitations).show(supportFragmentManager, TAG_INVITATION_LIST_DIALOG)
         supportFragmentManager.executePendingTransactions()
     }
@@ -113,18 +115,12 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         super.onStart()
 
         val roomId = intent.getStringExtra(EXTRA_JOIN_ROOM_ID)
-        if (roomId != null) {
-            Answers.getInstance().logContentView(ContentViewEvent().apply {
-                withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
-                putContentId(roomId)
-                putContentType("room")
-            })
-        }
 
-        appComponent.signalHandler
-                .roomStatus
-                .observeOnMainThread()
-                .subscribeSimple {
+        val roomStatus = appComponent.signalBroker.currentWalkieRoomState.map(RoomState::status).distinctUntilChanged().share()
+
+        roomStatus.observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget()
+                .subscribe {
                     if (it == RoomStatus.JOINING) {
                         showProgressDialog(R.string.joining_room, TAG_JOIN_ROOM_PROGRESS)
                     } else {
@@ -133,18 +129,18 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 }
                 .bindToLifecycle()
 
-        appComponent.signalHandler.roomStatus
+        roomStatus
                 .switchMap {
                     if (it == RoomStatus.IDLE) {
-                        rx.Observable.timer(500, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                        Observable.timer(500, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                     } else {
-                        rx.Observable.never()
+                        Observable.never()
                     }
                 }
-                .subscribeSimple {
-                    val loginStatus = appComponent.signalHandler.peekLoginStatus()
-                    val peekRoomState = appComponent.signalHandler.peekRoomState()
-                    if (loginStatus == LoginStatus.LOGGED_IN && peekRoomState.status == RoomStatus.IDLE && !isFinishing) {
+                .logErrorAndForget()
+                .subscribe {
+                    val peekRoomState = appComponent.signalBroker.currentWalkieRoomState.value
+                    if (appComponent.signalBroker.peekUserId() != null && peekRoomState.status == RoomStatus.IDLE && !isFinishing) {
                         Toast.makeText(this, R.string.room_quited, Toast.LENGTH_LONG).show()
                         finish()
                     }
@@ -152,8 +148,8 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
                 .bindToLifecycle()
     }
 
-    override fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean, isVideoChat: Boolean) {
-        val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
+    override fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
+        val currentRoomId = appComponent.signalBroker.peekWalkieRoomId()
         if (currentRoomId == roomId) {
             return
         }
@@ -165,32 +161,33 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
 
         (supportFragmentManager.findFragmentByTag(TAG_INVITE_DIALOG) as? RoomInvitationFragment)?.removeRoomInvitation(roomId)
 
-        appComponent.signalHandler.joinRoom(roomId, fromInvitation)
+        appComponent.signalBroker.joinWalkieRoom(roomId, fromInvitation)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(JoinRoomSubscriber(applicationContext, roomId))
     }
 
     private class JoinRoomSubscriber(private val appContext: Context,
-                                     private val roomId: String) : CompletableSubscriber {
-        override fun onSubscribe(d: Subscription?) {
+                                     private val roomId: String) : CompletableObserver {
+        override fun onSubscribe(d: Disposable?) {
+
         }
 
         override fun onError(e: Throwable) {
-            defaultOnErrorAction.call(e)
+            e.toast()
 
             val activity = appContext.appComponent.activityProvider.currentStartedActivity
             if (activity is RoomActivity) {
                 activity.finish()
             } else {
-//                appContext.startActivity(Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK))
+                appContext.startActivity(Intent(appContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK))
             }
 
-            appContext.appComponent.signalHandler.quitRoom()
+            appContext.appComponent.signalBroker.quitWalkieRoom()
         }
 
-        override fun onCompleted() {
-            appContext.appComponent.roomRepository.updateLastRoomActiveTime(roomId).execAsync().subscribeSimple()
+        override fun onComplete() {
+            appContext.appComponent.storage.updateRoomLastWalkieActiveTime(roomId).logErrorAndForget().subscribe()
         }
     }
 

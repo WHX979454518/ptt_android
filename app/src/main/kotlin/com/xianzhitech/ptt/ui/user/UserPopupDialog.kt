@@ -8,15 +8,20 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.toLevelString
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
-import rx.Subscription
+import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 
 class UserPopupDialog : BottomSheetDialogFragment() {
     private var views : Views? = null
-    private var subscription : Subscription? = null
+    private var subscription : Disposable? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.dialog_user_popup, container, false)
@@ -27,7 +32,7 @@ class UserPopupDialog : BottomSheetDialogFragment() {
 
         views = Views(view).apply {
             callButton.setOnClickListener {
-                (activity as? BaseActivity)?.joinRoom(CreateRoomRequest(extraMemberIds = listOf(arguments.getString(ARG_USER_ID))))
+                (activity as? BaseActivity)?.joinRoom(userIds = listOf(arguments.getString(ARG_USER_ID)))
             }
 
             view.setOnClickListener {
@@ -45,16 +50,16 @@ class UserPopupDialog : BottomSheetDialogFragment() {
     override fun onStart() {
         super.onStart()
 
-        subscription = appComponent.userRepository
+        subscription = appComponent.storage
                 .getUser(arguments.getString(ARG_USER_ID))
-                .observe()
-                .observeOnMainThread()
-                .subscribeSimple { user ->
-                    if (user != null) {
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget(Throwable::toast)
+                .subscribe { user ->
+                    if (user.isPresent) {
                         views?.let {
-                            it.name.text = user.name
-                            it.level.text = user.priority.toLevelString()
-                            it.icon.setImageDrawable(user.createDrawable())
+                            it.name.text = user.get().name
+                            it.level.text = user.get().priority.toLevelString()
+                            it.icon.setImageDrawable(user.get().createAvatarDrawable())
                         }
                     }
                 }
@@ -63,7 +68,7 @@ class UserPopupDialog : BottomSheetDialogFragment() {
     override fun onStop() {
         super.onStop()
 
-        subscription?.unsubscribe()
+        subscription?.dispose()
         subscription = null
     }
 

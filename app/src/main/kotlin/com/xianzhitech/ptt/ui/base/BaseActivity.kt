@@ -18,23 +18,22 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Room
 import com.xianzhitech.ptt.api.dto.AppConfig
-import com.xianzhitech.ptt.service.CreateRoomRequest
+import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.service.describeInHumanMessage
-import com.xianzhitech.ptt.service.handler.ForceUpdateException
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.call.CallActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.update.installPackage
+import io.reactivex.SingleObserver
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import rx.SingleSubscriber
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
-import rx.subscriptions.CompositeSubscription
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
@@ -44,8 +43,8 @@ abstract class BaseActivity : AppCompatActivity(),
         AlertDialogFragment.OnNegativeButtonClickListener {
 
     private var pendingDeniedPermissions: List<String>? = null
-    protected val logger : Logger by lazy { LoggerFactory.getLogger(javaClass.simpleName) }
-    private var subscriptions: CompositeSubscription? = null
+    protected val logger: Logger by lazy { LoggerFactory.getLogger(javaClass.simpleName) }
+    private var disposables: CompositeDisposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +90,7 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        pendingDeniedPermissions = permissions.filterIndexed { i, permission -> grantResults[i] == PackageManager.PERMISSION_DENIED }
+        pendingDeniedPermissions = permissions.filterIndexed { i, _ -> grantResults[i] == PackageManager.PERMISSION_DENIED }
 
         if (pendingDeniedPermissions!!.contains(Manifest.permission.READ_PHONE_STATE).not()) {
             PhoneCallHandler.register(this)
@@ -152,10 +151,10 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    fun joinRoom(roomId: String, fromInvitation: Boolean, isVideoChat : Boolean = false) {
+    fun joinRoom(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean = false) {
         val appComponent = application as AppComponent
 
-        val currentRoomID = appComponent.signalHandler.peekRoomState().currentRoomId
+        val currentRoomID = appComponent.signalBroker.peekWalkieRoomId()
 
         if ((isVideoChat && currentRoomID != null) || (currentRoomID != roomId && currentRoomID != null)) {
             AlertDialogFragment.Builder().apply {
@@ -176,39 +175,36 @@ abstract class BaseActivity : AppCompatActivity(),
         joinRoomConfirmed(roomId, fromInvitation, isVideoChat)
     }
 
-    open fun joinRoomConfirmed(roomId: String, fromInvitation : Boolean, isVideoChat: Boolean) {
+    open fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
         val intent = if (isVideoChat) Intent(this, CallActivity::class.java) else Intent(this, RoomActivity::class.java)
 
         // Base 类不知道具体怎么加入房间, 打开Activity来加入房间
         startActivityWithAnimation(intent
-                        .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
-                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
-                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true),
+                .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
+                .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
+                .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true),
                 R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
     }
 
-    fun joinRoom(createRoomRequest: CreateRoomRequest, isVideoChat: Boolean = false) {
+    fun joinRoom(groupIds: List<String> = emptyList(),
+                 userIds: List<String> = emptyList(), isVideoChat: Boolean = false) {
         val component = application as AppComponent
-        val signalService = component.signalHandler
+        val signalService = component.signalBroker
 
         showProgressDialog(R.string.getting_room_info, TAG_CREATE_ROOM_PROGRESS)
 
-        signalService.createRoom(createRoomRequest.groupIds, createRoomRequest.extraMemberIds)
+        signalService.createRoom(userIds = userIds, groupIds = groupIds)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(CreateRoomSubscriber(applicationContext, isVideoChat))
     }
 
-    fun navigateToDialPhone(phoneNumber : String) {
+    fun navigateToDialPhone(phoneNumber: String) {
         startActivity(Intent(Intent.ACTION_DIAL).setData(Uri.parse("tel:$phoneNumber")))
     }
 
     fun onLoginError(error: Throwable) {
-        if (error is ForceUpdateException) {
-            handleUpdate(error.appParams)
-        } else {
-            Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
-        }
+        Toast.makeText(this, error.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
     }
 
     fun handleUpdate(appParams: AppConfig) {
@@ -270,56 +266,58 @@ abstract class BaseActivity : AppCompatActivity(),
             }
         }
 
-        appComponent.appService.retrieveAppConfig(appComponent.signalHandler.peekCurrentUserId ?: Constants.EMPTY_USER_ID)
-                .toObservable()
-                .observeOnMainThread()
-                .subscribeSimple {
-                    handleUpdate(it)
-                }
+        appComponent.appApi.retrieveAppConfig(appComponent.signalBroker.peekUserId() ?: "")
+                .toMaybe()
+                .logErrorAndForget()
+                .subscribe(this::handleUpdate)
                 .bindToLifecycle()
 
-        appComponent.signalHandler.currentUserId
-            .switchMap { appComponent.userRepository.getUser(it).getAsync().toObservable() }
-            .observeOnMainThread()
-            .subscribeSimple {
-                val now = System.currentTimeMillis()
-                if (it != null && it.enterpriseExpireDate != null &&
-                        it.enterpriseExpireDate!!.time >= now &&
-                        it.enterpriseExpireDate!!.time - now < Constants.EXP_TIME_PROMPT_ADVANCE_MILLSECONDS &&
-                        (appComponent.preference.lastExpPromptTime == null || now - appComponent.preference.lastExpPromptTime!! >= Constants.PROMPT_EXP_TIME_INTERVAL_MILLSECONDS)) {
-                    AlertDialogFragment.Builder().apply {
-                        val expDays = Math.ceil((it.enterpriseExpireDate!!.time - now).toDouble() / TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)).toInt()
-                        message = R.string.trial_exp_in_days.toFormattedString(this@BaseActivity, expDays)
-                        btnNeutral = R.string.dialog_ok.toFormattedString(this@BaseActivity)
-                    }.show(supportFragmentManager, TAG_EXP_NOTIFICATION)
+        appComponent.signalBroker.currentUser
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget()
+                .subscribe { it ->
+                    val user = it.orNull()
+                    val now = System.currentTimeMillis()
+                    if (user != null && user.enterpriseExpireTime != null &&
+                            user.enterpriseExpireTime >= now &&
+                            user.enterpriseExpireTime - now < Constants.EXP_TIME_PROMPT_ADVANCE_MILLSECONDS &&
+                            (appComponent.preference.lastExpPromptTime == null || now - appComponent.preference.lastExpPromptTime!! >= Constants.PROMPT_EXP_TIME_INTERVAL_MILLSECONDS)) {
+                        AlertDialogFragment.Builder().apply {
+                            val expDays = Math.ceil((user.enterpriseExpireTime - now).toDouble() / TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)).toInt()
+                            message = R.string.trial_exp_in_days.toFormattedString(this@BaseActivity, expDays)
+                            btnNeutral = R.string.dialog_ok.toFormattedString(this@BaseActivity)
+                        }.show(supportFragmentManager, TAG_EXP_NOTIFICATION)
 
-                    supportFragmentManager.executePendingTransactions()
+                        supportFragmentManager.executePendingTransactions()
+                    }
                 }
-            }
-            .bindToLifecycle()
+                .bindToLifecycle()
     }
 
 
     override fun onStop() {
         super.onStop()
 
-        subscriptions?.unsubscribe()
-        subscriptions = null
+        disposables?.dispose()
+        disposables = null
     }
 
-    protected fun Subscription.bindToLifecycle() : Subscription {
-        if (subscriptions == null) {
-            subscriptions = CompositeSubscription()
+    protected fun Disposable.bindToLifecycle(): Disposable {
+        if (disposables == null) {
+            disposables = CompositeDisposable()
         }
 
-        subscriptions!!.add(this)
+        disposables!!.add(this)
         return this
     }
 
-    private inner class CreateRoomSubscriber(private val appContext: Context, private val isVideoChat: Boolean) : SingleSubscriber<Room>() {
-        override fun onError(error: Throwable) {
-            defaultOnErrorAction.call(error)
+    private inner class CreateRoomSubscriber(private val appContext: Context, private val isVideoChat: Boolean) : SingleObserver<Room> {
+        override fun onSubscribe(d: Disposable?) {
 
+        }
+
+        override fun onError(error: Throwable) {
+            error.toast()
             hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
         }
 
@@ -336,7 +334,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private data class JoinRoomBundle(val roomId: String,
                                       val fromInvitation: Boolean,
-                                      val isVideoChat : Boolean) : Serializable {
+                                      val isVideoChat: Boolean) : Serializable {
         companion object {
             private const val serialVersionUID = 1L
         }

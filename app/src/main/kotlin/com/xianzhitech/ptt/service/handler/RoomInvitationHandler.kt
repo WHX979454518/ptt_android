@@ -3,88 +3,88 @@ package com.xianzhitech.ptt.service.handler
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.PowerManager
 import com.xianzhitech.ptt.Constants
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.data.Permission
+import com.xianzhitech.ptt.data.RoomInfo
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.repo.RoomModel
-import com.xianzhitech.ptt.service.RoomInvitation
-import com.xianzhitech.ptt.service.RoomInvitationObject
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.isDownTime
+import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
 import org.threeten.bp.LocalTime
-import rx.Single
-import rx.android.schedulers.AndroidSchedulers
 import java.io.Serializable
 
-private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
 
-class RoomInvitationHandler() : BroadcastReceiver() {
+class RoomInvitationHandler : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
-        val invite : RoomInvitation = when (intent?.action) {
-            SignalServiceHandler.ACTION_ROOM_INVITATION -> intent!!.getSerializableExtra(SignalServiceHandler.EXTRA_INVITATION) as RoomInvitation
+        val invite: WalkieRoomInvitationEvent = when (intent?.action) {
+            ACTION_ROOM_INVITATION -> intent.getSerializableExtra(EXTRA_INVITATION) as WalkieRoomInvitationEvent
             else -> return
         }
 
-        val wl = (context.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RoomInvitation")
-        wl.acquire(2000)
 
         val appComponent = context.appComponent
-        Single.zip(
-                appComponent.roomRepository.getRoom(appComponent.signalHandler.peekCurrentRoomId()).getAsync(),
-                if (invite is RoomInvitationObject) {
-                    appComponent.roomRepository.saveRooms(listOf(invite.room))
-                            .execAsync()
-                            .onErrorComplete()
-                            .toSingleDefault(Unit)
-                } else {
-                    Single.just(Unit)
-                },
-                { room, ignored -> RoomInvitationHandler.InviteInfo(invite, room) })
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeSimple { onReceive(context, it.invitation, it.currentRoom) }
+        val currentRoomId = appComponent.signalBroker.peekWalkieRoomId()
+        if (currentRoomId == null) {
+            onReceive(context, invite, currentRoomId, null)
+        } else {
+            appComponent.storage.getRoomInfo(currentRoomId)
+                    .firstElement()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .logErrorAndForget(Throwable::toast)
+                    .subscribe { info ->
+                        onReceive(context, invite, currentRoomId, info.orNull())
+                    }
+        }
     }
 
-    private fun onReceive(context: Context, invitation: RoomInvitation, currentRoom: RoomModel?) {
-        if (invitation.room.id == currentRoom?.id) {
+    private fun onReceive(context: Context, invitation: WalkieRoomInvitationEvent, currentRoomId : String?, currentRoomInfo: RoomInfo?) {
+        if (invitation.room.id == currentRoomId) {
             logger.i { "Already in room ${invitation.room.id}. Skip inviting..." }
             return
         }
 
         val appComponent = context.appComponent
-        val user = appComponent.signalHandler.currentUserCache.value
-        if ((user?.permissions?.contains(Permission.MUTE) ?: false) &&
+        val user = appComponent.signalBroker.currentUser.value.orNull()
+        if (user == null) {
+            logger.e { "No user logged in" }
+            return
+        }
+
+        if (user.hasPermission(Permission.MUTE) &&
                 appComponent.preference.enableDownTime &&
                 LocalTime.now().isDownTime(
                         appComponent.preference.downTimeStart,
-                        appComponent.preference.downTimeEnd)
-                ) {
+                        appComponent.preference.downTimeEnd)) {
             logger.i { "ContactUser in downtime, skip inviting..." }
             return
         }
 
-        if ((user?.permissions?.contains(Permission.RECEIVE_INDIVIDUAL_CALL)?.not() ?: false) &&
-                invitation.room.associatedGroupIds.isEmpty() &&
-                invitation.room.extraMemberIds.size <= 2) {
+        if (user.hasPermission(Permission.RECEIVE_INDIVIDUAL_CALL).not() &&
+                invitation.room.groupIds.isEmpty() &&
+                invitation.room.extraMemberIds.without(user.id).size == 1) {
             logger.w { "ContactUser has no permission to receive individual call" }
             return
         }
 
-        if ((user?.permissions?.contains(Permission.RECEIVE_TEMPORARY_GROUP_CALL)?.not() ?: false) &&
-                invitation.room.associatedGroupIds.isEmpty() &&
-                invitation.room.extraMemberIds.size > 2) {
+        if (user.hasPermission(Permission.RECEIVE_TEMP_GROUP_CALL).not() &&
+                invitation.room.groupIds.isEmpty() &&
+                invitation.room.extraMemberIds.without(user.id).size > 1) {
             logger.w { "ContactUser has no permission to receive temporary group call" }
+            return
         }
 
-        logger.d { "Receive room invitation $invitation, currRoom: $currentRoom" }
+        logger.d { "Receive room invitation $invitation, currRoomId: $currentRoomId, currRoomInfo: $currentRoomInfo" }
 
         val intent = Intent(context, RoomActivity::class.java)
 
-        if (currentRoom == null ||
-                System.currentTimeMillis() - currentRoom.lastActiveTime.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
+        if (currentRoomInfo == null ||
+                currentRoomInfo.lastWalkieActiveTime == null ||
+                System.currentTimeMillis() - currentRoomInfo.lastWalkieActiveTime!!.time >= Constants.ROOM_IDLE_TIME_SECONDS * 1000L ||
                 (invitation.inviterPriority == 0) ||
                 invitation.force) {
             logger.i { "Join room ${invitation.room.id} directly" }
@@ -109,6 +109,10 @@ class RoomInvitationHandler() : BroadcastReceiver() {
         }
     }
 
-    private data class InviteInfo(val invitation: RoomInvitation,
-                                  val currentRoom: RoomModel?)
+    companion object {
+        private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
+
+        const val ACTION_ROOM_INVITATION = "room_invitation"
+        const val EXTRA_INVITATION = "invitation"
+    }
 }

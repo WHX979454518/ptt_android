@@ -11,8 +11,6 @@ import io.reactivex.disposables.Disposable
 
 
 abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBinding> : BaseActivity() {
-    private var disposable : CompositeDisposable? = null
-
     protected lateinit var binding: VB
     protected lateinit var viewModel: VM
 
@@ -27,15 +25,6 @@ abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBindi
         setContentView(binding.root)
     }
 
-    fun Disposable.bindToLifecycle() : Disposable {
-        if (disposable == null) {
-            disposable = CompositeDisposable()
-        }
-
-        disposable!!.add(this)
-        return this
-    }
-
     override fun onStart() {
         super.onStart()
 
@@ -46,9 +35,6 @@ abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBindi
         super.onStop()
 
         viewModel.onStop()
-
-        disposable?.dispose()
-        disposable = null
     }
 
     abstract fun onCreateViewModel(): VM

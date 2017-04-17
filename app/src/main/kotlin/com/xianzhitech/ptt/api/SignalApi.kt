@@ -9,11 +9,8 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.dto.Contact
 import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
 import com.xianzhitech.ptt.api.event.*
-import com.xianzhitech.ptt.data.CurrentUser
-import com.xianzhitech.ptt.data.Message
-import com.xianzhitech.ptt.data.Room
-import com.xianzhitech.ptt.data.UserCredentials
-import com.xianzhitech.ptt.data.exception.ServerException
+import com.xianzhitech.ptt.data.*
+import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
 import io.reactivex.Maybe
@@ -34,8 +31,7 @@ import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Path
+import retrofit2.http.*
 import java.util.concurrent.TimeUnit
 
 
@@ -191,6 +187,16 @@ class SignalApi(private val appComponent: AppComponent,
             restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.password.toMD5(), version)
                     .toMaybe()
                     .onErrorComplete { it is HttpException && it.code() == 304 }
+        }
+    }
+
+    fun sendLocationData(locations: List<Location>) : Completable {
+        return Completable.defer {
+            Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
+            restfulApi!!.updateLocations(currentUser.value.get().id,
+                    currentUserCredentials!!.password.toMD5(),
+                    locations
+            )
         }
     }
 
@@ -353,6 +359,14 @@ class SignalApi(private val appComponent: AppComponent,
         fun syncContact(@Path("idNumber") idNumber: String,
                         @Path("password") password: String,
                         @Path("version") version: Long): Single<Contact>
+
+        @POST("api/location")
+        fun updateLocations(@Query("idNumber") idNumber: String,
+                            @Query("password") password: String,
+                            @Body locations : List<Location>) : Completable
+
+        @GET("api/nearby")
+        fun findNearbyPeople(@Query("minLat") minLat : Double, @Query("minLng") minLng : Double, @Query("maxLat") maxLat : Double, @Query("maxLng") maxLng : Double) : Single<JSONArray>
 
     }
     enum class ConnectionState {

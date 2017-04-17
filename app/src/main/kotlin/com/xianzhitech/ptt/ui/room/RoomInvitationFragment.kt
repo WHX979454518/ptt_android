@@ -9,20 +9,20 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.RoomInvitation
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.user.UserItemHolder
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import java.util.*
 
 
 class RoomInvitationFragment : BaseFragment() {
 
-    private val pendingInvitations = arrayListOf<RoomInvitation>()
-    private var subscription: Subscription? = null
+    private val pendingInvitations = arrayListOf<WalkieRoomInvitationEvent>()
+    private var subscription: Disposable? = null
 
     private lateinit var views: Views
 
@@ -30,7 +30,7 @@ class RoomInvitationFragment : BaseFragment() {
         super.onCreate(savedInstanceState)
 
         if (savedInstanceState != null) {
-            pendingInvitations.addAll(savedInstanceState.getSerializable(STATE_PENDING_INVITATIONS) as ArrayList<RoomInvitation>)
+            pendingInvitations.addAll(savedInstanceState.getSerializable(STATE_PENDING_INVITATIONS) as ArrayList<WalkieRoomInvitationEvent>)
         }
     }
 
@@ -40,7 +40,7 @@ class RoomInvitationFragment : BaseFragment() {
         outState.putSerializable(STATE_PENDING_INVITATIONS, pendingInvitations)
     }
 
-    fun addInvitations(invitations: Collection<RoomInvitation>) {
+    fun addInvitations(invitations: Collection<WalkieRoomInvitationEvent>) {
         pendingInvitations.addAll(invitations)
         if (view != null) {
             applyView()
@@ -70,7 +70,7 @@ class RoomInvitationFragment : BaseFragment() {
     }
 
     override fun onDestroyView() {
-        subscription?.unsubscribe()
+        subscription?.dispose()
         subscription = null
         super.onDestroyView()
     }
@@ -84,34 +84,34 @@ class RoomInvitationFragment : BaseFragment() {
         applyView()
     }
 
-    private fun onAccept(invitation: RoomInvitation) {
+    private fun onAccept(invitation: WalkieRoomInvitationEvent) {
         (activity as? BaseActivity)?.joinRoom(invitation.room.id, true)
         if (pendingInvitations.remove(invitation)) {
             applyView()
         }
     }
 
-    private fun onIgnore(invitation: RoomInvitation) {
+    private fun onIgnore(invitation: WalkieRoomInvitationEvent) {
         if (pendingInvitations.remove(invitation)) {
             applyView()
         }
     }
 
     private fun applyView() {
-        subscription?.unsubscribe()
+        subscription?.dispose()
         if (pendingInvitations.isEmpty()) {
             callbacks<Callbacks>()?.dismissInvitations()
         } else {
-            subscription = appComponent.userRepository
-                    .getUsers(pendingInvitations.map { it.inviterId })
-                    .getAsync()
-                    .toObservable()
+            subscription = appComponent.storage
+                    .getUsers(pendingInvitations.map(WalkieRoomInvitationEvent::inviterId))
+                    .firstElement()
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeSimple {
+                    .logErrorAndForget()
+                    .subscribe {
                         val users = it
                         if (users.isEmpty()) {
                             callbacks<Callbacks>()?.dismissInvitations()
-                            return@subscribeSimple
+                            return@subscribe
                         }
 
                         views.inviteeIconContainer.removeAllViews()
@@ -148,7 +148,7 @@ class RoomInvitationFragment : BaseFragment() {
 
     interface Callbacks {
         fun dismissInvitations()
-        fun showInvitationList(invitations: List<RoomInvitation>)
+        fun showInvitationList(invitations: List<WalkieRoomInvitationEvent>)
     }
 
     companion object {

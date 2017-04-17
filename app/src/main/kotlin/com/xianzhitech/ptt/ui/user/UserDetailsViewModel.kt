@@ -2,14 +2,14 @@ package com.xianzhitech.ptt.ui.user
 
 import android.databinding.ObservableBoolean
 import android.databinding.ObservableField
-import com.crashlytics.android.answers.Answers
-import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
+import com.xianzhitech.ptt.data.User
+import com.xianzhitech.ptt.ext.createCompositeObservable
+import com.xianzhitech.ptt.ext.doOnLoadingState
+import com.xianzhitech.ptt.ext.fromOptional
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.toLevelString
 import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
-import com.xianzhitech.ptt.util.withUser
 
 
 class UserDetailsViewModel(private val appComponent: AppComponent,
@@ -23,20 +23,11 @@ class UserDetailsViewModel(private val appComponent: AppComponent,
     override fun onStart() {
         super.onStart()
 
-        appComponent.userRepository
+        appComponent.storage
                 .getUser(userId)
-                .observe()
                 .doOnLoadingState(loading::set)
-                .doOnNext {
-                    if (it != null) {
-                        Answers.getInstance().logContentView(ContentViewEvent().apply {
-                            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
-                            putContentType("user-details")
-                            putContentId(userId)
-                        })
-                    }
-                }
-                .subscribeSimple(user::set)
+                .logErrorAndForget()
+                .subscribe(user::fromOptional)
                 .bindToLifecycle()
     }
 
@@ -47,23 +38,23 @@ class UserDetailsViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickStartWalkieTalkie() {
-        appComponent.signalHandler
-                .createRoom(emptyList(), listOf(userId))
-                .map(Room::id)
-                .observeOnMainThread()
-                .doOnLoadingState(loading::set)
-                .subscribeSimple(navigator::navigateToWalkieTalkiePage)
-                .bindToLifecycle()
+//        appComponent.signalHandler
+//                .createRoom(emptyList(), listOf(userId))
+//                .map(Room::id)
+//                .observeOnMainThread()
+//                .doOnLoadingState(loading::set)
+//                .subscribeSimple(navigator::navigateToWalkieTalkiePage)
+//                .bindToLifecycle()
     }
 
     fun onClickStartVideoChat() {
-        appComponent.signalHandler
-                .createRoom(emptyList(), listOf(userId))
-                .map(Room::id)
-                .observeOnMainThread()
-                .doOnLoadingState(loading::set)
-                .subscribeSimple(navigator::navigateToVideoChatPage)
-                .bindToLifecycle()
+//        appComponent.signalHandler
+//                .createRoom(emptyList(), listOf(userId))
+//                .map(Room::id)
+//                .observeOnMainThread()
+//                .doOnLoadingState(loading::set)
+//                .subscribeSimple(navigator::navigateToVideoChatPage)
+//                .bindToLifecycle()
     }
 
     interface Navigator {

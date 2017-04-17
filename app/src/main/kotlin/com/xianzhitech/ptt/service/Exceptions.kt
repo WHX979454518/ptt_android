@@ -3,13 +3,16 @@ package com.xianzhitech.ptt.service
 import android.content.Context
 import android.support.annotation.StringRes
 import android.widget.Toast
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.xianzhitech.ptt.App
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.Permission
 import com.xianzhitech.ptt.ext.toFormattedString
 import io.socket.client.SocketIOException
 import io.socket.engineio.client.EngineIOException
-import retrofit2.adapter.rxjava.HttpException
+import retrofit2.HttpException
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeoutException
 
@@ -46,39 +49,6 @@ open class StaticUserException : UserDescribableException, RuntimeException {
     }
 }
 
-object UnknownServerException : RuntimeException("Unknown server exception"), UserDescribableException {
-    override fun describe(context: Context): CharSequence {
-        return R.string.error_unknown_server.toFormattedString(context)
-    }
-}
-
-class KnownServerException(val errorName: String, val errorMessage: String? = null) : RuntimeException(errorName), UserDescribableException {
-    var errorMessageResolved: String? = null
-
-    override fun describe(context: Context): CharSequence {
-        if (errorMessage.isNullOrBlank().not()) {
-            return errorMessage!!
-        }
-
-        if (errorMessageResolved?.isNotBlank() ?: false) {
-            return errorMessageResolved!!
-        }
-
-        errorMessageResolved = context.getString(context.resources.getIdentifier("error_$errorName", "string", context.packageName)) ?: ""
-        if (errorMessageResolved!!.isBlank()) {
-            if (BuildConfig.DEBUG && errorName.isNotBlank()) {
-                return errorName
-            } else {
-                return context.getString(R.string.error_unknown)
-            }
-        }
-
-        return errorMessageResolved!!
-    }
-}
-
-class ConnectivityException() : StaticUserException(R.string.error_unable_to_connect)
-
 fun Throwable?.describeInHumanMessage(context: Context): CharSequence {
     return when {
         this is UserDescribableException -> describe(context)
@@ -98,4 +68,42 @@ fun Throwable?.describeInHumanMessage(context: Context): CharSequence {
 
 fun Throwable?.toast() {
     Toast.makeText(App.instance, describeInHumanMessage(App.instance), Toast.LENGTH_LONG).show()
+}
+
+data class NoPermissionException(val permission : Permission?) : RuntimeException("No permission $permission"), UserDescribableException {
+    override fun describe(context: Context): CharSequence {
+        return context.getString(R.string.error_no_permission)
+    }
+}
+
+data class NoSuchRoomException(val roomId: String?) : RuntimeException(), UserDescribableException {
+    override fun describe(context: Context): CharSequence {
+        return context.getString(R.string.error_no_such_room)
+    }
+}
+
+data class ServerException @JsonCreator constructor(@param:JsonProperty("name") val name: String,
+                                                    @param:JsonProperty("message") override val message: String?) : RuntimeException(name), UserDescribableException {
+    var errorMessageResolved: String? = null
+
+    override fun describe(context: Context): CharSequence {
+        if (message.isNullOrBlank().not()) {
+            return message!!
+        }
+
+        if (errorMessageResolved?.isNotBlank() ?: false) {
+            return errorMessageResolved!!
+        }
+
+        errorMessageResolved = context.getString(context.resources.getIdentifier("error_$name", "string", context.packageName)) ?: ""
+        if (errorMessageResolved!!.isBlank()) {
+            if (BuildConfig.DEBUG && name.isNotBlank()) {
+                return name
+            } else {
+                return context.getString(R.string.error_unknown)
+            }
+        }
+
+        return errorMessageResolved!!
+    }
 }

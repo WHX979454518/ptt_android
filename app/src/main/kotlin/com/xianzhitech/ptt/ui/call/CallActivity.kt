@@ -25,7 +25,7 @@ class CallActivity : BaseActivity(), GroupChatView {
 
         binding.callRemoteView.init(eglBase.eglBaseContext, null)
         binding.callEnd.setOnClickListener {
-            appComponent.signalHandler.quitGroupChat()
+            appComponent.signalBroker.quitGroupChat()
             finish()
         }
 
@@ -53,23 +53,23 @@ class CallActivity : BaseActivity(), GroupChatView {
     }
 
     override fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
-        if (appComponent.signalHandler.groupChatRoomId == null || (appComponent.signalHandler.groupChatRoomId != roomId)) {
-            appComponent.signalHandler.quitRoom()
-            appComponent.signalHandler.startGroupChat(roomId)
-        }
+//        if (appComponent.signalHandler.groupChatRoomId == null || (appComponent.signalHandler.groupChatRoomId != roomId)) {
+//            appComponent.signalHandler.quitRoom()
+//            appComponent.signalHandler.startGroupChat(roomId)
+//        }
     }
 
     override fun onResume() {
         super.onResume()
 
         remoteRenderer = VideoRenderer(binding.callRemoteView)
-        appComponent.signalHandler.attachToGroupChat(this)
+//        appComponent.signalHandler.attachToGroupChat(this)
     }
 
     override fun onPause() {
         super.onPause()
 
-        appComponent.signalHandler.detachFromGroupChat(this)
+//        appComponent.signalHandler.detachFromGroupChat(this)
         remoteRenderer?.dispose()
         remoteRenderer = null
     }

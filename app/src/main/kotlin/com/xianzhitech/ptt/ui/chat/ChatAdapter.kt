@@ -74,7 +74,7 @@ class ChatAdapter : RecyclerView.Adapter<ChatAdapter.MessageHolder>() {
         holder.actualBinding.setVariable(BR.body, msg.convertBody(holder.itemBinding.root.context.appComponent.objectMapper))
         holder.actualBinding.setVariable(BR.message, msg)
         holder.itemBinding.userId = msg.senderId
-        holder.itemBinding.isMe = holder.itemView.context.appComponent.signalHandler.peekCurrentUserId == msg.senderId
+        holder.itemBinding.isMe = holder.itemView.context.appComponent.signalBroker.peekUserId() == msg.senderId
 
         holder.actualBinding.executePendingBindings()
         holder.itemBinding.executePendingBindings()

@@ -1,13 +1,14 @@
 package com.xianzhitech.ptt.service.handler
 
-import com.xianzhitech.ptt.ext.observeOnMainThread
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.broker.SignalBroker
+import com.xianzhitech.ptt.service.RoomState
+import io.reactivex.android.schedulers.AndroidSchedulers
 import java.util.*
 
 /**
  * 统计房间相关的数据
  */
-class StatisticCollector(private val signalService: SignalServiceHandler) {
+class StatisticCollector(signalService: SignalBroker) {
     var lastSpeakerId: String? = null
         private set
 
@@ -22,9 +23,10 @@ class StatisticCollector(private val signalService: SignalServiceHandler) {
         }
 
     init {
-        signalService.roomState.distinctUntilChanged { it -> it.speakerId }
-                .observeOnMainThread()
-                .subscribeSimple {
+        signalService.currentWalkieRoomState
+                .distinctUntilChanged(RoomState::speakerId)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
                     val currentSpeakerId = it.speakerId
 
                     if (lastSpeakerId != currentSpeakerId) {

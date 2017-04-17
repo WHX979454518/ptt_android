@@ -127,4 +127,8 @@ abstract class ModelListFragment<VM : ModelListViewModel, VB : ViewDataBinding> 
     interface Callbacks {
         fun onSelectionDone(selected: List<String>)
     }
+
+    companion object {
+        const val RESULT_EXTRA_SELECTED_IDS = "selected_ids"
+    }
 }

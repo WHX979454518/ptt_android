@@ -6,14 +6,16 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.StaticUserException
-import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
-import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
+import io.reactivex.android.schedulers.AndroidSchedulers
 
 class EditProfileActivity : BaseActivity(), AlertDialogFragment.OnNeutralButtonClickListener, View.OnClickListener {
     private lateinit var avatarImage: ImageView
@@ -40,29 +42,15 @@ class EditProfileActivity : BaseActivity(), AlertDialogFragment.OnNeutralButtonC
     override fun onStart() {
         super.onStart()
 
-        val comp = (application as AppComponent)
-        val currUserId = comp.signalHandler.peekCurrentUserId
-        if (currUserId == null) {
-            AlertDialogFragment.Builder().apply {
-                title = R.string.error_title.toFormattedString(this@EditProfileActivity)
-                message = R.string.error_user_not_logon.toFormattedString(this@EditProfileActivity)
-                btnNeutral = R.string.dialog_ok.toFormattedString(this@EditProfileActivity)
-            }.show(supportFragmentManager, TAG_ERROR_USER_NOT_LOGON)
-
-            return
-        }
-
-        comp.userRepository.getUser(currUserId).observe()
-                .first()
-                .map { it ?: throw StaticUserException(R.string.error_no_such_user) }
-                .observeOnMainThread()
-                .doOnError {
-                    Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
-                    finish()
-                }
-                .subscribeSimple { user ->
-                    nameView.text = user.name
-                    avatarImage.setImageDrawable(user.createDrawable())
+        appComponent.signalBroker
+                .currentUser
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    if (it.isPresent) {
+                        val user = it.get()
+                        nameView.text = user.name
+                        avatarImage.setImageDrawable(user.createAvatarDrawable())
+                    }
                 }
                 .bindToLifecycle()
     }

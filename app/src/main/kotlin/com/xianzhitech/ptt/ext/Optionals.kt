@@ -7,3 +7,6 @@ import com.google.common.base.Optional
 inline fun <T> T?.toOptional() : Optional<T> {
     return Optional.fromNullable(this)
 }
+
+val <T> Optional<T>.isAbsent : Boolean
+get() = isPresent.not()

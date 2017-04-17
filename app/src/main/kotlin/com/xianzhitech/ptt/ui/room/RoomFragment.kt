@@ -19,11 +19,22 @@ import android.widget.TextView
 import android.widget.Toast
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Permission
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.RoomName
+import com.xianzhitech.ptt.data.Permission
+import com.xianzhitech.ptt.data.RoomDetails
+import com.xianzhitech.ptt.data.User
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.combineLatest
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.isAbsent
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.setVisible
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.toLevelString
+import com.xianzhitech.ptt.ext.toOptional
+import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
@@ -31,12 +42,11 @@ import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
-import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
+import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
 import com.xianzhitech.ptt.util.SimpleAnimatorListener
-import rx.Observable
-import rx.SingleSubscriber
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
 
 class RoomFragment : BaseFragment()
@@ -44,7 +54,7 @@ class RoomFragment : BaseFragment()
 
     private class Views(rootView: View,
                         val titleView: TextView = rootView.findView(R.id.room_title),
-                        val notificationView : ImageView = rootView.findView(R.id.room_notification),
+                        val notificationView: ImageView = rootView.findView(R.id.room_notification),
                         val speakerView: View = rootView.findView(R.id.room_speakerView),
                         val speakerAvatarView: ImageView = speakerView.findView(R.id.room_speakerAvatar),
                         val speakerAnimationView: ImageView = speakerView.findView(R.id.room_speakerAnimationView),
@@ -63,12 +73,12 @@ class RoomFragment : BaseFragment()
     private val onlineUserAdapter = object : UserListAdapter(R.layout.view_room_online_member_list_item) {
         override fun onBindViewHolder(holder: UserItemHolder, position: Int) {
             super.onBindViewHolder(holder, position)
-            holder.itemView.findViewById(R.id.userItem_initiatorLabel)?.setVisible(holder.userId == appComponent.signalHandler.peekRoomState().currentRoomInitiatorUserId)
+            holder.itemView.findViewById(R.id.userItem_initiatorLabel)?.setVisible(holder.userId == appComponent.signalBroker.currentWalkieRoomState.value.currentRoomInitiatorUserId)
         }
     }
     private var popupWindow: PopupWindow? = null
-    private var invitationSubscription: Subscription? = null
-    private var updateDurationSubscription: Subscription? = null
+    private var invitationSubscription: Disposable? = null
+    private var updateDurationSubscription: Disposable? = null
     private val onlineUserColumnSpan: Int by lazy {
         resources.getInteger(R.integer.horizontal_member_item_count)
     }
@@ -81,14 +91,14 @@ class RoomFragment : BaseFragment()
             it.setImageDrawable(context.getTintedDrawable(R.drawable.ic_power, ContextCompat.getColor(context, R.color.red)))
 
             it.setOnClickListener {
-                appComponent.signalHandler.quitRoom()
+                appComponent.signalBroker.quitWalkieRoom()
                 activity.finish()
             }
         }
 
 
         rootView.findViewById(R.id.room_info)?.setOnClickListener {
-            val roomId = appComponent.signalHandler.peekCurrentRoomId()
+            val roomId = appComponent.signalBroker.peekWalkieRoomId()
             if (roomId != null) {
                 activity.startActivityWithAnimation(RoomDetailsActivity.build(context, roomId))
             }
@@ -96,43 +106,38 @@ class RoomFragment : BaseFragment()
 
         views.notificationView.setOnClickListener {
             views.notificationView.isEnabled = false
-            val roomId = appComponent.signalHandler.peekCurrentRoomId()
+            val roomId = appComponent.signalBroker.peekWalkieRoomId()
             if (roomId != null) {
-                appComponent.signalHandler.inviteRoomMembers(roomId)
+                appComponent.signalBroker.inviteRoomMembers(roomId)
                         .timeout(Constants.INVITE_MEMBER_TIME_OUT_MILLS, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                        .observeOnMainThread()
-                        .subscribe(object : SingleSubscriber<Int>() {
-                            override fun onSuccess(value: Int) {
-                                val msg : String
-                                if (value > 0) {
-                                    msg = getString(R.string.member_invitation_sent, value)
-                                }
-                                else {
-                                    msg = getString(R.string.member_invitation_sent_none)
-                                }
-
-                                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                views.notificationView.isEnabled = true
+                        .toMaybe()
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .logErrorAndForget {
+                            Toast.makeText(context, getString(R.string.member_invitation_sent_failed, it.describeInHumanMessage(context)),
+                                    Toast.LENGTH_LONG).show()
+                            views.notificationView.isEnabled = true
+                        }
+                        .subscribe { value ->
+                            val msg: String
+                            if (value > 0) {
+                                msg = getString(R.string.member_invitation_sent, value)
+                            } else {
+                                msg = getString(R.string.member_invitation_sent_none)
                             }
 
-                            override fun onError(error: Throwable?) {
-                                Toast.makeText(context, getString(R.string.member_invitation_sent_failed, error.describeInHumanMessage(context)),
-                                        Toast.LENGTH_LONG).show()
-                                views.notificationView.isEnabled = true
-                            }
-                        })
+                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                            views.notificationView.isEnabled = true
+                        }
                         .bindToLifecycle()
 
             }
         }
 
 
-        appComponent.userRepository.getUser(appComponent.signalHandler.peekCurrentUserId)
-                .observe()
-                .observeOnMainThread()
-                .onErrorResumeNext(Observable.just(null))
-                .subscribeSimple { user->
-                    val color = if (user != null && user.permissions.contains(Permission.FORCE_INVITE)) {
+        appComponent.signalBroker.currentUser
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { user ->
+                    val color = if (user.isPresent && user.get().hasPermission(Permission.FORCE_INVITE)) {
                         ContextCompat.getColor(context, R.color.red)
                     } else {
                         0
@@ -163,7 +168,7 @@ class RoomFragment : BaseFragment()
     }
 
     override fun onDestroyView() {
-        invitationSubscription?.unsubscribe()
+        invitationSubscription?.dispose()
         super.onDestroyView()
     }
 
@@ -184,7 +189,7 @@ class RoomFragment : BaseFragment()
             adapter = onlineUserAdapter
         }
         view.findViewById(R.id.roomOnlineInfo_all)!!.setOnClickListener {
-            val currentRoomId = appComponent.signalHandler.peekCurrentRoomId()
+            val currentRoomId = appComponent.signalBroker.peekWalkieRoomId()
             if (currentRoomId != null) {
                 val args = Bundle(1).apply { putString(RoomMemberListFragment.ARG_ROOM_ID, currentRoomId) }
                 activity.startActivityWithAnimation(
@@ -198,48 +203,64 @@ class RoomFragment : BaseFragment()
     override fun onStart() {
         super.onStart()
 
-        val signalService = appComponent.signalHandler
-        val stateByRoomId = signalService.roomState.distinctUntilChanged { it -> it.currentRoomId }
+        val signalService = appComponent.signalBroker
+        val stateByRoomId = signalService.currentWalkieRoomId
 
-        Observable.combineLatest(
-                stateByRoomId.switchMap { appComponent.roomRepository.getRoomName(it.currentRoomId, excludeUserIds = listOf(signalService.peekCurrentUserId)).observe() },
-                signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.map { it.onlineMemberIds },
-                stateByRoomId.switchMap { appComponent.roomRepository.getRoomMembers(it.currentRoomId, maxMemberCount = Int.MAX_VALUE).observe() },
-                stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },
-                { roomName, onlineMemberIds, roomMembers, room -> RoomInfo(roomName, room, roomMembers, onlineMemberIds) }
-        )
-                .observeOnMainThread()
-                .subscribeSimple {
-                    if (it.roomName != null && it.room != null) {
-                        callbacks<Callbacks>()?.setTitle(it.roomName.name)
+        combineLatest(
+                signalService.currentWalkieRoomState.map(RoomState::onlineMemberIds).distinctUntilChanged(),
+                stateByRoomId.switchMap {
+                    if (it.isPresent) {
+                        appComponent.storage.getRoomDetails(it.get())
+                    } else {
+                        Observable.empty()
+                    }
+                },
+                { onlineMemberIds, roomDetails -> roomDetails.transform { RoomInfo(it!!, onlineMemberIds) } })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { room ->
+                    if (room.isPresent) {
+                        callbacks<Callbacks>()?.setTitle(room.get().details.name)
                         views?.titleView?.apply {
-                            text = R.string.room_name_with_numbers.toFormattedString(context, it.roomName.name, it.onlineMemberIds.size, it.roomMembers.size)
+                            text = R.string.room_name_with_numbers.toFormattedString(context,
+                                    room.get().details.name, room.get().onlineMemberIds.size, room.get().onlineMemberIds.size)
                             isEnabled = true
                         }
                     }
                 }
                 .bindToLifecycle()
 
-        Observable.combineLatest(
-                signalService.roomState.distinctUntilChanged { it -> it.onlineMemberIds }.switchMap { appComponent.userRepository.getUsers(it.onlineMemberIds).observe() },
-                stateByRoomId.switchMap { appComponent.roomRepository.getRoom(it.currentRoomId).observe() },
-                { first, second -> first to second })
-                .observeOnMainThread()
-                .subscribeSimple {
-                    onlineUserAdapter.setUsers(it.first)
-                    val roomInitiatorUserId = signalService.peekRoomState().currentRoomInitiatorUserId
-                    if (roomInitiatorUserId != null) {
-                        onlineUserAdapter.setUserToPosition(roomInitiatorUserId, 0)
+        combineLatest(
+                signalService.currentWalkieRoomState.map(RoomState::onlineMemberIds)
+                        .distinctUntilChanged()
+                        .switchMap(appComponent.storage::getUsers),
+
+                signalService.currentWalkieRoomState
+                        .map { it.currentRoomInitiatorUserId.toOptional() }
+                        .distinctUntilChanged(),
+
+                ::Pair)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { (onlineMembers, initiatorUserId) ->
+                    onlineUserAdapter.setUsers(onlineMembers)
+                    if (initiatorUserId.isPresent) {
+                        onlineUserAdapter.setUserToPosition(initiatorUserId.get(), 0)
                     }
                 }
                 .bindToLifecycle()
 
-        signalService.roomState.distinctUntilChanged { it -> it.speakerId }
-                .switchMap { appComponent.userRepository.getUser(it.speakerId).observe() }
-                .observeOnMainThread()
-                .subscribeSimple { speaker ->
+        signalService.currentWalkieRoomState.distinctUntilChanged(RoomState::speakerId)
+                .switchMap {
+                    if (it.speakerId != null) {
+                        appComponent.storage.getUser(it.speakerId)
+                    } else {
+                        Observable.empty()
+                    }
+                }
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget()
+                .subscribe { speaker ->
                     views?.apply {
-                        if (speaker == null) {
+                        if (speaker.isAbsent) {
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 0f).apply {
                                 startDelay = 5000
@@ -250,10 +271,10 @@ class RoomFragment : BaseFragment()
                                 })
                                 start()
                             }
-                        } else if (speakerView.tag != speaker) {
-                            speakerNameView.text = R.string.name_with_level.toFormattedString(context, speaker.name, speaker.priority.toLevelString())
-                            speakerAvatarView.setImageDrawable(speaker.createDrawable())
-                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.id == appComponent.signalHandler.peekCurrentUserId) R.drawable.sending else R.drawable.receiving))
+                        } else if (speakerView.tag != speaker.get()) {
+                            speakerNameView.text = R.string.name_with_level.toFormattedString(context, speaker.get().name, speaker.get().priority.toLevelString())
+                            speakerAvatarView.setImageDrawable(speaker.get().createAvatarDrawable())
+                            speakerAnimationView.setImageDrawable(ContextCompat.getDrawable(context, if (speaker.get().id == appComponent.signalBroker.peekUserId()) R.drawable.sending else R.drawable.receiving))
                             speakerAnimator?.cancel()
                             speakerAnimator = ObjectAnimator.ofFloat(speakerView, View.ALPHA, 1f).apply {
                                 addListener(object : SimpleAnimatorListener() {
@@ -302,7 +323,7 @@ class RoomFragment : BaseFragment()
     }
 
     private fun stopUpdatingDurationView() {
-        updateDurationSubscription?.unsubscribe()
+        updateDurationSubscription?.dispose()
         updateDurationSubscription = null
     }
 
@@ -328,9 +349,7 @@ class RoomFragment : BaseFragment()
         return false
     }
 
-    private data class RoomInfo(val roomName: RoomName?,
-                                val room: Room?,
-                                val roomMembers: List<User>,
+    private data class RoomInfo(val details: RoomDetails,
                                 val onlineMemberIds: Collection<String>)
 
     interface Callbacks {

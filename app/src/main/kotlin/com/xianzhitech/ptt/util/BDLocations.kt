@@ -5,41 +5,40 @@ import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
 import com.baidu.mapapi.map.BaiduMap
 import com.baidu.mapapi.map.MapStatus
-import com.xianzhitech.ptt.model.Location
+import com.xianzhitech.ptt.data.Location
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
-import rx.Emitter
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
 
 private val logger = LoggerFactory.getLogger("BDLocation")
 
 fun LocationClient.receiveLocation(gpsOnly : Boolean,
-                                   intervalMills : Int) : Observable<Location> {
-    return Observable.create<Location>({ emitter ->
+                                   intervalMills : Long) : Observable<Location> {
+    return Observable.create<Location> { emitter ->
         val listener: (BDLocation) -> Unit = { emitter.onNext(it.toLocation()) }
         registerLocationListener(listener)
         locOption = LocationClientOption().apply {
             locationMode = if (gpsOnly) LocationClientOption.LocationMode.Device_Sensors else LocationClientOption.LocationMode.Hight_Accuracy
             coorType = "bd09ll"
          //   coorType = "gcj02"
-            scanSpan = intervalMills
+            scanSpan = intervalMills.toInt()
             setNeedDeviceDirect(true)
             isNeedAltitude = true
         }
 
-        emitter.setCancellation {
-            AndroidSchedulers.mainThread().createWorker().schedule {
+        emitter.setCancellable {
+            AndroidSchedulers.mainThread().scheduleDirect {
                 unRegisterLocationListener(listener)
                 stop()
             }
         }
 
         start()
-    }, Emitter.BackpressureMode.LATEST).subscribeOn(AndroidSchedulers.mainThread())
+    }.subscribeOn(AndroidSchedulers.mainThread())
 }
 
 fun BaiduMap.receiveMapStatus() : Observable<MapStatus> {
-    return Observable.create({ emitter ->
+    return Observable.create { emitter ->
         val listener = object : BaiduMap.OnMapStatusChangeListener {
             override fun onMapStatusChangeStart(p0: MapStatus?) { }
 
@@ -50,10 +49,10 @@ fun BaiduMap.receiveMapStatus() : Observable<MapStatus> {
             override fun onMapStatusChangeFinish(p0: MapStatus?) { }
         }
         setOnMapStatusChangeListener(listener)
-        emitter.setCancellation {
+        emitter.setCancellable {
             setOnMapStatusChangeListener(null)
         }
-    }, Emitter.BackpressureMode.LATEST)
+    }
 }
 
 private fun BDLocation.toLocation() : Location {

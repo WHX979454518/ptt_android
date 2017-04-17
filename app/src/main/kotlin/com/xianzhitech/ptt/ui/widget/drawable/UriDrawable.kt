@@ -10,7 +10,7 @@ import com.bumptech.glide.request.animation.GlideAnimation
 import com.bumptech.glide.request.target.SizeReadyCallback
 import com.bumptech.glide.request.target.Target
 import com.xianzhitech.ptt.ui.widget.DrawableWrapper
-import rx.subjects.BehaviorSubject
+import io.reactivex.subjects.BehaviorSubject
 
 
 class UriDrawable constructor(requestManager: RequestManager,
@@ -41,7 +41,8 @@ class UriDrawable constructor(requestManager: RequestManager,
     }
 
     override fun getSize(callback: SizeReadyCallback) {
-        sizeSubject.first { it.isEmpty.not() }
+        sizeSubject.filter { it.isEmpty.not() }
+                .firstElement()
                 .subscribe { callback.onSizeReady(it.width(), it.height()) }
     }
 

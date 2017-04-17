@@ -2,16 +2,15 @@ package com.xianzhitech.ptt.service.handler
 
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.Preference
+import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.ext.d
-import com.xianzhitech.ptt.ext.subscribeSimple
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.room.RoomActivity
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 private val logger = LoggerFactory.getLogger("RoomAutoQuitHandler")
@@ -21,11 +20,11 @@ private val logger = LoggerFactory.getLogger("RoomAutoQuitHandler")
  */
 class RoomAutoQuitHandler(private val preference: Preference,
                           private val activityProvider: ActivityProvider,
-                          private val signalServiceHandler: SignalServiceHandler) {
+                          private val signalBroker: SignalBroker) {
 
 
     init {
-        signalServiceHandler.roomState
+        signalBroker.currentWalkieRoomState
                 .doOnNext { logger.d { "Room state changed to $it" } }
                 .scan(ArrayList<RoomState>(2), { result, newState ->
                     if (newState.status.inRoom.not()) {
@@ -53,7 +52,9 @@ class RoomAutoQuitHandler(private val preference: Preference,
                 }
                 .subscribe { onRoomStateChanged(it[0], it[1]) }
 
-        signalServiceHandler.roomStatus
+        signalBroker.currentWalkieRoomState
+                .map(RoomState::status)
+                .distinctUntilChanged()
                 .switchMap {
                     if (it.inRoom && it != RoomStatus.ACTIVE) {
                         Observable.timer(Constants.ROOM_IDLE_TIME_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
@@ -61,10 +62,10 @@ class RoomAutoQuitHandler(private val preference: Preference,
                         Observable.never()
                     }
                 }
-                .subscribeSimple {
-                    if (signalServiceHandler.peekCurrentRoomId() != null) {
+                .subscribe {
+                    if (signalBroker.peekWalkieRoomId() != null) {
                         logger.d { "Auto quit room because room is put to idle" }
-                        signalServiceHandler.quitRoom()
+                        signalBroker.quitWalkieRoom()
                         (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
                     }
                 }
@@ -79,7 +80,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
                 currRoomState.onlineMemberIds.size <= 1 &&
                 preference.autoExit) {
 
-            signalServiceHandler.quitRoom()
+            signalBroker.quitWalkieRoom()
             (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
         }
     }

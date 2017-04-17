@@ -1,9 +1,9 @@
 package com.xianzhitech.ptt.service
 
 import com.google.gson.annotations.SerializedName
+import io.reactivex.Completable
 import retrofit2.http.Body
 import retrofit2.http.POST
-import rx.Completable
 
 data class VoiceServiceJoinRoomRequest(@SerializedName("room") val roomId : String,
                                        @SerializedName("user") val userId : String,

@@ -33,7 +33,7 @@ class TopBannerViewModel(appComponent: AppComponent,
                 signalBroker.connectionState,
                 signalBroker.currentUser,
                 signalBroker.currentVideoRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  } ,
-                signalBroker.currentWalkieRoomState.map { it.transform { it!!.roomId } }.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  },
+                signalBroker.currentWalkieRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  },
                 appContext.getConnectivityObservable(),
                 Function5 { _, _, video, wt, connected -> Triple(video, wt, connected) }
         )
@@ -81,7 +81,7 @@ class TopBannerViewModel(appComponent: AppComponent,
     }
 
     fun onClick() {
-        if (signalBroker.currentWalkieRoomState.value.isPresent) {
+        if (signalBroker.currentWalkieRoomState.value.currentRoomId != null) {
             navigator.navigateToWalkieTalkiePage()
         }
         else if (signalBroker.currentVideoRoomId.value.isPresent) {

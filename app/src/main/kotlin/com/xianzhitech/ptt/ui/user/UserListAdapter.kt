@@ -7,8 +7,8 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.model.User
 import java.text.Collator
 import java.util.*
 

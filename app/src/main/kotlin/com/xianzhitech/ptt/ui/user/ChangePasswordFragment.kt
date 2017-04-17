@@ -16,10 +16,10 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.describeInHumanMessage
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
-import com.xianzhitech.ptt.util.withUser
-import rx.android.schedulers.AndroidSchedulers
+import io.reactivex.android.schedulers.AndroidSchedulers
 
 class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveButtonClickListener, AlertDialogFragment.OnNegativeButtonClickListener {
     private var views: Views? = null
@@ -42,14 +42,6 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
         super.onDestroyView()
     }
 
-    override fun onStart() {
-        super.onStart()
-
-        Answers.getInstance().logContentView(ContentViewEvent().apply {
-            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
-            putContentType("changePassword")
-        })
-    }
 
     fun requestFinish(): Boolean {
         views?.apply {
@@ -111,17 +103,17 @@ class ChangePasswordFragment : BaseFragment(), AlertDialogFragment.OnPositiveBut
             newPasswordConfirm.error = null
 
             val dialog = ProgressDialog.show(context, null, R.string.saving.toFormattedString(context), true, false)
-            (activity.application as AppComponent).signalHandler
+            (activity.application as AppComponent).signalBroker
                     .changePassword(oldPassword.text!!, password)
                     .observeOn(AndroidSchedulers.mainThread())
-                    .doOnError {
+                    .logErrorAndForget {
                         if (activity != null) {
-                            Toast.makeText(context, it.describeInHumanMessage(context), Snackbar.LENGTH_LONG).show()
+                            it.toast()
                         }
 
                         dialog.dismiss()
                     }
-                    .subscribeSimple {
+                    .subscribe {
                         dialog.dismiss()
                         if (activity != null && !activity.isFinishing) {
                             callbacks?.confirmFinishing()

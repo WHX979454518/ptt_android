@@ -3,9 +3,9 @@ package com.xianzhitech.ptt.ui.chat
 import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.ext.toOptional
-import com.xianzhitech.ptt.model.User
 import com.xianzhitech.ptt.util.ObservableArrayList
 import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -31,11 +31,10 @@ class WalkieViewModel(val roomId: String,
                 }
 
         if (needsRoomMembers) {
-            appComponent.roomRepository
-                    .getRoomMembers(roomId)
-                    .observe()
-                    .subscribe(roomMembers::replaceAll)
-                    .bindToLifecycle()
+//            appComponent.storage.getRoomMembers(roomId)
+//                    .observe()
+//                    .subscribe(roomMembers::replaceAll)
+//                    .bindToLifecycle()
         }
     }
 }

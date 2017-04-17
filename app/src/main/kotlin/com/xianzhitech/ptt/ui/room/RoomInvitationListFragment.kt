@@ -15,42 +15,49 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.service.RoomInvitation
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.data.User
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.callbacks
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
-import com.xianzhitech.ptt.ui.widget.drawable.createDrawable
-import rx.Subscription
+import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import java.io.Serializable
 
 class RoomInvitationListFragment : BottomSheetDialogFragment() {
     private val adapter = Adapter()
 
-    private var subscription: Subscription? = null
+    private var subscription: Disposable? = null
     private var toolbar: Toolbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val invitationList = arguments.getSerializable(ARG_INVITATIONS) as List<RoomInvitation>
+        val invitationList = arguments.getSerializable(ARG_INVITATIONS) as List<WalkieRoomInvitationEvent>
 
-        subscription = appComponent.userRepository.getUsers(invitationList.map { it.inviterId })
-                .getAsync()
-                .toObservable()
+        subscription = appComponent.storage.getUsers(invitationList.map(WalkieRoomInvitationEvent::inviterId))
                 .map {
-                    val userMap = it.associateBy { it.id }
+                    val userMap = it.associateBy(User::id)
                     invitationList.map { RoomInvitationData(it, userMap[it.inviterId]) }
                 }
-                .observeOnMainThread()
-                .subscribeSimple {
+                .firstElement()
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget()
+                .subscribe {
                     adapter.addInvitations(it)
                     toolbar?.title = R.string.invitation_list.toFormattedString(context, adapter.itemCount)
                 }
     }
 
     override fun onDestroy() {
-        subscription?.unsubscribe()
+        subscription?.dispose()
         subscription = null
         super.onDestroy()
     }
@@ -121,7 +128,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val invitation = invitationList[position]
-            holder.inviterIconView.setImageDrawable(invitation.inviter?.createDrawable())
+            holder.inviterIconView.setImageDrawable(invitation.inviter?.createAvatarDrawable())
             holder.inviterNameView.text = invitation.inviter?.name
             holder.inviteTimeView.text = DateUtils.getRelativeTimeSpanString(invitation.invitation.inviteTime.time)
         }
@@ -134,7 +141,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
                              val joinButton: View = rootView.findView(R.id.inviteItem_join)
     ) : RecyclerView.ViewHolder(rootView)
 
-    private data class RoomInvitationData(val invitation: RoomInvitation,
+    private data class RoomInvitationData(val invitation: WalkieRoomInvitationEvent,
                                           val inviter: User?)
 
     interface Callbacks {
@@ -144,7 +151,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
     companion object {
         const val ARG_INVITATIONS = "arg_in"
 
-        fun build(invitations: List<RoomInvitation>): RoomInvitationListFragment {
+        fun build(invitations: List<WalkieRoomInvitationEvent>): RoomInvitationListFragment {
             return RoomInvitationListFragment().apply {
                 arguments = Bundle(1).apply {
                     putSerializable(ARG_INVITATIONS, invitations as Serializable)

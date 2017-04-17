@@ -4,12 +4,12 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import cn.netptt.engine.VoiceEngine
-import com.xianzhitech.ptt.ext.subscribeSimple
+import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.service.VoiceService
 import com.xianzhitech.ptt.service.VoiceServiceJoinRoomRequest
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.net.InetAddress
 
@@ -65,14 +65,16 @@ class WebRtcTalkEngine(context: Context,
             mediaEngine.startPlayout(channel)
 
             voiceService = Retrofit.Builder()
-                    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create())
                     .client(httpClient)
                     .baseUrl("http://${property[PROPERTY_REMOTE_SERVER_ADDRESS]}:${property[PROPERTY_REMOTE_SERVER_TCP_PORT]}/")
                     .build()
                     .create(VoiceService::class.java)
 
-            voiceService.command(VoiceServiceJoinRoomRequest(roomId, userId.toString(), userId.toLong())).subscribeSimple()
+            voiceService.command(VoiceServiceJoinRoomRequest(roomId, userId.toString(), userId.toLong()))
+                    .logErrorAndForget()
+                    .subscribe()
 
             mediaEngine.sendExtPacket(channel, RTP_EXT_PROTO_JOIN_ROOM, extProtoData)
             try {

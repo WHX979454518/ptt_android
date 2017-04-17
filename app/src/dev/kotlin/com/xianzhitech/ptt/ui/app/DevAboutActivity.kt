@@ -46,7 +46,6 @@ class AboutActivity : BaseAboutActivity() {
 
                 (appComponent as DevApp).appServerEndpoint = selectedEnv.url
                 appComponent.preference.lastIgnoredUpdateUrl = null
-                appComponent.preference.lastAppParams = null
                 appComponent.preference.contactVersion = -1
                 Toast.makeText(this, "服务器已经设置为 ${selectedEnv.name} (${selectedEnv.url}), 重新登陆后生效", Toast.LENGTH_LONG).show()
                 dialogInterface.dismiss()

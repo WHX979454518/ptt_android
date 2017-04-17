@@ -4,15 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.gson.Gson
-import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.UserCredentials
 import com.xianzhitech.ptt.ext.toFormattedString
-import com.xianzhitech.ptt.service.UserToken
 import org.threeten.bp.LocalTime
-import rx.Emitter
-import rx.Observable
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.reflect.KProperty
@@ -20,9 +15,6 @@ import kotlin.reflect.KProperty
 class AppPreference(appContext : Context,
                     private val pref: SharedPreferences,
                     private val appComponent: AppComponent) : Preference {
-
-    private val gson : Gson
-    get() = appComponent.gson
 
     private val objectMapper : ObjectMapper
     get() = appComponent.objectMapper
@@ -36,39 +28,11 @@ class AppPreference(appContext : Context,
     private val downTimeStartKey = R.string.key_downtime_start.toFormattedString(appContext)
     private val downTimeEndKey = R.string.key_downtime_end.toFormattedString(appContext)
 
-    private var userTokenCache = pref.getString(KEY_USER_TOKEN, null)?.let { gson.fromJson(it, UserToken::class.java) }
-
     override var lastIgnoredUpdateUrl: String?
         get() = pref.getString(KEY_IGNORED_UPDATE_URL, null)
         set(value) {
             pref.edit().putString(KEY_IGNORED_UPDATE_URL, value).apply()
         }
-
-    override var userSessionToken: UserToken?
-        get() = userTokenCache
-        set(value) {
-            userTokenCache = value
-            if (value == null) {
-                pref.edit().remove(KEY_USER_TOKEN).apply()
-            } else {
-                pref.edit().putString(KEY_USER_TOKEN, gson.toJson(value)).apply()
-            }
-        }
-
-    override val userSessionTokenSubject: Observable<UserToken>
-        get() {
-            return Observable.create<UserToken>({ subscriber ->
-                val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-                    if (key == KEY_USER_TOKEN) {
-                        subscriber.onNext(userSessionToken)
-                    }
-                }
-
-                pref.registerOnSharedPreferenceChangeListener(listener)
-                subscriber.setCancellation { pref.unregisterOnSharedPreferenceChangeListener(listener) }
-            }, Emitter.BackpressureMode.LATEST).startWith(userSessionToken)
-        }
-
 
     override var blockCalls: Boolean
         get() = pref.getBoolean(blockCallsKey, false)
@@ -92,12 +56,6 @@ class AppPreference(appContext : Context,
         get() = pref.getLong(KEY_CONTACT_SYNC_VERSION, Constants.INVALID_CONTACT_VERSION)
         set(value) {
             pref.edit().putLong(KEY_CONTACT_SYNC_VERSION, value).apply()
-        }
-
-    override var lastAppParams: AppConfig?
-        get() = pref.getString(KEY_LAST_APP_CONFIG, null)?.let { gson.fromJson(it, AppConfig::class.java) }
-        set(value) {
-            pref.edit().putString(KEY_LAST_APP_CONFIG, value?.let { gson.toJson(it) }).apply()
         }
 
     override var updateDownloadId: Pair<Uri, Long>?
@@ -130,13 +88,6 @@ class AppPreference(appContext : Context,
         get() = pref.getBoolean(playIndicatorSoundKey, true)
         set(value) {
             pref.edit().putBoolean(playIndicatorSoundKey, value).apply()
-        }
-
-
-    override var shortcut: Shortcut
-        get() = pref.getString(KEY_SHORTCUT, null)?.let { gson.fromJson(it, Shortcut::class.java) } ?: Shortcut()
-        set(value) {
-            pref.edit().putString(KEY_SHORTCUT, value.let { gson.toJson(it) }).apply()
         }
 
     override var keepSession: Boolean

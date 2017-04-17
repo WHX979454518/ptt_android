@@ -10,28 +10,31 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import com.crashlytics.android.answers.Answers
-import com.crashlytics.android.answers.ContentViewEvent
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.model.Room
-import com.xianzhitech.ptt.model.User
-import com.xianzhitech.ptt.repo.RoomName
+import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.User
+import com.xianzhitech.ptt.ext.findView
+import com.xianzhitech.ptt.ext.getTintedDrawable
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.StaticUserException
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
+import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
-import com.xianzhitech.ptt.util.withUser
-import rx.CompletableSubscriber
-import rx.Observable
-import rx.Subscriber
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
+import io.reactivex.CompletableObserver
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Function3
 import java.util.concurrent.TimeUnit
 
 class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
@@ -75,50 +78,31 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
     override fun onStart() {
         super.onStart()
 
-        Answers.getInstance().logContentView(ContentViewEvent().apply {
-            withUser(appComponent.signalHandler.peekCurrentUserId, appComponent.signalHandler.currentUserCache.value)
-            putContentId(roomId)
-            putContentType("room-details")
-        })
-
-        appComponent.signalHandler.retrieveRoomInfo(roomId)
-                .subscribeSimple {
-                    appComponent.roomRepository.saveRooms(listOf(it)).execAsync().subscribeSimple()
-                }
+        appComponent.signalBroker.updateRoom(roomId)
 
         Observable.combineLatest(
-                appComponent.roomRepository.getRoom(roomId).observe().map { it ?: throw StaticUserException(R.string.error_room_not_exists) },
-                appComponent.roomRepository.getRoomName(roomId, excludeUserIds = listOf(appComponent.signalHandler.peekCurrentUserId)).observe(),
-                appComponent.roomRepository.getRoomMembers(roomId, maxMemberCount = Int.MAX_VALUE).observe(),
-                { room, name, members ->
-                    RoomData(room, name!!, members)
+                appComponent.storage.getRoom(roomId).map { it.orNull() ?: throw StaticUserException(R.string.error_room_not_exists) },
+                appComponent.storage.getRoomName(roomId),
+                appComponent.storage.getRoomMembers(roomId),
+                Function3(::RoomData))
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget {
+                    it.toast()
+                    finish()
                 }
-        )
-                .observeOnMainThread()
-                .subscribe(object : Subscriber<RoomData>() {
-                    override fun onError(e: Throwable) {
-                        defaultOnErrorAction.call(e)
-                        finish()
-                    }
-
-                    override fun onCompleted() { }
-
-                    override fun onNext(t: RoomData) {
-                        onRoomLoaded(t.room, t.name, t.members)
-                    }
-                })
+                .subscribe { (room, name, members) -> onRoomLoaded(room, name, members) }
                 .bindToLifecycle()
     }
 
-    private fun onRoomLoaded(room: Room, roomName: RoomName, roomMembers: List<User>) {
+    private fun onRoomLoaded(room: Room, roomName: String, roomMembers: List<User>) {
         this.roomMembers = roomMembers
-        roomNameView.text = roomName.name
+        roomNameView.text = roomName
 
         if (room.extraMemberIds.isNotEmpty()) {
             // 如果有额外的用户, 意味着这个组是个临时组, 可以改名
             (roomNameView.parent as View).setOnClickListener {
                 startActivityForResultWithAnimation(TextInputActivity.build(
-                        this, R.string.room_name.toFormattedString(this), R.string.type_room_name.toFormattedString(this),null, false), REQUEST_UPDATE_ROOM_NAME)
+                        this, R.string.room_name.toFormattedString(this), R.string.type_room_name.toFormattedString(this), null, false), REQUEST_UPDATE_ROOM_NAME)
             }
             roomNameView.setCompoundDrawablesWithIntrinsicBounds(null, null, getTintedDrawable(R.drawable.ic_arrow_right, roomNameView.currentTextColor), null)
         } else {
@@ -140,7 +124,7 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
         // Display members
         memberAdapter.setUsers(roomMembers.subList(0, Math.min(roomMembers.size, MAX_MEMBER_DISPLAY_COUNT)))
 
-        if (room.id == appComponent.signalHandler.peekCurrentRoomId()) {
+        if (room.id == appComponent.signalBroker.peekWalkieRoomId()) {
             joinRoomButton.setText(R.string.in_room)
             joinRoomButton.isEnabled = false
         } else {
@@ -159,19 +143,18 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
-            //TODO:
-//            val selectedUserIds = data.getStringArrayExtra(ModelListActivity.RESULT_EXTRA_SELECTED_MODEL_IDS)
-//            appComponent.signalHandler.updateRoomMembers(roomId, selectedUserIds.toList())
-//                    .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-//                    .observeOn(AndroidSchedulers.mainThread())
-//                    .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
+            val selectedUserIds = data.getStringArrayExtra(ModelListFragment.RESULT_EXTRA_SELECTED_IDS)
+            appComponent.signalBroker.updateRoomMembers(roomId, selectedUserIds.toList())
+                    .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .toCompletable()
+                    .subscribe(RoomUpdateSubscriber(applicationContext, roomId))
         } else if (requestCode == REQUEST_UPDATE_ROOM_NAME && resultCode == RESULT_OK && data != null) {
             val roomName = data.getStringExtra(TextInputActivity.RESULT_EXTRA_TEXT)
             if (roomName.isNullOrBlank()) {
                 Toast.makeText(this, R.string.room_not_updated, Toast.LENGTH_LONG).show()
-            }
-            else {
-                appComponent.roomRepository.updateRoomName(roomId, roomName).execAsync().subscribeSimple()
+            } else {
+                appComponent.storage.updateRoomName(roomId, roomName).logErrorAndForget().subscribe()
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data)
@@ -179,18 +162,18 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
     }
 
     private class RoomUpdateSubscriber(private val context: Context,
-                                       private val roomId: String) : CompletableSubscriber {
+                                       private val roomId: String) : CompletableObserver {
 
-        override fun onSubscribe(d: Subscription?) {
+        override fun onSubscribe(d: Disposable?) {
         }
 
         override fun onError(e: Throwable) {
-            defaultOnErrorAction.call(e)
+            e.toast()
         }
 
-        override fun onCompleted() {
+        override fun onComplete() {
             Toast.makeText(context, R.string.room_updated.toFormattedString(context), Toast.LENGTH_LONG).show()
-            (context.applicationContext as AppComponent).roomRepository.updateLastRoomActiveTime(roomId).execAsync().subscribeSimple()
+            (context.applicationContext as AppComponent).storage.updateRoomLastWalkieActiveTime(roomId).logErrorAndForget().subscribe()
         }
     }
 
@@ -239,7 +222,7 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
     }
 
     private data class RoomData(val room: Room,
-                                val name: RoomName,
+                                val name: String,
                                 val members: List<User>)
 
     companion object {

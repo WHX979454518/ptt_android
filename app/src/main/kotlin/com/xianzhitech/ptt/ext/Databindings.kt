@@ -86,3 +86,7 @@ fun <T> BehaviorSubject<Optional<T>>.toObservableField(): ObservableField<T> {
         }
     }
 }
+
+fun <T> ObservableField<T>.fromOptional(opt : Optional<T>) {
+    set(opt.orNull())
+}

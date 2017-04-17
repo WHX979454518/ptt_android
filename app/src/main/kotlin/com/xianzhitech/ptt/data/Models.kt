@@ -96,6 +96,8 @@ interface RoomInfo : Persistable, Parcelable {
 
     @get:ForeignKey(references = Message::class, referencedColumn = "remoteId", delete = ReferentialAction.CASCADE)
     val latestReadMessageRemoteId : String?
+
+    val lastWalkieActiveTime : Date?
 }
 
 
