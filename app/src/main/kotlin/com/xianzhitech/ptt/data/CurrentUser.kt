@@ -38,21 +38,17 @@ class CurrentUser : User, Event {
         @JsonIgnore
         get() = Integer.parseInt(privileges["priority"].toString())
 
-    fun hasPermission(perm: Permission?): Boolean {
-        Preconditions.checkArgument(perm != null)
-
+    fun hasPermission(perm: Permission): Boolean {
         when (perm) {
             Permission.CALL_INDIVIDUAL -> return java.lang.Boolean.TRUE == privileges["callAble"]
             Permission.CALL_TEMP_GROUP -> return java.lang.Boolean.TRUE == privileges["groupAble"]
             Permission.RECEIVE_INDIVIDUAL_CALL -> return java.lang.Boolean.TRUE == privileges["calledAble"]
             Permission.RECEIVE_TEMP_GROUP_CALL -> return java.lang.Boolean.TRUE == privileges["joinAble"]
-            Permission.SPEAK -> return java.lang.Boolean.FALSE == privileges["forbidSpeak"]
+            Permission.SPEAK -> return privileges.containsKey("forbidSpeak").not() || java.lang.Boolean.FALSE == privileges["forbidSpeak"]
             Permission.MUTE -> return java.lang.Boolean.TRUE == privileges["muteAble"]
             Permission.FORCE_INVITE -> return java.lang.Boolean.TRUE == privileges["powerInviteAble"]
             Permission.VIEW_MAP -> return java.lang.Boolean.TRUE == privileges["viewMap"]
         }
-
-        return false
     }
 
     @get:JsonProperty("privileges")

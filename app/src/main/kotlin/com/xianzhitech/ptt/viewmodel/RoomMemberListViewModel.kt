@@ -16,7 +16,7 @@ class RoomMemberListViewModel(private val appComponent: AppComponent,
                                 .map { listOf(appComponent.signalBroker.currentUser.value.get()) + (it as List<NamedModel>) }
                     }
                     else {
-                        Observable.empty()
+                        Observable.just(emptyList())
                     }
                 }
 }

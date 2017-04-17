@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.home.login
 
 import android.content.Intent
+import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -25,7 +26,7 @@ class LoginFragment : BaseViewModelFragment<LoginViewModel, FragmentLoginBinding
     }
 
     override fun onCreateViewModel(): LoginViewModel {
-        return LoginViewModel(appComponent, this)
+        return LoginViewModel(appComponent, this, arguments?.getBoolean(ARG_KICKED_OUT) ?: false)
     }
 
     override fun navigateToHome() {
@@ -46,5 +47,17 @@ class LoginFragment : BaseViewModelFragment<LoginViewModel, FragmentLoginBinding
 
     interface Callbacks {
         fun navigateToHome()
+    }
+
+    companion object {
+        const val ARG_KICKED_OUT = "kicked_out"
+
+        fun create(kickedOut : Boolean) : LoginFragment {
+            return LoginFragment().apply {
+                arguments = Bundle(1).apply {
+                    putBoolean(ARG_KICKED_OUT, kickedOut)
+                }
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.broker
 
 import android.content.Context
 import android.content.Intent
+import android.os.Parcelable
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
@@ -9,11 +10,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.dto.NearbyUser
-import com.xianzhitech.ptt.api.event.ConnectionErrorEvent
-import com.xianzhitech.ptt.api.event.Event
-import com.xianzhitech.ptt.api.event.LoginFailedEvent
-import com.xianzhitech.ptt.api.event.WalkieRoomActiveInfoUpdateEvent
-import com.xianzhitech.ptt.api.event.WalkieRoomSpeakerUpdateEvent
+import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.data.Message
@@ -21,14 +18,10 @@ import com.xianzhitech.ptt.data.MessageEntity
 import com.xianzhitech.ptt.data.MessageType
 import com.xianzhitech.ptt.data.Permission
 import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.NoPermissionException
 import com.xianzhitech.ptt.service.NoSuchRoomException
 import com.xianzhitech.ptt.service.ServerException
-import com.xianzhitech.ptt.ext.i
-import com.xianzhitech.ptt.ext.logErrorAndForget
-import com.xianzhitech.ptt.ext.toOptional
-import com.xianzhitech.ptt.ext.w
-import com.xianzhitech.ptt.ext.without
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.toast
@@ -134,14 +127,14 @@ class SignalBroker(private val appComponent: AppComponent,
 
         if (room.extraMemberIds.without(user.id).isNotEmpty()) {
             if (room.extraMemberIds.size <= 2) {
-                return if (user.hasPermission(Permission.CALL_INDIVIDUAL)) {
+                return if (user.hasPermission(Permission.CALL_INDIVIDUAL).not()) {
                     NoPermissionException(Permission.CALL_INDIVIDUAL)
                 } else {
                     null
                 }
             }
 
-            return if (user.hasPermission(Permission.CALL_TEMP_GROUP)) {
+            return if (user.hasPermission(Permission.CALL_TEMP_GROUP).not()) {
                 NoPermissionException(Permission.CALL_TEMP_GROUP)
             } else {
                 null
@@ -182,8 +175,28 @@ class SignalBroker(private val appComponent: AppComponent,
                 }
             }
 
+            is RoomKickOutEvent -> {
+                quitWalkieRoom(false)
+            }
+
             is CurrentUser -> {
                 currentUser.onNext(event.toOptional())
+            }
+
+            is Message -> {
+                appComponent.storage.getRoom(event.roomId)
+                        .firstOrError()
+                        .flatMapCompletable { room ->
+                            if (room.isAbsent) {
+                                updateRoom(event.roomId).toCompletable()
+                            } else {
+                                Completable.complete()
+                            }
+                        }
+                        .andThen(appComponent.storage.saveMessage(event))
+                        .toMaybe()
+                        .logErrorAndForget()
+                        .subscribe()
             }
 
             is Room -> {
@@ -194,7 +207,13 @@ class SignalBroker(private val appComponent: AppComponent,
             }
         }
 
-        appContext.sendBroadcast(Intent(action).setPackage(appContext.packageName).putExtra(EXTRA_EVENT, event))
+        val intent = Intent(action).setPackage(appContext.packageName)
+        @Suppress("USELESS_CAST")
+        when (event) {
+            is Parcelable -> intent.putExtra(EXTRA_EVENT, event as Parcelable)
+            else -> intent.putExtra(EXTRA_EVENT, event)
+        }
+        appContext.sendBroadcast(intent)
     }
 
 
@@ -270,7 +289,7 @@ class SignalBroker(private val appComponent: AppComponent,
         appComponent.storage.updateRoomLastWalkieActiveTime(roomId).logErrorAndForget().subscribe()
     }
 
-    fun quitWalkieRoom() {
+    fun quitWalkieRoom(askOthersToLeave : Boolean = appComponent.preference.keepSession.not()) {
         joinWalkieDisposable?.dispose()
         joinWalkieDisposable = null
 
@@ -280,7 +299,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
         if (walkieRoomId != null) {
             recordWalkieRoomActive(walkieRoomId)
-            signalApi.leaveWalkieRoom(walkieRoomId)
+            signalApi.leaveWalkieRoom(walkieRoomId, askOthersToLeave)
                     .logErrorAndForget()
                     .subscribe()
         }
@@ -303,7 +322,7 @@ class SignalBroker(private val appComponent: AppComponent,
             }
 
 
-            if (roomState.currentRoomId != null && roomState.speakerPriority!! <= currentUser.priority) {
+            if (roomState.speakerId != null && roomState.speakerPriority!! <= currentUser.priority) {
                 return@defer Single.just(false)
             }
 

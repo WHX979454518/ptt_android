@@ -100,7 +100,7 @@ class SignalApi(private val appComponent: AppComponent,
                             .build()
                             .create(RestfulApi::class.java)
 
-                    SIGNAL_MAPS.forEach { signal, data ->
+                    SIGNAL_MAPS.forEach { (signal, data) ->
                         socket.listen(signal) { arg ->
                             if (data is Class<*> && Event::class.java.isAssignableFrom(data) && arg != null) {
                                 @Suppress("UNCHECKED_CAST")
@@ -288,8 +288,8 @@ class SignalApi(private val appComponent: AppComponent,
         return rpc<JoinWalkieRoomResponse>("c_join_room", roomId, fromInvitation).toSingle()
     }
 
-    fun leaveWalkieRoom(roomId: String): Completable {
-        return rpc<Unit>("c_leave_room", roomId).ignoreElement()
+    fun leaveWalkieRoom(roomId: String, askOthersToLeave: Boolean): Completable {
+        return rpc<Unit>("c_leave_room", roomId, askOthersToLeave).ignoreElement()
     }
 
     fun grabWalkieMic(roomId: String): Single<Boolean> {
@@ -414,9 +414,11 @@ class SignalApi(private val appComponent: AppComponent,
                 "s_logon" to CurrentUser::class.java,
                 "s_invite_to_join" to WalkieRoomInvitationEvent::class.java,
                 "s_online_member_update" to WalkieRoomActiveInfoUpdateEvent::class.java,
+                "s_speaker_changed" to WalkieRoomSpeakerUpdateEvent::class.java,
                 "s_member_update" to Room::class.java,
                 "s_user_update" to CurrentUser::class.java,
-                "s_room_message" to Message::class.java
+                "s_room_message" to Message::class.java,
+                "s_kick_out_room" to RoomKickOutEvent
         )
 
     }

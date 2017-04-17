@@ -3,16 +3,17 @@ package com.xianzhitech.ptt.service.handler
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.google.common.base.Optional
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
 import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Permission
 import com.xianzhitech.ptt.data.RoomInfo
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.isDownTime
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
 import org.threeten.bp.LocalTime
@@ -22,21 +23,26 @@ import java.io.Serializable
 class RoomInvitationHandler : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
-        val invite: WalkieRoomInvitationEvent = (intent?.getSerializableExtra(SignalBroker.EXTRA_EVENT) as? WalkieRoomInvitationEvent) ?: return
+        val invite: WalkieRoomInvitationEvent = intent?.getParcelableExtra<WalkieRoomInvitationEvent>(SignalBroker.EXTRA_EVENT) ?: return
+
 
         val appComponent = context.appComponent
         val currentRoomId = appComponent.signalBroker.peekWalkieRoomId()
+
+        val roomInfo : Single<Optional<RoomInfo>>
+
         if (currentRoomId == null) {
-            onReceive(context, invite, currentRoomId, null)
+            roomInfo = Single.just(Optional.absent())
         } else {
-            appComponent.storage.getRoomInfo(currentRoomId)
-                    .firstElement()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .logErrorAndForget(Throwable::toast)
-                    .subscribe { info ->
-                        onReceive(context, invite, currentRoomId, info.orNull())
-                    }
+            roomInfo = appComponent.storage.getRoomInfo(currentRoomId).firstOrError()
         }
+
+        appComponent.storage.saveRoom(invite.room)
+                .flatMap { roomInfo }
+                .toMaybe()
+                .logErrorAndForget()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { onReceive(context, invite, currentRoomId, it.orNull()) }
     }
 
     private fun onReceive(context: Context, invitation: WalkieRoomInvitationEvent, currentRoomId : String?, currentRoomInfo: RoomInfo?) {

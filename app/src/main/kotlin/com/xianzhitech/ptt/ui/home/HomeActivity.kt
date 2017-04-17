@@ -12,6 +12,7 @@ import com.xianzhitech.ptt.ui.base.BaseViewModelActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.chat.ChatFragment
 import com.xianzhitech.ptt.ui.login.LoginActivity
+import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment
 import com.xianzhitech.ptt.viewmodel.HomeViewModel
 
@@ -69,13 +70,6 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
         }
     }
 
-    override fun navigateToWalkieTalkiePage() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun navigateToVideoChatPage() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
 
     override fun navigateToChatRoomPage(room: Room) {
         startActivityWithAnimation(

@@ -32,8 +32,8 @@ class TopBannerViewModel(appComponent: AppComponent,
         val notification: Observable<Triple<Optional<Pair<Room, String>>, Optional<Pair<Room, String>>, Boolean>> = Observable.combineLatest(
                 signalBroker.connectionState,
                 signalBroker.currentUser,
-                signalBroker.currentVideoRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  } ,
-                signalBroker.currentWalkieRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.empty()  },
+                signalBroker.currentVideoRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.just(Optional.absent())  } ,
+                signalBroker.currentWalkieRoomId.switchMap { it.orNull()?.let { storage.getRoomWithName(it) } ?: Observable.just(Optional.absent())  },
                 appContext.getConnectivityObservable(),
                 Function5 { _, _, video, wt, connected -> Triple(video, wt, connected) }
         )

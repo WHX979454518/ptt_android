@@ -36,6 +36,7 @@ class ChatViewModel(private val appComponent: AppComponent,
         super.onStart()
 
         appComponent.storage.getRoomWithName(roomId)
+                .observeOn(AndroidSchedulers.mainThread())
                 .logErrorAndForget()
                 .subscribe {
                     room.set(it.orNull()?.first)
@@ -54,7 +55,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickCall() {
-
+        navigator.navigateToWalkieTalkie(roomId)
     }
 
     fun onClickEmoji() {
@@ -73,7 +74,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickVideo() {
-
+        navigator.navigateToVideoChatPage(roomId)
     }
 
     fun onClickVoice() {
@@ -100,6 +101,7 @@ class ChatViewModel(private val appComponent: AppComponent,
         fun navigateToLatestMessageIfPossible()
         fun displayNoPermissionToWalkie()
         fun openEmojiDrawer()
+        fun navigateToVideoChatPage(roomId: String)
     }
 
 }

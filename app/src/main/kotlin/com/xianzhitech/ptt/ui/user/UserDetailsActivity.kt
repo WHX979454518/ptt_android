@@ -20,13 +20,6 @@ class UserDetailsActivity : BaseActivity(), UserDetailsFragment.Callbacks {
         }
     }
 
-    override fun navigateToWalkieTalkiePage(roomId: String) {
-        joinRoom(roomId, false, false)
-    }
-
-    override fun navigateToVideoChatPage(roomId: String) {
-        joinRoom(roomId, false, true)
-    }
 
     companion object {
         const val EXTRA_USER_ID = "extra_user_id"

@@ -21,7 +21,7 @@ class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
         }
         else if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, LoginFragment())
+                    .replace(android.R.id.content, LoginFragment.create(intent.getBooleanExtra(EXTRA_KICKED_OUT, false)))
                     .commit()
         }
     }
@@ -29,5 +29,9 @@ class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
     override fun navigateToHome() {
         startActivity(Intent(this, HomeActivity::class.java))
         finish()
+    }
+
+    companion object {
+        const val EXTRA_KICKED_OUT = "kicked_out"
     }
 }

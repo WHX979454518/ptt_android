@@ -139,6 +139,13 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".service.handler.UserKickedOutReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="s_kick_out" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".service.handler.AutoStartReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

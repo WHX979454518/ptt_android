@@ -11,7 +11,7 @@ class GroupMemberListViewModel(private val appComponent: AppComponent,
     override val contactModels: Observable<List<NamedModel>>
         get() = appComponent.storage.getGroups(listOf(groupId))
                 .switchMap { groups ->
-                    groups.firstOrNull()?.let { appComponent.storage.getUsers(it.memberIds) } ?: Observable.empty()
+                    groups.firstOrNull()?.let { appComponent.storage.getUsers(it.memberIds) } ?: Observable.just(emptyList())
                 }
                 .map { listOf(appComponent.signalBroker.currentUser.value.get()) + (it as List<NamedModel>) }
 }

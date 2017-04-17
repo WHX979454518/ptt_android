@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit
 
 class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>(), ChatViewModel.Navigator {
     private val chatAdapter = ChatAdapter()
+
     private val inputMethodManager: InputMethodManager by lazy {
         context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     }
-
     override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentChatBinding {
         val binding = FragmentChatBinding.inflate(inflater, container, false)
         binding.recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true)
@@ -83,6 +83,10 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         }
     }
 
+    override fun navigateToVideoChatPage(roomId: String) {
+        callbacks<Callbacks>()?.navigateToVideoChatPage(roomId)
+    }
+
     override fun navigateToWalkieTalkie(roomId: String) {
         callbacks<Callbacks>()?.navigateToWalkieTalkiePage(roomId)
     }
@@ -115,6 +119,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         fun navigateToWalkieTalkiePage(roomId: String)
         fun navigateToWalkieTalkiePage()
         fun navigateToVideoChatPage()
+        fun navigateToVideoChatPage(roomId: String)
     }
 
     companion object {

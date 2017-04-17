@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
+import com.google.common.base.Optional
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.Permission
@@ -212,7 +213,7 @@ class RoomFragment : BaseFragment()
                     if (it.isPresent) {
                         appComponent.storage.getRoomDetails(it.get())
                     } else {
-                        Observable.empty()
+                        Observable.just(Optional.absent())
                     }
                 },
                 { onlineMemberIds, roomDetails -> roomDetails.transform { RoomInfo(it!!, onlineMemberIds) } })
@@ -222,7 +223,7 @@ class RoomFragment : BaseFragment()
                         callbacks<Callbacks>()?.setTitle(room.get().details.name)
                         views?.titleView?.apply {
                             text = R.string.room_name_with_numbers.toFormattedString(context,
-                                    room.get().details.name, room.get().onlineMemberIds.size, room.get().onlineMemberIds.size)
+                                    room.get().details.name, room.get().onlineMemberIds.size, room.get().details.members.size)
                             isEnabled = true
                         }
                     }
@@ -253,7 +254,7 @@ class RoomFragment : BaseFragment()
                     if (it.speakerId != null) {
                         appComponent.storage.getUser(it.speakerId)
                     } else {
-                        Observable.empty()
+                        Observable.just(Optional.absent())
                     }
                 }
                 .observeOn(AndroidSchedulers.mainThread())
@@ -288,7 +289,7 @@ class RoomFragment : BaseFragment()
 
                         val animateDrawable = speakerAnimationView.drawable
 
-                        if (speaker == null) {
+                        if (speaker.isAbsent) {
                             speakerAnimationView.visibility = View.INVISIBLE
                             speakerEllapseTimeView.visibility = View.VISIBLE
                             if (animateDrawable is AnimationDrawable) {
@@ -304,9 +305,9 @@ class RoomFragment : BaseFragment()
                             startUpdatingDurationView()
                         }
 
-                        speakerView.tag = speaker
-                        if (speaker != null) {
-                            speakerView.setTag(R.id.key_last_speaker, speaker)
+                        speakerView.tag = speaker.orNull()
+                        if (speaker.isPresent) {
+                            speakerView.setTag(R.id.key_last_speaker, speaker.get())
                         }
                     }
                 }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.xianzhitech.ptt.api.event.Event
 import com.xianzhitech.ptt.util.SetConverter
 import io.requery.*
+import java.io.Serializable
 import java.util.*
 
 interface NamedModel {
@@ -28,7 +29,7 @@ interface User : NamedModel {
 @Entity
 @Table(name = "users")
 @JsonDeserialize(`as` = ContactUserEntity::class)
-interface ContactUser : User, Persistable, NamedModel, Parcelable {
+interface ContactUser : User, Persistable, NamedModel, Parcelable, Serializable {
     @get:JsonProperty("idNumber")
     @get:Key
     override val id: String
@@ -49,7 +50,7 @@ interface ContactUser : User, Persistable, NamedModel, Parcelable {
 @Entity
 @Table(name = "groups")
 @JsonDeserialize(`as` = ContactGroupEntity::class)
-interface ContactGroup : Persistable, NamedModel, Parcelable {
+interface ContactGroup : Persistable, NamedModel, Parcelable, Serializable {
     @get:Key
     @get:JsonProperty("idNumber")
     override val id: String
@@ -68,7 +69,7 @@ interface ContactGroup : Persistable, NamedModel, Parcelable {
 @Entity
 @Table(name = "rooms")
 @JsonDeserialize(`as` = RoomEntity::class)
-interface Room : Persistable, Parcelable, Event {
+interface Room : Persistable, Parcelable, Event, Serializable {
     @get:JsonProperty("idNumber")
     @get:Key
     val id: String
@@ -90,7 +91,7 @@ interface Room : Persistable, Parcelable, Event {
 
 @Entity
 @Table(name = "room_info")
-interface RoomInfo : Persistable, Parcelable {
+interface RoomInfo : Persistable, Parcelable, Serializable {
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
     val roomId : String
 

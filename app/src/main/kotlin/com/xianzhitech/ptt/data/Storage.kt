@@ -50,7 +50,7 @@ class Storage(context: Context,
                             names.mapIndexed { index, name -> rooms[index] to (name as String) }
                         }
                     } else {
-                        Observable.empty()
+                        Observable.just(emptyList())
                     }
                 }
     }
@@ -106,7 +106,7 @@ class Storage(context: Context,
                     if (room.isPresent) {
                         getRoomName(room.get())
                     } else {
-                        Observable.empty()
+                        Observable.just("")
                     }
                 },
                 BiFunction { room, name -> room.transform { it!! to name } }
@@ -158,18 +158,18 @@ class Storage(context: Context,
                 }
     }
 
-    fun getRoomMembers(roomId : String, limit: Int? = null) : Observable<List<User>> {
+    fun getRoomMembers(roomId : String, limit: Int? = null, includeSelf: Boolean = true) : Observable<List<User>> {
         return getRoom(roomId)
                 .switchMap { room ->
                     if (room.isPresent) {
-                        getRoomMembers(room.get(), limit)
+                        getRoomMembers(room.get(), limit, includeSelf)
                     } else {
                         Observable.just(emptyList())
                     }
                 }
     }
 
-    fun getRoomDetails(roomId: String, memberLimit : Int? = null) : Observable<Optional<RoomDetails>> {
+    fun getRoomDetails(roomId: String, memberLimit : Int? = null, includeSelf: Boolean = true) : Observable<Optional<RoomDetails>> {
         val room = getRoom(roomId).share()
         return Observable.combineLatest(
                 room,
@@ -177,14 +177,14 @@ class Storage(context: Context,
                     if (it.isPresent) {
                         getRoomName(it.get())
                     } else {
-                        Observable.empty()
+                        Observable.just("")
                     }
                 },
                 room.switchMap {
                     if (it.isPresent) {
-                        getRoomMembers(it.get(), memberLimit)
+                        getRoomMembers(it.get(), memberLimit, includeSelf)
                     } else {
-                        Observable.empty()
+                        Observable.just(emptyList())
                     }
                 },
                 Function3 { room, name, members -> room.transform { RoomDetails(it!!, name, members) } }
@@ -193,7 +193,7 @@ class Storage(context: Context,
 
     fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
         //TODO:
-        return Observable.empty()
+        return Observable.just(emptyMap())
     }
 
     fun getAllRoomInfo() : Observable<Map<String, RoomInfo>> {
@@ -229,8 +229,9 @@ class Storage(context: Context,
                 .observeList()
                 .map {
                     val currentUser = appComponent.signalBroker.currentUser.value.orNull()
+                    @Suppress("UNCHECKED_CAST")
                     if (currentUser != null && userIds.contains(currentUser.id)) {
-                        it + currentUser
+                        (it + currentUser) as List<User>
                     } else {
                         it
                     }

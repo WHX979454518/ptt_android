@@ -122,6 +122,22 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
+    fun navigateToWalkieTalkiePage(roomId: String) {
+        joinRoom(roomId, fromInvitation = false)
+    }
+
+    fun navigateToWalkieTalkiePage() {
+        startActivityWithAnimation(Intent(this, RoomActivity::class.java))
+    }
+
+    fun navigateToVideoChatPage(roomId: String) {
+        joinRoom(roomId, fromInvitation = false, isVideoChat = true)
+    }
+
+    fun navigateToVideoChatPage() {
+        startActivityWithAnimation(Intent(this, CallActivity::class.java))
+    }
+
     private fun startDownload(appConfig: AppConfig) {
         val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         val downloadUri = Uri.parse(appConfig.downloadUrl)
@@ -208,9 +224,8 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     fun handleUpdate(appParams: AppConfig) {
-        if (appParams.hasUpdate &&
-                appParams.downloadUrl.isNullOrBlank().not() &&
-                (appParams.mandatory == true || appComponent.preference.lastIgnoredUpdateUrl != appParams.downloadUrl) &&
+        if (appParams.hasUpdate && appParams.downloadUrl.isNullOrBlank().not() &&
+                (appParams.mandatory || appComponent.preference.lastIgnoredUpdateUrl != appParams.downloadUrl) &&
                 appComponent.preference.updateDownloadId == null) {
             AlertDialogFragment.Builder().apply {
                 message = appParams.updateMessage

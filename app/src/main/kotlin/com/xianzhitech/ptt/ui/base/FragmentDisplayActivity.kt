@@ -6,9 +6,10 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
 import com.xianzhitech.ptt.App
+import com.xianzhitech.ptt.ui.chat.ChatFragment
 
 
-class FragmentDisplayActivity : BaseActivity() {
+class FragmentDisplayActivity : BaseActivity(), ChatFragment.Callbacks {
 
     @SuppressLint("CommitTransaction")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +25,8 @@ class FragmentDisplayActivity : BaseActivity() {
                     .commitNow()
         }
     }
+
+
 
     companion object {
         private const val EXTRA_FRAGMENT = "extra_fragment"
