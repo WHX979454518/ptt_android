@@ -1,5 +1,7 @@
 package com.xianzhitech.ptt.ui.modellist
 
+import android.app.Activity
+import android.content.Intent
 import android.databinding.ViewDataBinding
 import android.os.Bundle
 import android.support.v4.view.MenuItemCompat
@@ -14,6 +16,7 @@ import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.observe
 import com.xianzhitech.ptt.ext.show
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.widget.SideNavigationView
 
 
@@ -42,11 +45,18 @@ abstract class ModelListFragment<VM : ModelListViewModel, VB : ViewDataBinding> 
             viewModel.selectedItemIds
                     .observe()
                     .subscribe {
-                        doneItem?.isEnabled = it.isNotEmpty()
-                        doneItem?.title = if (it.isEmpty()) {
+                        val selectedItems : Int
+                        if (viewModel.preselectedUnselectable) {
+                            selectedItems = viewModel.selectedItemIds.size - viewModel.preselectedIds.size
+                        } else {
+                            selectedItems = viewModel.selectedItemIds.size
+                        }
+
+                        doneItem?.isEnabled = selectedItems > 0
+                        doneItem?.title = if (selectedItems <= 0) {
                             getString(R.string.finish)
                         } else {
-                            getString(R.string.finish_with_number, viewModel.selectedItemIds.size)
+                            getString(R.string.finish_with_number, selectedItems)
                         }
                     }
                     .bindToLifecycle()
@@ -79,11 +89,22 @@ abstract class ModelListFragment<VM : ModelListViewModel, VB : ViewDataBinding> 
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.modelList_done) {
-            callbacks<Callbacks>()?.onSelectionDone(viewModel.selectedItemIds.keys.toList())
+            onSelectDone()
             return true
         }
 
         return super.onOptionsItemSelected(item)
+    }
+
+    open fun onSelectDone() {
+        val selected = ArrayList(viewModel.selectedItemIds.keys)
+        if (activity is FragmentDisplayActivity) {
+            activity.setResult(Activity.RESULT_OK, Intent().putExtra(RESULT_EXTRA_SELECTED_IDS, selected))
+            activity.finish()
+        }
+        else {
+            callbacks<Callbacks>()?.onSelectionDone(selected)
+        }
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
@@ -125,7 +146,7 @@ abstract class ModelListFragment<VM : ModelListViewModel, VB : ViewDataBinding> 
     }
 
     interface Callbacks {
-        fun onSelectionDone(selected: List<String>)
+        fun onSelectionDone(ids : List<String>)
     }
 
     companion object {

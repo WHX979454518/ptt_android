@@ -1,4 +1,4 @@
-package com.xianzhitech.ptt.ui.room
+package com.xianzhitech.ptt.ui.contact
 
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -10,14 +10,16 @@ import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import com.xianzhitech.ptt.ui.widget.SideNavigationView
-import com.xianzhitech.ptt.viewmodel.RoomMemberListViewModel
+import com.xianzhitech.ptt.viewmodel.ContactSelectionListViewModel
 
 
-class RoomMemberListFragment : ModelListFragment<RoomMemberListViewModel, ViewModelListBinding>() {
+class ContactSelectionFragment : ModelListFragment<ContactSelectionListViewModel, ViewModelListBinding>() {
     override val recyclerView: RecyclerView
         get() = dataBinding.recyclerView
+
     override val sideNavigationView: SideNavigationView
         get() = dataBinding.sideBar
+
     override val currentCharView: TextView
         get() = dataBinding.currentChar
 
@@ -28,14 +30,19 @@ class RoomMemberListFragment : ModelListFragment<RoomMemberListViewModel, ViewMo
     override fun onStart() {
         super.onStart()
 
-        (activity as? FragmentDisplayActivity)?.title = getString(R.string.room_members)
+        (activity as? FragmentDisplayActivity)?.setTitle(R.string.select_contact)
     }
 
-    override fun onCreateViewModel(): RoomMemberListViewModel {
-        return RoomMemberListViewModel(appComponent, arguments.getString(ARG_ROOM_ID))
+    override fun onCreateViewModel(): ContactSelectionListViewModel {
+        return ContactSelectionListViewModel(
+                preselectedIds = arguments?.getStringArrayList(ARG_PRESELECTED_MODEL_IDS) ?: emptyList(),
+                appComponent = appComponent,
+                showGroup = arguments?.getBoolean(SHOW_GROUP, false) ?: false)
     }
+
 
     companion object {
-        const val ARG_ROOM_ID = "room_id"
+        const val ARG_PRESELECTED_MODEL_IDS = "model_ids"
+        const val SHOW_GROUP = "show_group"
     }
 }

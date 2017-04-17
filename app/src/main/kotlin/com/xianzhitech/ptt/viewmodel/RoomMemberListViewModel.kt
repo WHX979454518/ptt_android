@@ -13,7 +13,6 @@ class RoomMemberListViewModel(private val appComponent: AppComponent,
                 .switchMap { room ->
                     if (room.isPresent) {
                         appComponent.storage.getRoomMembers(room.get())
-                                .map { listOf(appComponent.signalBroker.currentUser.value.get()) + (it as List<NamedModel>) }
                     }
                     else {
                         Observable.just(emptyList())

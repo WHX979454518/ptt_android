@@ -7,10 +7,7 @@ import com.google.common.base.Optional
 import com.xianzhitech.ptt.data.ContactGroup
 import com.xianzhitech.ptt.data.ContactUser
 import com.xianzhitech.ptt.data.NamedModel
-import com.xianzhitech.ptt.ext.containsOnlyAsciiChars
-import com.xianzhitech.ptt.ext.doOnLoading
-import com.xianzhitech.ptt.ext.logErrorAndForget
-import com.xianzhitech.ptt.ext.toRxObservable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.util.ObservableArrayList
 import com.xianzhitech.ptt.util.PinyinComparator
 import com.xianzhitech.ptt.util.toPinyin
@@ -23,8 +20,8 @@ import java.util.*
 
 
 abstract class ModelListViewModel(val selectable: Boolean = false,
-                                  private val preselectedIds: Collection<String> = emptyList(),
-                                  private val preselectedUnselectable: Boolean = false) : LifecycleViewModel() {
+                                  val preselectedIds: Collection<String> = emptyList(),
+                                  val preselectedUnselectable: Boolean = true) : LifecycleViewModel() {
 
     val viewModels = ObservableArrayList<ViewModel>()
     val headerViewModelPositions = ObservableField<Map<Char, Int>>(emptyMap())

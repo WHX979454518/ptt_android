@@ -15,21 +15,18 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.data.User
-import com.xianzhitech.ptt.ext.findView
-import com.xianzhitech.ptt.ext.getTintedDrawable
-import com.xianzhitech.ptt.ext.logErrorAndForget
-import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.StaticUserException
 import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.app.TextInputActivity
 import com.xianzhitech.ptt.ui.base.BaseActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
+import com.xianzhitech.ptt.ui.contact.ContactSelectionFragment
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
+import com.xianzhitech.ptt.viewmodel.ContactSelectionListViewModel
 import io.reactivex.CompletableObserver
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -143,7 +140,7 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
-            val selectedUserIds = data.getStringArrayExtra(ModelListFragment.RESULT_EXTRA_SELECTED_IDS)
+            val selectedUserIds = data.getStringArrayListExtra(ModelListFragment.RESULT_EXTRA_SELECTED_IDS)
             appComponent.signalBroker.addRoomMembers(roomId, selectedUserIds.toList())
                     .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -201,12 +198,14 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
                 holder.nameView?.text = ""
                 holder.avatarView!!.setImageDrawable(holder.itemView.context.getTintedDrawable(R.drawable.ic_person_add_24dp, holder.nameView!!.currentTextColor))
                 holder.itemView.setOnClickListener {
-                    //TODO:
-//                    startActivityForResultWithAnimation(
-//                            ModelListActivity.build(this@RoomDetailsActivity, R.string.add_members.toFormattedString(parent.context),
-//                                    ContactUserProvider(true, roomMembers.map { it.id }.toSet(), false)),
-//                            REQUEST_SELECT_USER
-//                    )
+                    val args = Bundle(1).apply {
+                        putStringArrayList(ContactSelectionFragment.ARG_PRESELECTED_MODEL_IDS, ArrayList(roomMembers.map(User::id)))
+                    }
+
+                    startActivityForResultWithAnimation(
+                            FragmentDisplayActivity.createIntent(ContactSelectionFragment::class.java, args),
+                            REQUEST_SELECT_USER
+                    )
                 }
                 holder
             } else {
