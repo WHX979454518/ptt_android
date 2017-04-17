@@ -68,7 +68,7 @@ class Storage(context: Context,
                         .map { it.firstOrNull()?.name ?: "会话名称未知" }
             }
 
-            getRoomMembers(room, 4)
+            getRoomMembers(room, 4, includeSelf = false)
                     .map { users ->
                         val sb = users.atMost(3).joinTo(buffer = StringBuilder(), separator = "、", transform = User::name)
                         if (users.size == 4) {
@@ -139,12 +139,16 @@ class Storage(context: Context,
                 .toCompletable()
     }
 
-    fun getRoomMembers(room: Room, limit: Int? = null): Observable<List<User>> {
+    fun getRoomMembers(room: Room, limit: Int? = null, includeSelf : Boolean = true): Observable<List<User>> {
         return getGroups(room.groupIds)
                 .switchMap { groups ->
                     val userIds = LinkedHashSet<String>()
                     groups.flatMapTo(userIds, ContactGroup::memberIds)
                     userIds.addAll(room.extraMemberIds)
+
+                    if (includeSelf.not()) {
+                        userIds.remove(appComponent.preference.currentUser?.id)
+                    }
 
                     if (limit == null) {
                         getUsers(userIds)

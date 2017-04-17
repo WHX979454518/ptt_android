@@ -61,7 +61,7 @@ open class ModelView @JvmOverloads constructor(context: Context,
                     users = context.appComponent.storage.getUsers(model.memberIds.toList().atMost(9)).firstOrError()
                 }
                 is Room -> {
-                    users = context.appComponent.storage.getRoomMembers(model, 9).firstOrError()
+                    users = context.appComponent.storage.getRoomMembers(model, 9, includeSelf = false).firstOrError()
                 }
                 else -> throw IllegalStateException("Unknown model type $model")
             }
