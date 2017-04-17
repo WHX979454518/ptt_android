@@ -135,8 +135,7 @@
             android:name=".service.handler.RoomInvitationHandler"
             android:exported="false">
             <intent-filter>
-                <action android:name="SignalService.Room" />
-                <action android:name="PushService.Message" />
+                <action android:name="s_invite_to_join" />
             </intent-filter>
         </receiver>
 

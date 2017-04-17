@@ -46,7 +46,7 @@ class SignalApi(private val appComponent: AppComponent,
 
     val currentUser: BehaviorSubject<Optional<CurrentUser>> = BehaviorSubject.createDefault(Optional.absent())
     val connectionState: BehaviorSubject<ConnectionState> = BehaviorSubject.createDefault(ConnectionState.IDLE)
-    val events: PublishSubject<Event> = PublishSubject.create()
+    val events: PublishSubject<Pair<String, Event>> = PublishSubject.create()
 
     init {
         currentUser.onNext(appComponent.preference.currentUser.toOptional())
@@ -104,9 +104,9 @@ class SignalApi(private val appComponent: AppComponent,
                         socket.listen(signal) { arg ->
                             if (data is Class<*> && Event::class.java.isAssignableFrom(data) && arg != null) {
                                 @Suppress("UNCHECKED_CAST")
-                                events.onNext(appComponent.objectMapper.convertValue(arg, data as Class<Event>))
+                                events.onNext(signal to appComponent.objectMapper.convertValue(arg, data as Class<Event>))
                             } else if (data is Event) {
-                                events.onNext(data)
+                                events.onNext(signal to data)
                             } else {
                                 throw IllegalArgumentException("Unknown data type $data or argument isn't correct")
                             }
@@ -131,7 +131,7 @@ class SignalApi(private val appComponent: AppComponent,
                         appComponent.preference.currentUser = user
                         appComponent.preference.currentUserCredentials = currentUserCredentials
 
-                        events.onNext(user)
+                        events.onNext("s_logon" to user!!)
 
                         connectionState.onNext(ConnectionState.CONNECTED)
                     }

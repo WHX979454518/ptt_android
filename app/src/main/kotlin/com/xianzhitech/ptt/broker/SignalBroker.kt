@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.broker
 
 import android.content.Context
+import android.content.Intent
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
@@ -79,7 +80,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
         signalApi.events
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::onSignalEvent)
+                .subscribe { (name, event) -> onSignalEvent(name, event) }
     }
 
     fun login(name: String, password: String): Completable {
@@ -151,7 +152,7 @@ class SignalBroker(private val appComponent: AppComponent,
         return getRoomPermissionException(room) == null
     }
 
-    private fun onSignalEvent(event: Event) {
+    private fun onSignalEvent(action: String, event: Event) {
         logger.i { "on signal event: $event" }
 
         when (event) {
@@ -189,6 +190,8 @@ class SignalBroker(private val appComponent: AppComponent,
                         .subscribe()
             }
         }
+
+        appContext.sendBroadcast(Intent(action).setPackage(appContext.packageName))
     }
 
 
