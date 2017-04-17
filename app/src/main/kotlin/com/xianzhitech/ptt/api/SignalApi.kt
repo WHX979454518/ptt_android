@@ -8,6 +8,8 @@ import com.google.common.primitives.Primitives
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.dto.Contact
 import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
+import com.xianzhitech.ptt.api.dto.MessageQuery
+import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.service.ServerException
@@ -359,11 +361,11 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     fun addRoomMembers(roomId: String, newMemberIds: List<String>): Single<Room> {
-        return rpc<Room>("c_add_room_members", newMemberIds).toSingle()
+        return rpc<Room>("c_add_room_members", roomId, newMemberIds).toSingle()
     }
 
     fun inviteRoomMembers(roomId: String): Single<Int> {
-        return rpc<Int>("c_invite_room_members").toSingle()
+        return rpc<Int>("c_invite_room_members", roomId).toSingle()
     }
 
     fun changePassword(oldPassword: String, password: String): Completable {
@@ -376,6 +378,10 @@ class SignalApi(private val appComponent: AppComponent,
                         appComponent.preference.currentUserCredentials = newCredentials
                     }
         }
+    }
+
+    fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
+        return rpc<List<MessageQueryResult>>("c_query_messages", queries).toSingle()
     }
 
     private interface RestfulApi {

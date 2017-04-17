@@ -101,8 +101,8 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     }
 
     override fun navigateToLatestMessageIfPossible() {
-        val position = (dataBinding.recyclerView.layoutManager as LinearLayoutManager).findLastCompletelyVisibleItemPosition()
-        if (position == 1) {
+        val position = (dataBinding.recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+        if (position <= 1) {
             dataBinding.recyclerView.smoothScrollToPosition(0)
         }
     }

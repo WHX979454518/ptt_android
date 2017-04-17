@@ -99,6 +99,8 @@ interface RoomInfo : Persistable, Parcelable, Serializable {
     val latestReadMessageRemoteId : String?
 
     val lastWalkieActiveTime : Date?
+
+    val lastMessageSyncTime : Date?
 }
 
 

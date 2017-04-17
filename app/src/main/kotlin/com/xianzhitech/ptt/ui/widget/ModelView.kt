@@ -37,7 +37,6 @@ open class ModelView @JvmOverloads constructor(context: Context,
             if (field != value) {
                 field = value
                 disposable?.dispose()
-                setImageDrawable(null)
                 subscribeIfNeeded()
             }
         }
@@ -66,6 +65,7 @@ open class ModelView @JvmOverloads constructor(context: Context,
                 else -> throw IllegalStateException("Unknown model type $model")
             }
 
+            setImageDrawable(null)
             disposable = users
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe { users ->

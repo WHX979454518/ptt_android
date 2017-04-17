@@ -25,11 +25,7 @@ import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Storage
 import com.xianzhitech.ptt.media.AudioHandler
 import com.xianzhitech.ptt.media.MediaButtonHandler
-import com.xianzhitech.ptt.service.handler.LocationHandler
-import com.xianzhitech.ptt.service.handler.RoomAutoQuitHandler
-import com.xianzhitech.ptt.service.handler.ServiceHandler
-import com.xianzhitech.ptt.service.handler.StatisticCollector
-import com.xianzhitech.ptt.service.handler.WakeLockHandler
+import com.xianzhitech.ptt.service.handler.*
 import com.xianzhitech.ptt.ui.ActivityProvider
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.util.ActivityProviderImpl
@@ -111,6 +107,7 @@ open class App : MultiDexApplication(), AppComponent {
         LocationHandler(this, signalBroker)
         statisticCollector = StatisticCollector(signalBroker)
         WakeLockHandler(signalBroker, this)
+        MessageSync(this)
         SDKInitializer.initialize(this)
     }
 

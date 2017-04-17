@@ -1,14 +1,17 @@
 package com.xianzhitech.ptt.ui.widget
 
 import android.content.Context
+import android.support.v7.widget.AppCompatImageView
 import android.util.AttributeSet
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 
 
 class UserIconView @JvmOverloads constructor(context: Context,
                                              attrs: AttributeSet? = null,
-                                             defStyle: Int = 0) : ModelView(context, attrs, defStyle) {
+                                             defStyle: Int = 0) : AppCompatImageView(context, attrs, defStyle) {
 
     private var attachedToWindow: Boolean = false
     private var subscription: Disposable? = null
@@ -40,15 +43,15 @@ class UserIconView @JvmOverloads constructor(context: Context,
         if (attachedToWindow && userId != null) {
             val currentUser = context.appComponent.signalBroker.currentUser.value.orNull()
             if (currentUser?.id == userId) {
-                model = currentUser
+                setImageDrawable(currentUser!!.createAvatarDrawable())
             }
             else {
                 setImageDrawable(null)
                 subscription = context.appComponent.storage
-                        .getUsers(listOf(userId!!))
-                        .firstElement()
-                        .subscribe { users ->
-                            model = users.firstOrNull()
+                        .getUser(userId!!)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe {
+                            setImageDrawable(it.transform { it!!.createAvatarDrawable() }.orNull())
                         }
             }
         }

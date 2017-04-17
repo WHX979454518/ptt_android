@@ -141,11 +141,15 @@ fun <E, T : MutableCollection<E>> T.keepAtMost(count: Int) : T {
     var i = 0
     val iter = iterator()
     while (iter.hasNext() && i < count) {
-        i = i.inc();
+        i = i.inc()
         iter.next()
     }
     
-    while (iter.hasNext()) { iter.remove() }
+    while (iter.hasNext()) {
+        iter.next()
+        iter.remove()
+    }
+
     return this
 }
 

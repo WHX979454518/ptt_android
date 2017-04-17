@@ -9,6 +9,8 @@ import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.SignalApi
+import com.xianzhitech.ptt.api.dto.MessageQuery
+import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.NearbyUser
 import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.CurrentUser
@@ -448,6 +450,10 @@ class SignalBroker(private val appComponent: AppComponent,
 
     fun changePassword(oldPassword: String, password: String): Completable {
         return signalApi.changePassword(oldPassword, password)
+    }
+
+    fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
+        return signalApi.queryMessages(queries)
     }
 
     companion object {
