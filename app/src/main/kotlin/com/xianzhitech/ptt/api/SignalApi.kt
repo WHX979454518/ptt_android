@@ -190,7 +190,7 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
-    fun sendLocationData(locations: List<Location>) : Completable {
+    fun sendLocationData(locations: List<Location>): Completable {
         return Completable.defer {
             Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
             restfulApi!!.updateLocations(currentUser.value.get().id,
@@ -234,7 +234,7 @@ class SignalApi(private val appComponent: AppComponent,
         return currentUser.value.isPresent
     }
 
-    private fun <T> Socket.listenOnce(name: String, clazz : Class<T>, callback: (arg: T?) -> Unit) {
+    private fun <T> Socket.listenOnce(name: String, clazz: Class<T>, callback: (arg: T?) -> Unit) {
         once(name) { args ->
             logger.i { "Received raw event name = $name, args = ${args.toList()}" }
 
@@ -268,7 +268,7 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
-    private fun String.guessLoginPostfix() : String {
+    private fun String.guessLoginPostfix(): String {
         return when {
             matches(PHONE_MATCHER) -> ":PHONE"
             matches(EMAIL_MATCHER) -> ":MAIL"
@@ -284,27 +284,27 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
-    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean) : Single<JoinWalkieRoomResponse> {
+    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean): Single<JoinWalkieRoomResponse> {
         return rpc<JoinWalkieRoomResponse>("c_join_room", roomId, fromInvitation).toSingle()
     }
 
-    fun leaveWalkieRoom(roomId: String) : Completable {
+    fun leaveWalkieRoom(roomId: String): Completable {
         return rpc<Unit>("c_leave_room", roomId).ignoreElement()
     }
 
-    fun grabWalkieMic(roomId: String) : Single<Boolean> {
+    fun grabWalkieMic(roomId: String): Single<Boolean> {
         return rpc<Boolean>("c_control_mic", roomId).toSingle()
     }
 
-    fun releaseWalkieMic(roomId: String) : Completable {
+    fun releaseWalkieMic(roomId: String): Completable {
         return rpc<Unit>("c_release_mic", roomId).ignoreElement()
     }
 
-    fun sendMessage(msg : Message) : Single<Message> {
+    fun sendMessage(msg: Message): Single<Message> {
         return rpc<Message>("c_send_message", msg).toSingle()
     }
 
-    private inline fun <reified T> rpc(name : String, vararg args : Any?) : Maybe<T> {
+    private inline fun <reified T> rpc(name: String, vararg args: Any?): Maybe<T> {
         return Maybe.create { emitter ->
             Preconditions.checkState(socket != null && hasUser())
 
@@ -347,14 +347,39 @@ class SignalApi(private val appComponent: AppComponent,
                     } else {
                         throw RuntimeException("Server's response for API call $name is invalid: $response")
                     }
-                } catch (err : Throwable) {
+                } catch (err: Throwable) {
                     emitter.onError(err)
                 }
             }
         }
     }
 
+    fun getRoom(roomId: String): Single<Room> {
+        return rpc<Room>("c_room_info", roomId).toSingle()
+    }
+
+    fun addRoomMembers(roomId: String, newMemberIds: List<String>): Single<Room> {
+        return rpc<Room>("c_add_room_members", newMemberIds).toSingle()
+    }
+
+    fun inviteRoomMembers(roomId: String): Single<Int> {
+        return rpc<Int>("c_invite_room_members").toSingle()
+    }
+
+    fun changePassword(oldPassword: String, password: String): Completable {
+        return Completable.defer {
+            val oldUserCredentials = currentUserCredentials!!
+            rpc<Unit>("c_change_pwd", oldPassword.toMD5(), password.toMD5()).ignoreElement()
+                    .doOnComplete {
+                        val newCredentials = oldUserCredentials.copy(password = password)
+                        currentUserCredentials = newCredentials
+                        appComponent.preference.currentUserCredentials = newCredentials
+                    }
+        }
+    }
+
     private interface RestfulApi {
+
         @GET("/api/contact/sync/{idNumber}/{password}/{version}")
         fun syncContact(@Path("idNumber") idNumber: String,
                         @Path("password") password: String,
@@ -363,25 +388,25 @@ class SignalApi(private val appComponent: AppComponent,
         @POST("api/location")
         fun updateLocations(@Query("idNumber") idNumber: String,
                             @Query("password") password: String,
-                            @Body locations : List<Location>) : Completable
+                            @Body locations: List<Location>): Completable
 
         @GET("api/nearby")
-        fun findNearbyPeople(@Query("minLat") minLat : Double, @Query("minLng") minLng : Double, @Query("maxLat") maxLat : Double, @Query("maxLng") maxLng : Double) : Single<JSONArray>
-
+        fun findNearbyPeople(@Query("minLat") minLat: Double, @Query("minLng") minLng: Double, @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<JSONArray>
     }
+
     enum class ConnectionState {
         IDLE,
         CONNECTING,
         CONNECTED,
         RECONNECTING,
         DISCONNECTED,
-
     }
+
     companion object {
         private val PHONE_MATCHER = Regex("^1[2-9]\\d{9}$")
-
         private val EMAIL_MATCHER = Regex(".+@.+\\..+$")
         private val logger = LoggerFactory.getLogger("Signal")
+
         private val SIGNAL_MAPS: Map<String, Any> = mapOf(
                 "s_update_location" to RequestLocationUpdateEvent,
                 "s_login_failed" to LoginFailedEvent::class.java,

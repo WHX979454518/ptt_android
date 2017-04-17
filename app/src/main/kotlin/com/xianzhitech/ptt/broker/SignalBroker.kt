@@ -49,7 +49,9 @@ class SignalBroker(private val appComponent: AppComponent,
 
     private val signalApi = SignalApi(appComponent, appContext)
 
-    val events = signalApi.events
+    val events : Observable<Event>
+    get() = signalApi.events.map { it.second }
+
     val connectionState = signalApi.connectionState
     val currentUser = signalApi.currentUser
 
@@ -87,7 +89,7 @@ class SignalBroker(private val appComponent: AppComponent,
         Preconditions.checkState(isLoggedIn.not())
 
         @Suppress("UNCHECKED_CAST")
-        return Completable.fromObservable((signalApi.events as Observable<Any>)
+        return Completable.fromObservable((events as Observable<Any>)
                 .mergeWith(signalApi.connectionState)
                 .filter { it == SignalApi.ConnectionState.CONNECTED || it is ConnectionErrorEvent || it is LoginFailedEvent }
                 .firstOrError()
@@ -112,6 +114,7 @@ class SignalBroker(private val appComponent: AppComponent,
             quitWalkieRoom()
         }
 
+        appComponent.preference.contactVersion = -1
         appComponent.storage.clear().logErrorAndForget().subscribe()
         signalApi.logout()
     }
@@ -191,7 +194,7 @@ class SignalBroker(private val appComponent: AppComponent,
             }
         }
 
-        appContext.sendBroadcast(Intent(action).setPackage(appContext.packageName))
+        appContext.sendBroadcast(Intent(action).setPackage(appContext.packageName).putExtra(EXTRA_EVENT, event))
     }
 
 
@@ -407,23 +410,29 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
     fun updateRoom(roomId: String): Single<Room> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return signalApi.getRoom(roomId)
+                .flatMap(appComponent.storage::saveRoom)
     }
 
-    fun updateRoomMembers(roomId: String, toList: List<String>): Single<Room> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    fun addRoomMembers(roomId: String, newMemberIds: List<String>): Single<Room> {
+        return signalApi.addRoomMembers(roomId, newMemberIds)
+                .flatMap(appComponent.storage::saveRoom)
     }
 
-    fun  searchNearbyUsers(bounds: LatLngBounds): Single<List<NearbyUser>> {
+    fun searchNearbyUsers(bounds: LatLngBounds): Single<List<NearbyUser>> {
         TODO("not implemented")
     }
 
     fun inviteRoomMembers(roomId: String): Single<Int> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return signalApi.inviteRoomMembers(roomId)
     }
 
     fun changePassword(oldPassword: String, password: String): Completable {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return signalApi.changePassword(oldPassword, password)
+    }
+
+    companion object {
+        const val EXTRA_EVENT = "event"
     }
 }
 

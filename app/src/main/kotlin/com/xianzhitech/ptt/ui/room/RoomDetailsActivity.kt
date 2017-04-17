@@ -144,7 +144,7 @@ class RoomDetailsActivity : BaseActivity(), View.OnClickListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_SELECT_USER && resultCode == RESULT_OK && data != null) {
             val selectedUserIds = data.getStringArrayExtra(ModelListFragment.RESULT_EXTRA_SELECTED_IDS)
-            appComponent.signalBroker.updateRoomMembers(roomId, selectedUserIds.toList())
+            appComponent.signalBroker.addRoomMembers(roomId, selectedUserIds.toList())
                     .timeout(Constants.UPDATE_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .toCompletable()

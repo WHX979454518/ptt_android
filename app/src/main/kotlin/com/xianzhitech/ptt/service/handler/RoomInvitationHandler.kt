@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Permission
 import com.xianzhitech.ptt.data.RoomInfo
 import com.xianzhitech.ptt.ext.*
@@ -21,11 +22,7 @@ import java.io.Serializable
 class RoomInvitationHandler : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
-        val invite: WalkieRoomInvitationEvent = when (intent?.action) {
-            ACTION_ROOM_INVITATION -> intent.getSerializableExtra(EXTRA_INVITATION) as WalkieRoomInvitationEvent
-            else -> return
-        }
-
+        val invite: WalkieRoomInvitationEvent = (intent?.getSerializableExtra(SignalBroker.EXTRA_EVENT) as? WalkieRoomInvitationEvent) ?: return
 
         val appComponent = context.appComponent
         val currentRoomId = appComponent.signalBroker.peekWalkieRoomId()
@@ -111,8 +108,5 @@ class RoomInvitationHandler : BroadcastReceiver() {
 
     companion object {
         private val logger = LoggerFactory.getLogger("RoomInvitationHandler")
-
-        const val ACTION_ROOM_INVITATION = "room_invitation"
-        const val EXTRA_INVITATION = "invitation"
     }
 }
