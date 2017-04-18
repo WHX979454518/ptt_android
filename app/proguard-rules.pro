@@ -26,6 +26,24 @@
 # hockeyapp
 -keep class net.hockeyapp.**
 
+-dontwarn com.google.common.**
+-dontwarn io.requery.**
+-dontwarn com.fasterxml.**
+
+-keepattributes *Annotation*,EnclosingMethod,Signature
+-keepnames class com.fasterxml.jackson.** { *; }
+-dontwarn com.fasterxml.jackson.databind.**
+-keep class org.codehaus.** { *; }
+-keepclassmembers public final enum org.codehaus.jackson.annotate.JsonAutoDetect$Visibility {
+public static final org.codehaus.jackson.annotate.JsonAutoDetect$Visibility *; }
+-keep public class your.class.** {
+  public void set*(***);
+  public *** get*();
+}
+-keepclassmembers public class * {
+     @com.fasterxml.jackson.annotation.JsonCreator *;
+}
+
 # Webrtc
 -keep class org.webrtc.** { *; }
 -keepnames class org.webrtc.** { *; }
@@ -42,7 +60,9 @@
 
 # Gson
 -keepattributes Signature
--keep class com.xianzhitech.ptt.model.** { *; }
+-keep class com.xianzhitech.ptt.data.** { *; }
+-keep class com.xianzhitech.ptt.api.dto.** { *; }
+-keep class com.xianzhitech.ptt.api.event.** { *; }
 
 # For using GSON @Expose annotation
 -keepattributes *Annotation*

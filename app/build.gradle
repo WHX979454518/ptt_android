@@ -5,8 +5,8 @@ apply plugin: 'io.fabric'
 
 project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
 project.ext.buildName = "1.6.$buildNumber"
-project.ext.appServerUrl = System.getenv('APP_SERVER_URL') ?: "http://192.168.1.100:8000"
-//project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
+//project.ext.appServerUrl = System.getenv('APP_SERVER_URL') ?: "http://192.168.1.100:8000"
+project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
 
 println("Building app version $buildName($buildNumber)")
 
@@ -30,14 +30,14 @@ repositories {
     maven { url 'http://oss.sonatype.org/content/repositories/snapshots' }
     maven { url "https://jitpack.io" }
     maven { url 'https://maven.fabric.io/public' }
-
-    maven {
-        url "https://repo.simophin.net/artifactory/libs-snapshot-local"
-        credentials {
-            username = "netptt"
-            password = "APdaMmwae2hGMieAVa27dyGPUN1cAWaahnbwp"
-        }
-    }
+//
+//    maven {
+//        url "https://repo.simophin.net/artifactory/libs-snapshot-local"
+//        credentials {
+//            username = "netptt"
+//            password = "APdaMmwae2hGMieAVa27dyGPUN1cAWaahnbwp"
+//        }
+//    }
 
     flatDir { dirs 'aars' }
 }
@@ -73,8 +73,8 @@ android {
 
     buildTypes {
         release {
-//            minifyEnabled true
-//            signingConfig signingConfigs.release
+            minifyEnabled true
+            signingConfig signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
@@ -143,7 +143,8 @@ dependencies {
     compile 'com.belerweb:pinyin4j:2.5.1'
 
     //compile(name: 'webrtc-android-release', ext: 'aar')
-    compile(group: 'cn.netptt', name: 'engine', version: '2.0.0-20170408.030101-1', ext: 'aar')
+//    compile(group: 'cn.netptt', name: 'engine', version: '2.0.0-20170408.030101-1', ext: 'aar')
+    compile project(':voice_engine')
 //    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':bd_loc_sdk')
 
