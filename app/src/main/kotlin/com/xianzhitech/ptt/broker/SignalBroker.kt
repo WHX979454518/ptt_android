@@ -33,6 +33,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.BehaviorSubject
+import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -407,7 +408,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
         if (body != null && type.bodyClass != null) {
             Preconditions.checkArgument(type.bodyClass.isAssignableFrom(body.javaClass))
-            entity.setBody(appComponent.objectMapper.writeValueAsString(body))
+            entity.setBody(appComponent.objectMapper.convertValue(body, JSONObject::class.java))
         }
 
         return entity

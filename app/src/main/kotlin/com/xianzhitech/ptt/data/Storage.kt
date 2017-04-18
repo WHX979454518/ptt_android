@@ -191,6 +191,12 @@ class Storage(context: Context,
         )
     }
 
+    fun getRooms(roomIds : Collection<String>) : Observable<List<Room>> {
+        return data.select(Room::class.java)
+                .where(RoomEntity.ID.`in`(roomIds))
+                .observeList()
+    }
+
     fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
         //TODO:
         return Observable.just(emptyMap())
@@ -262,17 +268,6 @@ class Storage(context: Context,
         }
 
         return lookup.observeList()
-    }
-
-    fun updateRoomMessages(roomId : String, messages: Iterable<Message>, syncDate: Date) : Completable {
-        return runInTransaction(
-                data.upsert(messages),
-                data.update(RoomInfo::class.java)
-                        .set(RoomInfoEntity.LAST_MESSAGE_SYNC_TIME, syncDate)
-                        .where(RoomInfoEntity.ROOM_ID.eq(roomId).and(RoomInfoEntity.LAST_MESSAGE_SYNC_TIME.lt(syncDate)))
-                        .get()
-                        .single()
-        )
     }
 
     fun replaceAllUsersAndGroups(users: Iterable<ContactUser>, groups: Iterable<ContactGroup>): Completable {

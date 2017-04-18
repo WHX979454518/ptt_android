@@ -82,7 +82,7 @@ data class NoSuchRoomException(val roomId: String?) : RuntimeException(), UserDe
     }
 }
 
-data class ServerException @JsonCreator constructor(@param:JsonProperty("name") val name: String,
+data class ServerException @JsonCreator constructor(@param:JsonProperty("name") val name: String?,
                                                     @param:JsonProperty("message") override val message: String?) : RuntimeException(name), UserDescribableException {
     var errorMessageResolved: String? = null
 
@@ -97,8 +97,8 @@ data class ServerException @JsonCreator constructor(@param:JsonProperty("name") 
 
         errorMessageResolved = context.getString(context.resources.getIdentifier("error_$name", "string", context.packageName)) ?: ""
         if (errorMessageResolved!!.isBlank()) {
-            if (BuildConfig.DEBUG && name.isNotBlank()) {
-                return name
+            if (BuildConfig.DEBUG && name?.isNotBlank() ?: false) {
+                return name!!
             } else {
                 return context.getString(R.string.error_unknown)
             }

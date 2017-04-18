@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.api
 
 import android.content.Context
 import android.os.Looper
+import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.google.common.primitives.Primitives
@@ -381,7 +382,7 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
-        return rpc<List<MessageQueryResult>>("c_query_messages", queries).toSingle()
+        return rpc<Array<MessageQueryResult>>("c_query_messages", queries).toSingle().map { it.toList() }
     }
 
     private interface RestfulApi {

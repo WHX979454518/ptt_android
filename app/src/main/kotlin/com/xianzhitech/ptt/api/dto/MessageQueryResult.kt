@@ -6,5 +6,5 @@ import java.util.*
 
 
 data class MessageQueryResult(@param:JsonProperty("syncTime") val syncTime: Date,
-                              @param:JsonProperty("roomId") val roomId: String,
+                              @param:JsonProperty("roomId") val roomId: String?,
                               @param:JsonProperty("data") val data: List<Message>)

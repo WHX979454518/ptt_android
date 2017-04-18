@@ -5,8 +5,8 @@ apply plugin: 'io.fabric'
 
 project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
 project.ext.buildName = "1.6.$buildNumber"
-//project.ext.appServerUrl = System.getenv('APP_SERVER_URL') ?: "http://192.168.1.100:8000"
-project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
+project.ext.appServerUrl = System.getenv('APP_SERVER_URL') ?: "http://192.168.1.100:8000"
+//project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
 
 println("Building app version $buildName($buildNumber)")
 

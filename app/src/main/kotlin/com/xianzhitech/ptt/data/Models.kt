@@ -5,8 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.xianzhitech.ptt.api.event.Event
+import com.xianzhitech.ptt.util.JSONObjectConverter
 import com.xianzhitech.ptt.util.SetConverter
 import io.requery.*
+import org.json.JSONObject
 import java.io.Serializable
 import java.util.*
 
@@ -129,7 +131,8 @@ interface Message : Persistable, Parcelable, Event {
     val type : MessageType?
 
     @get:JsonProperty("body")
-    val body : String?
+    @get:Convert(JSONObjectConverter::class)
+    val body : JSONObject?
 
     @get:JsonProperty("senderId")
     @get:Index

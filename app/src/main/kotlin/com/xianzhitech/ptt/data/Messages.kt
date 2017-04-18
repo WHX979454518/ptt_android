@@ -12,7 +12,7 @@ enum class MessageType(val bodyClass : Class<*>? = null) {
     NOTIFY_CREATE_ROOM
 }
 
-data class TextMessage(@param:JsonProperty("text") val text : String)
+data class TextMessage(@param:JsonProperty("text") val text : String?)
 
 fun <T> Message.convertBody(objectMapper: ObjectMapper) : T? {
     if (body == null || type == null || type!!.bodyClass == null) {
@@ -20,5 +20,5 @@ fun <T> Message.convertBody(objectMapper: ObjectMapper) : T? {
     }
 
     @Suppress("UNCHECKED_CAST")
-    return objectMapper.readValue(body, type!!.bodyClass) as? T
+    return objectMapper.convertValue(body, type!!.bodyClass) as? T
 }
