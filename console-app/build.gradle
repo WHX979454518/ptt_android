@@ -16,10 +16,34 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
+        multiDexEnabled true
     }
+
+    productFlavors {
+        dev {
+            applicationIdSuffix ".dev"
+            manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "hKnYhi8rUtdE1XWZvX4HnxMi2jNgqCVV"
+        }
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('../etc/debug.keystore')
+        }
+
+        release {
+            storeFile file('../etc/debug.keystore')
+        }
+    }
+
     buildTypes {
         release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -37,8 +61,9 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:multidex:1.0.1'
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+//    compile 'com.android.support.constraint:constraint-layout:1.0.2'
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compile group: 'com.google.guava', name: 'guava', version: '20.0'

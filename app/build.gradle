@@ -65,12 +65,6 @@ android {
     }
 
     signingConfigs {
-        release {
-            storeFile file('../etc/release.jks')
-            storePassword 'TNZ33ACzYPBsgXrQGBb7'
-            keyAlias 'android'
-            keyPassword 'TNZ33ACzYPBsgXrQGBb7'
-        }
 
         debug {
             storeFile file('../etc/debug.keystore')
@@ -79,8 +73,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            signingConfig signingConfigs.release
+//            minifyEnabled true
+//            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
