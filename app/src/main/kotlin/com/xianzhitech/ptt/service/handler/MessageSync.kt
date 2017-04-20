@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.service.handler
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.dto.MessageQuery
+import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import io.reactivex.Completable
@@ -17,18 +18,20 @@ class MessageSync(private val appComponent: AppComponent) {
         appComponent.signalBroker.connectionState
                 .filter { it == SignalApi.ConnectionState.CONNECTED }
                 .flatMapCompletable {
-                    appComponent.signalBroker.queryMessages(listOf(MessageQuery()))
-                            .flatMapObservable { results ->
-                                val roomIds = hashSetOf<String>()
-                                results.forEach {  result ->
-                                    result.data.forEach { msg ->
-                                        roomIds.add(msg.roomId)
-                                    }
-                                }
-                                ensureRooms(roomIds).andThen(Observable.fromIterable(results))
-                            }
+                    val query  = MessageQuery(
+                            startTime = appComponent.preference.lastMessageSyncDate?.time
+                    )
+
+                    appComponent.signalBroker.queryMessages(listOf(query))
                             .flatMapCompletable {
-                                appComponent.storage.saveMessages(it.data)
+                                val result = it.first()
+                                val roomIds = hashSetOf<String>()
+                                result.data.mapTo(roomIds, Message::roomId)
+
+                                logger.i { "Received ${roomIds.size} rooms' messages, size = ${result.data.size}" }
+                                ensureRooms(roomIds)
+                                        .andThen(appComponent.storage.saveMessages(result.data))
+                                        .doOnComplete { appComponent.preference.lastMessageSyncDate = result.syncTime }
                             }
                             .logErrorAndForget()
                 }
@@ -37,15 +40,16 @@ class MessageSync(private val appComponent: AppComponent) {
     }
 
     private fun ensureRooms(roomIds : Collection<String>) : Completable {
-        return appComponent.storage.getRooms(roomIds)
+        return appComponent.storage.getAllRoomIds()
                 .firstElement()
-                .flatMapCompletable { rooms ->
-                    val roomIdSet = roomIds.toHashSet()
-                    rooms.forEach { roomIdSet.remove(it.id) }
+                .flatMapCompletable {
+                    val existingRoomIds = it.sorted()
+                    val roomIdsToDownload = roomIds.filter { existingRoomIds.binarySearch(it) < 0 }
 
-                    logger.i { "Downloading room info for ($roomIdSet)" }
 
-                    Observable.fromIterable(roomIdSet)
+                    logger.i { "Downloading room info for ($roomIdsToDownload)" }
+
+                    Observable.fromIterable(roomIdsToDownload)
                             .flatMapSingle(appComponent.signalBroker::updateRoom)
                             .ignoreElements()
                 }

@@ -4,6 +4,7 @@ import android.net.Uri
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.UserCredentials
 import org.threeten.bp.LocalTime
+import java.util.*
 
 /**
  * 提供程序选项数据的永久存储
@@ -24,4 +25,6 @@ interface Preference {
 
     var currentUser : CurrentUser?
     var currentUserCredentials : UserCredentials?
+
+    var lastMessageSyncDate : Date?
 }

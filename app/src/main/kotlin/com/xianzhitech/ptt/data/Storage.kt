@@ -1,11 +1,13 @@
 package com.xianzhitech.ptt.data
 
 import android.content.Context
+import android.support.v4.util.ArrayMap
 import com.google.common.base.Optional
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.functions.BiFunction
@@ -197,19 +199,38 @@ class Storage(context: Context,
                 .observeList()
     }
 
-    fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
-        //TODO:
-        return Observable.just(emptyMap())
+    fun getAllRoomIds() : Observable<List<String>> {
+        return data.select(RoomEntity.ID)
+                .observeList()
+                .map { it.map { it[RoomEntity.ID] } }
     }
 
-    fun getAllRoomInfo() : Observable<Map<String, RoomInfo>> {
-        return data.select(RoomInfo::class.java)
-                .get()
-                .observableResult()
-                .subscribeOn(readScheduler)
-                .map {
-                    it.toMap(RoomInfoEntity.ROOM_ID)
+    fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
+        return data.select(MessageEntity.ROOM_ID)
+                .distinct()
+                .observeList()
+                .switchMapSingle {
+                    Observable.fromIterable(it.map { it[MessageEntity.ROOM_ID] })
+                            .flatMapMaybe(this::getLatestMessage)
+                            .collectInto(ArrayMap<String, Message>()) { map, msg ->
+                                map[msg.roomId] = msg
+                            }
                 }
+
+    }
+
+    fun getLatestMessage(roomId : String) : Maybe<Message> {
+        return data.select(Message::class.java)
+                .where(MessageEntity.ROOM_ID.eq(roomId))
+                .orderBy(MessageEntity.SEND_TIME.desc())
+                .limit(1)
+                .get()
+                .maybe()
+    }
+
+    fun getAllRoomInfo() : Observable<List<RoomInfo>> {
+        return data.select(RoomInfo::class.java)
+                .observeList()
     }
 
     fun getAllUsers(): Observable<List<ContactUser>> {
