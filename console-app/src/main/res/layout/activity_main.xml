@@ -20,18 +20,19 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal">
-        <FrameLayout
-            android:id="@+id/contacts_container"
+        <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:layout_weight="2"
-            android:background="@android:color/darker_gray">
+            android:background="@android:color/white">
 
             <LinearLayout
+                android:id="@+id/linear_check_lay"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:orientation="horizontal"
+                android:layout_alignParentBottom="true"
                 android:layout_gravity="bottom"
                 android:gravity="center_vertical"
                 android:background="@android:color/white">
@@ -82,7 +83,15 @@
                 </LinearLayout>
 
             </LinearLayout>
-        </FrameLayout>
+            <RelativeLayout
+                android:id="@+id/contacts_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/linear_check_lay"
+                android:layout_alignParentTop="true">
+
+            </RelativeLayout>
+        </RelativeLayout>
         <LinearLayout
             android:id="@+id/map_container"
             android:layout_width="0dp"

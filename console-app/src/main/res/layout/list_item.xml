@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="40dip" >
+
+    <ImageView
+        android:id="@+id/id_treenode_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:src="@drawable/triangle_close" />
+    
+    <CheckBox
+        android:id="@+id/id_treeNode_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@id/id_treenode_icon"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:background="@drawable/selectedno"
+        android:button="@null"
+        android:focusable="true"
+        />
+    <ImageView
+        android:id="@+id/id_head_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_toRightOf="@id/id_treeNode_check"
+        android:src="@drawable/user_on" />
+    <TextView
+        android:id="@+id/id_treenode_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@id/id_head_icon"
+        android:text="@string/app_name"
+        android:textSize="14sp" />
+
+</RelativeLayout>
