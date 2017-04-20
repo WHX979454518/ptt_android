@@ -1,8 +1,103 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="com.zrt.ptt.app.console.MainActivity">
+    <LinearLayout
+        android:id="@+id/main_title"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:orientation="horizontal"
+        android:background="@color/title_bg_red"
+        >
 
-</FrameLayout>
+        <include layout="@layout/main_title_layout"/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/main_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+        <FrameLayout
+            android:id="@+id/contacts_container"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_weight="2"
+            android:background="@android:color/darker_gray">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:layout_gravity="bottom"
+                android:gravity="center_vertical"
+                android:background="@android:color/white">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+                    <RadioButton
+                        android:id="@+id/rb1"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:background="@color/btn_pre_red"
+                        android:text="组织架构"
+                        android:textColor="@color/textwhit"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+                    <RadioButton
+                        android:id="@+id/rb2"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:background="@color/btn_nopre_red"
+                        android:text="系统状态"
+                        android:textColor="@color/textwhit"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+                    <RadioButton
+                        android:id="@+id/rb3"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:background="@color/btn_nopre_red"
+                        android:text="会话记录"
+                        android:textColor="@color/textwhit"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </FrameLayout>
+        <LinearLayout
+            android:id="@+id/map_container"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="5"
+            android:background="@android:color/holo_green_dark"
+            android:orientation="vertical">
+            <com.baidu.mapapi.map.MapView
+                android:id="@+id/bmapView"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:clickable="true" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

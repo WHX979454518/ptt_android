@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:background="@color/title_bg_red"
+    android:padding="5dp">
+    <ImageView
+        android:id="@+id/pupmenu"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:scaleType="centerCrop"
+        android:src="@drawable/menu"/>
+
+    <TextView
+        android:id="@+id/all_call"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:layout_toRightOf="@+id/pupmenu"
+        android:text="全呼"
+        android:textSize="30sp"
+        android:gravity="center_vertical"
+        android:textColor="@color/textwhit"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="20dp"
+        android:layout_toRightOf="@+id/all_call"
+        android:text="框选"
+        android:textSize="30sp"
+        android:gravity="center_vertical"
+        android:textColor="@color/textwhit"/>
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/warninglight3"
+        android:layout_centerInParent="true"
+        android:layout_gravity="center"/>
+
+    <RelativeLayout
+        android:layout_alignParentRight="true"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/sign_out"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:text="退出"
+                android:textSize="20sp"
+                android:gravity="center_vertical"
+                android:layout_alignParentTop="true"
+                android:textColor="@color/textwhit"
+                android:drawableLeft="@drawable/singout"/>
+
+            <TextView
+                android:id="@+id/time_hms"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/sign_out"
+                android:layout_alignParentRight="true"
+                android:layout_below="@+id/sign_out"
+                android:gravity="bottom"
+                android:textSize="20sp"
+                android:textColor="@color/textwhit"
+                android:layout_alignParentBottom="true"
+                android:text="13:33:32"/>
+
+        <TextView
+            android:id="@+id/console"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="调度台"
+            android:textSize="20sp"
+            android:layout_marginRight="40dp"
+            android:layout_alignBaseline="@+id/sign_out"
+            android:layout_toLeftOf="@+id/sign_out"
+            android:gravity="center_vertical"
+            android:textColor="@color/textwhit"
+            android:drawableLeft="@drawable/console_pic"/>
+
+        <TextView
+            android:id="@+id/time_ymd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:layout_below="@+id/console"
+            android:layout_alignLeft="@+id/console"
+            android:layout_toLeftOf="@+id/time_hms"
+            android:layout_alignParentBottom="true"
+            android:gravity="bottom"
+            android:textColor="@color/textwhit"
+            android:text="2017-4-17"/>
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="40dp"
+            android:layout_toLeftOf="@+id/console"
+            android:layout_alignBottom="@+id/console"
+            android:gravity="center_vertical"
+            android:src="@drawable/logo" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/logo"
+            android:layout_alignLeft="@+id/logo"
+            android:layout_toLeftOf="@+id/time_ymd"
+            android:gravity="bottom"
+            android:layout_alignParentBottom="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="用户："
+                android:textColor="@color/textwhit"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:text="xx"
+                android:textColor="@color/textwhit"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+    </RelativeLayout>
+</RelativeLayout>

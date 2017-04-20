@@ -7,5 +7,11 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
+    <style name="notitle" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>//无标题
+        <item name="android:windowActionBar">false</item>//无ActionBarll
+        <item name="android:windowFullscreen">true</item>//全屏即无通知栏
+        <item name="android:windowContentOverlay">@null</item>//是否有遮盖
+    </style>
 
 </resources>
