@@ -127,6 +127,7 @@ class AppPreference(appContext : Context,
 
     override var currentUser: CurrentUser? by sharePreference("current_user")
     override var currentUserCredentials: UserCredentials? by sharePreference("current_user_credentials")
+    override var lastMessageSyncDate: Date? by sharePreference("last_message_sync")
 
     private inline fun <reified T> sharePreference(key: String) : SharedPreferenceDelegate<T> {
         return SharedPreferenceDelegate(key, pref, T::class.java, objectMapper)

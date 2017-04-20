@@ -210,13 +210,15 @@ class SignalBroker(private val appComponent: AppComponent,
             }
         }
 
-        val intent = Intent(action).setPackage(appContext.packageName)
-        @Suppress("USELESS_CAST")
-        when (event) {
-            is Parcelable -> intent.putExtra(EXTRA_EVENT, event as Parcelable)
-            else -> intent.putExtra(EXTRA_EVENT, event)
+        if (event is UserKickedOutEvent || event is WalkieRoomInvitationEvent) {
+            val intent = Intent(action).setPackage(appContext.packageName)
+            @Suppress("USELESS_CAST")
+            when (event) {
+                is Parcelable -> intent.putExtra(EXTRA_EVENT, event as Parcelable)
+                else -> intent.putExtra(EXTRA_EVENT, event)
+            }
+            appContext.sendBroadcast(intent)
         }
-        appContext.sendBroadcast(intent)
     }
 
 

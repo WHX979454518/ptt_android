@@ -1,11 +1,13 @@
 package com.xianzhitech.ptt.data
 
 import android.content.Context
+import android.support.v4.util.ArrayMap
 import com.google.common.base.Optional
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.ext.*
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.functions.BiFunction
@@ -197,19 +199,68 @@ class Storage(context: Context,
                 .observeList()
     }
 
-    fun getAllRoomLatestMessage(): Observable<Map<String, Message>> {
-        //TODO:
-        return Observable.just(emptyMap())
+    fun getAllRoomIds() : Observable<List<String>> {
+        return data.select(RoomEntity.ID)
+                .observeList()
+                .map { it.map { it[RoomEntity.ID] } }
     }
 
-    fun getAllRoomInfo() : Observable<Map<String, RoomInfo>> {
-        return data.select(RoomInfo::class.java)
-                .get()
-                .observableResult()
-                .subscribeOn(readScheduler)
-                .map {
-                    it.toMap(RoomInfoEntity.ROOM_ID)
+    fun getAllRoomLatestMessage(): Observable<Map<String, MessageWithSender>> {
+        return data.select(MessageEntity.ROOM_ID)
+                .distinct()
+                .observeList()
+                .switchMapSingle {
+                    Observable.fromIterable(it.map { it[MessageEntity.ROOM_ID] })
+                            .flatMapMaybe(this::getLatestMessage)
+                            .collectInto(ArrayMap<String, MessageWithSender>()) { map, msg ->
+                                map[msg.message.roomId] = msg
+                            }
                 }
+    }
+
+    fun getAllRoomUnreadMessageCount() : Observable<Map<String, Int>> {
+        return data.select(MessageEntity.ROOM_ID)
+                .distinct()
+                .observeList()
+                .switchMapSingle {
+                    Observable.fromIterable(it.map { it[MessageEntity.ROOM_ID] })
+                            .flatMapSingle(this::getRoomUnreadMessageCount)
+                            .collectInto(ArrayMap<String, Int>()) { map, msg ->
+                                map[msg.first] = msg.second
+                            }
+                }
+    }
+
+    fun getRoomUnreadMessageCount(roomId: String) : Single<Pair<String, Int>> {
+        return data.count(Message::class.java)
+                .where(MessageEntity.ROOM_ID.eq(roomId))
+                .and(MessageEntity.HAS_READ.eq(false))
+                .and(MessageEntity.SENDER_ID.ne(appComponent.signalBroker.peekUserId()))
+                .and(MessageEntity.TYPE.`in`(MessageType.MEANINGFUL))
+                .get()
+                .single()
+                .subscribeOn(readScheduler)
+                .map { roomId to it }
+    }
+
+    fun getLatestMessage(roomId : String) : Maybe<MessageWithSender> {
+        return data.select(Message::class.java)
+                .where(MessageEntity.ROOM_ID.eq(roomId))
+                .orderBy(MessageEntity.SEND_TIME.desc())
+                .limit(1)
+                .get()
+                .maybe()
+                .flatMap { msg ->
+                    getUser(msg.senderId).firstElement()
+                            .map { sender ->
+                                MessageWithSender(msg, sender.orNull())
+                            }
+                }
+    }
+
+    fun getAllRoomInfo() : Observable<List<RoomInfo>> {
+        return data.select(RoomInfo::class.java)
+                .observeList()
     }
 
     fun getAllUsers(): Observable<List<ContactUser>> {
@@ -248,6 +299,7 @@ class Storage(context: Context,
         return getUsers(listOf(userId))
                 .map { it.firstOrNull().toOptional() }
     }
+
 
     fun getMessagesUpTo(date: Date?,
                         roomId: String,

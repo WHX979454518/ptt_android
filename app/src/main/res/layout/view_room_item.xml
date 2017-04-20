@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
-        <import type="com.xianzhitech.ptt.ui.widget.drawable.ModelDrawableKt" />
+        <import type="com.xianzhitech.ptt.ui.widget.drawable.ModelDrawableKt"/>
 
-        <import type="android.text.format.DateUtils" />
+        <import type="android.text.format.DateUtils"/>
 
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.viewmodel.RoomItemViewModel" />
+            type="com.xianzhitech.ptt.viewmodel.RoomItemViewModel"/>
     </data>
 
     <RelativeLayout
@@ -21,14 +21,30 @@
         android:longClickable="true"
         android:onClick="@{ignored -> viewModel.onClickRoom()}">
 
-        <com.xianzhitech.ptt.ui.widget.ModelView
-            android:id="@+id/roomItem_icon"
-            android:layout_width="@dimen/group_list_icon_size"
-            android:layout_height="@dimen/group_list_icon_size"
+        <FrameLayout
+            android:id="@+id/roomItem_iconContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:layout_marginLeft="@dimen/unit_one"
-            app:model="@{viewModel.room}"
-            tools:src="@color/blue" />
+            android:layout_marginLeft="@dimen/unit_one">
+
+            <com.xianzhitech.ptt.ui.widget.ModelView
+                android:id="@+id/roomItem_icon"
+                android:layout_width="@dimen/group_list_icon_size"
+                android:layout_height="@dimen/group_list_icon_size"
+                app:model="@{viewModel.room}"
+                tools:src="@color/blue"/>
+
+            <include
+                layout="@layout/view_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right|top"
+                app:show="@{safeUnbox(viewModel.hasNewMessage)}"
+                app:count="@{safeUnbox(viewModel.unreadMessageCount[viewModel.room.id])}"
+                app:important="@{true}"/>
+
+        </FrameLayout>
 
         <LinearLayout
             android:id="@+id/roomItem_titleContainer"
@@ -36,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_toLeftOf="@+id/roomItem_arrow"
-            android:layout_toRightOf="@+id/roomItem_icon"
+            android:layout_toRightOf="@+id/roomItem_iconContainer"
             android:gravity="center_vertical|left"
             android:minHeight="60dp"
             android:orientation="vertical">
@@ -48,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/unit_one"
                 android:text="@{viewModel.roomName}"
-                tools:text="群组1" />
+                tools:text="群组1"/>
 
             <TextView
                 android:id="@+id/roomItem_secondaryTitle"
@@ -58,8 +74,8 @@
                 android:layout_marginLeft="@dimen/unit_one"
                 android:layout_marginTop="@dimen/unit_one"
                 android:drawablePadding="@dimen/unit_half"
-                android:text="@{DateUtils.getRelativeTimeSpanString(viewModel.roomMessage[viewModel.room.id].sendTime.time)}"
-                tools:text="1分钟以前" />
+                android:text="@{DateUtils.getRelativeTimeSpanString(viewModel.roomMessage[viewModel.room.id].message.sendTime.time)}"
+                tools:text="1分钟以前"/>
 
         </LinearLayout>
 
@@ -72,12 +88,12 @@
             android:layout_centerVertical="true"
             android:layout_margin="@dimen/unit_one"
             android:src="@drawable/ic_arrow_right"
-            android:tint="@color/secondary_text" />
+            android:tint="@color/secondary_text"/>
 
         <View
             style="@style/Divider.Lighter"
             android:layout_below="@+id/roomItem_titleContainer"
-            android:layout_marginTop="@dimen/unit_one" />
+            android:layout_marginTop="@dimen/unit_one"/>
 
     </RelativeLayout>
 </layout>
