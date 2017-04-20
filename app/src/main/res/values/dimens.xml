@@ -24,4 +24,6 @@
     <dimen name="room_details_member_icon_size">50dp</dimen>
     <dimen name="map_people_icon_size">40dp</dimen>
     <dimen name="map_people_icon_size_highlighted">50dp</dimen>
+
+    <dimen name="zero">0dp</dimen>
 </resources>

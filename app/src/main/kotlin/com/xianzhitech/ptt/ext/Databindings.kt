@@ -1,16 +1,47 @@
 package com.xianzhitech.ptt.ext
 
+import android.databinding.Observable
 import android.databinding.ObservableField
+import android.databinding.ObservableList
+import android.databinding.ObservableMap
 import com.google.common.base.Optional
 import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.BehaviorSubject
 import java.util.concurrent.atomic.AtomicInteger
 
-private open class CompositeObservable<T>(private val observables: List<android.databinding.Observable>,
+private open class CompositeObservable<T>(private val observables: List<Any>,
                                           private val valueGetter: () -> T?) : ObservableField<T>() {
-    val changeListener = object : android.databinding.Observable.OnPropertyChangedCallback() {
+    val observableChangeListener = object : android.databinding.Observable.OnPropertyChangedCallback() {
         override fun onPropertyChanged(p0: android.databinding.Observable?, p1: Int) {
             notifyChange()
+        }
+    }
+
+    val mapChangeListener : ObservableMap.OnMapChangedCallback<ObservableMap<Any, Any>, Any, Any> = object : ObservableMap.OnMapChangedCallback<ObservableMap<Any, Any>, Any, Any>() {
+        override fun onMapChanged(p0: ObservableMap<Any, Any>?, p1: Any?) {
+            notifyChange()
+        }
+    }
+
+    val listChangeListener : ObservableList.OnListChangedCallback<*> = object : ObservableList.OnListChangedCallback<ObservableList<Any>>() {
+        override fun onChanged(p0: ObservableList<Any>?) {
+            this@CompositeObservable.notifyChange()
+        }
+
+        override fun onItemRangeMoved(p0: ObservableList<Any>?, p1: Int, p2: Int, p3: Int) {
+            onChanged(p0)
+        }
+
+        override fun onItemRangeRemoved(p0: ObservableList<Any>?, p1: Int, p2: Int) {
+            onChanged(p0)
+        }
+
+        override fun onItemRangeInserted(p0: ObservableList<Any>?, p1: Int, p2: Int) {
+            onChanged(p0)
+        }
+
+        override fun onItemRangeChanged(p0: ObservableList<Any>?, p1: Int, p2: Int) {
+            onChanged(p0)
         }
     }
 
@@ -26,8 +57,15 @@ private open class CompositeObservable<T>(private val observables: List<android.
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     open protected fun onFirstCallbackAdded() {
-        observables.forEach { it.addOnPropertyChangedCallback(changeListener) }
+        observables.forEach {
+            when (it) {
+                is ObservableMap<*, *> -> (it as ObservableMap<Any, Any>).addOnMapChangedCallback(mapChangeListener)
+                is Observable -> it.addOnPropertyChangedCallback(observableChangeListener)
+                is ObservableList<*> -> (it as ObservableList<Any>).addOnListChangedCallback(listChangeListener)
+            }
+        }
     }
 
     override fun removeOnPropertyChangedCallback(callback: android.databinding.Observable.OnPropertyChangedCallback?) {
@@ -38,8 +76,15 @@ private open class CompositeObservable<T>(private val observables: List<android.
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     open protected fun onLastCallbackRemoved() {
-        observables.forEach { it.removeOnPropertyChangedCallback(changeListener) }
+        observables.forEach {
+            when (it) {
+                is ObservableMap<*, *> -> (it as ObservableMap<Any, Any>).removeOnMapChangedCallback(mapChangeListener)
+                is Observable -> it.removeOnPropertyChangedCallback(observableChangeListener)
+                is ObservableList<*> -> (it as ObservableList<Any>).removeOnListChangedCallback(listChangeListener)
+            }
+        }
     }
 }
 
@@ -58,14 +103,14 @@ fun <T> ObservableField<T>.toRxObservable(): io.reactivex.Observable<Optional<T>
     }
 }
 
-fun <T> createCompositeObservable(observable: android.databinding.Observable,
+fun <T> createCompositeObservable(observable: Any,
                                   valueGetter: () -> T): ObservableField<T> {
     return createCompositeObservable(listOf(observable), valueGetter)
 }
 
-fun <T> createCompositeObservable(observables: List<android.databinding.Observable>,
+fun <T> createCompositeObservable(observables: List<Any>,
                                   valueGetter: () -> T): ObservableField<T> {
-    return CompositeObservable<T>(observables, valueGetter)
+    return CompositeObservable(observables, valueGetter)
 }
 
 fun <T> BehaviorSubject<Optional<T>>.toObservableField(): ObservableField<T> {

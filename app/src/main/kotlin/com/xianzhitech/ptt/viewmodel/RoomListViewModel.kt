@@ -2,23 +2,29 @@ package com.xianzhitech.ptt.viewmodel
 
 import android.databinding.ObservableArrayMap
 import android.databinding.ObservableBoolean
+import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
-import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.MessageWithSender
 import com.xianzhitech.ptt.data.RoomInfo
 import com.xianzhitech.ptt.ext.combineLatest
 import com.xianzhitech.ptt.util.ObservableArrayList
 import io.reactivex.android.schedulers.AndroidSchedulers
+import java.util.*
 
 
 class RoomListViewModel(private val appComponent: AppComponent,
                         private val navigator : Navigator) : LifecycleViewModel() {
     val roomViewModels = ObservableArrayList<RoomItemViewModel>()
-    val roomLatestMessages = ObservableArrayMap<String, Message>()
+    val roomLatestMessages = ObservableArrayMap<String, MessageWithSender>()
+    val roomUnreadMessageCount = ObservableArrayMap<String, Int>()
     val roomInfo = ObservableArrayMap<String, RoomInfo>()
     val emptyViewVisible = ObservableBoolean()
+    val latestMessageSyncDate = ObservableField<Date>()
 
     override fun onStart() {
         super.onStart()
+
+        latestMessageSyncDate.set(appComponent.preference.lastMessageSyncDate)
 
         combineLatest(
                 appComponent.storage.getAllRoomLatestMessage(),
@@ -26,10 +32,10 @@ class RoomListViewModel(private val appComponent: AppComponent,
                 { messages, rooms -> messages to rooms })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { (messages, rooms) ->
-                    val sortedRooms = rooms.sortedBy { messages[it.first.id]?.sendTime }
+                    val sortedRooms = rooms.sortedByDescending { messages[it.first.id]?.message?.sendTime }
 
                     roomViewModels.replaceAll(sortedRooms.map { (room, name) ->
-                        RoomItemViewModel(room, name, roomLatestMessages, roomInfo, navigator) }
+                        RoomItemViewModel(room, name, roomLatestMessages, roomInfo, roomUnreadMessageCount, navigator) }
                     )
 
                     roomLatestMessages.clear()
@@ -38,6 +44,13 @@ class RoomListViewModel(private val appComponent: AppComponent,
                     emptyViewVisible.set(roomViewModels.isEmpty())
                 }
                 .bindToLifecycle()
+
+        appComponent.storage.getAllRoomUnreadMessageCount()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    roomUnreadMessageCount.clear()
+                    roomUnreadMessageCount.putAll(it)
+                }
 
         appComponent.storage.getAllRoomInfo()
                 .observeOn(AndroidSchedulers.mainThread())

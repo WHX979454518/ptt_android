@@ -12,7 +12,7 @@ import android.widget.EditText
 
 fun EditText.isEmpty() = text.isEmpty()
 
-fun ViewGroup.inflate(@LayoutRes layout: Int, attachToRoot: Boolean = false) : View =
+fun ViewGroup.inflate(@LayoutRes layout: Int, attachToRoot: Boolean = false): View =
         LayoutInflater.from(context).inflate(layout, this, attachToRoot)
 
 inline fun <reified T : View> Activity.findView(@IdRes id: Int) = findViewById(id) as T
@@ -23,14 +23,25 @@ fun View.setVisible(visible: Boolean) {
 }
 
 @set:BindingAdapter("show")
-var View.show : Boolean
+var View.show: Boolean
     set(value) = if (value) visibility = View.VISIBLE else visibility = View.GONE
     get() = visibility == View.VISIBLE
 
 @set:BindingAdapter("string")
 @get:InverseBindingAdapter(attribute = "string")
-var EditText.string : String
+var EditText.string: String
     set(value) {
         setText(value)
     }
     get() = text.toString()
+
+
+@BindingAdapter("minWidth")
+fun setViewMinWidth(view: View, width : Float) {
+    view.minimumWidth = width.toInt()
+}
+
+@BindingAdapter("minHeight")
+fun setViewMinHeight(view: View, height : Float) {
+    view.minimumHeight = height.toInt()
+}

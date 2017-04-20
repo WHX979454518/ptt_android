@@ -101,8 +101,6 @@ interface RoomInfo : Persistable, Parcelable, Serializable {
     val latestReadMessageRemoteId : String?
 
     val lastWalkieActiveTime : Date?
-
-    val lastMessageSyncTime : Date?
 }
 
 
@@ -141,4 +139,11 @@ interface Message : Persistable, Parcelable, Event {
     @get:JsonProperty("roomId")
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
     val roomId : String
+
+    @get:JsonIgnore
+    @get:Column(value = "0")
+    val hasRead : Boolean
 }
+
+data class MessageWithSender(val message: Message,
+                             val user : User?)
