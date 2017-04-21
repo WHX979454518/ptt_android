@@ -32,10 +32,10 @@ class RoomListViewModel(private val appComponent: AppComponent,
                 { messages, rooms -> messages to rooms })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { (messages, rooms) ->
-                    val sortedRooms = rooms.sortedByDescending { messages[it.first.id]?.message?.sendTime }
+                    val sortedRooms = rooms.sortedByDescending { messages[it.room.id]?.message?.sendTime }
 
-                    roomViewModels.replaceAll(sortedRooms.map { (room, name) ->
-                        RoomItemViewModel(room, name, roomLatestMessages, roomInfo, roomUnreadMessageCount, navigator) }
+                    roomViewModels.replaceAll(sortedRooms.map { room ->
+                        RoomItemViewModel(room, room.name, roomLatestMessages, roomInfo, roomUnreadMessageCount, navigator) }
                     )
 
                     roomLatestMessages.clear()

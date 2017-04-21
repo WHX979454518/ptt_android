@@ -8,15 +8,14 @@ import android.util.AttributeSet
 import com.bumptech.glide.Glide
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.ContactGroup
-import com.xianzhitech.ptt.data.ContactUser
 import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.RoomWithMembersAndName
 import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.atMost
 import com.xianzhitech.ptt.ui.widget.drawable.MultiDrawable
 import com.xianzhitech.ptt.ui.widget.drawable.TextDrawable
 import com.xianzhitech.ptt.ui.widget.drawable.UriDrawable
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -57,17 +56,25 @@ open class ModelView @JvmOverloads constructor(context: Context,
                         return
                     }
 
-                    users = context.appComponent.storage.getUsers(model.memberIds.toList().atMost(9)).firstOrError()
+                    setImageDrawable(null)
+                    users = context.appComponent.storage.getUsers(model.memberIds.toList().atMost(9))
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .firstOrError()
+                }
+                is RoomWithMembersAndName -> {
+                    users = Single.just(model.members)
                 }
                 is Room -> {
-                    users = context.appComponent.storage.getRoomMembers(model, 9, includeSelf = false).firstOrError()
+                    setImageDrawable(null)
+                    users = context.appComponent.storage.getRoomMembers(model, 9, includeSelf = false)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .firstOrError()
                 }
                 else -> throw IllegalStateException("Unknown model type $model")
             }
 
-            setImageDrawable(null)
             disposable = users
-                    .observeOn(AndroidSchedulers.mainThread())
+
                     .subscribe { users ->
                         val drawable = when (users.size) {
                             0 -> null

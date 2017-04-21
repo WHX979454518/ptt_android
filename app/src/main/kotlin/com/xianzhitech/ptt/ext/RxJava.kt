@@ -75,3 +75,8 @@ inline fun <T1, T2, T3, T4, R> combineLatest(t1 : Observable<T1>,
                                          noinline action : (T1, T2, T3, T4) -> R) : Observable<R> {
     return Observable.combineLatest(t1, t2, t3, t4, Function4(action))
 }
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T1, T2, R> zip(t1 : Single<T1>, t2 : Single<T2>, noinline action: (T1, T2) -> R) : Single<R> {
+    return Single.zip(t1, t2, BiFunction(action))
+}

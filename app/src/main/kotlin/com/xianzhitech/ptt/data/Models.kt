@@ -61,11 +61,11 @@ interface ContactGroup : Persistable, NamedModel, Parcelable, Serializable {
     override val name: String
 
     @get:JsonProperty("avatar")
-    val avatar : String?
+    val avatar: String?
 
     @get:JsonProperty("members")
     @get:Convert(SetConverter::class)
-    val memberIds : Set<String>
+    val memberIds: Set<String>
 }
 
 @Entity
@@ -78,29 +78,29 @@ interface Room : Persistable, Parcelable, Event, Serializable {
 
     @get:JsonProperty("associatedGroupIds")
     @get:Convert(SetConverter::class)
-    val groupIds : Set<String>
+    val groupIds: Set<String>
 
     @get:JsonProperty("extraMemberIds")
     @get:Convert(SetConverter::class)
-    val extraMemberIds : Set<String>
+    val extraMemberIds: Set<String>
 
     @get:JsonProperty("name")
-    val name : String?
+    val name: String?
 
     @get:JsonProperty("ownerId")
-    val ownerId : String
+    val ownerId: String
 }
 
 @Entity
 @Table(name = "room_info")
 interface RoomInfo : Persistable, Parcelable, Serializable {
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
-    val roomId : String
+    val roomId: String
 
     @get:ForeignKey(references = Message::class, referencedColumn = "remoteId", delete = ReferentialAction.CASCADE)
-    val latestReadMessageRemoteId : String?
+    val latestReadMessageRemoteId: String?
 
-    val lastWalkieActiveTime : Date?
+    val lastWalkieActiveTime: Date?
 }
 
 
@@ -111,39 +111,43 @@ interface Message : Persistable, Parcelable, Event {
     @get:JsonIgnore
     @get:Key
     @get:Generated
-    val id : Long?
+    val id: Long?
 
     @get:JsonProperty("localId")
     @get:Column(definition = "UNIQUE ON CONFLICT REPLACE")
-    val localId : String?
+    val localId: String?
 
     @get:JsonProperty("_id")
     @get:Column(definition = "UNIQUE ON CONFLICT REPLACE")
-    val remoteId : String?
+    val remoteId: String?
 
     @get:Index
     @get:JsonProperty("sendTime")
-    val sendTime : Date
+    val sendTime: Date
 
     @get:JsonProperty("type")
-    val type : MessageType?
+    val type: MessageType?
 
     @get:JsonProperty("body")
     @get:Convert(JSONObjectConverter::class)
-    val body : JSONObject?
+    val body: JSONObject?
 
     @get:JsonProperty("senderId")
     @get:Index
-    val senderId : String
+    val senderId: String
 
     @get:JsonProperty("roomId")
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
-    val roomId : String
+    val roomId: String
 
     @get:JsonIgnore
     @get:Column(value = "0")
-    val hasRead : Boolean
+    val hasRead: Boolean
 }
 
 data class MessageWithSender(val message: Message,
-                             val user : User?)
+                             val user: User?)
+
+data class RoomWithMembersAndName(val room: Room,
+                                  val members: List<User>,
+                                  val name: String)

@@ -44,15 +44,23 @@ class Storage(context: Context,
     private val readScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
     private val writeScheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
-    fun getAllRooms(): Observable<List<Pair<Room, String>>> {
-        return data.select(Room::class.java).observeList()
-                .switchMap { rooms ->
+    fun getAllRooms(maxRoomMember : Int = 9): Observable<List<RoomWithMembersAndName>> {
+        return data.select(Room::class.java)
+                .observeList()
+                .switchMapSingle { rooms ->
                     if (rooms.isNotEmpty()) {
-                        Observable.combineLatest(rooms.map(this::getRoomName)) { names ->
-                            names.mapIndexed { index, name -> rooms[index] to (name as String) }
-                        }
+                        Observable.fromIterable(rooms)
+                                .concatMap { room ->
+                                    zip(
+                                            getRoomName(room).firstOrError(),
+                                            getRoomMembers(room, maxRoomMember).firstOrError(),
+                                            { name, members -> RoomWithMembersAndName(room, members, name) }
+                                    ).toObservable()
+                                }
+                                .toList()
+
                     } else {
-                        Observable.just(emptyList())
+                        Single.just(emptyList())
                     }
                 }
     }
