@@ -67,7 +67,7 @@ class Storage(context: Context,
 
     fun getRoomName(room: Room): Observable<String> {
         return Observable.defer {
-            if (room.name != null) {
+            if (room.name.isNullOrBlank().not()) {
                 return@defer Observable.just(room.name)
             }
 

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Handler
 import android.os.StrictMode
 import android.preference.PreferenceManager
+import com.facebook.stetho.Stetho
 import com.xianzhitech.ptt.util.SimpleActivityLifecycleCallbacks
 
 class DevApp : App() {
@@ -31,6 +32,8 @@ class DevApp : App() {
                 }, 1000)
             }
         })
+
+        Stetho.initializeWithDefaults(this)
 
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyDeath().penaltyDeathOnNetwork().build())

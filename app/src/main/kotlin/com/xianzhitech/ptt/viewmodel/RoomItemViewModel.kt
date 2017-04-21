@@ -14,9 +14,7 @@ import com.xianzhitech.ptt.ext.createCompositeObservable
 
 class RoomItemViewModel(val appComponent: AppComponent,
                         val room: RoomWithMembersAndName,
-                        val roomName: String,
                         val roomMessage: ObservableMap<String, MessageWithSender>,
-                        val roomInfo: ObservableMap<String, RoomInfo>,
                         val unreadMessageCount : ObservableMap<String, Int>,
                         val navigator: Navigator) : ViewModel {
 
