@@ -35,7 +35,7 @@ class RoomListViewModel(private val appComponent: AppComponent,
                     val sortedRooms = rooms.sortedByDescending { messages[it.room.id]?.message?.sendTime }
 
                     roomViewModels.replaceAll(sortedRooms.map { room ->
-                        RoomItemViewModel(room, room.name, roomLatestMessages, roomInfo, roomUnreadMessageCount, navigator) }
+                        RoomItemViewModel(appComponent, room, room.name, roomLatestMessages, roomInfo, roomUnreadMessageCount, navigator) }
                     )
 
                     roomLatestMessages.clear()

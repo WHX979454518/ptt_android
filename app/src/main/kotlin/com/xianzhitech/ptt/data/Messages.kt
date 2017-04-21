@@ -24,7 +24,7 @@ enum class MessageType(val bodyClass : Class<*>? = null) {
     ;
 
     companion object {
-        val MEANINGFUL = EnumSet.of(TEXT, IMAGE, VIDEO, LOCATION)
+        val MEANINGFUL : Set<MessageType> = EnumSet.of(TEXT, IMAGE, VIDEO, LOCATION)
     }
 }
 

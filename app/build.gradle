@@ -5,8 +5,8 @@ apply plugin: 'io.fabric'
 
 project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
 project.ext.buildName = "1.6.$buildNumber"
-//project.ext.appServerUrl = System.getenv('APP_SERVER_URL') ?: "http://192.168.1.100:8000"
-project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
+project.ext.appServerUrl = System.getenv('APP_SERVER_URL') ?: "http://192.168.1.100:8000"
+//project.ext.appServerUrl = System.getenv('APP_SERVER_URL')
 
 println("Building app version $buildName($buildNumber)")
 
@@ -16,6 +16,7 @@ buildscript {
         jcenter()
         maven { url 'http://oss.sonatype.org/content/repositories/snapshots' }
         maven { url 'https://maven.fabric.io/public' }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap-1.1' }
     }
 
     dependencies {
@@ -30,6 +31,7 @@ repositories {
     maven { url 'http://oss.sonatype.org/content/repositories/snapshots' }
     maven { url "https://jitpack.io" }
     maven { url 'https://maven.fabric.io/public' }
+    maven { url 'https://dl.bintray.com/kotlin/kotlin-eap-1.1' }
 //
 //    maven {
 //        url "https://repo.simophin.net/artifactory/libs-snapshot-local"
@@ -122,6 +124,7 @@ android {
         exclude 'META-INF/rxkotlin.properties'
         exclude 'META-INF/rxkotlin_main.kotlin_module'
     }
+
 }
 
 dependencies {

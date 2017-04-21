@@ -145,6 +145,15 @@ interface Message : Persistable, Parcelable, Event {
     val hasRead: Boolean
 }
 
+val Message.displayText : String?
+get() = when(type) {
+    MessageType.TEXT -> body?.getString("text")
+    MessageType.IMAGE -> "[图片]"
+    MessageType.VIDEO -> "[视频]"
+    MessageType.LOCATION -> "[位置]"
+    else -> null
+}
+
 data class MessageWithSender(val message: Message,
                              val user: User?)
 

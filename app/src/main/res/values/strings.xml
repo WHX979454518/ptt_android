@@ -241,6 +241,7 @@
     <string name="camera">相机</string>
     <string name="location">位置</string>
     <string name="select_contact">选择联系人</string>
+    <string name="me">我</string>
 
     <string-array name="level_number">
         <item>管理员</item>

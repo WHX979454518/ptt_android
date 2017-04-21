@@ -254,6 +254,7 @@ class Storage(context: Context,
     fun getLatestMessage(roomId : String) : Maybe<MessageWithSender> {
         return data.select(Message::class.java)
                 .where(MessageEntity.ROOM_ID.eq(roomId))
+                .and(MessageEntity.TYPE.`in`(MessageType.MEANINGFUL))
                 .orderBy(MessageEntity.SEND_TIME.desc())
                 .limit(1)
                 .get()
