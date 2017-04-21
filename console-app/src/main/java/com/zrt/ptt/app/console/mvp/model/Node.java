@@ -9,6 +9,7 @@ import java.util.List;
 
 public class Node {
 
+
     /**
      * 节点id
      */
@@ -174,5 +175,6 @@ public class Node {
     public void setHideChecked(boolean isHideChecked) {
         this.isHideChecked = isHideChecked;
     }
+
 
 }

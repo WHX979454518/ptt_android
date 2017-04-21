@@ -11,6 +11,8 @@ import java.lang.reflect.Field;
  */
 
 public class TreeHelper {
+
+
     /**
      * 根据所有节点获取可见节点
      *
@@ -110,7 +112,7 @@ public class TreeHelper {
             Class<? extends Object> clazz = t.getClass();
             Field[] declaredFields = clazz.getDeclaredFields();
             /**
-             * 与MyNodeBean实体一一对应
+             * 与xxNodeBean实体一一对应
              */
             for (Field f : declaredFields) {
                 if ("id".equals(f.getName())) {
@@ -192,6 +194,7 @@ public class TreeHelper {
         setChildrenNodeChecked(node, isChecked);
         /** 父节点处理 */
         setParentNodeChecked(node);
+
     }
 
     /**
@@ -233,4 +236,6 @@ public class TreeHelper {
             setParentNodeChecked(rootNode);
         }
     }
+
+
 }

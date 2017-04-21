@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="#fff"
     tools:context="com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment">
 
     <!-- TODO: Update blank fragment layout -->
@@ -10,24 +11,34 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:padding="5dp"
         android:orientation="horizontal">
-        <ImageView
-            android:id="@+id/search_img"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/search"/>
         <EditText
             android:id="@+id/search_edit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/searchicon"
+            android:background="@drawable/search_bg"
+            android:paddingLeft="10dp"
             android:padding="5dp"
-            android:gravity="center"
+            android:gravity="center_vertical"
             android:hint="搜索部门、人员"/>
 
     </LinearLayout>
-    <ListView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/tree_lv"
-        />
+        android:padding="10dp"
+        android:background="@color/lis_view_bg">
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/lst_stroke_bg"
+            android:scrollbars="none"
+            android:padding="5dp"
+            android:id="@+id/tree_lv"
+            />
+    </LinearLayout>
+
 </LinearLayout>

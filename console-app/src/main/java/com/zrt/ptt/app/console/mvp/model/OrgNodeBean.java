@@ -4,7 +4,8 @@ package com.zrt.ptt.app.console.mvp.model;
  * Created by surpass on 2017-4-20.
  */
 
-public class MyNodeBean {
+public class OrgNodeBean {
+
     /**
      * 节点Id
      */
@@ -27,7 +28,7 @@ public class MyNodeBean {
     private long length;
 
 
-    public MyNodeBean(int id, int pId, String name) {
+    public OrgNodeBean(int id, int pId, String name) {
         super();
         this.id = id;
         this.pId = pId;
@@ -64,4 +65,7 @@ public class MyNodeBean {
     public void setLength(long length) {
         this.length = length;
     }
+
+
+
 }

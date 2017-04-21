@@ -24,21 +24,22 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="2"
+            android:layout_weight="3"
             android:background="@android:color/white">
 
             <LinearLayout
                 android:id="@+id/linear_check_lay"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="50dp"
                 android:orientation="horizontal"
                 android:layout_alignParentBottom="true"
                 android:layout_gravity="bottom"
                 android:gravity="center_vertical"
-                android:background="@android:color/white">
+                android:background="#fff">
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
+                    android:padding="3dp"
                     android:layout_weight="1">
                     <RadioButton
                         android:id="@+id/rb1"
@@ -54,6 +55,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
+                    android:padding="3dp"
                     android:layout_weight="1">
                     <RadioButton
                         android:id="@+id/rb2"
@@ -69,6 +71,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
+                    android:padding="3dp"
                     android:layout_weight="1">
                     <RadioButton
                         android:id="@+id/rb3"
@@ -96,7 +99,7 @@
             android:id="@+id/map_container"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="5"
+            android:layout_weight="6"
             android:background="@android:color/holo_green_dark"
             android:orientation="vertical">
             <com.baidu.mapapi.map.MapView

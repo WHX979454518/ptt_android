@@ -27,6 +27,8 @@ import com.zrt.ptt.app.console.mvp.model.TreeHelper;
  * @param <T>
  */
 public abstract class TreeListViewAdapter<T> extends BaseAdapter {
+
+
     protected Context mContext;
     /**
      * 存储所有可见的Node
@@ -184,10 +186,12 @@ public abstract class TreeListViewAdapter<T> extends BaseAdapter {
      * @param isHide
      */
     public void updateView(boolean isHide){
-        /*for(Node node:mAllNodes){
+        for(Node node:mAllNodes){
             node.setHideChecked(isHide);
         }
 
-        this.notifyDataSetChanged();*/
+        this.notifyDataSetChanged();
     }
+
+
 }

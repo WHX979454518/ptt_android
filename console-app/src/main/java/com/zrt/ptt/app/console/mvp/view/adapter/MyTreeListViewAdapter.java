@@ -22,8 +22,12 @@ import java.util.List;
  */
 
 public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
+
+
+
+
     public MyTreeListViewAdapter(ListView mTree, Context context,
-                                 List<T> datas, int defaultExpandLevel, boolean isHide)
+                                 List<T> datas, int defaultExpandLevel,boolean isHide)
             throws IllegalArgumentException, IllegalAccessException {
         super(mTree, context, datas, defaultExpandLevel,isHide);
     }
@@ -89,4 +93,5 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
             cb.setBackgroundResource(R.drawable.selectedno);
         }
     }
+
 }

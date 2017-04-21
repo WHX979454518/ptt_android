@@ -1,1 +1,2 @@
-include ':app', ':bd_loc_sdk', ':console-app', ':voice_engine'
+//include ':app', ':bd_loc_sdk', ':console-app', ':voice_engine'
+include  ':bd_loc_sdk', ':console-app', ':voice_engine'
