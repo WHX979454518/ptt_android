@@ -3,9 +3,10 @@ package com.xianzhitech.ptt.data
 import android.os.Parcelable
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.xianzhitech.ptt.api.event.Event
-import com.xianzhitech.ptt.util.JSONObjectConverter
+import com.xianzhitech.ptt.util.SerializableConverter
 import com.xianzhitech.ptt.util.SetConverter
 import io.requery.*
 import org.json.JSONObject
@@ -107,7 +108,7 @@ interface RoomInfo : Persistable, Parcelable, Serializable {
 @Entity
 @Table(name = "messages")
 @JsonDeserialize(`as` = MessageEntity::class)
-interface Message : Persistable, Parcelable, Event {
+interface Message : Persistable, Serializable, Event {
     @get:JsonIgnore
     @get:Key
     @get:Generated
@@ -129,8 +130,9 @@ interface Message : Persistable, Parcelable, Event {
     val type: MessageType?
 
     @get:JsonProperty("body")
-    @get:Convert(JSONObjectConverter::class)
-    val body: JSONObject?
+    @get:JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type")
+    @get:Convert(SerializableConverter::class)
+    val body: MessageBody?
 
     @get:JsonProperty("senderId")
     @get:Index
@@ -143,21 +145,7 @@ interface Message : Persistable, Parcelable, Event {
     @get:JsonIgnore
     @get:Index
     @get:Column
+    @get:ReadOnly
     val hasRead: Boolean
 }
 
-val Message.displayText : String?
-get() = when(type) {
-    MessageType.TEXT -> body?.optString("text", null)
-    MessageType.IMAGE -> "[图片]"
-    MessageType.VIDEO -> "[视频]"
-    MessageType.LOCATION -> "[位置]"
-    else -> null
-}
-
-data class MessageWithSender(val message: Message,
-                             val user: User?)
-
-data class RoomWithMembersAndName(val room: Room,
-                                  val members: List<User>,
-                                  val name: String)

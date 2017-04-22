@@ -183,6 +183,10 @@
         <item quantity="other">%1$s天以前</item>
     </plurals>
 
+    <plurals name="num_new_messages">
+        <item quantity="other">%1$s条新消息</item>
+    </plurals>
+
     <string name="level_with_number">%1$s级</string>
     <string name="name_with_level">%1$s (%2$s)</string>
     <string name="field_required">该项目不能为空</string>
@@ -242,6 +246,11 @@
     <string name="location">位置</string>
     <string name="select_contact">选择联系人</string>
     <string name="me">我</string>
+    <string name="reply">回复</string>
+    <string name="message_with_room_name">%1$s: %2$s</string>
+    <string name="image_body">[图片]</string>
+    <string name="video_body">[视频]</string>
+    <string name="location_body">[位置信息]</string>
 
     <string-array name="level_number">
         <item>管理员</item>

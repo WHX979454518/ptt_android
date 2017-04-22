@@ -8,13 +8,11 @@ import android.support.v7.widget.util.SortedListAdapterCallback
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.google.common.base.Objects
 import com.google.common.collect.ComparisonChain
 import com.xianzhitech.ptt.BR
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.MessageType
-import com.xianzhitech.ptt.data.convertBody
 import com.xianzhitech.ptt.databinding.ViewMessageItemBinding
 import com.xianzhitech.ptt.ext.appComponent
 
@@ -71,7 +69,7 @@ class ChatAdapter : RecyclerView.Adapter<ChatAdapter.MessageHolder>() {
 
     override fun onBindViewHolder(holder: ChatAdapter.MessageHolder, position: Int) {
         val msg = messages[position]
-        holder.actualBinding.setVariable(BR.body, msg.convertBody(holder.itemBinding.root.context.appComponent.objectMapper))
+        holder.actualBinding.setVariable(BR.body, msg.body)
         holder.actualBinding.setVariable(BR.message, msg)
         holder.itemBinding.userId = msg.senderId
         holder.itemBinding.isMe = holder.itemView.context.appComponent.signalBroker.peekUserId() == msg.senderId

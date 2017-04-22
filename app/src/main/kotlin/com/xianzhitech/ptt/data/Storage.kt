@@ -3,6 +3,8 @@ package com.xianzhitech.ptt.data
 import android.content.Context
 import android.support.v4.util.ArrayMap
 import com.google.common.base.Optional
+import com.google.common.collect.Iterables
+import com.google.common.collect.Lists
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Preference
 import com.xianzhitech.ptt.ext.*
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.stream.Collectors.toList
+import kotlin.collections.HashSet
 import kotlin.collections.LinkedHashSet
 
 class Storage(context: Context,
@@ -215,16 +218,55 @@ class Storage(context: Context,
                 .map { it.map { it[RoomEntity.ID] } }
     }
 
+    fun getLatestUnreadMessages(limit: Int): Observable<List<MessageWithRoomNameAndSender>> {
+        val currentUserId = appComponent.signalBroker.peekUserId() ?: return Observable.just(emptyList())
+
+        return data.select(Message::class.java)
+                .where(MessageEntity.HAS_READ.eq(false))
+                .and(MessageEntity.SENDER_ID.ne(currentUserId))
+                .and(MessageEntity.TYPE.`in`(MessageType.MEANINGFUL))
+                .orderBy(MessageEntity.SEND_TIME.desc())
+                .limit(limit)
+                .observeList()
+                .switchMap { messages ->
+                    combineLatest(
+                            Observable.combineLatest(messages.map { getRoomName(it.roomId) }, { it }),
+                            getUsers(messages.map(Message::senderId)),
+                            { roomNames, senders ->
+                                val senderMap = senders.associateBy(User::id)
+                                messages.mapIndexedNotNull { index, message ->
+                                    val roomName = roomNames[index].toString()
+                                    if (roomName.isBlank()) {
+                                        null
+                                    } else {
+                                        MessageWithRoomNameAndSender(message = message, roomName = roomName, sender = senderMap[message.senderId])
+                                    }
+                                }
+                            }
+                    )
+                }
+    }
+
     fun getAllRoomLatestMessage(): Observable<Map<String, MessageWithSender>> {
         return data.select(MessageEntity.ROOM_ID)
                 .distinct()
                 .observeList()
-                .switchMapSingle {
-                    Observable.fromIterable(it.map { it[MessageEntity.ROOM_ID] })
-                            .flatMapMaybe(this::getLatestMessage)
-                            .collectInto(ArrayMap<String, MessageWithSender>()) { map, msg ->
-                                map[msg.message.roomId] = msg
+                .switchMap {
+                    Observable.combineLatest(
+                            it.map { getLatestMessage(it[0]) },
+                            {
+                                val map = ArrayMap<String, MessageWithSender>(it.size)
+                                it.forEach {
+                                    @Suppress("UNCHECKED_CAST")
+                                    val msg = it as Optional<MessageWithSender>
+                                    if (msg.isPresent) {
+                                        map[msg.get().message.roomId] = msg.get()
+                                    }
+                                }
+
+                                map
                             }
+                    )
                 }
     }
 
@@ -244,18 +286,19 @@ class Storage(context: Context,
                 }
     }
 
-    fun getLatestMessage(roomId: String): Maybe<MessageWithSender> {
+    fun getLatestMessage(roomId: String): Observable<Optional<MessageWithSender>> {
         return data.select(Message::class.java)
                 .where(MessageEntity.ROOM_ID.eq(roomId))
                 .and(MessageEntity.TYPE.`in`(MessageType.MEANINGFUL))
                 .orderBy(MessageEntity.SEND_TIME.desc())
                 .limit(1)
-                .get()
-                .maybe()
-                .flatMap { msg ->
-                    getUser(msg.senderId).firstElement()
-                            .map { sender ->
-                                MessageWithSender(msg, sender.orNull())
+                .observeList()
+                .switchMap { msgs ->
+                    val msg = msgs.firstOrNull() ?: return@switchMap Observable.just(Optional.absent<MessageWithSender>())
+
+                    getUser(msg.senderId)
+                            .map {
+                                MessageWithSender(msg, it.orNull()).toOptional()
                             }
                 }
     }
@@ -324,7 +367,7 @@ class Storage(context: Context,
         return lookup.observeList()
     }
 
-    fun markRoomAllMessagesRead(roomId: String) : Completable {
+    fun markRoomAllMessagesRead(roomId: String): Completable {
         return data.update(Message::class.java)
                 .set(MessageEntity.HAS_READ, true)
                 .where(MessageEntity.HAS_READ.eq(false))
@@ -396,3 +439,14 @@ class Storage(context: Context,
                 .map { it.toList() }
     }
 }
+
+data class MessageWithSender(val message: Message,
+                             val user: User?)
+
+data class RoomWithMembersAndName(val room: Room,
+                                  val members: List<User>,
+                                  val name: String)
+
+data class MessageWithRoomNameAndSender(val message: Message,
+                                        val roomName: String?,
+                                        val sender: User?)

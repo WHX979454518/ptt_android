@@ -1,22 +1,26 @@
 package com.xianzhitech.ptt.data
 
+import android.content.Context
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.xianzhitech.ptt.R
+import java.io.Serializable
 import java.util.*
 
 
-enum class MessageType(val bodyClass : Class<*>? = null) {
+enum class MessageType {
     @JsonProperty("text")
-    TEXT(TextMessage::class.java),
+    TEXT,
 
     @JsonProperty("image")
-    IMAGE(MediaMessage::class.java),
+    IMAGE,
 
     @JsonProperty("video")
-    VIDEO(MediaMessage::class.java),
+    VIDEO,
 
     @JsonProperty("location")
-    LOCATION(LocationMessage::class.java),
+    LOCATION,
 
     @JsonProperty("notify_create_room")
     NOTIFY_CREATE_ROOM,
@@ -24,23 +28,59 @@ enum class MessageType(val bodyClass : Class<*>? = null) {
     ;
 
     companion object {
-        val MEANINGFUL : Set<MessageType> = EnumSet.of(TEXT, IMAGE, VIDEO, LOCATION)
+        val MEANINGFUL: Set<MessageType> = EnumSet.of(TEXT, IMAGE, VIDEO, LOCATION)
     }
 }
 
-data class TextMessage(@param:JsonProperty("text") val text : String?)
-data class MediaMessage(@param:JsonProperty("url") val url : String,
-                        @param:JsonProperty("desc") val desc: String?)
+@JsonSubTypes(
+        JsonSubTypes.Type(name = "text", value = TextMessageBody::class),
+        JsonSubTypes.Type(name = "image", value = ImageMessageBody::class),
+        JsonSubTypes.Type(name = "video", value = VideoMessageBody::class),
+        JsonSubTypes.Type(name = "location", value = LocationMessageBody::class)
+)
+interface MessageBody : Serializable {
+    fun toDisplayText(context: Context): CharSequence
 
-data class LocationMessage(@param:JsonProperty("lat") val lat : Double,
-                           @param:JsonProperty("lng") val lng : Double,
-                           @param:JsonProperty("address") val address : String?)
-
-fun <T> Message.convertBody(objectMapper: ObjectMapper) : T? {
-    if (body == null || type == null || type!!.bodyClass == null) {
-        return null
+    companion object {
+        private const val serialVersionUID = 1L
     }
+}
 
-    @Suppress("UNCHECKED_CAST")
-    return objectMapper.convertValue(body, type!!.bodyClass) as? T
+data class TextMessageBody(@JsonProperty("text") val text: String) : MessageBody {
+    override fun toDisplayText(context: Context) = text
+}
+
+data class ImageMessageBody(@JsonProperty("url") val url: String,
+                            @JsonProperty("desc") val desc: String) : MessageBody {
+    override fun toDisplayText(context: Context): CharSequence {
+        return if (desc.isNullOrBlank()) {
+            context.getString(R.string.image_body)
+        } else {
+            desc
+        }
+    }
+}
+
+data class VideoMessageBody(@JsonProperty("url") val url: String,
+                            @JsonProperty("desc") val desc: String) : MessageBody {
+    override fun toDisplayText(context: Context): CharSequence {
+        return if (desc.isNullOrBlank()) {
+            context.getString(R.string.image_body)
+        } else {
+            desc
+        }
+    }
+}
+
+data class LocationMessageBody(@JsonProperty("lat") val lat: Double,
+                               @JsonProperty("lng") val lng: Double,
+                               @JsonProperty("desc") val desc: String?) : MessageBody {
+
+    override fun toDisplayText(context: Context): CharSequence {
+        return if (desc.isNullOrBlank()) {
+            context.getString(R.string.location_body)
+        } else {
+            desc!!
+        }
+    }
 }

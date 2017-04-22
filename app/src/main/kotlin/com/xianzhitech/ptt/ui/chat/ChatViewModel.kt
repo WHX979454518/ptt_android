@@ -2,12 +2,13 @@ package com.xianzhitech.ptt.ui.chat
 
 import android.content.Context
 import android.databinding.ObservableField
+import android.os.SystemClock
 import android.support.v7.util.SortedList
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.MessageType
 import com.xianzhitech.ptt.data.Room
-import com.xianzhitech.ptt.data.TextMessage
+import com.xianzhitech.ptt.data.TextMessageBody
 import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
@@ -31,7 +32,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     val displayMoreButton = createCompositeObservable(message) { message.get().isNullOrEmpty() }
     val moreSelectionOpen = ObservableField(false)
 
-    private var startMessageDate: Date? = null
+    private var startMessageDate = Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30))
 
     override fun onStart() {
         super.onStart()
@@ -72,6 +73,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickWalkieTalkie() {
+        navigator.navigateToWalkieTalkie(roomId)
     }
 
     fun onClickLocation() {
@@ -95,7 +97,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickSend() {
-        val msg = appComponent.signalBroker.createMessage(roomId, MessageType.TEXT, TextMessage(message.get()))
+        val msg = appComponent.signalBroker.createMessage(roomId, MessageType.TEXT, TextMessageBody(message.get()))
         message.set(null)
         appComponent.signalBroker.sendMessage(msg).toMaybe().logErrorAndForget().subscribe()
     }

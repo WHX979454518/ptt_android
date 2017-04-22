@@ -10,7 +10,13 @@ import com.google.common.base.Optional
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.SignalApi
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.d
+import com.xianzhitech.ptt.ext.getConnectivityObservable
+import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.receiveBroadcasts
+import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.w
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.call.CallActivity
@@ -133,20 +139,20 @@ class ServiceHandler(private val appContext: Context,
         builder.setContentTitle(R.string.app_name.toFormattedString(appContext))
 
         val icon: Int
-        val text : String
+        val text : String?
         val intent : Intent
 
         val connectionState = appComponent.signalBroker.connectionState.value
 
         when {
-            state.connectivity.not() || connectionState == SignalApi.ConnectionState.DISCONNECTED -> {
-                text = appContext.getString(R.string.notification_user_offline, user.name)
+            connectionState == SignalApi.ConnectionState.RECONNECTING -> {
+                text = appContext.getString(R.string.notification_user_logging_in, user.name)
                 intent = Intent(appContext, HomeActivity::class.java)
                 icon = R.drawable.ic_notification_offline
             }
 
-            connectionState == SignalApi.ConnectionState.RECONNECTING -> {
-                text = appContext.getString(R.string.notification_user_logging_in, user.name)
+            state.connectivity.not() || connectionState == SignalApi.ConnectionState.DISCONNECTED -> {
+                text = appContext.getString(R.string.notification_user_offline, user.name)
                 intent = Intent(appContext, HomeActivity::class.java)
                 icon = R.drawable.ic_notification_offline
             }

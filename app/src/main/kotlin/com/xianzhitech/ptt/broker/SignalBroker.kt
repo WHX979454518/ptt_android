@@ -16,6 +16,7 @@ import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.MessageBody
 import com.xianzhitech.ptt.data.MessageEntity
 import com.xianzhitech.ptt.data.MessageType
 import com.xianzhitech.ptt.data.Permission
@@ -35,6 +36,7 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.BehaviorSubject
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -197,6 +199,13 @@ class SignalBroker(private val appComponent: AppComponent,
                             }
                         }
                         .andThen(appComponent.storage.saveMessage(event))
+                        .doOnSuccess {
+                            if (it.hasRead.not()) {
+                                appContext.sendBroadcast(Intent(action)
+                                        .setPackage(appContext.packageName)
+                                        .putExtra(EXTRA_EVENT, event as Serializable))
+                            }
+                        }
                         .toMaybe()
                         .logErrorAndForget()
                         .subscribe()
@@ -400,19 +409,14 @@ class SignalBroker(private val appComponent: AppComponent,
                 .flatMap(appComponent.storage::saveMessage)
     }
 
-    fun createMessage(roomId: String, type: MessageType, body: Any? = null): Message {
+    fun createMessage(roomId: String, type: MessageType, body: MessageBody? = null): Message {
         val entity = MessageEntity()
         entity.setSendTime(Date())
         entity.setLocalId(UUID.randomUUID().toString())
         entity.setRoomId(roomId)
         entity.setSenderId(currentUser.value.get().id)
         entity.setType(type)
-
-        if (body != null && type.bodyClass != null) {
-            Preconditions.checkArgument(type.bodyClass.isAssignableFrom(body.javaClass))
-            entity.setBody(appComponent.objectMapper.convertValue(body, JSONObject::class.java))
-        }
-
+        entity.setBody(body)
         return entity
     }
 

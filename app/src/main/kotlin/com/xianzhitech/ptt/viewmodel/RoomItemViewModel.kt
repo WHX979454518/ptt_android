@@ -6,9 +6,7 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.MessageWithSender
 import com.xianzhitech.ptt.data.Room
-import com.xianzhitech.ptt.data.RoomInfo
 import com.xianzhitech.ptt.data.RoomWithMembersAndName
-import com.xianzhitech.ptt.data.displayText
 import com.xianzhitech.ptt.ext.createCompositeObservable
 
 
@@ -35,7 +33,7 @@ class RoomItemViewModel(val appComponent: AppComponent,
             msg?.user?.name
         }
 
-        msg?.let { "$name: ${it.message.displayText}" }
+        msg?.let { "$name: ${it.message.body?.toDisplayText(App.instance)}" }
     }
 
     fun onClickRoom() {
