@@ -10,7 +10,7 @@ import com.xianzhitech.ptt.ui.home.HomeActivity
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
 
-class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
+open class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
