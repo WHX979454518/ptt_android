@@ -72,6 +72,7 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
         viewHolder.label.setText(node.getName());
 
 
+
         return convertView;
     }
     private final class ViewHolder

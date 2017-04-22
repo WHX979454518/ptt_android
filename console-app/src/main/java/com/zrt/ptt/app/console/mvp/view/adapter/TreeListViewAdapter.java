@@ -17,6 +17,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
+import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.model.TreeHelper;
 /**
@@ -173,6 +174,11 @@ public abstract class TreeListViewAdapter<T> extends BaseAdapter {
                 }
 
             });
+        }
+        if(node.getParent()==null){
+            convertView.setBackgroundColor(mContext.getResources().getColor(R.color.lst_item_node_paren));
+        }else {
+            convertView.setBackgroundColor(mContext.getResources().getColor(R.color.lst_item_bg));
         }
 
         return convertView;

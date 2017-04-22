@@ -28,7 +28,6 @@ import java.util.List;
 public class OrganizationFragment extends Fragment {
 
     private ListView treeLv;
-    private Button checkSwitchBtn;
     private MyTreeListViewAdapter<OrgNodeBean> adapter;
     private List<OrgNodeBean> mDatas = new ArrayList<OrgNodeBean>();
     //标记是显示Checkbox还是隐藏

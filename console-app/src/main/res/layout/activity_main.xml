@@ -24,7 +24,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="3"
+            android:layout_weight="4"
             android:background="@android:color/white">
 
             <LinearLayout
@@ -95,20 +95,42 @@
 
             </RelativeLayout>
         </RelativeLayout>
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/map_container"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="6"
-            android:background="@android:color/holo_green_dark"
+            android:layout_weight="7"
             android:orientation="vertical">
             <com.baidu.mapapi.map.MapView
                 android:id="@+id/bmapView"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
                 android:clickable="true" />
+            <FrameLayout
+                android:id="@+id/organiz_func_container"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_gravity="bottom"
+                android:background="#50323232"
+                android:gravity="center_vertical"
+                >
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <include layout="@layout/organiz_function_btn_ly"
+                        android:id="@+id/organiz_function_inc"
+                        android:visibility="visible"/>
+                </LinearLayout>
+
+
+                <include layout="@layout/sys_state_func_ly"
+                    android:id="@+id/sys_state_func_inc"
+                    android:visibility="gone"/>
+
+            </FrameLayout>
+
+        </FrameLayout>
 
     </LinearLayout>
 

@@ -50,9 +50,13 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.bmapView)
     MapView bmapView;
     @BindView(R.id.map_container)
-    LinearLayout mapContainer;
+    FrameLayout mapContainer;
     @BindView(R.id.main_content)
     LinearLayout mainContent;
+    @BindView(R.id.linear_check_lay)
+    LinearLayout linearCheckLay;
+    @BindView(R.id.organiz_func_container)
+    FrameLayout organizFuncContainer;
     private MapView mMapView;
     private OrganizationFragment organizationFragment;
     private SystemStateFragment stateFragment;
@@ -66,15 +70,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         mMapView = (MapView) findViewById(R.id.bmapView);
+        View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly,null);
         setSelected(rb1.getId());
     }
 
-    public void setSelected(int id){
+    public void setSelected(int id) {
         checkRadio(id);
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         hideFragment(ft, id);
-        switch (id){
+        switch (id) {
             case R.id.rb1:
                 if (organizationFragment == null) {
                     organizationFragment = new OrganizationFragment();
@@ -93,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         ft.commitAllowingStateLoss();
     }
 
-    public void checkRadio(int id){
+    public void checkRadio(int id) {
         switch (id) {
             case R.id.rb1:
                 rb1.setChecked(true);
@@ -123,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void hideFragment(FragmentTransaction ft, int id) {
-        if (organizationFragment != null && id !=rb1.getId() )
+        if (organizationFragment != null && id != rb1.getId())
             ft.hide(organizationFragment);
         if (stateFragment != null && id != rb2.getId())
             ft.hide(stateFragment);
@@ -131,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
 //            ft.hide(managFinacFrag);
 
     }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
