@@ -1,18 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+          xmlns:tools="http://schemas.android.com/tools">
 
     <application
-            tools:replace="android:name"
-            android:name="com.xianzhitech.ptt.DevApp">
-
-        <activity
-            android:name="com.xianzhitech.ptt.ui.ServerInitActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize"
-            android:label="初始化信号服务器"
-            android:theme="@style/AppTheme.NoActionBar" />
-
-    </application>
+        android:name="com.xianzhitech.ptt.DevApp"
+        tools:replace="android:name" />
 
 </manifest>

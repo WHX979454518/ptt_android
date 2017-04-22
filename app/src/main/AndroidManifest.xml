@@ -1,31 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.xianzhitech.ptt"
+    package="com.xianzhitech.ptt.app"
     android:installLocation="internalOnly">
 
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.USE_SIP" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.BROADCAST_STICKY" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.CAMERA" />
-
     <application
-        android:name=".App"
+        android:name="com.xianzhitech.ptt.App"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
@@ -38,11 +18,11 @@
             android:value="3562376117e656a0ce17f29b2e524d6bb0116630" />
 
         <meta-data
-            android:name="com.xianzhitech.ptt.App$AppGlideModule"
+            android:name="com.xianzhitech.ptt.BaseApp$AppGlideModule"
             android:value="GlideModule" />
 
         <activity
-            android:name=".ui.login.LoginActivity"
+            android:name="com.xianzhitech.ptt.ui.login.LoginActivity"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -51,120 +31,14 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.home.HomeActivity" />
-
         <activity
-            android:name=".ui.room.RoomActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:showForAllUsers="true"
-            android:showOnLockScreen="true"
-            android:theme="@style/AppTheme.Room" />
-
-        <activity
-            android:name=".ui.settings.SettingsActivity"
-            android:label="@string/settings"
-            android:launchMode="singleTask" />
-
-        <activity
-            android:name=".ui.user.EditProfileActivity"
-            android:label="@string/edit_profile" />
-
-        <activity
-            android:name=".ui.app.ShareActivity"
-            android:label="@string/share" />
-
-        <activity
-            android:name=".ui.user.ChangePasswordActivity"
-            android:label="@string/change_password" />
-
-        <activity
-            android:name=".ui.room.RoomDetailsActivity"
-            android:label="@string/room_info" />
-
-        <activity
-            android:name=".ui.base.FragmentDisplayActivity" />
-
-        <activity
-            android:name=".ui.user.UserDetailsActivity"
-            android:label="@string/user_info" />
-
-        <activity android:name=".ui.app.TextInputActivity" />
-
-        <activity
-            android:name=".ui.group.GroupDetailsActivity"
-            android:label="@string/group_info" />
-
-        <activity
-            android:name=".ui.app.FeedbackActivity"
-            android:label="@string/feedback" />
-
-        <activity
-            android:name=".ui.app.AboutActivity"
+            android:name="com.xianzhitech.ptt.ui.app.BaseAboutActivity"
             android:label="@string/about" />
 
-        <activity
-            android:name=".ui.map.MapActivity"
-            android:label="@string/people_nearby" />
-
-        <activity
-            android:name=".ui.call.CallActivity"
-            android:label="@string/group_chat"
-            android:theme="@style/AppTheme.Room" />
-
-
-        <receiver android:name=".update.DownloadCompleteReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".media.MediaButtonReceiver"
-            android:priority="65536">
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </receiver>
-
-        <service android:name=".service.handler.BackgroundService" />
-
-        <receiver
-            android:name=".service.handler.RoomInvitationHandler"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="s_invite_to_join" />
-            </intent-filter>
-        </receiver>
-
-        <receiver android:name=".service.handler.UserKickedOutReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="s_kick_out" />
-                <action android:name="s_login_failed" />
-            </intent-filter>
-        </receiver>
-
-        <receiver android:name=".service.handler.AutoStartReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.SCREEN_ON" />
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-                <action android:name="android.intent.action.MEDIA_MOUNTED" />
-            </intent-filter>
-        </receiver>
-
-        <service
-            android:name="com.baidu.location.f"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="com.baidu.location.service_v2.2"></action>
-            </intent-filter>
-        </service>
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
             android:value="${BD_LOCATION_SDK_KEY}" />  <!--http://lbsyun.baidu.com/apiconsole/key-->
+
     </application>
 
 </manifest>

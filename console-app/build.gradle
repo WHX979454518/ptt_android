@@ -76,4 +76,5 @@ dependencies {
     compile 'com.android.support:support-v4:25.3.1'
     testCompile 'junit:junit:4.12'
     apt 'com.jakewharton:butterknife-compiler:8.5.1'
+    compile project(path: ':app')
 }

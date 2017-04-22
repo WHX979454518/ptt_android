@@ -6,13 +6,14 @@ buildscript {
     ext.build_tools_version = '25.0.2'
     ext.support_library_version = '25.3.1'
     ext.min_sdk_version = 15
+    ext.android_gradle_version = '2.3.1'
 
     repositories {
         jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.1'
+        classpath "com.android.tools.build:gradle:$android_gradle_version"
     }
 }
 
