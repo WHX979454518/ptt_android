@@ -1,10 +1,5 @@
 image: openjdk:8-jdk
 
-variables:
-  ANDROID_COMPILE_SDK: "25"
-  ANDROID_BUILD_TOOLS: "25.0.2"
-  ANDROID_SDK_TOOLS: "26.0.1"
-
 stages:
   - build
   - deploy
