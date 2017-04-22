@@ -141,7 +141,8 @@ interface Message : Persistable, Parcelable, Event {
     val roomId: String
 
     @get:JsonIgnore
-    @get:Column(value = "0")
+    @get:Index
+    @get:Column
     val hasRead: Boolean
 }
 

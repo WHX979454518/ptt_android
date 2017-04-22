@@ -14,11 +14,12 @@ import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.viewmodel.TopBannerViewModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
 class ChatViewModel(private val appComponent: AppComponent,
                     appContext: Context,
-                    private val roomMessages : SortedList<Message>,
+                    private val roomMessages: SortedList<Message>,
                     private val roomId: String,
                     private val navigator: Navigator) : LifecycleViewModel() {
     val room = ObservableField<Room>()
@@ -43,9 +44,17 @@ class ChatViewModel(private val appComponent: AppComponent,
                     title.set(it.orNull()?.second)
                 }
 
-        appComponent.storage.getMessagesFrom(startMessageDate, roomId)
-                .observeOn(AndroidSchedulers.mainThread())
+        val messages = appComponent.storage.getMessagesFrom(startMessageDate, roomId).share()
+
+        messages.observeOn(AndroidSchedulers.mainThread())
                 .subscribe(this::onMessageUpdated)
+                .bindToLifecycle()
+
+        messages.debounce(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                .startWith(emptyList<Message>())
+                .flatMapCompletable { appComponent.storage.markRoomAllMessagesRead(roomId).logErrorAndForget() }
+                .logErrorAndForget()
+                .subscribe()
                 .bindToLifecycle()
     }
 

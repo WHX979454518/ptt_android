@@ -181,6 +181,8 @@ class SignalApi(private val appComponent: AppComponent,
         appComponent.preference.currentUser = null
         appComponent.preference.lastMessageSyncDate = null
 
+        appComponent.storage.clear().logErrorAndForget().subscribe()
+
         connectionState.onNext(ConnectionState.IDLE)
 
     }

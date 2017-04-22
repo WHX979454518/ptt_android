@@ -10,6 +10,7 @@ import com.xianzhitech.ptt.ext.combineLatest
 import com.xianzhitech.ptt.util.ObservableArrayList
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
 class RoomListViewModel(private val appComponent: AppComponent,
@@ -30,13 +31,17 @@ class RoomListViewModel(private val appComponent: AppComponent,
                 appComponent.storage.getAllRoomLatestMessage(),
                 appComponent.storage.getAllRooms(),
                 { messages, rooms -> messages to rooms })
-                .observeOn(AndroidSchedulers.mainThread())
+                .debounce(200, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
                 .subscribe { (messages, rooms) ->
                     val sortedRooms = rooms.sortedByDescending { messages[it.room.id]?.message?.sendTime }
 
-                    roomViewModels.replaceAll(sortedRooms.map { room ->
-                        RoomItemViewModel(appComponent, room, roomLatestMessages, roomUnreadMessageCount, navigator) }
-                    )
+                    roomViewModels.replaceAll(sortedRooms.mapNotNull { room ->
+                        if (room.name.isBlank()) {
+                            null
+                        } else {
+                            RoomItemViewModel(appComponent, room, roomLatestMessages, roomUnreadMessageCount, navigator)
+                        }
+                    })
 
                     roomLatestMessages.clear()
                     roomLatestMessages.putAll(messages)
