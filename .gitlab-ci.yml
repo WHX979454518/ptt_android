@@ -1,29 +1,48 @@
+image: openjdk:8-jdk
+
+variables:
+  ANDROID_COMPILE_SDK: "25"
+  ANDROID_BUILD_TOOLS: "25.0.2"
+  ANDROID_SDK_TOOLS: "26.0.1"
+
 stages:
   - build
   - deploy
 
 build:
+  before_script:
+    - apt-get --quiet update --yes
+    - apt-get --quiet install --yes wget tar unzip lib32stdc++6 lib32z1 openssh-client
+    - curl https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip > android_sdk.zip
+    - mkdir -p android-sdk-linux/licenses
+    - unzip android_sdk.zip -d android-sdk-linux
+    - echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > android-sdk-linux/licenses/android-sdk-license
+    - export ANDROID_HOME=$PWD/android-sdk-linux
+    - export PATH=$PATH:$PWD/android-sdk-linux/platform-tools/
   stage: build
-  script: ./gradlew --no-daemon clean :app:assembleDevRelease
+  variables:
+      APP_SERVER_URL: "http://netptt.cn:25002"
+      BUILD_NUMBER: ${CI_PIPELINE_ID}
+  script: ./gradlew --no-daemon clean :app:assembleDevRelease :console-app:assembleDevDebug
   artifacts:
     paths:
       - app/build/outputs
-  tags:
-    - ANDROID
+      - console-app/build/outputs
 
-deploy_staging:
+deploy_app_staging:
   stage: deploy
   when: manual
-  variables:
-    APP_SERVER_URL: "http://netptt.cn:25002"
-    BUILD_NUMBER: ${CI_PIPELINE_ID}
+  before_script:
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    - mkdir -p ~/.ssh
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
   environment:
       name: staging
       url: http://netptt.cn:25000
   script:
     - export CHANGE_LOG="`./generate_gitlog.sh`"
     - echo $CHANGE_LOG
-    - ./gradlew --no-daemon clean assembleDevRelease
     - scp app/build/outputs/apk/app-dev-release.apk root@netptt.cn:/serverDisk/apks/zrt_staging/zrt-ptt-staging-${CI_PIPELINE_ID}.apk
     - >
         curl -X POST
@@ -31,9 +50,20 @@ deploy_staging:
         -u admin:123654
         -d "{\"latest_version_code\":${CI_PIPELINE_ID},\"latest_version_name\":\"1.6.${CI_PIPELINE_ID}\",\"update_message\":\"<ul>${CHANGE_LOG}<li>...</li></ul>\",\"mandatory\":false,\"signal_server_endpoint\":\"https://netptt.cn:25007\",\"signal_server_endpoint_insecure\":\"http://netptt.cn:25000\",\"download_url\":\"http://netptt.cn:8080/zrt_staging/zrt-ptt-staging-${CI_PIPELINE_ID}.apk\"}"
         http://netptt.cn:25002/admin
-  tags:
-    - ANDROID
-    - NETPTT_ACCESS
+
+deploy_console_staging:
+  stage: deploy
+  when: manual
+  before_script:
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    - mkdir -p ~/.ssh
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+  environment:
+      name: staging
+      url: http://netptt.cn:25000
+  script:
+    - scp console-app/build/outputs/apk/console-app-dev-debug.apk root@netptt.cn:/serverDisk/apks/zrt_staging/zrt-ptt-console-staging-${CI_PIPELINE_ID}.apk
   artifacts:
       paths:
         - app/build/outputs
