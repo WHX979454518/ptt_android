@@ -23,6 +23,9 @@
   public *;
 }
 
+# Jackson
+-dontwarn kotlin.reflect.**
+
 # hockeyapp
 -keep class net.hockeyapp.**
 
