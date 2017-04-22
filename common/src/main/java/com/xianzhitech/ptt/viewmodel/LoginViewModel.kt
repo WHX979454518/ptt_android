@@ -3,14 +3,15 @@ package com.xianzhitech.ptt.viewmodel
 import android.databinding.Observable
 import android.databinding.ObservableBoolean
 import android.databinding.ObservableField
-import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.BaseApp
+import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.SignalApi
-import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.doOnLoading
 import com.xianzhitech.ptt.ext.e
+import com.xianzhitech.ptt.service.ServerException
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -21,7 +22,7 @@ class LoginViewModel(private val appComponent: AppComponent,
                      kickedOut : Boolean,
                      kickedOutReason : String?) : LifecycleViewModel() {
 
-    val name = ObservableField<String>("500033")
+    val name = ObservableField<String>((500000 + (Math.random() * 100).toInt()).toString())
     val password = ObservableField<String>("000000")
     val isLogging = ObservableBoolean()
     val loginButtonEnabled = createCompositeObservable(listOf<Observable>(name, password, isLogging)) {
