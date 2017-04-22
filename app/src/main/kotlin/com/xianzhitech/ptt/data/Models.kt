@@ -147,7 +147,7 @@ interface Message : Persistable, Parcelable, Event {
 
 val Message.displayText : String?
 get() = when(type) {
-    MessageType.TEXT -> body?.getString("text")
+    MessageType.TEXT -> body?.optString("text", null)
     MessageType.IMAGE -> "[图片]"
     MessageType.VIDEO -> "[视频]"
     MessageType.LOCATION -> "[位置]"

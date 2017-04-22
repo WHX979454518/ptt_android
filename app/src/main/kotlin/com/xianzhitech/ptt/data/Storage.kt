@@ -240,10 +240,12 @@ class Storage(context: Context,
     }
 
     fun getRoomUnreadMessageCount(roomId: String) : Single<Pair<String, Int>> {
+        val userId = appComponent.signalBroker.peekUserId() ?: return Single.just(roomId to 0)
+
         return data.count(Message::class.java)
                 .where(MessageEntity.ROOM_ID.eq(roomId))
                 .and(MessageEntity.HAS_READ.eq(false))
-                .and(MessageEntity.SENDER_ID.ne(appComponent.signalBroker.peekUserId()))
+                .and(MessageEntity.SENDER_ID.ne(userId))
                 .and(MessageEntity.TYPE.`in`(MessageType.MEANINGFUL))
                 .get()
                 .single()

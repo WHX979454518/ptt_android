@@ -26,7 +26,7 @@ class LoginFragment : BaseViewModelFragment<LoginViewModel, FragmentLoginBinding
     }
 
     override fun onCreateViewModel(): LoginViewModel {
-        return LoginViewModel(appComponent, this, arguments?.getBoolean(ARG_KICKED_OUT) ?: false)
+        return LoginViewModel(appComponent, this, arguments?.getBoolean(ARG_KICKED_OUT) ?: false, arguments?.getString(ARG_KICKED_OUT_REASON))
     }
 
     override fun navigateToHome() {
@@ -51,11 +51,13 @@ class LoginFragment : BaseViewModelFragment<LoginViewModel, FragmentLoginBinding
 
     companion object {
         const val ARG_KICKED_OUT = "kicked_out"
+        const val ARG_KICKED_OUT_REASON = "kicked_out_reason"
 
-        fun create(kickedOut : Boolean) : LoginFragment {
+        fun create(kickedOut : Boolean, reason : String? = null) : LoginFragment {
             return LoginFragment().apply {
-                arguments = Bundle(1).apply {
+                arguments = Bundle(2).apply {
                     putBoolean(ARG_KICKED_OUT, kickedOut)
+                    putString(ARG_KICKED_OUT_REASON, reason)
                 }
             }
         }

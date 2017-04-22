@@ -21,7 +21,9 @@ class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
         }
         else if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, LoginFragment.create(intent.getBooleanExtra(EXTRA_KICKED_OUT, false)))
+                    .replace(android.R.id.content, LoginFragment.create(
+                            intent.getBooleanExtra(EXTRA_KICKED_OUT, false),
+                            intent.getStringExtra(EXTRA_KICKED_OUT_REASON)))
                     .commit()
         }
     }
@@ -33,5 +35,6 @@ class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
 
     companion object {
         const val EXTRA_KICKED_OUT = "kicked_out"
+        const val EXTRA_KICKED_OUT_REASON = "kicked_out_reason"
     }
 }

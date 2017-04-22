@@ -179,6 +179,7 @@ class SignalApi(private val appComponent: AppComponent,
         currentUser.onNext(Optional.absent())
         appComponent.preference.currentUserCredentials = null
         appComponent.preference.currentUser = null
+        appComponent.preference.lastMessageSyncDate = null
 
         connectionState.onNext(ConnectionState.IDLE)
 

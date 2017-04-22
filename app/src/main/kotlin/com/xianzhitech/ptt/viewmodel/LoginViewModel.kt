@@ -18,7 +18,8 @@ import java.util.concurrent.TimeoutException
 
 class LoginViewModel(private val appComponent: AppComponent,
                      private val navigator : Navigator,
-                     kickedOut : Boolean) : LifecycleViewModel() {
+                     kickedOut : Boolean,
+                     kickedOutReason : String?) : LifecycleViewModel() {
 
     val name = ObservableField<String>("500033")
     val password = ObservableField<String>("000000")
@@ -27,8 +28,8 @@ class LoginViewModel(private val appComponent: AppComponent,
         name.get().isNullOrBlank().not() && password.get().isNullOrBlank().not() && isLogging.get().not()
     }
 
-    val nameError = ObservableField<String>(if (kickedOut) App.instance.getString(R.string.error_forced_logout) else null)
-    val passwordError = ObservableField<String>(if (kickedOut) App.instance.getString(R.string.error_forced_logout) else null)
+    val nameError = ObservableField<String>(if (kickedOut) kickedOutReason ?: App.instance.getString(R.string.error_forced_logout) else null)
+    val passwordError = ObservableField<String>(if (kickedOut) kickedOutReason ?: App.instance.getString(R.string.error_forced_logout) else null)
 
     override fun onStop() {
         super.onStop()

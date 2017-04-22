@@ -66,8 +66,6 @@
             android:label="@string/settings"
             android:launchMode="singleTask" />
 
-        <activity android:name=".ui.KickOutActivity" />
-
         <activity
             android:name=".ui.user.EditProfileActivity"
             android:label="@string/edit_profile" />
@@ -143,6 +141,7 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="s_kick_out" />
+                <action android:name="s_login_failed" />
             </intent-filter>
         </receiver>
 

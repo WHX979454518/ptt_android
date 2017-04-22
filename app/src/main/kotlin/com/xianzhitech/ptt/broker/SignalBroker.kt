@@ -210,7 +210,7 @@ class SignalBroker(private val appComponent: AppComponent,
             }
         }
 
-        if (event is UserKickedOutEvent || event is WalkieRoomInvitationEvent) {
+        if (event is UserKickedOutEvent || event is WalkieRoomInvitationEvent || event is LoginFailedEvent) {
             val intent = Intent(action).setPackage(appContext.packageName)
             @Suppress("USELESS_CAST")
             when (event) {
