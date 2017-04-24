@@ -3,12 +3,14 @@ package com.xianzhitech.ptt.ui.chat
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +23,7 @@ import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.e
 import com.xianzhitech.ptt.ext.show
 import com.xianzhitech.ptt.ext.toRxObservable
+import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import io.reactivex.Observable
@@ -30,7 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>(), ChatViewModel.Navigator {
+class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>(), ChatViewModel.Navigator, BackPressable {
     private val chatAdapter = ChatAdapter()
 
     private var photoFile: Uri? = null
@@ -55,6 +58,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         val binding = FragmentChatBinding.inflate(inflater, container, false)
         binding.recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true)
         binding.recyclerView.adapter = chatAdapter
+        binding.recyclerView.addItemDecoration(ChatDecoration)
         return binding
     }
 
@@ -120,6 +124,14 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         Toast.makeText(context, R.string.error_no_permission, Toast.LENGTH_LONG).show()
     }
 
+    override fun onBackPressed(): Boolean {
+        if (viewModel.moreSelectionOpen.get()) {
+            viewModel.moreSelectionOpen.set(false)
+            return true
+        }
+
+        return false
+    }
 
     override fun openEmojiDrawer() {
         //TODO
@@ -187,6 +199,23 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
             }
 
             else -> super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
+    object ChatDecoration : RecyclerView.ItemDecoration() {
+
+        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State?) {
+            val vertical = view.resources.getDimensionPixelSize(R.dimen.unit_two)
+            val horizontal = view.resources.getDimensionPixelSize(R.dimen.unit_one)
+            val pos = parent.findContainingViewHolder(view)?.adapterPosition ?: return
+
+            if (pos == parent.adapter.itemCount - 1) {
+                outRect.top = vertical
+            }
+
+            outRect.left = horizontal
+            outRect.right = horizontal
+            outRect.bottom = vertical
         }
     }
 

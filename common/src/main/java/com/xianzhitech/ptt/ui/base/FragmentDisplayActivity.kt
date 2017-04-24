@@ -26,7 +26,12 @@ class FragmentDisplayActivity : BaseActivity(), ChatFragment.Callbacks {
         }
     }
 
-
+    override fun onBackPressed() {
+        val frag = supportFragmentManager.findFragmentById(android.R.id.content)
+        if (frag !is BackPressable || !frag.onBackPressed()) {
+            super.onBackPressed()
+        }
+    }
 
     companion object {
         private const val EXTRA_FRAGMENT = "extra_fragment"
