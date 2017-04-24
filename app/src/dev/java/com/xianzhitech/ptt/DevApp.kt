@@ -5,8 +5,10 @@ import android.os.Handler
 import android.os.StrictMode
 import android.preference.PreferenceManager
 import com.facebook.stetho.Stetho
+import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.xianzhitech.ptt.app.BuildConfig
 import com.xianzhitech.ptt.util.SimpleActivityLifecycleCallbacks
+import okhttp3.OkHttpClient
 
 class DevApp : App() {
     companion object {
@@ -41,7 +43,12 @@ class DevApp : App() {
 
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyDeath().penaltyDeathOnNetwork().build())
+            StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder().detectActivityLeaks().detectLeakedClosableObjects().detectLeakedSqlLiteObjects().penaltyDeath().build())
         }
+    }
+
+    override fun onBuildHttpClient(): OkHttpClient.Builder {
+        return super.onBuildHttpClient().addNetworkInterceptor(StethoInterceptor())
     }
 
 }

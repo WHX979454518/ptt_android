@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.viewmodel.ImageMessageViewModel"/>
+
+    </data>
+
+    <android.support.percent.PercentRelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/unit_two">
+
+
+        <ImageView
+            android:id="@+id/image"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/icon"
+            android:layout_toLeftOf="@+id/icon"
+            app:layout_widthPercent="40%"
+            app:url="@{viewModel.url}"
+            tools:layout_height="100dp"
+            tools:src="@color/blue"/>
+
+        <TextView
+            style="@style/Text.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/image"
+            android:layout_alignLeft="@+id/image"
+            android:layout_alignRight="@+id/image"
+            android:layout_alignTop="@+id/image"
+            android:background="@color/black_30a"
+            android:gravity="center"
+            android:text="@{@string/percentage(viewModel.progress)}"
+            android:textColor="@color/material_white"
+            app:show="@{safeUnbox(viewModel.isUploadingImage)}"
+            tools:text="10%"/>
+
+        <com.xianzhitech.ptt.ui.widget.UserIconView
+            android:id="@+id/icon"
+            android:layout_width="@dimen/unit_five"
+            android:layout_height="@dimen/unit_five"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_gravity="top"
+            android:layout_marginLeft="@dimen/unit_one"
+            app:userId="@{viewModel.message.senderId}"
+            tools:src="@color/blue"/>
+
+    </android.support.percent.PercentRelativeLayout>
+
+</layout>

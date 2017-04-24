@@ -12,7 +12,7 @@ class NewMessageReceiver : BroadcastReceiver() {
         val msg = intent.getSerializableExtra(SignalBroker.EXTRA_EVENT) as Message
 
         when (msg.body) {
-
+            //TODO:
         }
     }
 }

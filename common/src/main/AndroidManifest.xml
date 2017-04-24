@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.xianzhitech.ptt"
-    android:installLocation="internalOnly">
+          xmlns:tools="http://schemas.android.com/tools"
+          package="com.xianzhitech.ptt"
+          android:installLocation="internalOnly">
 
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.USE_SIP" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.BROADCAST_STICKY" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.USE_SIP"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:name=".BaseApp"
@@ -35,17 +36,17 @@
 
         <meta-data
             android:name="io.fabric.ApiKey"
-            android:value="3562376117e656a0ce17f29b2e524d6bb0116630" />
+            android:value="3562376117e656a0ce17f29b2e524d6bb0116630"/>
 
         <meta-data
             android:name="com.xianzhitech.ptt.BaseApp$AppGlideModule"
-            android:value="GlideModule" />
+            android:value="GlideModule"/>
 
         <activity
             android:name=".ui.login.LoginActivity"
-            android:windowSoftInputMode="adjustPan" />
+            android:windowSoftInputMode="adjustPan"/>
 
-        <activity android:name=".ui.home.HomeActivity" />
+        <activity android:name=".ui.home.HomeActivity"/>
 
         <activity
             android:name=".ui.room.RoomActivity"
@@ -53,62 +54,63 @@
             android:screenOrientation="portrait"
             android:showForAllUsers="true"
             android:showOnLockScreen="true"
-            android:theme="@style/AppTheme.Room" />
+            android:theme="@style/AppTheme.Room"/>
 
         <activity
             android:name=".ui.settings.SettingsActivity"
             android:label="@string/settings"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"/>
 
         <activity
             android:name=".ui.user.EditProfileActivity"
-            android:label="@string/edit_profile" />
+            android:label="@string/edit_profile"/>
 
         <activity
             android:name=".ui.app.ShareActivity"
-            android:label="@string/share" />
+            android:label="@string/share"/>
 
         <activity
             android:name=".ui.user.ChangePasswordActivity"
-            android:label="@string/change_password" />
+            android:label="@string/change_password"/>
 
         <activity
             android:name=".ui.room.RoomDetailsActivity"
-            android:label="@string/room_info" />
+            android:label="@string/room_info"/>
 
         <activity
-            android:name=".ui.base.FragmentDisplayActivity" />
+            android:name=".ui.base.FragmentDisplayActivity"/>
 
         <activity
             android:name=".ui.user.UserDetailsActivity"
-            android:label="@string/user_info" />
+            android:label="@string/user_info"/>
 
-        <activity android:name=".ui.app.TextInputActivity" />
+        <activity android:name=".ui.app.TextInputActivity"/>
 
         <activity
             android:name=".ui.group.GroupDetailsActivity"
-            android:label="@string/group_info" />
+            android:label="@string/group_info"/>
 
         <activity
             android:name=".ui.app.FeedbackActivity"
-            android:label="@string/feedback" />
+            android:label="@string/feedback"/>
 
-        <activity android:name=".ui.app.AboutActivity"
-                  android:label="@string/about" />
+        <activity
+            android:name=".ui.app.AboutActivity"
+            android:label="@string/about"/>
 
         <activity
             android:name=".ui.map.MapActivity"
-            android:label="@string/people_nearby" />
+            android:label="@string/people_nearby"/>
 
         <activity
             android:name=".ui.call.CallActivity"
             android:label="@string/group_chat"
-            android:theme="@style/AppTheme.Room" />
+            android:theme="@style/AppTheme.Room"/>
 
 
         <receiver android:name=".update.DownloadCompleteReceiver">
             <intent-filter>
-                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE"/>
             </intent-filter>
         </receiver>
 
@@ -116,35 +118,36 @@
             android:name=".media.MediaButtonReceiver"
             android:priority="65536">
             <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
+                <action android:name="android.intent.action.MEDIA_BUTTON"/>
             </intent-filter>
         </receiver>
 
-        <service android:name=".service.handler.BackgroundService" />
+        <service android:name=".service.handler.BackgroundService"/>
 
         <receiver
             android:name=".service.handler.RoomInvitationHandler"
             android:exported="false">
             <intent-filter>
-                <action android:name="s_invite_to_join" />
+                <action android:name="s_invite_to_join"/>
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".service.handler.UserKickedOutReceiver"
+        <receiver
+            android:name=".service.handler.UserKickedOutReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="s_kick_out" />
-                <action android:name="s_login_failed" />
+                <action android:name="s_kick_out"/>
+                <action android:name="s_login_failed"/>
             </intent-filter>
         </receiver>
 
         <receiver android:name=".service.handler.AutoStartReceiver">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.SCREEN_ON" />
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-                <action android:name="android.intent.action.MEDIA_MOUNTED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.SCREEN_ON"/>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+                <action android:name="android.intent.action.USER_PRESENT"/>
+                <action android:name="android.intent.action.MEDIA_MOUNTED"/>
             </intent-filter>
         </receiver>
 
@@ -155,6 +158,18 @@
                 <action android:name="com.baidu.location.service_v2.2"></action>
             </intent-filter>
         </service>
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            tools:replace="android:authorities">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
+
 
     </application>
 

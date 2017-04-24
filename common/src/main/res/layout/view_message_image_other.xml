@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.viewmodel.ImageMessageViewModel"/>
+
+    </data>
+
+    <android.support.percent.PercentRelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/unit_two"
+        android:orientation="horizontal">
+
+        <com.xianzhitech.ptt.ui.widget.UserIconView
+            android:id="@+id/icon"
+            android:layout_width="@dimen/unit_five"
+            android:layout_height="@dimen/unit_five"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_gravity="top"
+            android:layout_marginRight="@dimen/unit_one"
+            app:onUserLoadedListener="@{user -> sender.setText(user.name)}"
+            app:userId="@{viewModel.message.senderId}"
+            tools:src="@color/blue"/>
+
+        <TextView
+            android:id="@+id/sender"
+            style="@style/Text.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/icon"
+            app:show="@{viewModel.displaysSender}"
+            tools:text="12345"/>
+
+        <ImageView
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/sender"
+            android:layout_below="@+id/sender"
+            android:layout_marginTop="@dimen/unit_half"
+            app:layout_widthPercent="40%"
+            app:url="@{viewModel.url}"
+            tools:layout_height="100dp"
+            tools:src="@color/blue"/>
+
+    </android.support.percent.PercentRelativeLayout>
+
+</layout>

@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.data
 
 import android.content.Context
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -51,30 +52,30 @@ data class TextMessageBody(@JsonProperty("text") val text: String) : MessageBody
 }
 
 data class ImageMessageBody(@JsonProperty("url") val url: String,
-                            @JsonProperty("desc") val desc: String) : MessageBody {
+                            @JsonProperty("desc") val desc: String? = null) : MessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
             context.getString(R.string.image_body)
         } else {
-            desc
+            desc!!
         }
     }
 }
 
 data class VideoMessageBody(@JsonProperty("url") val url: String,
-                            @JsonProperty("desc") val desc: String) : MessageBody {
+                            @JsonProperty("desc") val desc: String? = null) : MessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
-            context.getString(R.string.image_body)
+            context.getString(R.string.video_body)
         } else {
-            desc
+            desc!!
         }
     }
 }
 
 data class LocationMessageBody(@JsonProperty("lat") val lat: Double,
                                @JsonProperty("lng") val lng: Double,
-                               @JsonProperty("desc") val desc: String?) : MessageBody {
+                               @JsonProperty("desc") val desc: String? = null) : MessageBody {
 
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
@@ -82,5 +83,20 @@ data class LocationMessageBody(@JsonProperty("lat") val lat: Double,
         } else {
             desc!!
         }
+    }
+}
+
+fun Message.copy(copier : MessageEntity.(Message) -> Unit = {}) : Message {
+    val src = this
+    return MessageEntity().apply {
+        setLocalId(src.localId)
+        setRemoteId(src.remoteId)
+        setBody(src.body)
+        setError(src.error)
+        setSendTime(src.sendTime)
+        setSenderId(src.senderId)
+        setType(src.type)
+        setRoomId(src.roomId)
+        this.copier(src)
     }
 }

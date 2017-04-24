@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.viewmodel.TextMessageViewModel"/>
+
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/unit_two"
+        android:orientation="horizontal">
+
+        <com.xianzhitech.ptt.ui.widget.UserIconView
+            android:layout_width="@dimen/unit_five"
+            android:layout_height="@dimen/unit_five"
+            android:layout_gravity="top"
+            android:layout_marginRight="@dimen/unit_one"
+            app:onUserLoadedListener="@{user -> sender.setText(user.name)}"
+            app:userId="@{viewModel.message.senderId}"
+            tools:src="@color/blue"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="9"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/sender"
+                style="@style/Text.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:show="@{viewModel.displaysSender}"
+                tools:text="12345"/>
+
+            <TextView
+                android:id="@+id/message"
+                style="@style/Text.Body1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/unit_half"
+                android:gravity="left"
+                android:text="@{viewModel.text}"
+                tools:text="Hello"/>
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+
+    </LinearLayout>
+
+</layout>

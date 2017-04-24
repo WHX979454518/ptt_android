@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.viewmodel.NotificationMessageViewModel"/>
+    </data>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/unit_two">
+
+        <TextView
+            style="@style/Text.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_text_message_grey"
+            android:paddingBottom="@dimen/unit_half"
+            android:paddingLeft="@dimen/unit_one"
+            android:paddingRight="@dimen/unit_one"
+            android:paddingTop="@dimen/unit_half"
+            android:text="@{viewModel.text}"
+            android:textColor="@color/material_white"
+            tools:text="@string/unknown_message"/>
+
+
+    </FrameLayout>
+
+</layout>

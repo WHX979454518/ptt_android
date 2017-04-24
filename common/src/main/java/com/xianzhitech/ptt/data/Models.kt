@@ -139,13 +139,19 @@ interface Message : Persistable, Serializable, Event {
     val senderId: String
 
     @get:JsonProperty("roomId")
+    @get:Column(nullable = false)
     @get:ForeignKey(references = Room::class, delete = ReferentialAction.CASCADE)
     val roomId: String
 
     @get:JsonIgnore
     @get:Index
-    @get:Column
     @get:ReadOnly
     val hasRead: Boolean
+
+    @get:JsonIgnore
+    val error: String
 }
 
+
+val Room.isSingle: Boolean
+    get() = groupIds.isEmpty() && extraMemberIds.size < 3

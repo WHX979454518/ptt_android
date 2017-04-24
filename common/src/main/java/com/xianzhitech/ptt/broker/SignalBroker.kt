@@ -2,7 +2,11 @@ package com.xianzhitech.ptt.broker
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Parcelable
+import android.util.Base64
+import android.util.Base64InputStream
+import android.util.Base64OutputStream
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
@@ -28,12 +32,17 @@ import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.toast
+import com.xianzhitech.ptt.util.InputStreamReadReporter
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.BehaviorSubject
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import okio.BufferedSink
+import okio.Okio
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.io.Serializable
@@ -461,6 +470,44 @@ class SignalBroker(private val appComponent: AppComponent,
 
     fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
         return signalApi.queryMessages(queries)
+    }
+
+    fun uploadImage(uri: Uri, progressReport : (Int) -> Unit) : Single<String> {
+        return Single.defer {
+            val fileSize = appContext.contentResolver.openInputStream(uri).use {
+                val byteArray = ByteArray(4096)
+
+                var rc = it.read(byteArray)
+                if (rc <= 0) {
+                    return@use rc.toLong()
+                }
+
+                var size = 0L
+                while (rc > 0) {
+                    size += rc
+                    rc = it.read(byteArray)
+                }
+                size
+            }
+
+            val reporter : (Long) -> Unit = {
+                if (fileSize > 0) {
+                    progressReport((it * 90 / fileSize).toInt())
+                }
+            }
+
+            signalApi.uploadImage(object : RequestBody() {
+                override fun contentType(): MediaType {
+                    return MediaType.parse("image/jpeg")
+                }
+
+                override fun writeTo(sink: BufferedSink) {
+                    InputStreamReadReporter(appContext.contentResolver.openInputStream(uri), reporter).use { input ->
+                        sink.writeAll(Okio.source(input))
+                    }
+                }
+            })
+        }
     }
 
     companion object {

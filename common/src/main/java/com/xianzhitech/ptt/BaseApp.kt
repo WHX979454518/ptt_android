@@ -93,7 +93,7 @@ abstract class BaseApp : MultiDexApplication(), AppComponent {
         appApi = Retrofit.Builder()
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(io.reactivex.schedulers.Schedulers.io()))
                 .addConverterFactory(JacksonConverterFactory.create(objectMapper))
-                .baseUrl(BuildConfig.APP_SERVER_ENDPOINT)
+                .baseUrl(appServerEndpoint)
                 .build()
                 .create(AppApi::class.java)
         signalBroker = SignalBroker(this, this)

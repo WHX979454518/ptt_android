@@ -9,6 +9,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageView
+import com.bumptech.glide.Glide
 
 fun EditText.isEmpty() = text.isEmpty()
 
@@ -37,11 +39,18 @@ var EditText.string: String
 
 
 @BindingAdapter("minWidth")
-fun setViewMinWidth(view: View, width : Float) {
+fun setViewMinWidth(view: View, width: Float) {
     view.minimumWidth = width.toInt()
 }
 
 @BindingAdapter("minHeight")
-fun setViewMinHeight(view: View, height : Float) {
+fun setViewMinHeight(view: View, height: Float) {
     view.minimumHeight = height.toInt()
+}
+
+@BindingAdapter("url")
+fun setImageUrl(view: ImageView, url: String) {
+    Glide.with(view.context)
+            .load(url)
+            .into(view)
 }

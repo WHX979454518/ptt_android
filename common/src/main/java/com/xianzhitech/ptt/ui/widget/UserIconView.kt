@@ -3,6 +3,7 @@ package com.xianzhitech.ptt.ui.widget
 import android.content.Context
 import android.support.v7.widget.AppCompatImageView
 import android.util.AttributeSet
+import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -15,6 +16,8 @@ class UserIconView @JvmOverloads constructor(context: Context,
 
     private var attachedToWindow: Boolean = false
     private var subscription: Disposable? = null
+
+    var onUserLoadedListener: OnUserLoadedListener? = null
 
     var userId: String? = null
         set(value) {
@@ -44,14 +47,17 @@ class UserIconView @JvmOverloads constructor(context: Context,
             val currentUser = context.appComponent.signalBroker.currentUser.value.orNull()
             if (currentUser?.id == userId) {
                 setImageDrawable(currentUser!!.createAvatarDrawable())
-            }
-            else {
+                onUserLoadedListener?.onUserLoaded(currentUser)
+            } else {
                 setImageDrawable(null)
                 subscription = context.appComponent.storage
                         .getUser(userId!!)
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe {
                             setImageDrawable(it.transform { it!!.createAvatarDrawable() }.orNull())
+                            if (it.isPresent) {
+                                onUserLoadedListener?.onUserLoaded(it.get())
+                            }
                         }
             }
         }
@@ -62,4 +68,7 @@ class UserIconView @JvmOverloads constructor(context: Context,
         subscription = null
     }
 
+    interface OnUserLoadedListener {
+        fun onUserLoaded(user: User)
+    }
 }

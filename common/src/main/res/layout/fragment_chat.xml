@@ -116,6 +116,7 @@
             android:paddingRight="@dimen/unit_three"
             android:paddingTop="@dimen/unit_two"
             android:visibility="gone"
+            tools:visibility="visible"
             app:columnCount="4">
 
             <include

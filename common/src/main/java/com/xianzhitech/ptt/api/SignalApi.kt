@@ -27,6 +27,8 @@ import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.Transport
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
@@ -99,6 +101,7 @@ class SignalApi(private val appComponent: AppComponent,
                     this@SignalApi.restfulApi = Retrofit.Builder()
                             .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.io()))
                             .addConverterFactory(JacksonConverterFactory.create(appComponent.objectMapper))
+                            .client(appComponent.httpClient)
                             .baseUrl(config.signalServerEndpoint)
                             .build()
                             .create(RestfulApi::class.java)
@@ -185,6 +188,10 @@ class SignalApi(private val appComponent: AppComponent,
 
         connectionState.onNext(ConnectionState.IDLE)
 
+    }
+
+    fun uploadImage(imgBody : RequestBody) : Single<String> {
+        return restfulApi!!.uploadImage(MultipartBody.Part.createFormData("imgData", "image.jpg", imgBody))
     }
 
     fun syncContacts(version: Long): Maybe<Contact> {
@@ -402,6 +409,10 @@ class SignalApi(private val appComponent: AppComponent,
 
         @GET("api/nearby")
         fun findNearbyPeople(@Query("minLat") minLat: Double, @Query("minLng") minLng: Double, @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<JSONArray>
+
+        @POST("upload/do/binary")
+        @Multipart
+        fun uploadImage(@Part file : MultipartBody.Part) : Single<String>
     }
 
     enum class ConnectionState {

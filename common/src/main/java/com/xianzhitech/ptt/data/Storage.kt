@@ -368,14 +368,26 @@ class Storage(context: Context,
     }
 
     fun markRoomAllMessagesRead(roomId: String): Completable {
-        return data.update(Message::class.java)
-                .set(MessageEntity.HAS_READ, true)
+        return data.count(Message::class.java)
                 .where(MessageEntity.HAS_READ.eq(false))
                 .and(MessageEntity.ROOM_ID.eq(roomId))
                 .get()
                 .single()
-                .subscribeOn(writeScheduler)
-                .toCompletable()
+                .subscribeOn(readScheduler)
+                .flatMapCompletable {
+                    if (it > 0) {
+                        data.update(Message::class.java)
+                                .set(MessageEntity.HAS_READ, true)
+                                .where(MessageEntity.HAS_READ.eq(false))
+                                .and(MessageEntity.ROOM_ID.eq(roomId))
+                                .get()
+                                .single()
+                                .subscribeOn(writeScheduler)
+                                .toCompletable()
+                    } else {
+                        Completable.complete()
+                    }
+                }
     }
 
     fun replaceAllUsersAndGroups(users: Iterable<ContactUser>, groups: Iterable<ContactGroup>): Completable {
@@ -407,6 +419,17 @@ class Storage(context: Context,
 
     fun saveMessage(message: Message): Single<Message> {
         return data.upsert(message).subscribeOn(writeScheduler)
+    }
+
+    fun setMessageError(localMessageId : String, error : String?) : Completable {
+        return data.update(Message::class.java)
+                .set(MessageEntity.ERROR, error)
+                .where(MessageEntity.LOCAL_ID.eq(localMessageId))
+                .and(MessageEntity.REMOTE_ID.isNull())
+                .get()
+                .single()
+                .subscribeOn(writeScheduler)
+                .toCompletable()
     }
 
     fun removeRoom(roomId: String): Completable {

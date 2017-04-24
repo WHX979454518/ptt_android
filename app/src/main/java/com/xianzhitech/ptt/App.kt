@@ -9,4 +9,5 @@ open class App : BaseApp() {
 
     override val appServerEndpoint: String
         get() = BuildConfig.APP_SERVER_ENDPOINT
+
 }
