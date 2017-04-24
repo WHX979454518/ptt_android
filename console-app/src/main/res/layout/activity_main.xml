@@ -86,14 +86,51 @@
                 </LinearLayout>
 
             </LinearLayout>
-            <RelativeLayout
-                android:id="@+id/contacts_container"
+            <LinearLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:orientation="vertical"
                 android:layout_above="@+id/linear_check_lay"
                 android:layout_alignParentTop="true">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:gravity="center_vertical"
+                    android:padding="5dp"
+                    android:orientation="horizontal">
+                    <EditText
+                        android:id="@+id/state_search_edit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableLeft="@drawable/searchicon"
+                        android:background="@drawable/search_bg"
+                        android:paddingLeft="10dp"
+                        android:padding="5dp"
+                        android:gravity="center_vertical"
+                        android:hint="搜索部门、人员"/>
 
-            </RelativeLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:orientation="vertical"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:background="@color/lis_view_bg">
+                    <LinearLayout
+                        android:id="@+id/contacts_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="5dp"
+                        android:background="@color/lst_stroke_bg">
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </LinearLayout>
         </RelativeLayout>
         <FrameLayout
             android:id="@+id/map_container"
@@ -109,24 +146,29 @@
             <FrameLayout
                 android:id="@+id/organiz_func_container"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="70dp"
                 android:layout_gravity="bottom"
                 android:background="#50323232"
                 android:gravity="center_vertical"
                 >
 
                 <LinearLayout
+                    android:id="@+id/organiz_function_inc"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-                    <include layout="@layout/organiz_function_btn_ly"
-                        android:id="@+id/organiz_function_inc"
-                        android:visibility="visible"/>
+                    android:layout_height="match_parent"
+                    android:visibility="visible">
+                    <include layout="@layout/organiz_function_btn_ly" />
                 </LinearLayout>
 
 
-                <include layout="@layout/sys_state_func_ly"
+                <LinearLayout
                     android:id="@+id/sys_state_func_inc"
-                    android:visibility="gone"/>
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone">
+                    <include layout="@layout/sys_state_func_ly"/>
+                </LinearLayout>
+
 
             </FrameLayout>
 

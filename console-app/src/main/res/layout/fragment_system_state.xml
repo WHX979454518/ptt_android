@@ -7,7 +7,7 @@
     tools:context="com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment">
 
     <!-- TODO: Update blank fragment layout -->
-    <LinearLayout
+   <!-- <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -24,20 +24,18 @@
             android:gravity="center_vertical"
             android:hint="搜索部门、人员"/>
 
-    </LinearLayout>
+    </LinearLayout>-->
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="10dp"
-        android:background="@color/lis_view_bg">
+       >
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="5dp"
-            android:background="@color/lst_stroke_bg">
+            >
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
@@ -167,9 +165,7 @@
         <ListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/lst_stroke_bg"
             android:scrollbars="none"
-            android:padding="5dp"
             android:id="@+id/sys_state_tree_lv"
             />
     </LinearLayout>

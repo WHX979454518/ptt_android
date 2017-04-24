@@ -8,7 +8,7 @@
 
     <!-- TODO: Update blank fragment layout -->
 
-    <LinearLayout
+   <!-- <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -25,20 +25,18 @@
             android:gravity="center_vertical"
             android:hint="搜索部门、人员"/>
 
-    </LinearLayout>
+    </LinearLayout>-->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="10dp"
-        android:background="@color/lis_view_bg">
+       >
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:background="@color/lst_stroke_bg"
             android:gravity="center"
-            android:padding="5dp">
+            >
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -134,9 +132,7 @@
         <ListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/lst_stroke_bg"
             android:scrollbars="none"
-            android:padding="5dp"
             android:id="@+id/tree_lv"
             />
     </LinearLayout>

@@ -4,15 +4,16 @@
     android:layout_height="match_parent"
     android:gravity="center_vertical"
     android:background="@color/title_bg_red"
-    android:padding="5dp">
+    >
     <ImageView
         android:id="@+id/pupmenu"
         android:layout_width="55dp"
         android:layout_height="55dp"
         android:layout_centerVertical="true"
         android:layout_alignParentLeft="true"
+        android:layout_marginLeft="10dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/menu"/>
+        android:src="@drawable/menu_pred_select"/>
 
     <TextView
         android:id="@+id/all_call"
@@ -24,8 +25,10 @@
         android:text="全呼"
         android:textSize="30sp"
         android:gravity="center_vertical"
+        android:visibility="gone"
         android:textColor="@color/textwhit"/>
     <TextView
+        android:id="@+id/frame_map"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="center_vertical"
@@ -36,8 +39,8 @@
         android:gravity="center_vertical"
         android:textColor="@color/textwhit"/>
     <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
         android:src="@drawable/warninglight3"
         android:layout_centerInParent="true"
         android:layout_gravity="center"/>
@@ -46,19 +49,31 @@
         android:layout_alignParentRight="true"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:paddingRight="5dp"
         android:orientation="horizontal">
 
+        <LinearLayout
+            android:id="@+id/sign_out"
+            android:layout_alignParentRight="true"
+            android:gravity="center_vertical"
+            android:layout_alignParentTop="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            >
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/sign_out_select"/>
             <TextView
-                android:id="@+id/sign_out"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
+                android:layout_marginLeft="3dp"
                 android:text="退出"
                 android:textSize="20sp"
-                android:gravity="center_vertical"
-                android:layout_alignParentTop="true"
                 android:textColor="@color/textwhit"
-                android:drawableLeft="@drawable/singout"/>
+                />
+            
+        </LinearLayout>
 
             <TextView
                 android:id="@+id/time_hms"
@@ -68,33 +83,44 @@
                 android:layout_alignParentRight="true"
                 android:layout_below="@+id/sign_out"
                 android:gravity="bottom"
-                android:textSize="20sp"
+                android:textSize="18sp"
                 android:textColor="@color/textwhit"
                 android:layout_alignParentBottom="true"
                 android:text="13:33:32"/>
 
-        <TextView
+        <LinearLayout
             android:id="@+id/console"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="调度台"
-            android:textSize="20sp"
-            android:layout_marginRight="40dp"
+            android:layout_marginRight="10dp"
             android:layout_alignBaseline="@+id/sign_out"
             android:layout_toLeftOf="@+id/sign_out"
-            android:gravity="center_vertical"
-            android:textColor="@color/textwhit"
-            android:drawableLeft="@drawable/console_pic"/>
+            android:gravity="center_vertical">
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/console_pic"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:text="调度台"
+                android:textSize="20sp"
+                android:textColor="@color/textwhit"
+                />
+        </LinearLayout>
+
 
         <TextView
             android:id="@+id/time_ymd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:layout_below="@+id/console"
             android:layout_alignLeft="@+id/console"
             android:layout_toLeftOf="@+id/time_hms"
             android:layout_alignParentBottom="true"
+            android:paddingLeft="5dp"
             android:gravity="bottom"
             android:textColor="@color/textwhit"
             android:text="2017-4-17"/>
@@ -102,8 +128,8 @@
         <ImageView
             android:id="@+id/logo"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="60dp"
+            android:layout_height="40dp"
+            android:layout_marginRight="40dp"
             android:layout_toLeftOf="@+id/console"
             android:gravity="center_vertical"
             android:src="@drawable/logo" />
@@ -122,7 +148,7 @@
                 android:layout_height="wrap_content"
                 android:text="用户："
                 android:textColor="@color/textwhit"
-                android:textSize="20sp" />
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -130,7 +156,7 @@
                 android:layout_marginLeft="3dp"
                 android:text="xx"
                 android:textColor="@color/textwhit"
-                android:textSize="20sp" />
+                android:textSize="18sp" />
         </LinearLayout>
 
     </RelativeLayout>

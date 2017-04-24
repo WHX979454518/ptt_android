@@ -15,6 +15,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.baidu.mapapi.map.MapView;
+import com.xianzhitech.ptt.ui.base.BaseActivity;
+import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment;
 
@@ -22,17 +24,17 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
     @BindView(R.id.pupmenu)
     ImageView pupmenu;
     @BindView(R.id.all_call)
     TextView allCall;
     @BindView(R.id.sign_out)
-    TextView signOut;
+    LinearLayout signOut;
     @BindView(R.id.time_hms)
     TextView timeHms;
     @BindView(R.id.console)
-    TextView console;
+    LinearLayout console;
     @BindView(R.id.time_ymd)
     TextView timeYmd;
     @BindView(R.id.logo)
@@ -46,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.rb3)
     RadioButton rb3;
     @BindView(R.id.contacts_container)
-    RelativeLayout contactsContainer;
+    LinearLayout contactsContainer;
     @BindView(R.id.bmapView)
     MapView bmapView;
     @BindView(R.id.map_container)
@@ -57,9 +59,14 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout linearCheckLay;
     @BindView(R.id.organiz_func_container)
     FrameLayout organizFuncContainer;
+    @BindView(R.id.organiz_function_inc)
+    LinearLayout organizFunctionInc;
+    @BindView(R.id.sys_state_func_inc)
+    LinearLayout sysStateFuncInc;
     private MapView mMapView;
     private OrganizationFragment organizationFragment;
     private SystemStateFragment stateFragment;
+    private RoomListFragment roomListFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,10 +77,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         mMapView = (MapView) findViewById(R.id.bmapView);
-        View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly,null);
+        View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
         setSelected(rb1.getId());
     }
 
+    private void initView(){
+        View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
+    }
     public void setSelected(int id) {
         checkRadio(id);
         FragmentManager fm = getSupportFragmentManager();
@@ -93,6 +103,12 @@ public class MainActivity extends AppCompatActivity {
                     ft.add(R.id.contacts_container, stateFragment);
                 } else if (!stateFragment.isVisible())
                     ft.show(stateFragment);
+                break;case R.id.rb3:
+                if (roomListFragment == null) {
+                    roomListFragment = new RoomListFragment();
+                    ft.add(R.id.contacts_container, roomListFragment);
+                } else if (!roomListFragment.isVisible())
+                    ft.show(roomListFragment);
                 break;
         }
         ft.commitAllowingStateLoss();
@@ -105,6 +121,8 @@ public class MainActivity extends AppCompatActivity {
                 rb1.setBackgroundColor(getResources().getColor(R.color.btn_pre_red));
                 rb2.setBackgroundColor(getResources().getColor(R.color.btn_nopre_red));
                 rb3.setBackgroundColor(getResources().getColor(R.color.btn_nopre_red));
+                organizFunctionInc.setVisibility(View.VISIBLE);
+                sysStateFuncInc.setVisibility(View.GONE);
                 rb2.setChecked(false);
                 rb3.setChecked(false);
                 break;
@@ -113,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
                 rb1.setBackgroundColor(getResources().getColor(R.color.btn_nopre_red));
                 rb2.setBackgroundColor(getResources().getColor(R.color.btn_pre_red));
                 rb3.setBackgroundColor(getResources().getColor(R.color.btn_nopre_red));
+                organizFunctionInc.setVisibility(View.GONE);
+                sysStateFuncInc.setVisibility(View.VISIBLE);
                 rb1.setChecked(false);
                 rb3.setChecked(false);
                 break;
@@ -121,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
                 rb1.setBackgroundColor(getResources().getColor(R.color.btn_nopre_red));
                 rb2.setBackgroundColor(getResources().getColor(R.color.btn_nopre_red));
                 rb3.setBackgroundColor(getResources().getColor(R.color.btn_pre_red));
+                organizFunctionInc.setVisibility(View.GONE);
+                sysStateFuncInc.setVisibility(View.GONE);
                 rb1.setChecked(false);
                 rb2.setChecked(false);
                 break;
@@ -132,8 +154,8 @@ public class MainActivity extends AppCompatActivity {
             ft.hide(organizationFragment);
         if (stateFragment != null && id != rb2.getId())
             ft.hide(stateFragment);
-//        if (managFinacFrag != null && id != rb3.getId())
-//            ft.hide(managFinacFrag);
+        if (roomListFragment != null && id != rb3.getId())
+            ft.hide(roomListFragment);
 
     }
 
