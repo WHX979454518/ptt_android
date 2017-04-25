@@ -81,9 +81,14 @@ public class MainActivity extends BaseActivity {
         setSelected(rb1.getId());
     }
 
-    private void initView(){
+    private void initView() {
         View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
     }
+
+    /**
+     * 切换左侧Fragment
+     * @param id
+     */
     public void setSelected(int id) {
         checkRadio(id);
         FragmentManager fm = getSupportFragmentManager();
@@ -103,7 +108,8 @@ public class MainActivity extends BaseActivity {
                     ft.add(R.id.contacts_container, stateFragment);
                 } else if (!stateFragment.isVisible())
                     ft.show(stateFragment);
-                break;case R.id.rb3:
+                break;
+            case R.id.rb3:
                 if (roomListFragment == null) {
                     roomListFragment = new RoomListFragment();
                     ft.add(R.id.contacts_container, roomListFragment);
@@ -114,6 +120,10 @@ public class MainActivity extends BaseActivity {
         ft.commitAllowingStateLoss();
     }
 
+    /**
+     * 左侧切换钮背景等相关处理
+     * @param id
+     */
     public void checkRadio(int id) {
         switch (id) {
             case R.id.rb1:
@@ -149,6 +159,11 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    /**
+     * 隐藏fragment
+     * @param ft
+     * @param id
+     */
     private void hideFragment(FragmentTransaction ft, int id) {
         if (organizationFragment != null && id != rb1.getId())
             ft.hide(organizationFragment);
@@ -180,6 +195,10 @@ public class MainActivity extends BaseActivity {
         mMapView.onPause();
     }
 
+    /**
+     * butterknife绑定点击监听事件
+     * @param view
+     */
     @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.rb1, R.id.rb2, R.id.rb3, R.id.contacts_container, R.id.bmapView})
     public void onViewClicked(View view) {
         switch (view.getId()) {
