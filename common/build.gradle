@@ -106,7 +106,9 @@ dependencies {
     kapt "com.android.databinding:compiler:$android_gradle_version"
 
     compile 'com.github.piasy:BigImageViewer:1.2.9'
-    compile 'com.github.piasy:GlideImageLoader:1.2.9'
+    compile ('com.github.piasy:GlideImageLoader:1.2.9') {
+        exclude group: 'com.github.bumptech.glide'
+    }
     compile 'com.github.piasy:ProgressPieIndicator:1.2.9'
 
 }
