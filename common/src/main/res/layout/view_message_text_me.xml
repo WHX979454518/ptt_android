@@ -23,7 +23,6 @@
             android:layout_gravity="top"
             android:layout_marginRight="@dimen/unit_one"
             android:layout_marginTop="@dimen/unit_one"
-            android:layout_weight="1"
             android:gravity="right"
             android:text="@{viewModel.displayTime}"
             tools:ignore="NestedWeights"
