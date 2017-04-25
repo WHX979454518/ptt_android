@@ -254,6 +254,8 @@
     <string name="pick_photo">选择要发送的图片</string>
     <string name="unknown_message">未知消息类型</string>
     <string name="percentage">%1$s%%</string>
+    <string name="user_join_walkie">用户“%1$s”加入对讲</string>
+    <string name="user_quit_walkie">用户“%1$s”退出对讲</string>
 
     <string-array name="level_number">
         <item>管理员</item>

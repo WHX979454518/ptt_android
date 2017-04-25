@@ -48,6 +48,7 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 
 
 abstract class BaseApp : MultiDexApplication(), AppComponent {
@@ -89,6 +90,7 @@ abstract class BaseApp : MultiDexApplication(), AppComponent {
             registerModule(KotlinModule())
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+            configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
         }
 
         preference = AppPreference(this, PreferenceManager.getDefaultSharedPreferences(this), this)
@@ -125,7 +127,10 @@ abstract class BaseApp : MultiDexApplication(), AppComponent {
 
 
     open protected fun onBuildHttpClient(): OkHttpClient.Builder {
-        return OkHttpClient.Builder().cache(Cache(cacheDir, Constants.HTTP_MAX_CACHE_SIZE))
+        return OkHttpClient.Builder()
+                .cache(Cache(cacheDir, Constants.HTTP_MAX_CACHE_SIZE))
+                .readTimeout(10, TimeUnit.MINUTES)
+                .writeTimeout(10, TimeUnit.MINUTES)
     }
 
     class AppGlideModule : GlideModule {

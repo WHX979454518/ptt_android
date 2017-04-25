@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import com.bumptech.glide.Glide
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.MediaMessageBody
 import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.MessageType
@@ -77,6 +78,7 @@ fun setImageMessage(view: ImageView, message: Message) {
     } else if (mediaBody.url.isNotBlank()) {
         Glide.with(view.context)
                 .load(mediaBody.url)
+                .placeholder(R.drawable.ic_refresh_black_24dp)
                 .into(view)
     } else {
         view.setImageDrawable(null)

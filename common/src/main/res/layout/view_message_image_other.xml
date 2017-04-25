@@ -36,17 +36,32 @@
             app:show="@{viewModel.displaysSender}"
             tools:text="12345"/>
 
-        <ImageView
+        <com.xianzhitech.ptt.ui.util.ImageView
+            android:id="@+id/image"
             android:layout_height="wrap_content"
             android:layout_alignLeft="@+id/sender"
             android:layout_below="@+id/sender"
             android:layout_marginTop="@dimen/unit_half"
+            android:background="@drawable/bg_chat_message"
             android:foreground="?attr/selectableItemBackground"
             android:onClick="@{ignored -> viewModel.onClickImage()}"
-            app:layout_widthPercent="40%"
+            android:padding="@dimen/unit_one"
+            android:scaleType="fitXY"
+            app:layout_widthPercent="50%"
             app:mediaMessage="@{viewModel.message}"
-            tools:layout_height="100dp"
+            tools:layout_height="130dp"
             tools:src="@color/blue"/>
+
+        <TextView
+            style="@style/Text.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/image"
+            android:layout_alignParentRight="true"
+            android:layout_marginBottom="@dimen/unit_one"
+            android:layout_marginLeft="@dimen/unit_one"
+            android:text="@{viewModel.displayTime}"
+            tools:text="1 minute ago"/>
 
     </android.support.percent.PercentRelativeLayout>
 

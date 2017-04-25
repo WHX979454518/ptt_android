@@ -11,12 +11,13 @@
 
     </data>
 
-    <LinearLayout
+    <android.support.percent.PercentRelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <com.xianzhitech.ptt.ui.widget.UserIconView
+            android:id="@+id/icon"
             android:layout_width="@dimen/unit_five"
             android:layout_height="@dimen/unit_five"
             android:layout_gravity="top"
@@ -25,22 +26,23 @@
             app:userId="@{viewModel.message.senderId}"
             tools:src="@color/blue"/>
 
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/sender"
+            style="@style/Text.Caption"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="9"
-            android:orientation="vertical">
+            android:layout_toRightOf="@+id/icon"
+            app:show="@{viewModel.displaysSender}"
+            tools:text="12345"/>
+
+        <FrameLayout
+            android:id="@+id/messageContainer"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/sender"
+            android:layout_below="@+id/sender"
+            app:layout_widthPercent="60%">
 
             <TextView
-                android:id="@+id/sender"
-                style="@style/Text.Caption"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:show="@{viewModel.displaysSender}"
-                tools:text="12345"/>
-
-            <TextView
-                android:id="@+id/message"
                 style="@style/Text.Body1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -51,14 +53,23 @@
                 android:text="@{viewModel.text}"
                 tools:text="Hello"/>
 
-        </LinearLayout>
+        </FrameLayout>
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
+        <TextView
+            style="@style/Text.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_gravity="top"
+            android:layout_marginTop="@dimen/unit_one"
+            android:layout_weight="1"
+            android:gravity="right"
+            android:text="@{viewModel.displayTime}"
+            tools:ignore="NestedWeights"
+            tools:text="1 minute ago"/>
 
 
-    </LinearLayout>
+    </android.support.percent.PercentRelativeLayout>
 
 </layout>

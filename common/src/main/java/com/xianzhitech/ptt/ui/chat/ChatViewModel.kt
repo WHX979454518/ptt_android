@@ -10,9 +10,11 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.Target
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BaseApp
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.ImageMessageBody
 import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.MessageType
+import com.xianzhitech.ptt.data.MessageWithSender
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.data.TextMessageBody
 import com.xianzhitech.ptt.data.copy
@@ -26,6 +28,7 @@ import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.viewmodel.ImageMessageViewModel
 import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
 import com.xianzhitech.ptt.viewmodel.MessageViewModel
+import com.xianzhitech.ptt.viewmodel.NotificationMessageViewModel
 import com.xianzhitech.ptt.viewmodel.TextMessageViewModel
 import com.xianzhitech.ptt.viewmodel.TopBannerViewModel
 import com.xianzhitech.ptt.viewmodel.UnknownMessageViewModel
@@ -43,7 +46,7 @@ class ChatViewModel(private val appComponent: AppComponent,
                     appContext: Context,
                     private val roomMessages: SortedList<MessageViewModel>,
                     private val roomId: String,
-                    private val navigator: Navigator) : LifecycleViewModel() {
+                    private val navigator: Navigator) : LifecycleViewModel(), ImageMessageViewModel.Navigator {
     val room = ObservableField<Room>()
     val title = ObservableField<String>()
 
@@ -75,7 +78,7 @@ class ChatViewModel(private val appComponent: AppComponent,
                 .bindToLifecycle()
 
         messages.debounce(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                .startWith(emptyList<Message>())
+                .startWith(emptyList<MessageWithSender>())
                 .flatMapCompletable { appComponent.storage.markRoomAllMessagesRead(roomId).logErrorAndForget() }
                 .logErrorAndForget()
                 .subscribe()
@@ -89,7 +92,7 @@ class ChatViewModel(private val appComponent: AppComponent,
                 .bindToLifecycle()
     }
 
-    private fun onMessageUpdated(messages: List<Message>) {
+    private fun onMessageUpdated(messages: List<MessageWithSender>) {
         roomMessages.addAll(messages.mapNotNull { it.toViewModel() })
         navigator.navigateToLatestMessageIfPossible()
     }
@@ -132,6 +135,50 @@ class ChatViewModel(private val appComponent: AppComponent,
         appComponent.signalBroker.sendMessage(msg).toMaybe().logErrorAndForget().subscribe()
     }
 
+    override fun navigateToImageViewer(url: String) {
+        navigator.navigateToImageViewer(url)
+    }
+
+    override fun retrySendingImage(message: Message) {
+        doSendImageMessage(message).logErrorAndForget().subscribe()
+    }
+
+    private fun doSendImageMessage(msg: Message): Completable {
+        val message = msg.copy { setError(false) }
+        val msgId = message.localId!!
+        IMAGE_UPLOAD_PROGRESS.value[msgId] = 0
+        notifyProgress()
+
+        val imageBody = message.body as ImageMessageBody
+
+        return appComponent.storage.saveMessage(message)
+                .flatMap {
+                    appComponent.signalBroker.uploadImage(Uri.parse(imageBody.url)) { progress ->
+                        AndroidSchedulers.mainThread().scheduleDirect {
+                            if (IMAGE_UPLOAD_PROGRESS.value.containsKey(msgId)) {
+                                IMAGE_UPLOAD_PROGRESS.value[msgId] = progress
+                                notifyProgress()
+                            }
+                        }
+                    }
+                }
+                .flatMapCompletable { uri ->
+                    logger.i { "Got uploaded uri: $uri" }
+                    val updatedMessage = message.copy { setBody(imageBody.copy(url = uri.toString())) }
+                    appComponent.signalBroker.sendMessage(updatedMessage).toCompletable()
+                }
+                .onErrorResumeNext {
+                    logger.e(it) { "Error uploading image: ${imageBody.url}" }
+                    appComponent.storage.setMessageError(msgId, true)
+                }
+                .logErrorAndForget()
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnComplete {
+                    IMAGE_UPLOAD_PROGRESS.value.remove(msgId)
+                    notifyProgress()
+                }
+    }
+
     fun onNewImage(image: Uri) {
         logger.i { "Got image $image" }
 
@@ -143,39 +190,8 @@ class ChatViewModel(private val appComponent: AppComponent,
                 .flatMapCompletable {
                     val imageBody = ImageMessageBody(url = image.toString(), thumbnail = it)
                     val msg = appComponent.signalBroker.createMessage(roomId, MessageType.IMAGE, imageBody)
-                    val msgId = msg.localId!!
 
-                    IMAGE_UPLOAD_PROGRESS.value[msgId] = 0
-                    notifyProgress()
-
-                    appComponent.storage.saveMessage(msg)
-                            .flatMap {
-                                appComponent.signalBroker.uploadImage(image) { progress ->
-                                    AndroidSchedulers.mainThread().scheduleDirect {
-                                        if (IMAGE_UPLOAD_PROGRESS.value.containsKey(msgId)) {
-                                            IMAGE_UPLOAD_PROGRESS.value[msgId] = progress
-                                            notifyProgress()
-                                        }
-                                    }
-                                }
-                            }
-                            .flatMapCompletable { uri ->
-                                logger.i { "Got uploaded uri: $uri" }
-                                val updatedMessage = msg.copy { setBody(imageBody.copy(url = uri.toString())) }
-                                appComponent.signalBroker.sendMessage(updatedMessage)
-                                        .toCompletable()
-                                        .andThen(downloadImage(uri).logErrorAndForget())
-                            }
-                            .onErrorResumeNext {
-                                logger.e(it) { "Error uploading image: $image" }
-                                appComponent.storage.setMessageError(msgId, it.describeInHumanMessage(BaseApp.instance).toString())
-                            }
-                            .logErrorAndForget()
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .doOnComplete {
-                                IMAGE_UPLOAD_PROGRESS.value.remove(msgId)
-                                notifyProgress()
-                            }
+                    doSendImageMessage(msg)
                 }
                 .subscribe()
     }
@@ -184,27 +200,20 @@ class ChatViewModel(private val appComponent: AppComponent,
         moreSelectionOpen.set(!moreSelectionOpen.get())
     }
 
-    private fun downloadImage(url: String): Completable {
-        return Single.defer {
-            val target = Glide.with(BaseApp.instance)
-                    .load(url)
-                    .downloadOnly(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
-
-            Single.fromFuture(target)
-        }.subscribeOn(Schedulers.io()).toCompletable()
-    }
-
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun Message.toViewModel(): MessageViewModel? {
-        return when (type) {
-            MessageType.TEXT -> TextMessageViewModel(appComponent, this, room.get()?.isSingle ?: false)
-            MessageType.IMAGE -> ImageMessageViewModel(appComponent, this, room.get()?.isSingle ?: false, progresses, navigator)
-            MessageType.NOTIFY_CREATE_ROOM -> null
-            else -> UnknownMessageViewModel(appComponent, this)
+    private inline fun MessageWithSender.toViewModel(): MessageViewModel? {
+        return when (message.type) {
+            MessageType.TEXT -> TextMessageViewModel(appComponent, message, room.get()?.isSingle ?: false)
+            MessageType.IMAGE -> ImageMessageViewModel(appComponent, message, room.get()?.isSingle ?: false, progresses, this@ChatViewModel)
+            MessageType.NOTIFY_JOIN_ROOM -> NotificationMessageViewModel(appComponent, message,
+                    BaseApp.instance.getString(R.string.user_join_walkie, user?.name ?: ""))
+            MessageType.NOTIFY_QUIT_ROOM -> NotificationMessageViewModel(appComponent, message,
+                    BaseApp.instance.getString(R.string.user_quit_walkie, user?.name ?: ""))
+            else -> UnknownMessageViewModel(appComponent, message)
         }
     }
 
-    interface Navigator : TopBannerViewModel.Navigator, ImageMessageViewModel.Navigator {
+    interface Navigator : TopBannerViewModel.Navigator {
         fun navigateToWalkieTalkie(roomId: String)
         fun navigateToLatestMessageIfPossible()
         fun displayNoPermissionToWalkie()
@@ -212,6 +221,7 @@ class ChatViewModel(private val appComponent: AppComponent,
         fun navigateToVideoChatPage(roomId: String)
         fun navigateToPickAlbum()
         fun navigateToCamera()
+        fun navigateToImageViewer(url: String)
     }
 
     companion object {

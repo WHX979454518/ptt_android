@@ -294,6 +294,8 @@ class SignalBroker(private val appComponent: AppComponent,
                         if (room.id == currState.currentRoomId) {
                             recordWalkieRoomActive(roomId)
 
+                            sendMessage(createMessage(roomId, MessageType.NOTIFY_JOIN_ROOM)).toCompletable().logErrorAndForget().subscribe()
+
                             currentWalkieRoomState.onNext(currState.copy(
                                     status = if (peekUserId() == speakerId) RoomStatus.ACTIVE else RoomStatus.JOINED,
                                     speakerId = speakerId,
@@ -322,6 +324,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
         if (walkieRoomId != null) {
             recordWalkieRoomActive(walkieRoomId)
+            sendMessage(createMessage(walkieRoomId, MessageType.NOTIFY_QUIT_ROOM)).toCompletable().logErrorAndForget().subscribe()
             signalApi.leaveWalkieRoom(walkieRoomId, askOthersToLeave)
                     .logErrorAndForget()
                     .subscribe()
@@ -360,6 +363,7 @@ class SignalBroker(private val appComponent: AppComponent,
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
                                     peekUserId() == currentUser.id)
                                 recordWalkieRoomActive(newRoomState.currentRoomId)
+                                sendMessage(createMessage(newRoomState.currentRoomId!!, MessageType.NOTIFY_GRAB_MIC)).toCompletable().logErrorAndForget().subscribe()
                                 currentWalkieRoomState.onNext(newRoomState.copy(
                                         speakerId = currentUser.id,
                                         speakerPriority = currentUser.priority,
@@ -392,6 +396,7 @@ class SignalBroker(private val appComponent: AppComponent,
                     (roomState.speakerId == peekUserId()) || roomState.status == RoomStatus.REQUESTING_MIC) {
                 currentWalkieRoomState.onNext(roomState.copy(speakerPriority = null, speakerId = null, status = RoomStatus.JOINED))
                 recordWalkieRoomActive(roomState.currentRoomId!!)
+                sendMessage(createMessage(roomState.currentRoomId, MessageType.NOTIFY_RELEASE_MIC)).toCompletable().logErrorAndForget().subscribe()
                 signalApi.releaseWalkieMic(roomState.currentRoomId)
             } else {
                 Completable.complete()
@@ -418,7 +423,7 @@ class SignalBroker(private val appComponent: AppComponent,
                 .flatMap(appComponent.storage::saveMessage)
     }
 
-    fun createMessage(roomId: String, type: MessageType, body: MessageBody? = null): Message {
+    fun createMessage(roomId: String, type: String, body: MessageBody? = null): Message {
         val entity = MessageEntity()
         entity.setSendTime(Date())
         entity.setLocalId(UUID.randomUUID().toString())
@@ -433,9 +438,6 @@ class SignalBroker(private val appComponent: AppComponent,
                    groupIds: List<String> = emptyList()): Single<Room> {
         return signalApi.createRoom(userIds, groupIds)
                 .flatMap(appComponent.storage::saveRoom)
-                .doOnSuccess { room ->
-                    sendMessage(createMessage(room.id, MessageType.NOTIFY_CREATE_ROOM)).toMaybe().logErrorAndForget().subscribe()
-                }
     }
 
     fun sendLocationData(locations: List<Location>): Completable {

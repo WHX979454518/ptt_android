@@ -70,7 +70,8 @@ class ChatAdapter : RecyclerView.Adapter<ViewBindingHolder>() {
                 }
 
             }
-            MessageType.NOTIFY_CREATE_ROOM -> R.layout.view_message_notification
+            MessageType.NOTIFY_JOIN_ROOM,
+            MessageType.NOTIFY_QUIT_ROOM -> R.layout.view_message_notification
             else -> R.layout.view_message_unknown
         }
     }

@@ -16,6 +16,19 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
+        <TextView
+            style="@style/Text.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_marginTop="@dimen/unit_one"
+            android:layout_weight="1"
+            android:gravity="right"
+            android:text="@{viewModel.displayTime}"
+            tools:ignore="NestedWeights"
+            tools:text="1 minute ago"/>
+
         <View
             android:layout_width="0dp"
             android:layout_height="0dp"
@@ -24,7 +37,8 @@
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="9">
+            android:layout_weight="9"
+            android:orientation="horizontal">
 
             <TextView
                 style="@style/Base.TextAppearance.AppCompat.Body1"

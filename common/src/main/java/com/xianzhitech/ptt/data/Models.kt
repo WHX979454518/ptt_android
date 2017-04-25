@@ -1,6 +1,8 @@
 package com.xianzhitech.ptt.data
 
 import android.os.Parcelable
+import android.support.annotation.StringDef
+import com.fasterxml.jackson.annotation.JsonEnumDefaultValue
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -126,8 +128,9 @@ interface Message : Persistable, Serializable, Event {
     @get:JsonProperty("sendTime")
     val sendTime: Date
 
-    @get:JsonProperty("type")
-    val type: MessageType?
+    @get:JsonProperty("type", defaultValue = "unknown")
+    @get:MessageType.Type
+    val type: String
 
     @get:JsonProperty("body")
     @get:JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type")
@@ -149,7 +152,7 @@ interface Message : Persistable, Serializable, Event {
     val hasRead: Boolean
 
     @get:JsonIgnore
-    val error: String
+    val error: Boolean
 }
 
 

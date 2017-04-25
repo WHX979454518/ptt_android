@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.stream.Collectors.toList
+import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 import kotlin.collections.LinkedHashSet
 
@@ -358,13 +359,33 @@ class Storage(context: Context,
         return lookup.limit(limit).observeList().firstOrError()
     }
 
-    fun getMessagesFrom(date: Date?, roomId: String): Observable<List<Message>> {
-        var lookup = data.select(Message::class.java).where(MessageEntity.ROOM_ID.eq(roomId))
+    fun getMessagesFrom(date: Date?, roomId: String): Observable<List<MessageWithSender>> {
+        var messageLookup = data.select(Message::class.java)
+                .where(MessageEntity.ROOM_ID.eq(roomId))
+
+        var messageSenderIdLookup = data.select(MessageEntity.SENDER_ID)
+                .where(MessageEntity.ROOM_ID.eq(roomId))
+
         if (date != null) {
-            lookup = lookup.and(MessageEntity.SEND_TIME.gte(date))
+            messageLookup = messageLookup.and(MessageEntity.SEND_TIME.gte(date))
+            messageSenderIdLookup = messageSenderIdLookup.and(MessageEntity.SEND_TIME.gte(date))
         }
 
-        return lookup.observeList()
+        return combineLatest(
+                messageLookup.observeList(),
+                data.select(ContactUser::class.java)
+                        .where(ContactUserEntity.ID.`in`(messageSenderIdLookup))
+                        .get()
+                        .observableResult()
+                        .subscribeOn(readScheduler)
+                        .map { it.associateByTo(ArrayMap(it.count()), ContactUser::id) },
+                { messages, userMap ->
+                    val currentUserId = appComponent.signalBroker.peekUserId()
+                    messages.map {
+                        MessageWithSender(it, if (it.senderId == currentUserId) appComponent.signalBroker.currentUser.value.orNull() else userMap[it.senderId])
+                    }
+                }
+        )
     }
 
     fun markRoomAllMessagesRead(roomId: String): Completable {
@@ -421,7 +442,7 @@ class Storage(context: Context,
         return data.upsert(message).subscribeOn(writeScheduler)
     }
 
-    fun setMessageError(localMessageId : String, error : String?) : Completable {
+    fun setMessageError(localMessageId: String, error: Boolean): Completable {
         return data.update(Message::class.java)
                 .set(MessageEntity.ERROR, error)
                 .where(MessageEntity.LOCAL_ID.eq(localMessageId))

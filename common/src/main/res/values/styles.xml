@@ -46,6 +46,9 @@
     <style name="Text.Body1" parent="TextAppearance.AppCompat.Body1" />
     <style name="Text.Caption" parent="TextAppearance.AppCompat.Caption" />
     <style name="Text.Button" parent="TextAppearance.AppCompat.Button" />
+    <style name="Text.Small" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textSize">9sp</item>
+    </style>
 
     <style name="Text.MainTabButton" parent="Text.Caption">
         <item name="android:textColor">@color/tab_item</item>

@@ -2,15 +2,15 @@ package com.xianzhitech.ptt.viewmodel
 
 import android.databinding.ObservableField
 import android.databinding.ObservableMap
+import android.text.format.DateUtils
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.data.ImageMessageBody
-import com.xianzhitech.ptt.data.MessageType
 import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.MessageType
 import com.xianzhitech.ptt.data.TextMessageBody
 import com.xianzhitech.ptt.ext.createCompositeObservable
-import com.xianzhitech.ptt.ext.logErrorAndForget
 
 abstract class MessageViewModel(val appComponent: AppComponent,
                                 val message: Message) : ViewModel {
@@ -20,12 +20,11 @@ abstract class MessageViewModel(val appComponent: AppComponent,
     val isSending: Boolean
         get() = message.remoteId.isNullOrBlank()
 
-    fun onClickRetry() {
-        appComponent.signalBroker.sendMessage(message)
-                .toCompletable()
-                .logErrorAndForget()
-                .subscribe()
-    }
+    val hasError: Boolean
+        get() = message.error
+
+    val displayTime: CharSequence
+        get() = DateUtils.getRelativeTimeSpanString(message.sendTime.time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
 
     override fun equals(other: Any?): Boolean {
         if (other is MessageViewModel) {
@@ -42,10 +41,10 @@ abstract class MessageViewModel(val appComponent: AppComponent,
 
 class UnknownMessageViewModel(appComponent: AppComponent, message: Message) : MessageViewModel(appComponent, message)
 
-class NotificationMessageViewModel(appComponent: AppComponent, message: Message) : MessageViewModel(appComponent, message) {
+class NotificationMessageViewModel(appComponent: AppComponent, message: Message, private val displayText: String? = null) : MessageViewModel(appComponent, message) {
 
     val text: CharSequence
-        get() = message.body?.toDisplayText(BaseApp.instance) ?: ""
+        get() = message.body?.toDisplayText(BaseApp.instance) ?: displayText ?: ""
 }
 
 
@@ -79,13 +78,18 @@ class ImageMessageViewModel(appComponent: AppComponent, message: Message, isSing
         get() = createCompositeObservable(progresses) { message.localId?.let { progresses[it] }?.toString() ?: "0" }
 
     val isUploadingImage: Boolean
-        get() = message.remoteId == null && message.error.isNullOrBlank() && progresses.containsKey(message.localId)
+        get() = message.remoteId == null && message.error.not() && progresses.containsKey(message.localId)
 
     fun onClickImage() {
         navigator.navigateToImageViewer((message.body as ImageMessageBody).url)
     }
 
+    fun onClickRetry() {
+        navigator.retrySendingImage(message)
+    }
+
     interface Navigator {
         fun navigateToImageViewer(url: String)
+        fun retrySendingImage(message: Message)
     }
 }

@@ -15,17 +15,44 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <ImageView
+        <com.xianzhitech.ptt.ui.util.ImageView
             android:id="@+id/image"
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/icon"
             android:layout_toLeftOf="@+id/icon"
+            android:background="@drawable/bg_chat_message"
             android:foreground="?attr/selectableItemBackground"
             android:onClick="@{ignored -> viewModel.onClickImage()}"
-            app:layout_widthPercent="40%"
+            android:padding="@dimen/unit_one"
+            android:scaleType="fitXY"
+            app:layout_widthPercent="50%"
             app:mediaMessage="@{viewModel.message}"
-            tools:layout_height="100dp"
+            tools:layout_height="130dp"
             tools:src="@color/blue"/>
+
+        <TextView
+            style="@style/Text.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/image"
+            android:layout_alignParentLeft="true"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_marginBottom="@dimen/unit_one"
+            android:text="@{viewModel.displayTime}"
+            tools:text="1 minute ago"/>
+
+        <ImageView
+            android:layout_width="@dimen/unit_two"
+            android:layout_height="@dimen/unit_two"
+            android:layout_alignBottom="@+id/image"
+            android:layout_marginRight="@dimen/unit_one"
+            android:layout_toLeftOf="@+id/image"
+            android:background="@drawable/bg_red_circle"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:onClick="@{ignored -> viewModel.onClickRetry()}"
+            android:padding="2dp"
+            android:src="@drawable/ic_refresh_black_24dp"
+            app:show="@{viewModel.hasError}"/>
 
         <TextView
             style="@style/Text.Caption"

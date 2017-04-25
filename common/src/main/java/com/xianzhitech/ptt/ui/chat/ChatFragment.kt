@@ -163,14 +163,14 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     override fun navigateToPickAlbum() {
         val getIntent = Intent(Intent.ACTION_GET_CONTENT)
         getIntent.type = "image/*"
+//
+//        val pickIntent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+//        pickIntent.type = "image/*"
+//
+//        val chooserIntent = Intent.createChooser(getIntent, getString(R.string.pick_photo))
+//        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(pickIntent))
 
-        val pickIntent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        pickIntent.type = "image/*"
-
-        val chooserIntent = Intent.createChooser(getIntent, getString(R.string.pick_photo))
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(pickIntent))
-
-        startActivityForResult(chooserIntent, REQUEST_ALBUM)
+        startActivityForResult(getIntent, REQUEST_ALBUM)
     }
 
     override fun navigateToCamera() {

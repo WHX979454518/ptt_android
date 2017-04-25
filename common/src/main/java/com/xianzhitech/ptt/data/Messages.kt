@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.data
 
 import android.content.Context
+import android.support.annotation.StringDef
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
@@ -10,27 +11,29 @@ import java.io.Serializable
 import java.util.*
 
 
-enum class MessageType {
-    @JsonProperty("text")
-    TEXT,
+object MessageType {
+    const val TEXT = "text"
+    const val IMAGE = "image"
+    const val VIDEO = "video"
+    const val LOCATION = "location"
+    const val NOTIFY_JOIN_ROOM = "join_room"
+    const val NOTIFY_QUIT_ROOM = "quit_room"
+    const val NOTIFY_GRAB_MIC = "grab_mic"
+    const val NOTIFY_RELEASE_MIC = "release_mic"
 
-    @JsonProperty("image")
-    IMAGE,
+    val MEANINGFUL: Set<String> = setOf(TEXT, IMAGE, VIDEO, LOCATION)
 
-    @JsonProperty("video")
-    VIDEO,
-
-    @JsonProperty("location")
-    LOCATION,
-
-    @JsonProperty("notify_create_room")
-    NOTIFY_CREATE_ROOM,
-
-    ;
-
-    companion object {
-        val MEANINGFUL: Set<MessageType> = EnumSet.of(TEXT, IMAGE, VIDEO, LOCATION)
-    }
+    @StringDef(
+            MessageType.IMAGE,
+            MessageType.TEXT,
+            MessageType.LOCATION,
+            MessageType.NOTIFY_GRAB_MIC,
+            MessageType.NOTIFY_RELEASE_MIC,
+            MessageType.NOTIFY_JOIN_ROOM,
+            MessageType.NOTIFY_QUIT_ROOM
+    )
+    @Retention(AnnotationRetention.SOURCE)
+    annotation class Type
 }
 
 @JsonSubTypes(

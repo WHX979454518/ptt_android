@@ -40,11 +40,6 @@ class DevApp : App() {
         })
 
         Stetho.initializeWithDefaults(this)
-
-        if (BuildConfig.DEBUG) {
-            StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyDeath().penaltyDeathOnNetwork().build())
-            StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder().detectActivityLeaks().detectLeakedClosableObjects().detectLeakedSqlLiteObjects().penaltyDeath().build())
-        }
     }
 
     override fun onBuildHttpClient(): OkHttpClient.Builder {
