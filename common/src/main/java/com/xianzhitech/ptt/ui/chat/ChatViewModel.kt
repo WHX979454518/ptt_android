@@ -20,6 +20,7 @@ import com.xianzhitech.ptt.data.isSingle
 import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.e
 import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.loadImageAsBase64
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.viewmodel.ImageMessageViewModel
@@ -32,7 +33,9 @@ import io.reactivex.Completable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import io.reactivex.subjects.BehaviorSubject
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 
@@ -49,6 +52,8 @@ class ChatViewModel(private val appComponent: AppComponent,
     val displaySendButton = createCompositeObservable(message) { message.get()?.isNotEmpty() ?: false }
     val displayMoreButton = createCompositeObservable(message) { message.get().isNullOrEmpty() }
     val moreSelectionOpen = ObservableField(false)
+
+    val progresses = ObservableArrayMap<String, Int>()
 
     private var startMessageDate = Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30))
 
@@ -74,6 +79,13 @@ class ChatViewModel(private val appComponent: AppComponent,
                 .flatMapCompletable { appComponent.storage.markRoomAllMessagesRead(roomId).logErrorAndForget() }
                 .logErrorAndForget()
                 .subscribe()
+                .bindToLifecycle()
+
+        IMAGE_UPLOAD_PROGRESS
+                .subscribe {
+                    progresses.clear()
+                    progresses.putAll(it)
+                }
                 .bindToLifecycle()
     }
 
@@ -123,35 +135,48 @@ class ChatViewModel(private val appComponent: AppComponent,
     fun onNewImage(image: Uri) {
         logger.i { "Got image $image" }
 
-        val imageBody = ImageMessageBody(url = image.toString())
-        val msg = appComponent.signalBroker.createMessage(roomId, MessageType.IMAGE, imageBody)
-        val msgId = msg.localId!!
-        IMAGE_UPLOAD_PROGRESS[msgId] = 0
+        loadImageAsBase64(image.toString(), 600, 600)
+                .onErrorReturn {
+                    logger.e(it) { "Error generating thumbnail" }
+                    ""
+                }
+                .flatMapCompletable {
+                    val imageBody = ImageMessageBody(url = image.toString(), thumbnail = it)
+                    val msg = appComponent.signalBroker.createMessage(roomId, MessageType.IMAGE, imageBody)
+                    val msgId = msg.localId!!
 
-        appComponent.storage.saveMessage(msg)
-                .flatMap {
-                    appComponent.signalBroker.uploadImage(image) { progress ->
-                        AndroidSchedulers.mainThread().scheduleDirect {
-                            if (IMAGE_UPLOAD_PROGRESS.containsKey(msgId)) {
-                                IMAGE_UPLOAD_PROGRESS[msgId] = progress
+                    IMAGE_UPLOAD_PROGRESS.value[msgId] = 0
+                    notifyProgress()
+
+                    appComponent.storage.saveMessage(msg)
+                            .flatMap {
+                                appComponent.signalBroker.uploadImage(image) { progress ->
+                                    AndroidSchedulers.mainThread().scheduleDirect {
+                                        if (IMAGE_UPLOAD_PROGRESS.value.containsKey(msgId)) {
+                                            IMAGE_UPLOAD_PROGRESS.value[msgId] = progress
+                                            notifyProgress()
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
+                            .flatMapCompletable { uri ->
+                                logger.i { "Got uploaded uri: $uri" }
+                                val updatedMessage = msg.copy { setBody(imageBody.copy(url = uri.toString())) }
+                                appComponent.signalBroker.sendMessage(updatedMessage)
+                                        .toCompletable()
+                                        .andThen(downloadImage(uri).logErrorAndForget())
+                            }
+                            .onErrorResumeNext {
+                                logger.e(it) { "Error uploading image: $image" }
+                                appComponent.storage.setMessageError(msgId, it.describeInHumanMessage(BaseApp.instance).toString())
+                            }
+                            .logErrorAndForget()
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnComplete {
+                                IMAGE_UPLOAD_PROGRESS.value.remove(msgId)
+                                notifyProgress()
+                            }
                 }
-                .flatMapCompletable { uri ->
-                    logger.i { "Got uploaded uri: $uri" }
-                    val updatedMessage = msg.copy { setBody(imageBody.copy(url = uri.toString())) }
-                    appComponent.signalBroker.sendMessage(updatedMessage)
-                            .toCompletable()
-                            .andThen(downloadImage(uri).logErrorAndForget())
-                }
-                .onErrorResumeNext {
-                    logger.e(it) { "Error uploading image: $image" }
-                    appComponent.storage.setMessageError(msgId, it.describeInHumanMessage(BaseApp.instance).toString())
-                }
-                .logErrorAndForget()
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnComplete { IMAGE_UPLOAD_PROGRESS.remove(msgId) }
                 .subscribe()
     }
 
@@ -159,7 +184,7 @@ class ChatViewModel(private val appComponent: AppComponent,
         moreSelectionOpen.set(!moreSelectionOpen.get())
     }
 
-    private fun downloadImage(url : String) : Completable {
+    private fun downloadImage(url: String): Completable {
         return Single.defer {
             val target = Glide.with(BaseApp.instance)
                     .load(url)
@@ -170,10 +195,10 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun Message.toViewModel() : MessageViewModel? {
+    private inline fun Message.toViewModel(): MessageViewModel? {
         return when (type) {
             MessageType.TEXT -> TextMessageViewModel(appComponent, this, room.get()?.isSingle ?: false)
-            MessageType.IMAGE -> ImageMessageViewModel(appComponent, this, room.get()?.isSingle ?: false, IMAGE_UPLOAD_PROGRESS)
+            MessageType.IMAGE -> ImageMessageViewModel(appComponent, this, room.get()?.isSingle ?: false, progresses)
             MessageType.NOTIFY_CREATE_ROOM -> null
             else -> UnknownMessageViewModel(appComponent, this)
         }
@@ -191,7 +216,11 @@ class ChatViewModel(private val appComponent: AppComponent,
 
     companion object {
         // Map localId to progress
-        val IMAGE_UPLOAD_PROGRESS: ObservableMap<String, Int> = ObservableArrayMap<String, Int>()
+        val IMAGE_UPLOAD_PROGRESS: BehaviorSubject<ConcurrentHashMap<String, Int>> = BehaviorSubject.createDefault(ConcurrentHashMap())
+
+        private fun notifyProgress() {
+            IMAGE_UPLOAD_PROGRESS.onNext(IMAGE_UPLOAD_PROGRESS.value)
+        }
     }
 
 }

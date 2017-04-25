@@ -42,7 +42,7 @@
             android:layout_below="@+id/sender"
             android:layout_marginTop="@dimen/unit_half"
             app:layout_widthPercent="40%"
-            app:url="@{viewModel.url}"
+            app:mediaMessage="@{viewModel.message}"
             tools:layout_height="100dp"
             tools:src="@color/blue"/>
 

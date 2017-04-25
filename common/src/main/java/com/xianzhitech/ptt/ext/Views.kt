@@ -11,6 +11,10 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import com.bumptech.glide.Glide
+import com.xianzhitech.ptt.data.MediaMessageBody
+import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.MessageType
+import com.xianzhitech.ptt.ui.util.ImageMessageThumbnailLoader
 
 fun EditText.isEmpty() = text.isEmpty()
 
@@ -53,4 +57,28 @@ fun setImageUrl(view: ImageView, url: String) {
     Glide.with(view.context)
             .load(url)
             .into(view)
+}
+
+
+@BindingAdapter("mediaMessage")
+fun setImageMessage(view: ImageView, message: Message) {
+    if ((message.type != MessageType.IMAGE && message.type != MessageType.VIDEO) || message.body !is MediaMessageBody) {
+        return
+    }
+
+    val mediaBody = message.body as MediaMessageBody
+
+    // Do we have thumbnail?
+    if (mediaBody.thumbnail?.isNotBlank() ?: false) {
+        Glide.with(view.context)
+                .using(ImageMessageThumbnailLoader)
+                .load(message)
+                .into(view)
+    } else if (mediaBody.url.isNotBlank()) {
+        Glide.with(view.context)
+                .load(mediaBody.url)
+                .into(view)
+    } else {
+        view.setImageDrawable(null)
+    }
 }

@@ -51,8 +51,15 @@ data class TextMessageBody(@JsonProperty("text") val text: String) : MessageBody
     override fun toDisplayText(context: Context) = text
 }
 
-data class ImageMessageBody(@JsonProperty("url") val url: String,
-                            @JsonProperty("desc") val desc: String? = null) : MessageBody {
+interface MediaMessageBody : MessageBody {
+    val url : String
+    val thumbnail : String?
+    val desc : String?
+}
+
+data class ImageMessageBody(@JsonProperty("url") override val url: String,
+                            @JsonProperty("thumbnail") override val thumbnail: String? = null,
+                            @JsonProperty("desc") override val desc: String? = null) : MediaMessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
             context.getString(R.string.image_body)
@@ -62,8 +69,9 @@ data class ImageMessageBody(@JsonProperty("url") val url: String,
     }
 }
 
-data class VideoMessageBody(@JsonProperty("url") val url: String,
-                            @JsonProperty("desc") val desc: String? = null) : MessageBody {
+data class VideoMessageBody(@JsonProperty("url") override val url: String,
+                            @JsonProperty("thumbnail") override val thumbnail: String? = null,
+                            @JsonProperty("desc") override val desc: String? = null) : MediaMessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
             context.getString(R.string.video_body)

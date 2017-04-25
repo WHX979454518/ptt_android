@@ -21,7 +21,7 @@
             android:layout_alignTop="@+id/icon"
             android:layout_toLeftOf="@+id/icon"
             app:layout_widthPercent="40%"
-            app:url="@{viewModel.url}"
+            app:mediaMessage="@{viewModel.message}"
             tools:layout_height="100dp"
             tools:src="@color/blue"/>
 
