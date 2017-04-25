@@ -17,6 +17,7 @@ import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.NearbyUser
 import com.xianzhitech.ptt.api.event.*
+import com.xianzhitech.ptt.data.AddRoomMembersMessageBody
 import com.xianzhitech.ptt.data.CurrentUser
 import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.data.Message
@@ -56,8 +57,8 @@ class SignalBroker(private val appComponent: AppComponent,
 
     private val signalApi = SignalApi(appComponent, appContext)
 
-    val events : Observable<Event>
-    get() = signalApi.events.map { it.second }
+    val events: Observable<Event>
+        get() = signalApi.events.map { it.second }
 
     val connectionState = signalApi.connectionState
     val currentUser = signalApi.currentUser
@@ -65,8 +66,8 @@ class SignalBroker(private val appComponent: AppComponent,
     val currentVideoRoomId: BehaviorSubject<Optional<String>> = BehaviorSubject.createDefault(Optional.absent<String>())
     val currentWalkieRoomState: BehaviorSubject<RoomState> = BehaviorSubject.createDefault(RoomState.EMPTY)
 
-    val currentWalkieRoomId : Observable<Optional<String>>
-    get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
+    val currentWalkieRoomId: Observable<Optional<String>>
+        get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
 
 
     private var joinWalkieDisposable: Disposable? = null
@@ -240,7 +241,7 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
 
-    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean) : Completable {
+    fun joinWalkieRoom(roomId: String, fromInvitation: Boolean): Completable {
         return Completable.defer {
             if (peekVideoRoomId() != null) {
                 logger.i { "Quitting video room before joining walkie room" }
@@ -314,7 +315,7 @@ class SignalBroker(private val appComponent: AppComponent,
         appComponent.storage.updateRoomLastWalkieActiveTime(roomId).logErrorAndForget().subscribe()
     }
 
-    fun quitWalkieRoom(askOthersToLeave : Boolean = appComponent.preference.keepSession.not()) {
+    fun quitWalkieRoom(askOthersToLeave: Boolean = appComponent.preference.keepSession.not()) {
         joinWalkieDisposable?.dispose()
         joinWalkieDisposable = null
 
@@ -331,7 +332,7 @@ class SignalBroker(private val appComponent: AppComponent,
         }
     }
 
-    fun grabWalkieMic() : Single<Boolean> {
+    fun grabWalkieMic(): Single<Boolean> {
         return Single.defer {
             val currentUser = currentUser.value.get()
             val roomState = currentWalkieRoomState.value
@@ -363,12 +364,12 @@ class SignalBroker(private val appComponent: AppComponent,
                                     newRoomState.currentRoomId == roomState.currentRoomId &&
                                     peekUserId() == currentUser.id)
                                 recordWalkieRoomActive(newRoomState.currentRoomId)
-                                sendMessage(createMessage(newRoomState.currentRoomId!!, MessageType.NOTIFY_GRAB_MIC)).toCompletable().logErrorAndForget().subscribe()
-                                currentWalkieRoomState.onNext(newRoomState.copy(
-                                        speakerId = currentUser.id,
-                                        speakerPriority = currentUser.priority,
-                                        status = RoomStatus.ACTIVE
-                                ))
+                            sendMessage(createMessage(newRoomState.currentRoomId!!, MessageType.NOTIFY_GRAB_MIC)).toCompletable().logErrorAndForget().subscribe()
+                            currentWalkieRoomState.onNext(newRoomState.copy(
+                                    speakerId = currentUser.id,
+                                    speakerPriority = currentUser.priority,
+                                    status = RoomStatus.ACTIVE
+                            ))
                         }
                     }
                     .doOnError {
@@ -456,6 +457,12 @@ class SignalBroker(private val appComponent: AppComponent,
     fun addRoomMembers(roomId: String, newMemberIds: List<String>): Single<Room> {
         return signalApi.addRoomMembers(roomId, newMemberIds)
                 .flatMap(appComponent.storage::saveRoom)
+                .doOnSuccess {
+                    sendMessage(createMessage(roomId, MessageType.NOTIFY_ADDED_ROOM_MEMBERS, AddRoomMembersMessageBody(newMemberIds)))
+                            .toCompletable()
+                            .logErrorAndForget()
+                            .subscribe()
+                }
     }
 
     fun searchNearbyUsers(bounds: LatLngBounds): Single<List<NearbyUser>> {
@@ -470,11 +477,11 @@ class SignalBroker(private val appComponent: AppComponent,
         return signalApi.changePassword(oldPassword, password)
     }
 
-    fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
+    fun queryMessages(queries: List<MessageQuery>): Single<List<MessageQueryResult>> {
         return signalApi.queryMessages(queries)
     }
 
-    fun uploadImage(uri: Uri, progressReport : (Int) -> Unit) : Single<String> {
+    fun uploadImage(uri: Uri, progressReport: (Int) -> Unit): Single<String> {
         return Single.defer {
             val fileSize = appContext.contentResolver.openInputStream(uri).use {
                 val byteArray = ByteArray(4096)
@@ -492,7 +499,7 @@ class SignalBroker(private val appComponent: AppComponent,
                 size
             }
 
-            val reporter : (Long) -> Unit = {
+            val reporter: (Long) -> Unit = {
                 if (fileSize > 0) {
                     progressReport((it * 90 / fileSize).toInt())
                 }

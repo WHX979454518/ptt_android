@@ -20,6 +20,7 @@ object MessageType {
     const val NOTIFY_QUIT_ROOM = "quit_room"
     const val NOTIFY_GRAB_MIC = "grab_mic"
     const val NOTIFY_RELEASE_MIC = "release_mic"
+    const val NOTIFY_ADDED_ROOM_MEMBERS = "add_room_members"
 
     val MEANINGFUL: Set<String> = setOf(TEXT, IMAGE, VIDEO, LOCATION)
 
@@ -34,6 +35,7 @@ object MessageType {
     )
     @Retention(AnnotationRetention.SOURCE)
     annotation class Type
+
 }
 
 @JsonSubTypes(
@@ -94,6 +96,12 @@ data class LocationMessageBody(@JsonProperty("lat") val lat: Double,
         } else {
             desc!!
         }
+    }
+}
+
+data class AddRoomMembersMessageBody(@JsonProperty("memberIds") val memberIds : List<String>) : MessageBody {
+    override fun toDisplayText(context: Context): CharSequence {
+        return ""
     }
 }
 
