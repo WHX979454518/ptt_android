@@ -198,13 +198,13 @@ class ChatViewModel(private val appComponent: AppComponent,
     private inline fun Message.toViewModel(): MessageViewModel? {
         return when (type) {
             MessageType.TEXT -> TextMessageViewModel(appComponent, this, room.get()?.isSingle ?: false)
-            MessageType.IMAGE -> ImageMessageViewModel(appComponent, this, room.get()?.isSingle ?: false, progresses)
+            MessageType.IMAGE -> ImageMessageViewModel(appComponent, this, room.get()?.isSingle ?: false, progresses, navigator)
             MessageType.NOTIFY_CREATE_ROOM -> null
             else -> UnknownMessageViewModel(appComponent, this)
         }
     }
 
-    interface Navigator : TopBannerViewModel.Navigator {
+    interface Navigator : TopBannerViewModel.Navigator, ImageMessageViewModel.Navigator {
         fun navigateToWalkieTalkie(roomId: String)
         fun navigateToLatestMessageIfPossible()
         fun displayNoPermissionToWalkie()

@@ -69,17 +69,23 @@ class TextMessageViewModel(appComponent: AppComponent, message: Message, isSingl
 }
 
 class ImageMessageViewModel(appComponent: AppComponent, message: Message, isSingleRoom: Boolean,
-                            val progresses: ObservableMap<String, Int>) : MeaningfulMessageViewModel(appComponent, message, isSingleRoom) {
+                            val progresses: ObservableMap<String, Int>,
+                            private val navigator: Navigator) : MeaningfulMessageViewModel(appComponent, message, isSingleRoom) {
     init {
         Preconditions.checkArgument(message.body is ImageMessageBody && message.type == MessageType.IMAGE)
     }
-
-    val url: String
-        get() = (message.body as ImageMessageBody).url
 
     val progress: ObservableField<String>
         get() = createCompositeObservable(progresses) { message.localId?.let { progresses[it] }?.toString() ?: "0" }
 
     val isUploadingImage: Boolean
         get() = message.remoteId == null && message.error.isNullOrBlank() && progresses.containsKey(message.localId)
+
+    fun onClickImage() {
+        navigator.navigateToImageViewer((message.body as ImageMessageBody).url)
+    }
+
+    interface Navigator {
+        fun navigateToImageViewer(url: String)
+    }
 }

@@ -41,6 +41,8 @@
             android:layout_alignLeft="@+id/sender"
             android:layout_below="@+id/sender"
             android:layout_marginTop="@dimen/unit_half"
+            android:foreground="?attr/selectableItemBackground"
+            android:onClick="@{ignored -> viewModel.onClickImage()}"
             app:layout_widthPercent="40%"
             app:mediaMessage="@{viewModel.message}"
             tools:layout_height="100dp"

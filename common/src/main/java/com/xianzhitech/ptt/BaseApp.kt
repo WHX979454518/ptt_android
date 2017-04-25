@@ -19,6 +19,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.github.piasy.biv.BigImageViewer
+import com.github.piasy.biv.loader.glide.GlideImageLoader
+import com.github.piasy.biv.view.BigImageView
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xianzhitech.ptt.api.AppApi
 import com.xianzhitech.ptt.broker.SignalBroker
@@ -116,6 +119,8 @@ abstract class BaseApp : MultiDexApplication(), AppComponent {
         WakeLockHandler(signalBroker, this)
         MessageSync(this)
         SDKInitializer.initialize(this)
+
+        BigImageViewer.initialize(GlideImageLoader.with(this, httpClient))
     }
 
 

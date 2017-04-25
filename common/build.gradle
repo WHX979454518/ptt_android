@@ -33,6 +33,7 @@ android {
     dataBinding.enabled = true
 }
 
+
 dependencies {
     compile 'com.squareup.retrofit2:retrofit:2.2.0'
     compile 'com.squareup.retrofit2:converter-gson:2.2.0'
@@ -103,4 +104,9 @@ dependencies {
     }
 
     kapt "com.android.databinding:compiler:$android_gradle_version"
+
+    compile 'com.github.piasy:BigImageViewer:1.2.9'
+    compile 'com.github.piasy:GlideImageLoader:1.2.9'
+    compile 'com.github.piasy:ProgressPieIndicator:1.2.9'
+
 }

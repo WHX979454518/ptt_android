@@ -26,6 +26,7 @@ import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
+import com.xianzhitech.ptt.ui.image.ImageViewerFragment
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.io.File
@@ -118,6 +119,13 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
 
     override fun navigateToWalkieTalkie(roomId: String) {
         callbacks<Callbacks>()?.navigateToWalkieTalkiePage(roomId)
+    }
+
+    override fun navigateToImageViewer(url: String) {
+        ImageViewerFragment.createInstance(url).let {
+            it.isCancelable = true
+            it.show(childFragmentManager, TAG_IMAGE_VIEWER)
+        }
     }
 
     override fun displayNoPermissionToWalkie() {
@@ -231,6 +239,8 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
 
         private const val REQUEST_ALBUM = 1
         private const val REQUEST_CAMERA = 2
+
+        private const val TAG_IMAGE_VIEWER = "image_viewer"
 
         private const val STATE_PHOTO_PATH = "photo"
 
