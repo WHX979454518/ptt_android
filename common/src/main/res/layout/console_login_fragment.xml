@@ -31,9 +31,9 @@
             <android.support.design.widget.TextInputLayout
                 android:id="@+id/login_nameField"
                 android:layout_width="200dp"
-                android:layout_height="40dp"
+                android:layout_height="50dp"
                 android:layout_x="430dp"
-                android:layout_y="200dp"
+                android:layout_y="184dp"
                 app:error="@{viewModel.nameError}">
 
                 <android.support.design.widget.TextInputEditText
@@ -52,9 +52,9 @@
             <android.support.design.widget.TextInputLayout
                 android:id="@+id/login_passwordField"
                 android:layout_width="200dp"
-                android:layout_height="40dp"
+                android:layout_height="50dp"
                 android:layout_x="430dp"
-                android:layout_y="230dp"
+                android:layout_y="234dp"
                 app:error="@{viewModel.passwordError}">
 
                 <android.support.design.widget.TextInputEditText

@@ -1,15 +1,18 @@
 package com.zrt.ptt.app.console;
 
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -24,7 +27,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class MainActivity extends BaseActivity {
+public class MainActivity extends BaseActivity implements View.OnClickListener {
     @BindView(R.id.pupmenu)
     ImageView pupmenu;
     @BindView(R.id.all_call)
@@ -67,6 +70,10 @@ public class MainActivity extends BaseActivity {
     private OrganizationFragment organizationFragment;
     private SystemStateFragment stateFragment;
     private RoomListFragment roomListFragment;
+    private PopupWindow popupWindow;
+    private View rootView;
+    private LinearLayout logRecord;
+    private LinearLayout playBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,14 +86,55 @@ public class MainActivity extends BaseActivity {
         mMapView = (MapView) findViewById(R.id.bmapView);
         View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
         setSelected(rb1.getId());
+        initView();
     }
 
     private void initView() {
+        rootView = findViewById(R.id.main_title);
+
         View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
+        logRecord = (LinearLayout) popupView.findViewById(R.id.log_record);
+        logRecord.setOnClickListener(this);
+
+        playBack = (LinearLayout) popupView.findViewById(R.id.play_back);
+        playBack.setOnClickListener(this);
+        popupWindow = new PopupWindow(popupView, WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT, true);
+//        popupWindow.setContentView(popupView);
+        popupWindow.setOutsideTouchable(true);
+        popupWindow.setBackgroundDrawable(new BitmapDrawable());
+        popupWindow.setFocusable(true);
+        popupWindow.setTouchable(true);
+
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                // popupWindow隐藏时恢复屏幕正常透明度
+//                setBackgroundAlpha(1.0f);
+            }
+        });
+        popupWindow.setTouchInterceptor(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_OUTSIDE) {
+                    popupWindow.dismiss();
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    public void setBackgroundAlpha(float bgAlpha) {
+        WindowManager.LayoutParams lp = getWindow()
+                .getAttributes();
+        lp.alpha = bgAlpha;
+        getWindow().setAttributes(lp);
     }
 
     /**
      * 切换左侧Fragment
+     *
      * @param id
      */
     public void setSelected(int id) {
@@ -122,6 +170,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * 左侧切换钮背景等相关处理
+     *
      * @param id
      */
     public void checkRadio(int id) {
@@ -161,6 +210,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * 隐藏fragment
+     *
      * @param ft
      * @param id
      */
@@ -197,12 +247,23 @@ public class MainActivity extends BaseActivity {
 
     /**
      * butterknife绑定点击监听事件
+     *
      * @param view
      */
     @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.rb1, R.id.rb2, R.id.rb3, R.id.contacts_container, R.id.bmapView})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.pupmenu:
+                if (popupWindow.isShowing()) {
+                    popupWindow.dismiss();
+                } else {
+                    popupWindow.showAsDropDown(rootView, 0, 0);
+//                    popupWindow.showAtLocation(rootView,Gravity.TOP,0,24);
+//                    rootView.getBackground().setAlpha(255);
+//                    setBackgroundAlpha(0.5f);
+
+                    popupWindow.update();
+                }
                 break;
             case R.id.all_call:
                 break;
@@ -220,6 +281,19 @@ public class MainActivity extends BaseActivity {
             case R.id.contacts_container:
                 break;
             case R.id.bmapView:
+                break;
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+
+        switch (v.getId()) {
+            case R.id.log_record:
+                popupWindow.dismiss();
+                break;
+            case R.id.play_back:
+                popupWindow.dismiss();
                 break;
         }
     }

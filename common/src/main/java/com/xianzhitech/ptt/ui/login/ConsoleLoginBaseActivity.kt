@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -15,13 +16,15 @@ open class ConsoleLoginBaseActivity : BaseActivity(), ConsoleLoginFragment.Callb
         super.onCreate(savedInstanceState)
 
         title = getString(R.string.login_app)
+       /* supportActionBar!!.hide()// 隐藏ActionBar
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)//remove notification bar 即全屏*/
 
         if (appComponent.signalBroker.isLoggedIn) {
             navigateToHome()
         }
         else if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, LoginFragment.create(
+                    .replace(android.R.id.content, ConsoleLoginFragment.create(
                             intent.getBooleanExtra(EXTRA_KICKED_OUT, false),
                             intent.getStringExtra(EXTRA_KICKED_OUT_REASON)))
                     .commit()
