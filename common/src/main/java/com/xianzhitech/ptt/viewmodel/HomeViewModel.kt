@@ -18,7 +18,7 @@ class HomeViewModel(private val appComponent: AppComponent,
         super.onStart()
 
         appComponent.signalBroker
-                .rootDepartments
+                .enterprise
                 .subscribe {
                     logger.i { "Got departments: $it" }
                 }

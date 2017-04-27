@@ -53,7 +53,7 @@ class SignalBroker(private val appComponent: AppComponent,
     val currentWalkieRoomId: Observable<Optional<String>>
         get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
 
-    val rootDepartments: Observable<ContactEnterprise> by lazy {
+    val enterprise: Observable<ContactEnterprise> by lazy {
         combineLatest(
                 appComponent.storage.getAllUsers(),
                 signalApi.getAllDepartments().toObservable()
