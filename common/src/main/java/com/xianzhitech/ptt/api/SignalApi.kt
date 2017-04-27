@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.api
 
 import android.content.Context
 import android.os.Looper
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.google.common.primitives.Primitives
@@ -82,7 +83,7 @@ class SignalApi(private val appComponent: AppComponent,
             connectionState.onNext(ConnectionState.CONNECTING)
         }
 
-        appComponent.appApi.retrieveAppConfig(currentUser.value.orNull()?.id ?: "", appComponent.currentVersion.toString())
+        appComponent.appApi.retrieveAppConfig(currentUser.value.orNull()?.id ?: "", appComponent.currentVersion)
                 .observeOn(AndroidSchedulers.mainThread())
                 .toMaybe()
                 .logErrorAndForget(this::onSocketError)
@@ -95,12 +96,25 @@ class SignalApi(private val appComponent: AppComponent,
                         reconnection = false
                     }
 
+                    val token = "$name:${password.toMD5()}${name.guessLoginPostfix()}"
+                    val authHeader = "Basic ${token.toBase64()}"
+                    val client = appComponent.httpClient.newBuilder()
+                            .addNetworkInterceptor { chain ->
+                                chain.request()
+                                        .newBuilder()
+                                        .addHeader("Authorization", authHeader)
+                                        .addHeader("X-Device-Id", appComponent.preference.deviceId)
+                                        .build()
+                                        .let(chain::proceed)
+                            }
+                            .build()
+
                     val socket = IO.socket(config.signalServerEndpoint, options)
                     this@SignalApi.socket = socket
                     this@SignalApi.restfulApi = Retrofit.Builder()
                             .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.io()))
                             .addConverterFactory(JacksonConverterFactory.create(appComponent.objectMapper))
-                            .client(appComponent.httpClient)
+                            .client(client)
                             .baseUrl(config.signalServerEndpoint)
                             .build()
                             .create(RestfulApi::class.java)
@@ -154,7 +168,6 @@ class SignalApi(private val appComponent: AppComponent,
                         transport.on(Transport.EVENT_REQUEST_HEADERS, {
                             @Suppress("UNCHECKED_CAST")
                             val headers = it.first() as MutableMap<String, List<String>>
-                            val token = "$name:${password.toMD5()}${name.guessLoginPostfix()}"
                             headers["Authorization"] = listOf("Basic ${token.toBase64()}")
                             headers["X-Device-Id"] = listOf(appComponent.preference.deviceId)
                         })
@@ -189,27 +202,29 @@ class SignalApi(private val appComponent: AppComponent,
 
     }
 
-    fun uploadImage(imgBody : RequestBody) : Single<String> {
+    fun uploadImage(imgBody: RequestBody): Single<String> {
         return restfulApi!!.uploadImage(MultipartBody.Part.createFormData("imgData", "image.jpg", imgBody))
     }
 
     fun syncContacts(version: Long): Maybe<Contact> {
-        return Maybe.defer {
-            Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
-            restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.password.toMD5(), version)
-                    .toMaybe()
-                    .onErrorComplete { it is HttpException && it.code() == 304 }
-        }
+        return waitForLoggedIn()
+                .andThen(Maybe.defer {
+                    Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
+                    restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.password.toMD5(), version)
+                            .toMaybe()
+                            .onErrorComplete { it is HttpException && it.code() == 304 }
+                })
     }
 
     fun sendLocationData(locations: List<Location>): Completable {
-        return Completable.defer {
-            Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
-            restfulApi!!.updateLocations(currentUser.value.get().id,
-                    currentUserCredentials!!.password.toMD5(),
-                    locations
-            )
-        }
+        return waitForLoggedIn()
+                .andThen(Completable.defer {
+                    Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
+                    restfulApi!!.updateLocations(currentUser.value.get().id,
+                            currentUserCredentials!!.password.toMD5(),
+                            locations
+                    )
+                })
     }
 
     private fun onSocketError(err: Throwable?) {
@@ -390,25 +405,39 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
-    fun getAllDepartments() : Single<List<ContactDepartment>> {
-        return restfulApi!!.getAllDepartments().map {
-            // 舍弃无用的服务器数据
-            if (it.data.isNotEmpty() && it.data.last().parentObjectId == "-1") {
-                it.data.subList(0, it.data.size - 1)
-            } else {
-                it.data
-            }
-        }
+    fun getAllDepartments(): Single<List<ContactDepartment>> {
+        return waitForLoggedIn()
+                .andThen(Single.defer { restfulApi!!.getAllDepartments() })
+                .map {
+                    if (it.data == null) {
+                        return@map emptyList<ContactDepartment>()
+                    }
+
+                    // 舍弃无用的服务器数据
+                    if (it.data.isNotEmpty() && it.data.last().parentObjectId == "-1") {
+                        it.data.subList(0, it.data.size - 1)
+                    } else {
+                        it.data
+                    }
+                }
     }
 
-    fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
+    fun queryMessages(queries: List<MessageQuery>): Single<List<MessageQueryResult>> {
         return rpc<Array<MessageQueryResult>>("c_query_messages", queries).toSingle().map { it.toList() }
     }
 
-    private data class Dto<T>(val status : Int?, val data : T) {
+    private fun waitForLoggedIn(): Completable {
+        return connectionState.filter { it == ConnectionState.CONNECTED }
+                .firstOrError()
+                .toCompletable()
+    }
+
+    private data class Dto<T>(@JsonProperty("status") val status: Int?,
+                              @JsonProperty("data") val data: T? = null,
+                              @JsonProperty("message") val message: String? = null) {
         init {
             if (status != 200) {
-                throw ServerException("unknown", data?.toString())
+                throw ServerException("unknown", message)
             }
         }
     }
@@ -426,14 +455,15 @@ class SignalApi(private val appComponent: AppComponent,
                             @Body locations: List<Location>): Completable
 
         @GET("api/nearby")
-        fun findNearbyPeople(@Query("minLat") minLat: Double, @Query("minLng") minLng: Double, @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<JSONArray>
+        fun findNearbyPeople(@Query("minLat") minLat: Double, @Query("minLng") minLng: Double,
+                             @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<JSONArray>
 
         @POST("upload/do/binary")
         @Multipart
-        fun uploadImage(@Part file : MultipartBody.Part) : Single<String>
+        fun uploadImage(@Part file: MultipartBody.Part): Single<String>
 
         @GET("api/contact/departments")
-        fun getAllDepartments() : Single<Dto<List<ContactDepartment>>>
+        fun getAllDepartments(): Single<Dto<List<ContactDepartment>>>
     }
 
     enum class ConnectionState {

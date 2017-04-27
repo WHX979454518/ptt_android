@@ -11,6 +11,7 @@ import com.xianzhitech.ptt.util.SetConverter
 import io.requery.*
 import java.io.Serializable
 import java.util.*
+import kotlin.collections.ArrayList
 
 interface NamedModel {
     val id: String
@@ -46,7 +47,7 @@ interface ContactUser : User, Persistable, NamedModel, Parcelable, Serializable 
     override val priority: Int
 
     @get:JsonProperty("father")
-    val parentObjectId: String
+    val parentObjectId: String?
 
     @get:JsonProperty("phoneNumber")
     override val phoneNumber: String?
@@ -71,11 +72,14 @@ interface ContactGroup : Persistable, NamedModel, Parcelable, Serializable {
     val memberIds: Set<String>
 }
 
+data class ContactEnterprise(val departments : List<ContactDepartment>,
+                             val directUsers : List<ContactUser>)
+
 data class ContactDepartment(@JsonProperty("_id") val id: String,
-                             @JsonProperty("name") val name: String,
-                             @JsonProperty("father") val parentObjectId : String?,
-                             @JsonIgnore val children : List<ContactDepartment> = emptyList(),
-                             @JsonIgnore val members : List<ContactUser> = emptyList())
+                             @JsonProperty("name") val name: String = "",
+                             @JsonProperty("father") val parentObjectId : String? = null,
+                             @JsonIgnore val children : MutableList<ContactDepartment> = arrayListOf(),
+                             @JsonIgnore val members : MutableList<ContactUser> = arrayListOf())
 
 @Entity
 @Table(name = "rooms")

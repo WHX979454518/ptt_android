@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 
 class SignalBroker(private val appComponent: AppComponent,
@@ -52,14 +53,35 @@ class SignalBroker(private val appComponent: AppComponent,
     val currentWalkieRoomId: Observable<Optional<String>>
         get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
 
-    private val rootDepartments : Observable<List<ContactDepartment>> by lazy {
-        signalApi.getAllDepartments()
-                .map {
-                    val departmentMap = it.associateBy(ContactDepartment::id)
-                    val root = it.filter { it.parentObjectId == null }
-                    emptyList<ContactDepartment>()
+    val rootDepartments: Observable<ContactEnterprise> by lazy {
+        combineLatest(
+                appComponent.storage.getAllUsers(),
+                signalApi.getAllDepartments().toObservable()
+        ) { users, departments ->
+            val departmentParentMap = hashMapOf<String?, ArrayList<ContactDepartment>>()
+            val departmentMap = departments.associateBy(ContactDepartment::id)
+
+            departments.forEach { department ->
+                departmentParentMap.getOrPut(department.parentObjectId) { arrayListOf() }.add(department)
+            }
+
+            departmentParentMap.forEach { parentObjectId, departmentList ->
+                if (parentObjectId != null) {
+                    departmentMap[parentObjectId]?.children?.addAll(departmentList)
                 }
-                .toObservable()
+            }
+
+            val directUsers = arrayListOf<ContactUser>()
+
+            users.forEach { user ->
+                user.parentObjectId?.let { departmentMap[it]?.members?.add(user) } ?: directUsers.add(user)
+            }
+
+            ContactEnterprise(
+                    departments = departmentParentMap[null] ?: emptyList<ContactDepartment>(),
+                    directUsers = directUsers
+            )
+        }.replay(1).refCount()
     }
 
     private var joinWalkieDisposable: Disposable? = null

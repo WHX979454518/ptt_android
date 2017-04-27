@@ -4,14 +4,25 @@ import android.content.Context
 import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.i
 
 
-class HomeViewModel(appComponent: AppComponent,
+class HomeViewModel(private val appComponent: AppComponent,
                     appContext: Context,
                     navigator: Navigator) : LifecycleViewModel() {
 
     val currentTab = ObservableField(R.id.home_rooms)
     val topBannerViewModel = TopBannerViewModel(appComponent, appContext, navigator).let(this::addChildModel)
+
+    override fun onStart() {
+        super.onStart()
+
+        appComponent.signalBroker
+                .rootDepartments
+                .subscribe {
+                    logger.i { "Got departments: $it" }
+                }
+    }
 
     interface Navigator : TopBannerViewModel.Navigator
 }
