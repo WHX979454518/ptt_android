@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Parcelable
-import android.util.Base64
-import android.util.Base64InputStream
-import android.util.Base64OutputStream
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
@@ -17,22 +14,9 @@ import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.NearbyUser
 import com.xianzhitech.ptt.api.event.*
-import com.xianzhitech.ptt.data.AddRoomMembersMessageBody
-import com.xianzhitech.ptt.data.CurrentUser
-import com.xianzhitech.ptt.data.Location
-import com.xianzhitech.ptt.data.Message
-import com.xianzhitech.ptt.data.MessageBody
-import com.xianzhitech.ptt.data.MessageEntity
-import com.xianzhitech.ptt.data.MessageType
-import com.xianzhitech.ptt.data.Permission
-import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.ext.*
-import com.xianzhitech.ptt.service.NoPermissionException
-import com.xianzhitech.ptt.service.NoSuchRoomException
-import com.xianzhitech.ptt.service.ServerException
-import com.xianzhitech.ptt.service.RoomState
-import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.service.toast
+import com.xianzhitech.ptt.service.*
 import com.xianzhitech.ptt.util.InputStreamReadReporter
 import io.reactivex.Completable
 import io.reactivex.Observable
@@ -44,7 +28,6 @@ import okhttp3.MediaType
 import okhttp3.RequestBody
 import okio.BufferedSink
 import okio.Okio
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.io.Serializable
 import java.util.*
@@ -69,6 +52,15 @@ class SignalBroker(private val appComponent: AppComponent,
     val currentWalkieRoomId: Observable<Optional<String>>
         get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
 
+    private val rootDepartments : Observable<List<ContactDepartment>> by lazy {
+        signalApi.getAllDepartments()
+                .map {
+                    val departmentMap = it.associateBy(ContactDepartment::id)
+                    val root = it.filter { it.parentObjectId == null }
+                    emptyList<ContactDepartment>()
+                }
+                .toObservable()
+    }
 
     private var joinWalkieDisposable: Disposable? = null
 

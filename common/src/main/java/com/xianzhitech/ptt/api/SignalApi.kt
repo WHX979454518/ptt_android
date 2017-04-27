@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.api
 
 import android.content.Context
 import android.os.Looper
-import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.google.common.primitives.Primitives
@@ -13,8 +12,8 @@ import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.*
-import com.xianzhitech.ptt.service.ServerException
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.ServerException
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
@@ -391,13 +390,32 @@ class SignalApi(private val appComponent: AppComponent,
         }
     }
 
+    fun getAllDepartments() : Single<List<ContactDepartment>> {
+        return restfulApi!!.getAllDepartments().map {
+            // 舍弃无用的服务器数据
+            if (it.data.isNotEmpty() && it.data.last().parentObjectId == "-1") {
+                it.data.subList(0, it.data.size - 1)
+            } else {
+                it.data
+            }
+        }
+    }
+
     fun queryMessages(queries : List<MessageQuery>) : Single<List<MessageQueryResult>> {
         return rpc<Array<MessageQueryResult>>("c_query_messages", queries).toSingle().map { it.toList() }
     }
 
+    private data class Dto<T>(val status : Int?, val data : T) {
+        init {
+            if (status != 200) {
+                throw ServerException("unknown", data?.toString())
+            }
+        }
+    }
+
     private interface RestfulApi {
 
-        @GET("/api/contact/sync/{idNumber}/{password}/{version}")
+        @GET("api/contact/sync/{idNumber}/{password}/{version}")
         fun syncContact(@Path("idNumber") idNumber: String,
                         @Path("password") password: String,
                         @Path("version") version: Long): Single<Contact>
@@ -413,6 +431,9 @@ class SignalApi(private val appComponent: AppComponent,
         @POST("upload/do/binary")
         @Multipart
         fun uploadImage(@Part file : MultipartBody.Part) : Single<String>
+
+        @GET("api/contact/departments")
+        fun getAllDepartments() : Single<Dto<List<ContactDepartment>>>
     }
 
     enum class ConnectionState {

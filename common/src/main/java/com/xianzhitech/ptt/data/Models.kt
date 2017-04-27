@@ -1,8 +1,6 @@
 package com.xianzhitech.ptt.data
 
 import android.os.Parcelable
-import android.support.annotation.StringDef
-import com.fasterxml.jackson.annotation.JsonEnumDefaultValue
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -11,7 +9,6 @@ import com.xianzhitech.ptt.api.event.Event
 import com.xianzhitech.ptt.util.SerializableConverter
 import com.xianzhitech.ptt.util.SetConverter
 import io.requery.*
-import org.json.JSONObject
 import java.io.Serializable
 import java.util.*
 
@@ -48,6 +45,9 @@ interface ContactUser : User, Persistable, NamedModel, Parcelable, Serializable 
     @get:JsonProperty("priority")
     override val priority: Int
 
+    @get:JsonProperty("father")
+    val parentObjectId: String
+
     @get:JsonProperty("phoneNumber")
     override val phoneNumber: String?
 }
@@ -70,6 +70,12 @@ interface ContactGroup : Persistable, NamedModel, Parcelable, Serializable {
     @get:Convert(SetConverter::class)
     val memberIds: Set<String>
 }
+
+data class ContactDepartment(@JsonProperty("_id") val id: String,
+                             @JsonProperty("name") val name: String,
+                             @JsonProperty("father") val parentObjectId : String?,
+                             @JsonIgnore val children : List<ContactDepartment> = emptyList(),
+                             @JsonIgnore val members : List<ContactUser> = emptyList())
 
 @Entity
 @Table(name = "rooms")
