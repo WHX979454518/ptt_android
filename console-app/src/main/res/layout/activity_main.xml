@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.zrt.ptt.app.console.MainActivity">
+    tools:context="com.zrt.ptt.app.console.mvp.view.activity.MainActivity">
     <LinearLayout
         android:id="@+id/main_title"
         android:layout_width="match_parent"

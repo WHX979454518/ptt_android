@@ -1,10 +1,10 @@
-package com.zrt.ptt.app.console;
+package com.zrt.ptt.app.console.mvp.view.activity;
 
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -14,20 +14,25 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RadioButton;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.baidu.mapapi.map.MapView;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
+import com.zrt.ptt.app.console.R;
+import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
+import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment;
+
+import org.json.JSONObject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener,IMainActivityView{
     @BindView(R.id.pupmenu)
     ImageView pupmenu;
     @BindView(R.id.all_call)
@@ -74,6 +79,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private View rootView;
     private LinearLayout logRecord;
     private LinearLayout playBack;
+    private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +93,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
         setSelected(rb1.getId());
         initView();
+        mainPresenter.UpDataOrganzation();
     }
 
     private void initView() {
@@ -296,5 +303,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 popupWindow.dismiss();
                 break;
         }
+    }
+
+    @Override
+    public void UpDateOrganization(JSONObject data) {
+        Toast.makeText(this,"执行了",Toast.LENGTH_LONG).show();
+        Log.e("Organization" , data.toString());
     }
 }
