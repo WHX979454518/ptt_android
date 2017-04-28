@@ -17,9 +17,9 @@ import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -149,7 +149,7 @@ abstract class BaseActivity : AppCompatActivity(),
             }
 
             try {
-                val fileName = "${appConfig.getAppFullName(this)}.apk"
+                val fileName = getString(R.string.app_name) + "-${appConfig.latestVersionName}.apk"
                 val downloadRequest = DownloadManager.Request(downloadUri)
                 downloadRequest.setMimeType("application/vnd.android.package-archive")
                 downloadRequest.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
@@ -231,7 +231,7 @@ abstract class BaseActivity : AppCompatActivity(),
             AlertDialogFragment.Builder().apply {
                 message = appParams.updateMessage
                 messageIsHtml = true
-                title = R.string.update_title.toFormattedString(this@BaseActivity, appParams.getAppFullVersionName())
+                title = R.string.update_title.toFormattedString(this@BaseActivity, appParams.latestVersionName)
                 btnPositive = R.string.update.toFormattedString(this@BaseActivity)
                 btnNegative = if (appParams.mandatory) null else R.string.ignore.toFormattedString(this@BaseActivity)
                 cancellabe = false
