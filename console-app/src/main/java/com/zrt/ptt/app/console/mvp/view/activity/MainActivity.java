@@ -93,7 +93,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
         View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
         setSelected(rb1.getId());
         initView();
-        mainPresenter.UpDataOrganzation();
+//        mainPresenter.UpDataOrganzation();
     }
 
     private void initView() {

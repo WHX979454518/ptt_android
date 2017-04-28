@@ -105,8 +105,8 @@ public class TreeHelper {
         Node node = null;
 
         for (T t : datas) {
-            int id = -1;
-            int pId = -1;
+            String _id = "-1";
+            String  father = "-1";
             String name = null;
 
             Class<? extends Object> clazz = t.getClass();
@@ -115,14 +115,14 @@ public class TreeHelper {
              * 与xxNodeBean实体一一对应
              */
             for (Field f : declaredFields) {
-                if ("id".equals(f.getName())) {
+                if ("_id".equals(f.getName())) {
                     f.setAccessible(true);
-                    id = f.getInt(t);
+                    _id = (String) f.get(t);
                 }
 
-                if ("pId".equals(f.getName())) {
+                if ("father".equals(f.getName())) {
                     f.setAccessible(true);
-                    pId = f.getInt(t);
+                    father = (String) f.get(t);
                 }
 
                 if ("name".equals(f.getName())) {
@@ -138,12 +138,13 @@ public class TreeHelper {
                     continue;
                 }
 
-                if (id == -1 && pId == -1 && name == null) {
+                if(_id != null && name != null){
                     break;
                 }
+
             }
 
-            node = new Node(id, pId, name);
+            node = new Node(_id, father, name);
             node.setHideChecked(isHide);
             nodes.add(node);
         }
@@ -155,10 +156,10 @@ public class TreeHelper {
             Node n = nodes.get(i);
             for (int j = i + 1; j < nodes.size(); j++) {
                 Node m = nodes.get(j);
-                if (n.getId() == m.getpId()) {
+                if (n.get_id().equals(m.getFather()) ) {
                     n.getChildrenNodes().add(m);
                     m.setParent(n);
-                } else if (n.getpId() == m.getId()) {
+                } else if (n.getFather().equals(m.get_id())) {
                     n.setParent(m);
                     m.getChildrenNodes().add(n);
                 }

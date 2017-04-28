@@ -10,14 +10,16 @@ import java.util.List;
 public class Node {
 
 
+
+
     /**
      * 节点id
      */
-    private int id;
+    private String _id;
     /**
      * 父节点id
      */
-    private int pId;
+    private String father;
     /**
      * 是否展开
      */
@@ -48,27 +50,28 @@ public class Node {
     public Node() {
     }
 
-    public Node(int id, int pId, String name) {
+    public Node(String id, String pId, String name) {
         super();
-        this.id = id;
-        this.pId = pId;
+        this._id = id;
+        this.father = pId;
         this.name = name;
     }
 
-    public int getId() {
-        return id;
+
+    public String get_id() {
+        return _id;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void set_id(String _id) {
+        this._id = _id;
     }
 
-    public int getpId() {
-        return pId;
+    public String getFather() {
+        return father;
     }
 
-    public void setpId(int pId) {
-        this.pId = pId;
+    public void setFather(String father) {
+        this.father = father;
     }
 
     public boolean isExpand() {
