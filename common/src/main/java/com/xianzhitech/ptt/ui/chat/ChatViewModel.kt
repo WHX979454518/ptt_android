@@ -176,7 +176,7 @@ class ChatViewModel(private val appComponent: AppComponent,
     fun onNewImage(image: Uri) {
         logger.i { "Got image $image" }
 
-        loadImageAsBase64(image.toString(), 600, 600)
+        loadImageAsBase64(image.toString(), 150, 150)
                 .onErrorReturn {
                     logger.e(it) { "Error generating thumbnail" }
                     ""
