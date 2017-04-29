@@ -65,7 +65,7 @@ class SignalBroker(private val appComponent: AppComponent,
                 departmentParentMap.getOrPut(department.parentObjectId) { arrayListOf() }.add(department)
             }
 
-            departmentParentMap.forEach { parentObjectId, departmentList ->
+            departmentParentMap.entries.forEach { (parentObjectId, departmentList) ->
                 if (parentObjectId != null) {
                     departmentMap[parentObjectId]?.children?.addAll(departmentList)
                 }
