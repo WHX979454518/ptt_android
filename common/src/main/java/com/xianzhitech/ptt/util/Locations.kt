@@ -1,7 +1,11 @@
 package com.xianzhitech.ptt.util
 
 import android.content.Context
-import android.location.*
+import android.location.Criteria
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.location.LocationProvider
 import android.os.Bundle
 import android.os.Looper
 import com.xianzhitech.ptt.BaseApp

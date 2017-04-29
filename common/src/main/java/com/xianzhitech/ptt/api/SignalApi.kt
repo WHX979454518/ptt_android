@@ -94,6 +94,7 @@ class SignalApi(private val appComponent: AppComponent,
                     val options = IO.Options().apply {
                         multiplex = false
                         reconnection = false
+                        transports = arrayOf("websocket")
                     }
 
                     val token = "$name:${password.toMD5()}${name.guessLoginPostfix()}"

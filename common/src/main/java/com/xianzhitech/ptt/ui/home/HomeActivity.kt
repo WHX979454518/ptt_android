@@ -59,12 +59,12 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
                 override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
                 override fun onPageSelected(position: Int) {
-                    viewModel.currentTab.set(adapter.fragments[position].first)
+                    viewModel!!.currentTab.set(adapter.fragments[position].first)
                 }
             })
 
             tabBar.setOnNavigationItemSelectedListener {
-                viewModel.currentTab.set(it.itemId)
+                viewModel!!.currentTab.set(it.itemId)
                 true
             }
         }

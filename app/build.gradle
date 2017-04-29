@@ -111,7 +111,8 @@ dependencies {
     androidTestCompile 'junit:junit:4.12'
     testCompile 'junit:junit:4.12'
 
-    compile project(':common')
+    debugCompile project(path: ':common', configuration: 'debug')
+    releaseCompile project(path: ':common', configuration: 'release')
 
     devCompile("com.facebook.stetho:stetho:1.5.0")
     devCompile("com.facebook.stetho:stetho-okhttp3:1.5.0")

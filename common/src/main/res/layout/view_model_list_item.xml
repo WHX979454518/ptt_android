@@ -42,7 +42,7 @@
             android:layout_marginRight="@dimen/unit_three"
             android:layout_toRightOf="@+id/icon"
             android:checkMark="?android:attr/listChoiceIndicatorMultiple"
-            android:checked="@{viewModel.checkedIds[viewModel.model.id]}"
+            android:checked="@{safeUnbox(viewModel.checkedIds[viewModel.model.id])}"
             android:duplicateParentState="true"
             android:gravity="left|center_vertical"
             android:text="@{viewModel.model.name}"

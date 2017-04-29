@@ -6,12 +6,21 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.xianzhitech.ptt.api.event.Event
-import com.xianzhitech.ptt.util.SerializableConverter
+import com.xianzhitech.ptt.util.MessageBodyConverter
 import com.xianzhitech.ptt.util.SetConverter
-import io.requery.*
+import io.requery.Column
+import io.requery.Convert
+import io.requery.Entity
+import io.requery.ForeignKey
+import io.requery.Generated
+import io.requery.Index
+import io.requery.Key
+import io.requery.Persistable
+import io.requery.ReadOnly
+import io.requery.ReferentialAction
+import io.requery.Table
 import java.io.Serializable
 import java.util.*
-import kotlin.collections.ArrayList
 
 interface NamedModel {
     val id: String
@@ -72,14 +81,15 @@ interface ContactGroup : Persistable, NamedModel, Parcelable, Serializable {
     val memberIds: Set<String>
 }
 
-data class ContactEnterprise(val departments : List<ContactDepartment>,
-                             val directUsers : List<ContactUser>)
+data class ContactEnterprise(val departments: List<ContactDepartment>,
+                             val directUsers: List<ContactUser>)
 
-data class ContactDepartment(@JsonProperty("_id") val id: String,
-                             @JsonProperty("name") val name: String = "",
-                             @JsonProperty("father") val parentObjectId : String? = null,
-                             @JsonIgnore val children : MutableList<ContactDepartment> = arrayListOf(),
-                             @JsonIgnore val members : MutableList<ContactUser> = arrayListOf())
+data class ContactDepartment @JvmOverloads constructor(
+        @get:JsonProperty("_id") val id: String = "",
+        @get:JsonProperty("name") val name: String = "",
+        @get:JsonProperty("father") val parentObjectId: String? = null,
+        @JsonIgnore val children: MutableList<ContactDepartment> = arrayListOf(),
+        @JsonIgnore val members: MutableList<ContactUser> = arrayListOf())
 
 @Entity
 @Table(name = "rooms")
@@ -144,7 +154,7 @@ interface Message : Persistable, Serializable, Event {
 
     @get:JsonProperty("body")
     @get:JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type")
-    @get:Convert(SerializableConverter::class)
+    @get:Convert(MessageBodyConverter::class)
     val body: MessageBody?
 
     @get:JsonProperty("senderId")

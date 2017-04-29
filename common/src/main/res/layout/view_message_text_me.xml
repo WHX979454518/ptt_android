@@ -7,7 +7,7 @@
 
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.viewmodel.TextMessageViewModel"/>
+            type="com.xianzhitech.ptt.viewmodel.MeaningfulMessageViewModel"/>
 
     </data>
 

@@ -2,13 +2,10 @@ package com.xianzhitech.ptt.data
 
 import android.content.Context
 import android.support.annotation.StringDef
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.xianzhitech.ptt.R
 import java.io.Serializable
-import java.util.*
 
 
 object MessageType {
@@ -46,25 +43,23 @@ object MessageType {
 )
 interface MessageBody : Serializable {
     fun toDisplayText(context: Context): CharSequence
-
-    companion object {
-        private const val serialVersionUID = 1L
-    }
 }
 
-data class TextMessageBody(@JsonProperty("text") val text: String) : MessageBody {
+data class TextMessageBody @JvmOverloads constructor(
+        @get:JsonProperty("text") val text: String = "") : MessageBody {
     override fun toDisplayText(context: Context) = text
 }
 
 interface MediaMessageBody : MessageBody {
-    val url : String
-    val thumbnail : String?
-    val desc : String?
+    val url: String
+    val thumbnail: String?
+    val desc: String?
 }
 
-data class ImageMessageBody(@JsonProperty("url") override val url: String,
-                            @JsonProperty("thumbnail") override val thumbnail: String? = null,
-                            @JsonProperty("desc") override val desc: String? = null) : MediaMessageBody {
+data class ImageMessageBody @JvmOverloads constructor(
+        @get:JsonProperty("url") override val url: String = "",
+        @get:JsonProperty("thumbnail") override val thumbnail: String? = null,
+        @get:JsonProperty("desc") override val desc: String? = null) : MediaMessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
             context.getString(R.string.image_body)
@@ -74,9 +69,10 @@ data class ImageMessageBody(@JsonProperty("url") override val url: String,
     }
 }
 
-data class VideoMessageBody(@JsonProperty("url") override val url: String,
-                            @JsonProperty("thumbnail") override val thumbnail: String? = null,
-                            @JsonProperty("desc") override val desc: String? = null) : MediaMessageBody {
+data class VideoMessageBody @JvmOverloads constructor(
+        @get:JsonProperty("url") override val url: String = "",
+        @get:JsonProperty("thumbnail") override val thumbnail: String? = null,
+        @get:JsonProperty("desc") override val desc: String? = null) : MediaMessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
             context.getString(R.string.video_body)
@@ -86,9 +82,14 @@ data class VideoMessageBody(@JsonProperty("url") override val url: String,
     }
 }
 
-data class LocationMessageBody(@JsonProperty("lat") val lat: Double,
-                               @JsonProperty("lng") val lng: Double,
-                               @JsonProperty("desc") val desc: String? = null) : MessageBody {
+data class LocationMessageBody @JvmOverloads constructor(
+        @get:JsonProperty("lat") val lat: Double = 0.0,
+        @get:JsonProperty("lng") val lng: Double = 0.0,
+        @get:JsonProperty("accuracy") val accuracy: Float = 0f,
+        @get:JsonProperty("desc") val desc: String? = null) : MessageBody {
+
+    val isEmpty: Boolean
+        get() = lat == 0.0 && lng == 0.0 && accuracy == 0f
 
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {
@@ -99,13 +100,14 @@ data class LocationMessageBody(@JsonProperty("lat") val lat: Double,
     }
 }
 
-data class AddRoomMembersMessageBody(@JsonProperty("memberIds") val memberIds : List<String>) : MessageBody {
+data class AddRoomMembersMessageBody @JvmOverloads constructor(
+        @get:JsonProperty("memberIds") val memberIds: List<String> = emptyList()) : MessageBody {
     override fun toDisplayText(context: Context): CharSequence {
         return ""
     }
 }
 
-fun Message.copy(copier : MessageEntity.(Message) -> Unit = {}) : Message {
+fun Message.copy(copier: MessageEntity.(Message) -> Unit = {}): Message {
     val src = this
     return MessageEntity().apply {
         setLocalId(src.localId)

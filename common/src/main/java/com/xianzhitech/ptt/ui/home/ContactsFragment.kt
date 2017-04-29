@@ -28,13 +28,13 @@ class ContactsFragment : ModelListFragment<ContactsViewModel, FragmentContactsBi
     }
 
     override val recyclerView: RecyclerView
-        get() = dataBinding.modelList.recyclerView
+        get() = dataBinding.modelList!!.recyclerView
 
     override val sideNavigationView: SideNavigationView
-        get() = dataBinding.modelList.sideBar
+        get() = dataBinding.modelList!!.sideBar
 
     override val currentCharView: TextView
-        get() = dataBinding.modelList.currentChar
+        get() = dataBinding.modelList!!.currentChar
 
 
     override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentContactsBinding {

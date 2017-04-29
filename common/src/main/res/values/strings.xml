@@ -256,6 +256,7 @@
     <string name="percentage">%1$s%%</string>
     <string name="user_join_walkie">用户“%1$s”加入对讲</string>
     <string name="user_quit_walkie">用户“%1$s”退出对讲</string>
+    <string name="locating">定位中...</string>
 
     <string-array name="level_number">
         <item>管理员</item>

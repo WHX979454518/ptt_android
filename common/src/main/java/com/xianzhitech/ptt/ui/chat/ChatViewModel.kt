@@ -10,6 +10,7 @@ import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.util.Locations
 import com.xianzhitech.ptt.viewmodel.*
 import io.reactivex.Completable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 class ChatViewModel(private val appComponent: AppComponent,
                     appContext: Context,
-                    private val roomMessages: SortedList<MessageViewModel>,
+                    private val roomMessages: SortedList<MessageViewModel<MessageBody>>,
                     private val roomId: String,
                     private val navigator: Navigator) : LifecycleViewModel(), ImageMessageViewModel.Navigator {
     val room = ObservableField<Room>()
@@ -87,7 +88,23 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickLocation() {
+        val msg = appComponent.signalBroker.createMessage(roomId, MessageType.LOCATION, LocationMessageBody())
 
+        appComponent.storage.saveMessage(msg)
+                .flatMap { Locations.requestLocationUpdate() }
+                .flatMap { loc ->
+                    val updatedMsg = msg.copy {
+                        setBody(LocationMessageBody(lat = loc.latitude, lng = loc.longitude, accuracy = loc.accuracy))
+                    }
+
+                    appComponent.signalBroker.sendMessage(updatedMsg)
+                }
+                .toCompletable()
+                .doOnError {
+                    appComponent.storage.setMessageError(msg.localId!!, true).subscribe()
+                }
+                .logErrorAndForget()
+                .subscribe()
     }
 
     fun onClickAlbum() {
@@ -178,19 +195,21 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun MessageWithSender.toViewModel(): MessageViewModel? {
+    private inline fun MessageWithSender.toViewModel(): MessageViewModel<MessageBody>? {
+        val isSingleRoom = room.get()?.isSingle ?: false
         return when (message.type) {
-            MessageType.TEXT -> TextMessageViewModel(appComponent, message, room.get()?.isSingle ?: false)
-            MessageType.IMAGE -> ImageMessageViewModel(appComponent, message, room.get()?.isSingle ?: false, progresses, this@ChatViewModel)
+            MessageType.TEXT -> TextMessageViewModel(appComponent, message, isSingleRoom)
+            MessageType.IMAGE -> ImageMessageViewModel(appComponent, message, isSingleRoom, progresses, this@ChatViewModel)
             MessageType.NOTIFY_JOIN_ROOM -> NotificationMessageViewModel(appComponent, message,
                     BaseApp.instance.getString(R.string.user_join_walkie, user?.name ?: ""))
             MessageType.NOTIFY_QUIT_ROOM -> NotificationMessageViewModel(appComponent, message,
                     BaseApp.instance.getString(R.string.user_quit_walkie, user?.name ?: ""))
+            MessageType.LOCATION -> LocationMessageViewModel(appComponent, message, isSingleRoom, navigator)
             else -> UnknownMessageViewModel(appComponent, message)
         }
     }
 
-    interface Navigator : TopBannerViewModel.Navigator {
+    interface Navigator : TopBannerViewModel.Navigator, LocationMessageViewModel.Navigator {
         fun navigateToWalkieTalkie(roomId: String)
         fun navigateToLatestMessageIfPossible()
         fun displayNoPermissionToWalkie()

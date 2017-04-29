@@ -18,7 +18,6 @@ import com.crashlytics.android.Crashlytics
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.github.piasy.biv.BigImageViewer
 import com.github.piasy.biv.loader.glide.GlideImageLoader
 import com.github.piasy.biv.view.BigImageView
@@ -87,7 +86,6 @@ abstract class BaseApp : MultiDexApplication(), AppComponent {
         storage = Storage(this, this)
         objectMapper = ObjectMapper().apply {
             registerModule(JsonOrgModule())
-            registerModule(KotlinModule())
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
             configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)

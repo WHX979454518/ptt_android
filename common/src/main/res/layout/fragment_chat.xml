@@ -86,7 +86,7 @@
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_send_black_24dp"
                 android:tint="?attr/colorAccent"
-                app:show="@{viewModel.displaySendButton}"
+                app:show="@{safeUnbox(viewModel.displaySendButton)}"
                 tools:visibility="visible" />
 
             <ImageView
@@ -100,7 +100,7 @@
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_add_circle_outline_black_24dp"
                 android:tint="?attr/colorControlNormal"
-                app:show="@{viewModel.displayMoreButton}" />
+                app:show="@{safeUnbox(viewModel.displayMoreButton)}" />
 
 
         </LinearLayout>

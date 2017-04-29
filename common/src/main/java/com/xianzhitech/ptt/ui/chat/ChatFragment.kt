@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -171,6 +172,10 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
 //        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(pickIntent))
 
         startActivityForResult(getIntent, REQUEST_ALBUM)
+    }
+
+    override fun navigateToMap(location: Location) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun navigateToCamera() {

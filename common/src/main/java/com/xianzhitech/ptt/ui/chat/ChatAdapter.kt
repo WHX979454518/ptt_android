@@ -9,18 +9,19 @@ import android.view.ViewGroup
 import com.google.common.collect.ComparisonChain
 import com.xianzhitech.ptt.BR
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.MessageBody
 import com.xianzhitech.ptt.data.MessageType
 import com.xianzhitech.ptt.ui.util.ViewBindingHolder
 import com.xianzhitech.ptt.viewmodel.MessageViewModel
 
 
 class ChatAdapter : RecyclerView.Adapter<ViewBindingHolder>() {
-    val messages = SortedList<MessageViewModel>(MessageViewModel::class.java, object : SortedListAdapterCallback<MessageViewModel>(this) {
-        override fun areContentsTheSame(oldItem: MessageViewModel?, newItem: MessageViewModel): Boolean {
+    val messages = SortedList<MessageViewModel<MessageBody>>(MessageViewModel::class.java, object : SortedListAdapterCallback<MessageViewModel<MessageBody>>(this) {
+        override fun areContentsTheSame(oldItem: MessageViewModel<MessageBody>?, newItem: MessageViewModel<MessageBody>): Boolean {
             return oldItem == newItem
         }
 
-        override fun compare(o1: MessageViewModel, o2: MessageViewModel): Int {
+        override fun compare(o1: MessageViewModel<MessageBody>, o2: MessageViewModel<MessageBody>): Int {
             if (areItemsTheSame(o1, o2)) {
                 return 0
             }
@@ -31,7 +32,7 @@ class ChatAdapter : RecyclerView.Adapter<ViewBindingHolder>() {
                     .result()
         }
 
-        override fun areItemsTheSame(item1: MessageViewModel, item2: MessageViewModel): Boolean {
+        override fun areItemsTheSame(item1: MessageViewModel<MessageBody>, item2: MessageViewModel<MessageBody>): Boolean {
             if (hasNonNullItem(item1.message.id, item2.message.id) && item1.message.id == item2.message.id) {
                 return true
             }
@@ -55,6 +56,7 @@ class ChatAdapter : RecyclerView.Adapter<ViewBindingHolder>() {
     override fun getItemViewType(position: Int): Int {
         val msg = messages[position]
         return when (msg.message.type) {
+            MessageType.LOCATION,
             MessageType.TEXT -> {
                 if (msg.isMyMessage) {
                     R.layout.view_message_text_me

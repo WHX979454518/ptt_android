@@ -152,8 +152,6 @@ public class OrganizationFragment extends Fragment {
     }
 
 
-
-    @org.junit.Test
     public void initDatas() {
 //        mDatas.add(new OrgNodeBean(1, 0, "中国古代"));
 //        mDatas.add(new OrgNodeBean(2, 1, "唐朝"));
