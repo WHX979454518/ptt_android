@@ -45,6 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="right"
                 android:layout_marginTop="@dimen/unit_half"
+                android:onClick="@{ignored -> viewModel.onClickMessage()}"
                 android:background="@drawable/bg_chat_message"
                 android:padding="@dimen/unit_one"
                 android:text="@{viewModel.text}"

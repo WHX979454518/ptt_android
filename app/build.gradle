@@ -80,7 +80,7 @@ android {
             def appServerUrl = project.appServerUrl ?: "http://netptt.cn:25002"
             applicationIdSuffix ".dev"
             buildConfigField("String", "APP_SERVER_ENDPOINT", "\"$appServerUrl\"")
-            manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "hWdRd0tU6Fkv1BOUteDzp4HsgkUvkNuz"
+            manifestPlaceholders["BD_LOCATION_SDK_KEY"] = "Ks6UbcAssADHD9ZAko0Gnkyyq7OMi5y4"
             println("Using $appServerUrl as app server for dev build")
 
             buildConfigField("boolean", "IS_PRODUCTION", "false")

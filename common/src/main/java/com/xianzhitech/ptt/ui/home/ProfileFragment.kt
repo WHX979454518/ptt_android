@@ -18,7 +18,9 @@ import com.xianzhitech.ptt.ui.app.AboutActivity
 import com.xianzhitech.ptt.ui.app.FeedbackActivity
 import com.xianzhitech.ptt.ui.app.ShareActivity
 import com.xianzhitech.ptt.ui.base.BaseFragment
+import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
+import com.xianzhitech.ptt.ui.map.OfflineMapDownloadFragment
 import com.xianzhitech.ptt.ui.settings.SettingsActivity
 import com.xianzhitech.ptt.ui.user.EditProfileActivity
 import com.xianzhitech.ptt.ui.widget.ModelView
@@ -84,7 +86,15 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
                         context.getTintedDrawable(R.drawable.ic_file_upload_black, tintColor),
                         null, null, null)
             }
+            findView<Button>(R.id.profile_offline_map).apply {
+                setOnClickListener(this@ProfileFragment)
+                setCompoundDrawablesWithIntrinsicBounds(
+                        context.getTintedDrawable(R.drawable.ic_map, tintColor),
+                        null, null, null)
+
+            }
             findView<View>(R.id.profile_logout).setOnClickListener(this@ProfileFragment)
+
 
             views = Views(this)
         }
@@ -174,6 +184,9 @@ class ProfileFragment : BaseFragment(), View.OnClickListener, AlertDialogFragmen
             R.id.profile_feedback -> activity.startActivityWithAnimation(Intent(context, FeedbackActivity::class.java))
             R.id.profile_about -> activity.startActivityWithAnimation(Intent(context, AboutActivity::class.java))
             R.id.profile_share -> activity.startActivityWithAnimation(Intent(context, ShareActivity::class.java))
+            R.id.profile_offline_map -> activity.startActivityWithAnimation(FragmentDisplayActivity.createIntent(
+                    OfflineMapDownloadFragment::class.java
+            ))
             R.id.profile_logUpload -> confirmLogUpload()
         }
     }
