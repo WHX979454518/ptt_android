@@ -76,8 +76,8 @@ class MapDownloadService : Service(), MapDownloadServiceConnection {
             when (info.status) {
                 MKOLUpdateElement.WAITING,
                 MKOLUpdateElement.DOWNLOADING -> statusMap[info.cityID] = DOWNLOAD_STATUS_IN_PROGRESS
-                MKOLUpdateElement.FINISHED -> statusMap[info.cityID] = DOWNLOAD_STATUS_DOWNLOADED
                 MKOLUpdateElement.SUSPENDED -> statusMap[info.cityID] = DOWNLOAD_STATUS_PAUSED
+                MKOLUpdateElement.FINISHED -> statusMap[info.cityID] = DOWNLOAD_STATUS_DOWNLOADED
             }
         }
 
