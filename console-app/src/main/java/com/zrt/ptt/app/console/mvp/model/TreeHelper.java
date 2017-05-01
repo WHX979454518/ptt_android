@@ -156,6 +156,9 @@ public class TreeHelper {
             Node n = nodes.get(i);
             for (int j = i + 1; j < nodes.size(); j++) {
                 Node m = nodes.get(j);
+                if(m.getFather()==null||n.getFather()==null){
+                    break;
+                }
                 if (n.get_id().equals(m.getFather()) ) {
                     n.getChildrenNodes().add(m);
                     m.setParent(n);
