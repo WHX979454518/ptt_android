@@ -428,9 +428,14 @@ class SignalApi(private val appComponent: AppComponent,
     }
 
     private fun waitForLoggedIn(): Completable {
-        return connectionState.filter { it == ConnectionState.CONNECTED }
-                .firstOrError()
-                .toCompletable()
+        return connectionState
+                .flatMapCompletable {
+                    when (it) {
+                        ConnectionState.IDLE -> Completable.error(UserNotLoggedInException)
+                        ConnectionState.CONNECTED -> Completable.complete()
+                        else -> Completable.never()
+                    }
+                }
     }
 
     private data class Dto<T>(@JsonProperty("status") val status: Int?,
@@ -496,3 +501,4 @@ class SignalApi(private val appComponent: AppComponent,
 
     }
 }
+

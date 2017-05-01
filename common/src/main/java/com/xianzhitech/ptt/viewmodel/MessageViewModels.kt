@@ -90,7 +90,7 @@ class ImageMessageViewModel(appComponent: AppComponent, message: Message, isSing
     val isUploadingImage: Boolean
         get() = message.remoteId == null && message.error.not() && progresses.containsKey(message.localId)
 
-    fun onClickImage() {
+    override fun onClickMessage() {
         navigator.navigateToImageViewer(body.url)
     }
 
@@ -116,7 +116,7 @@ class LocationMessageViewModel(appComponent: AppComponent, message: Message, isS
         get() = body.isEmpty
 
     override val text: String
-        get() = if (isEmpty) BaseApp.instance.getString(R.string.locating) else String.format("%.3d,%.3d", body.lat, body.lng)
+        get() = if (isEmpty) BaseApp.instance.getString(R.string.locating) else String.format("%.3f,%.3f", body.lat, body.lng)
 
     override fun onClickMessage() {
         navigator.navigateToMap(Location("gps").apply {

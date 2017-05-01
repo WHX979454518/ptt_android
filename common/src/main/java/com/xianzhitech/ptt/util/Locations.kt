@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.BaseApp
 import io.reactivex.Single
 
 object Locations {
-    val accurateCriteria = Criteria().apply { accuracy = 50 }
+    val accurateCriteria = Criteria().apply { accuracy = Criteria.ACCURACY_FINE }
 
     fun getLocationProvider(criteria: Criteria) : String? {
         val manager = BaseApp.instance.getSystemService(Context.LOCATION_SERVICE) as LocationManager

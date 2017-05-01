@@ -86,6 +86,13 @@
         <View style="@style/Divider.Lighter" />
 
         <Button
+            android:id="@+id/profile_offline_map"
+            style="@style/ProfileButton"
+            android:text="@string/offline_map_settings" />
+
+        <View style="@style/Divider.Lighter" />
+
+        <Button
             android:id="@+id/profile_feedback"
             style="@style/ProfileButton"
             android:text="@string/feedback" />

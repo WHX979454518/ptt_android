@@ -23,11 +23,13 @@ import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ext.e
 import com.xianzhitech.ptt.ext.show
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.image.ImageViewerFragment
+import com.xianzhitech.ptt.ui.map.LocationViewFragment
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import java.io.File
@@ -175,7 +177,14 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     }
 
     override fun navigateToMap(location: Location) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        activity.startActivityWithAnimation(
+                FragmentDisplayActivity.createIntent(
+                        LocationViewFragment::class.java,
+                        Bundle(1).apply {
+                            putParcelable(LocationViewFragment.ARG_LOCATION, location)
+                        }
+                )
+        )
     }
 
     override fun navigateToCamera() {

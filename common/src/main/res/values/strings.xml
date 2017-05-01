@@ -55,6 +55,7 @@
     <string name="error_no_phone_permission">控制电话权限被拒绝，对讲将无法正常工作，请同意此权限</string>
     <string name="error_getting_user_info">获取该用户信息失败</string>
     <string name="error_download">下载失败。请检查您的存储卡是否有剩余空间</string>
+    <string name="error_download_map">离线地图下载失败</string>
 
     <string name="error_unable_to_get_room_info">获取房间信息失败</string>
     <string name="error_no_such_room">没有该房间</string>
@@ -257,6 +258,12 @@
     <string name="user_join_walkie">用户“%1$s”加入对讲</string>
     <string name="user_quit_walkie">用户“%1$s”退出对讲</string>
     <string name="locating">定位中...</string>
+    <string name="download">下载</string>
+    <string name="pause">暂停下载</string>
+    <string name="delete">删除</string>
+    <string name="delete_offline">清除数据</string>
+    <string name="offline_map_settings">离线地图</string>
+    <string name="offline_map_downloading">正在下载离线地图数据</string>
 
     <string-array name="level_number">
         <item>管理员</item>
