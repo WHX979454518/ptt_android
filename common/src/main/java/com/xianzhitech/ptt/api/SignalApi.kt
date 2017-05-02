@@ -37,6 +37,7 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
 import retrofit2.http.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 
@@ -49,10 +50,45 @@ class SignalApi(private val appComponent: AppComponent,
     private var restfulApi: RestfulApi? = null
     private var currentUserCredentials: UserCredentials? = null
 
+    private val onlineUserIdSet = object : Set<String> {
+        private val map = ConcurrentHashMap<String, Unit>()
+
+        override val size: Int
+            get() = map.size
+
+        override fun contains(element: String): Boolean {
+            return map.containsKey(element)
+        }
+
+        override fun containsAll(elements: Collection<String>): Boolean {
+            throw UnsupportedOperationException()
+        }
+
+        override fun isEmpty(): Boolean {
+            return map.isEmpty()
+        }
+
+        override fun iterator(): Iterator<String> {
+            return map.keys().iterator()
+        }
+
+        fun add(element : String) : Boolean {
+            return map.put(element, Unit) == null
+        }
+
+        fun remove(element : String) : Boolean {
+            return map.remove(element) != null
+        }
+
+        fun clear() {
+            map.clear()
+        }
+    }
+
     val currentUser: BehaviorSubject<Optional<CurrentUser>> = BehaviorSubject.createDefault(Optional.absent())
     val connectionState: BehaviorSubject<ConnectionState> = BehaviorSubject.createDefault(ConnectionState.IDLE)
     val events: PublishSubject<Pair<String, Event>> = PublishSubject.create()
-    val onlineUserIds : BehaviorSubject<Set<String>> = BehaviorSubject.createDefault(emptySet())
+    val onlineUserIds : BehaviorSubject<Set<String>> = BehaviorSubject.createDefault(onlineUserIdSet)
 
     init {
         currentUser.onNext(appComponent.preference.currentUser.toOptional())
@@ -165,6 +201,18 @@ class SignalApi(private val appComponent: AppComponent,
                         logout()
                     }
 
+                    socket.listen("s_user_online") {
+                        if (it != null && onlineUserIdSet.add(it.toString())) {
+                            onlineUserIds.onNext(onlineUserIdSet)
+                        }
+                    }
+
+                    socket.listen("s_user_offline") {
+                        if (it != null && onlineUserIdSet.remove(it.toString())) {
+                            onlineUserIds.onNext(onlineUserIdSet)
+                        }
+                    }
+
                     socket.io().on(Manager.EVENT_TRANSPORT, {
                         val transport = it.first() as Transport
                         transport.on(Transport.EVENT_REQUEST_HEADERS, {
@@ -184,6 +232,8 @@ class SignalApi(private val appComponent: AppComponent,
 
         retrieveAppConfigDisposable?.dispose()
         retrieveAppConfigDisposable = null
+
+        onlineUserIdSet.clear()
 
         socket?.off()
         socket?.close()

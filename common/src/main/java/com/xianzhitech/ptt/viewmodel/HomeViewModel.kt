@@ -4,6 +4,7 @@ import android.content.Context
 import android.databinding.ObservableField
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.i
 
 
@@ -18,9 +19,9 @@ class HomeViewModel(private val appComponent: AppComponent,
         super.onStart()
 
         appComponent.signalBroker
-                .enterprise
+                .onlineUserIds
                 .subscribe {
-                    logger.i { "Got departments: $it" }
+                    logger.i { "Got online users $it" }
                 }
     }
 
