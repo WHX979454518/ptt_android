@@ -52,6 +52,7 @@ class SignalApi(private val appComponent: AppComponent,
     val currentUser: BehaviorSubject<Optional<CurrentUser>> = BehaviorSubject.createDefault(Optional.absent())
     val connectionState: BehaviorSubject<ConnectionState> = BehaviorSubject.createDefault(ConnectionState.IDLE)
     val events: PublishSubject<Pair<String, Event>> = PublishSubject.create()
+    val onlineUserIds : BehaviorSubject<Set<String>> = BehaviorSubject.createDefault(emptySet())
 
     init {
         currentUser.onNext(appComponent.preference.currentUser.toOptional())

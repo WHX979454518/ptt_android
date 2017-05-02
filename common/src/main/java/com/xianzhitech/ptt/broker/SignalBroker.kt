@@ -52,36 +52,39 @@ class SignalBroker(private val appComponent: AppComponent,
     val currentWalkieRoomId: Observable<Optional<String>>
         get() = currentWalkieRoomState.map { it.currentRoomId.toOptional() }.distinctUntilChanged()
 
-    val enterprise: Observable<ContactEnterprise> by lazy {
-        combineLatest(
-                appComponent.storage.getAllUsers(),
-                signalApi.getAllDepartments().toObservable()
-        ) { users, departments ->
-            val departmentParentMap = hashMapOf<String?, ArrayList<ContactDepartment>>()
-            val departmentMap = departments.associateBy(ContactDepartment::id)
+    val enterprise: Observable<ContactEnterprise>
+        get() {
+            return combineLatest(
+                    appComponent.storage.getAllUsers(),
+                    signalApi.getAllDepartments().toObservable()) { users, departments ->
+                val departmentParentMap = hashMapOf<String?, ArrayList<ContactDepartment>>()
+                val departmentMap = departments.associateBy(ContactDepartment::id)
 
-            departments.forEach { department ->
-                departmentParentMap.getOrPut(department.parentObjectId) { arrayListOf() }.add(department)
-            }
-
-            departmentParentMap.entries.forEach { (parentObjectId, departmentList) ->
-                if (parentObjectId != null) {
-                    departmentMap[parentObjectId]?.children?.addAll(departmentList)
+                departments.forEach { department ->
+                    departmentParentMap.getOrPut(department.parentObjectId) { arrayListOf() }.add(department)
                 }
+
+                departmentParentMap.entries.forEach { (parentObjectId, departmentList) ->
+                    if (parentObjectId != null) {
+                        departmentMap[parentObjectId]?.children?.addAll(departmentList)
+                    }
+                }
+
+                val directUsers = arrayListOf<ContactUser>()
+
+                users.forEach { user ->
+                    user.parentObjectId?.let { departmentMap[it]?.members?.add(user) } ?: directUsers.add(user)
+                }
+
+                ContactEnterprise(
+                        departments = departmentParentMap[null] ?: emptyList<ContactDepartment>(),
+                        directUsers = directUsers
+                )
             }
+        }
 
-            val directUsers = arrayListOf<ContactUser>()
-
-            users.forEach { user ->
-                user.parentObjectId?.let { departmentMap[it]?.members?.add(user) } ?: directUsers.add(user)
-            }
-
-            ContactEnterprise(
-                    departments = departmentParentMap[null] ?: emptyList<ContactDepartment>(),
-                    directUsers = directUsers
-            )
-        }.replay(1).refCount()
-    }
+    val onlineUserIds: Observable<Set<String>>
+        get() = signalApi.onlineUserIds
 
     private var joinWalkieDisposable: Disposable? = null
 
