@@ -205,7 +205,7 @@ class ChatViewModel(private val appComponent: AppComponent,
             MessageType.NOTIFY_QUIT_ROOM -> NotificationMessageViewModel(appComponent, message,
                     BaseApp.instance.getString(R.string.user_quit_walkie, user?.name ?: ""))
             MessageType.LOCATION -> LocationMessageViewModel(appComponent, message, isSingleRoom, navigator)
-            else -> UnknownMessageViewModel(appComponent, message)
+            else -> null
         }
     }
 

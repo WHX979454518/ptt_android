@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 
 class SignalBroker(private val appComponent: AppComponent,
@@ -429,7 +428,9 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
     fun peekUserId(): String? = currentUser.value.orNull()?.id
+
     private fun peekVideoRoomId(): String? = currentVideoRoomId.value.orNull()
+
     fun peekWalkieRoomId(): String? = currentWalkieRoomState.value.currentRoomId
 
     fun sendMessage(message: Message): Single<Message> {

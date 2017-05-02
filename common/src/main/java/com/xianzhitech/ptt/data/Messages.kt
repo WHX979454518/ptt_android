@@ -15,6 +15,8 @@ object MessageType {
     const val LOCATION = "location"
     const val NOTIFY_JOIN_ROOM = "join_room"
     const val NOTIFY_QUIT_ROOM = "quit_room"
+    const val NOTIFY_START_VIDEO_CHAT = "start_video_chat"
+    const val NOTIFY_END_VIDEO_CHAT = "end_video_chat"
     const val NOTIFY_GRAB_MIC = "grab_mic"
     const val NOTIFY_RELEASE_MIC = "release_mic"
     const val NOTIFY_ADDED_ROOM_MEMBERS = "add_room_members"
@@ -28,7 +30,9 @@ object MessageType {
             MessageType.NOTIFY_GRAB_MIC,
             MessageType.NOTIFY_RELEASE_MIC,
             MessageType.NOTIFY_JOIN_ROOM,
-            MessageType.NOTIFY_QUIT_ROOM
+            MessageType.NOTIFY_QUIT_ROOM,
+            MessageType.NOTIFY_START_VIDEO_CHAT,
+            MessageType.NOTIFY_END_VIDEO_CHAT
     )
     @Retention(AnnotationRetention.SOURCE)
     annotation class Type
