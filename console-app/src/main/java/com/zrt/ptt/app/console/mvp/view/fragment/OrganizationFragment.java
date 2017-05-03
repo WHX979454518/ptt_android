@@ -166,14 +166,21 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     //通过presenter拿到所有数据回调展示
     @Override
     public void showAll(List<OrgNodeBean> list,List<ContactUser> contactUser) {
+        mDatas.clear();
         for(OrgNodeBean node:list){
             mDatas.add(node);
         }
         if (adapter == null) {
             initAdapter(treeLv,mDatas,isHide);
-
+            adapter.notifyDataSetChanged();
+        }else {
+            try {
+                adapter.setDatas(mDatas);
+                adapter.notifyDataSetChanged();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
         }
-        adapter.notifyDataSetChanged();
         allUserNum.setText("("+contactUser.size()+")");
     }
 
@@ -223,9 +230,12 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }*/
-        adapter.setDatas(mDatas);
-        adapter.notifyDataSetChanged();
-
+        try {
+            adapter.setDatas(mDatas);
+            adapter.notifyDataSetChanged();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
     }
 
     //通过presenter拿到离线用户数据回调展示
