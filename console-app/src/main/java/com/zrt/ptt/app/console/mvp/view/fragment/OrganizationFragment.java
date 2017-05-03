@@ -172,7 +172,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     public void getOrgAndUserData(){
         AppComponent appComponent = (AppComponent) App.getInstance().getApplicationContext();
         Observable<ContactEnterprise> contactEnterprise = appComponent.getSignalBroker().getEnterprise();
-        contactEnterprise.observeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<ContactEnterprise>() {
+        contactEnterprise.observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<ContactEnterprise>() {
             @Override
             public void onSubscribe(Disposable disposable) {
                 Log.e("Disposable","Disposable已经执行了");

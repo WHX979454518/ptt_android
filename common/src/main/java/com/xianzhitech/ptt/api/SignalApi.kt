@@ -17,6 +17,7 @@ import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.ServerException
 import io.reactivex.Completable
 import io.reactivex.Maybe
+import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -459,6 +460,9 @@ class SignalApi(private val appComponent: AppComponent,
 
     fun getAllDepartments(): Single<List<ContactDepartment>> {
         return waitForLoggedIn()
+                .doOnComplete {
+                    logger.i { "User is logged in" }
+                }
                 .andThen(Single.defer { restfulApi!!.getAllDepartments() })
                 .map {
                     if (it.data == null) {
@@ -480,11 +484,14 @@ class SignalApi(private val appComponent: AppComponent,
 
     private fun waitForLoggedIn(): Completable {
         return connectionState
+                .filter { it == ConnectionState.IDLE || it == ConnectionState.CONNECTED }
+                .firstElement()
                 .flatMapCompletable {
-                    when (it) {
-                        ConnectionState.IDLE -> Completable.error(UserNotLoggedInException)
-                        ConnectionState.CONNECTED -> Completable.complete()
-                        else -> Completable.never()
+                    if (it == ConnectionState.IDLE) {
+                        Completable.error(UserNotLoggedInException)
+                    }
+                    else {
+                        Completable.complete()
                     }
                 }
     }

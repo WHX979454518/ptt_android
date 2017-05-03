@@ -169,6 +169,7 @@ interface Message : Persistable, Serializable, Event {
     @get:JsonIgnore
     @get:Index
     @get:ReadOnly
+    @get:Column(value = "0")
     val hasRead: Boolean
 
     @get:JsonIgnore
