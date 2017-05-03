@@ -84,87 +84,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         showSelectedUsers.setOnClickListener(this);
         fragPresen = new OrganFragmentPresenter(this);
 
-        AppComponent appComponent = (AppComponent) App.getInstance().getApplicationContext();
-        Observable<ContactEnterprise> contactEnterprise = appComponent.getSignalBroker().getEnterprise();
-        contactEnterprise.observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<ContactEnterprise>() {
-            @Override
-            public void onSubscribe(Disposable disposable) {
-                //it can stop this subscription,you should do this  when activity distory ok
-              /*  if(!disposable.isDisposed()){
-                    disposable.dispose();
-                }*/
-                Log.v("tag","onSubscrbe------------:");
-               /* if(disposable != null){
-                    dposable = disposable;
-                }*/
-
-            }
-
-            @Override
-            public void onNext(ContactEnterprise contactEnterprise) {
-                List<ContactDepartment> contactDepartment = contactEnterprise.getDepartments();
-                OrgNodeBean org ;
-                Log.e("contactDepartment","contactDepartment:"+contactDepartment);
-                for (ContactDepartment department :contactDepartment){
-                    org = new OrgNodeBean(department.getId(),department.getParentObjectId(),department.getName());
-                    Log.e(""+department.getName()+":",""+department.getName());
-                    mDatas.add(org);
-
-                }
-
-                List<ContactUser> contactUser = contactEnterprise.getDirectUsers();
-                Log.e("contactUser:------->",""+contactUser);
-                for (ContactUser user:contactUser){
-                    org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
-                    mDatas.add(org);
-                }
-
-                try {
-                    adapter = new MyTreeListViewAdapter<OrgNodeBean>(treeLv, getActivity(),
-                            mDatas, 0, isHide);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-
-                adapter.setOnTreeNodeClickListener(new TreeListViewAdapter.OnTreeNodeClickListener() {
-                    @Override
-                    public void onClick(Node node, int position) {
-                        if (node.isLeaf()) {
-                            Toast.makeText(getActivity().getApplicationContext(), node.getName(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onCheckChange(Node node, int position,
-                                              List<Node> checkedNodes) {
-                        // TODO Auto-generated method stub
-
-                        StringBuffer sb = new StringBuffer();
-                        for (Node n : checkedNodes) {
-
-                        }
-                    }
-
-                });
-
-                treeLv.setAdapter(adapter);
-
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                Log.e("throwable",""+throwable.getMessage());
-                throwable.printStackTrace();
-                Log.e("出错啦","出错啦");
-            }
-
-            @Override
-            public void onComplete() {
-                Log.e("tag","onComplete----------------->");
-            }
-        });
-
+//        getOrgAndUserData();
+        fragPresen.showAll();
         return view;
 
     }
@@ -175,7 +96,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         contactEnterprise.observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<ContactEnterprise>() {
             @Override
             public void onSubscribe(Disposable disposable) {
-                Log.e("Disposable","Disposable已经执行了");
+                Log.e("Disposable","Disposable已经执行了"+disposable);
 //                dposable = disposable;
             }
 
@@ -198,34 +119,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                     mDatas.add(org);
                 }
 
-                try {
-                    adapter = new MyTreeListViewAdapter<OrgNodeBean>(treeLv, getActivity(),
-                            mDatas, 0, isHide);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-
-                adapter.setOnTreeNodeClickListener(new TreeListViewAdapter.OnTreeNodeClickListener() {
-                    @Override
-                    public void onClick(Node node, int position) {
-                        if (node.isLeaf()) {
-                            Toast.makeText(getActivity().getApplicationContext(), node.getName(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onCheckChange(Node node, int position,
-                                              List<Node> checkedNodes) {
-                        // TODO Auto-generated method stub
-
-                        StringBuffer sb = new StringBuffer();
-                        for (Node n : checkedNodes) {
-
-                        }
-                    }
-
-                });
+                initAdapter(treeLv,mDatas,isHide);
 
                 treeLv.setAdapter(adapter);
 
@@ -240,10 +134,127 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
             @Override
             public void onComplete() {
 
+                Log.e("是否完毕","已完毕");
             }
         });
     }
 
+
+
+
+    //所有人员，在线，离线，已勾选点击事件
+    @Override
+    public void onClick(View v) {
+
+        switch (v.getId()){
+            case R.id.show_orgzation_all:
+                mDatas.clear();
+                fragPresen.showAll();
+
+
+                break;
+            case R.id.show_orgzation_online:
+                fragPresen.showOnlineUser();
+                break;
+            case R.id.show_orgzation_offline:
+                break;
+            case R.id.show_orgzation_selected:
+                break;
+        }
+    }
+
+    //通过presenter拿到所有数据回调展示
+    @Override
+    public void showAll(List<OrgNodeBean> list,List<ContactUser> contactUser) {
+        for(OrgNodeBean node:list){
+            mDatas.add(node);
+        }
+        if (adapter == null) {
+            initAdapter(treeLv,mDatas,isHide);
+
+        }
+        adapter.notifyDataSetChanged();
+        allUserNum.setText("("+contactUser.size()+")");
+    }
+
+    //初始化适配器
+    private void initAdapter(ListView treeLv, List<OrgNodeBean> mDatas, boolean isHide) {
+        try {
+            adapter = new MyTreeListViewAdapter<OrgNodeBean>(treeLv, getActivity(),
+                    mDatas, 0, isHide);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+        adapter.setOnTreeNodeClickListener(new TreeListViewAdapter.OnTreeNodeClickListener() {
+            @Override
+            public void onClick(Node node, int position) {
+                if (node.isLeaf()) {
+                    Toast.makeText(getActivity().getApplicationContext(), node.getName(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCheckChange(Node node, int position,
+                                      List<Node> checkedNodes) {
+                // TODO Auto-generated method stub
+
+                StringBuffer sb = new StringBuffer();
+                for (Node n : checkedNodes) {
+
+                }
+            }
+
+        });
+        treeLv.setAdapter(adapter);
+    }
+
+    //通过presenter拿到在线用户数据回调展示
+    @Override
+    public void showOnLine(List<OrgNodeBean> list) {
+        mDatas.clear();
+        for (OrgNodeBean node:list) {
+           mDatas.add(node);
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    //通过presenter拿到离线用户数据回调展示
+    @Override
+    public void showOffline() {
+
+    }
+
+    //通过presenter拿到已勾选用户数据回调展示
+    @Override
+    public void showSlected() {
+
+    }
+
+    //通过presenter拿到RXjava Disposable 截断下游接收数据在ondestroy中处理
+    @Override
+    public void callDisposable(Disposable disposable) {
+        if(disposable != null){
+            dposable = disposable;
+        }
+
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+
+    //销毁时需要结束RXjava接收
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (dposable != null) {
+            dposable.dispose();
+        }
+
+    }
 
     //模拟json数据
     public void initDatas() {
@@ -269,68 +280,5 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 e.printStackTrace();
             }
         }
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (dposable != null) {
-            dposable.dispose();
-        }
-
-    }
-
-    //所有人员，在线，离线，已勾选点击事件
-    @Override
-    public void onClick(View v) {
-
-        switch (v.getId()){
-            case R.id.show_orgzation_all:
-                mDatas.clear();
-                fragPresen.showAll();
-
-                break;
-            case R.id.show_orgzation_online:
-                break;
-            case R.id.show_orgzation_offline:
-                break;
-            case R.id.show_orgzation_selected:
-                break;
-        }
-    }
-
-    //通过presenter拿到所有数据回调展示
-    @Override
-    public void showAll(List<OrgNodeBean> list,List<ContactUser> contactUser) {
-        mDatas = list;
-        adapter.notifyDataSetChanged();
-        allUserNum.setText("("+contactUser.size()+")");
-    }
-
-    //通过presenter拿到在线用户数据回调展示
-    @Override
-    public void showOnLine() {
-
-    }
-
-    //通过presenter拿到离线用户数据回调展示
-    @Override
-    public void showOffline() {
-
-    }
-
-    //通过presenter拿到已勾选用户数据回调展示
-    @Override
-    public void showSlected() {
-
-    }
-
-    //通过presenter拿到RXjava Disposable 截断下游接收数据在ondestroy中处理
-    @Override
-    public void callDisposable(Disposable disposable) {
-        if(disposable != null){
-            dposable = disposable;
-        }
-
     }
 }

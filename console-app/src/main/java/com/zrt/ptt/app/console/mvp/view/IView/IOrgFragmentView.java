@@ -12,8 +12,9 @@ import io.reactivex.disposables.Disposable;
  */
 
 public interface IOrgFragmentView {
+    //第二个参数方便统计用户数量
     void showAll(List<OrgNodeBean> list,List<ContactUser> contactUser);
-    void showOnLine();
+    void showOnLine(List<OrgNodeBean> list);
     void showOffline();
     void showSlected();
     void callDisposable(Disposable disposable);

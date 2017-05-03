@@ -13,8 +13,14 @@ import io.reactivex.disposables.Disposable;
 
 public interface IOrgFragmentModel {
     void getDepartUser(callDisposListener listener);
+    void getOnLineUser(callOnlineData onlinelistener);
     interface callDisposListener{
         void callDisposable(Disposable disposable);
         void getNodeData(List<OrgNodeBean> list,List<ContactUser> contactUser);
+    }
+
+    interface  callOnlineData{
+        void callDisposable(Disposable disposable);
+        void callOnlineUser(List<OrgNodeBean> list);
     }
 }

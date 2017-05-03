@@ -47,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
                 android:textSize="14sp"
-                android:text="(300)"/>
+                android:text="(0)"/>
         </LinearLayout>
         <View
             android:layout_width="match_parent"
@@ -159,6 +159,7 @@
             android:layout_height="1dp"
             android:background="#9a9565"/>
         <ListView
+            android:layout_marginTop="2dp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scrollbars="none"

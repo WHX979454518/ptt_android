@@ -50,7 +50,26 @@ public class OrganFragmentPresenter {
                 });
 
             }
+        });
+    }
 
+    //处理在线用户展示
+    public void showOnlineUser(){
+        iFragmentModel.getOnLineUser( new IOrgFragmentModel.callOnlineData() {
+            @Override
+            public void callDisposable(Disposable disposable) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        iFragmentView.callDisposable(disposable);
+                    }
+                });
+            }
+
+            @Override
+            public void callOnlineUser(List<OrgNodeBean> list) {
+                        iFragmentView.showOnLine(list);
+            }
         });
     }
     class orgHandler  extends Handler {
