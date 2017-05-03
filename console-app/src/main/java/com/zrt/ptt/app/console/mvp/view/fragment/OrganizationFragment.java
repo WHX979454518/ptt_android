@@ -217,7 +217,15 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         for (OrgNodeBean node:list) {
            mDatas.add(node);
         }
+        /*try {
+            adapter = new MyTreeListViewAdapter<>(treeLv,getActivity(),mDatas,0,isHide);
+
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }*/
+        adapter.setDatas(mDatas);
         adapter.notifyDataSetChanged();
+
     }
 
     //通过presenter拿到离线用户数据回调展示

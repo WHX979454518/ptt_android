@@ -40,6 +40,9 @@ public abstract class TreeListViewAdapter<T> extends BaseAdapter {
      * 存储所有的Node
      */
     protected List<Node> mAllNodes;
+    protected List<T> datas;
+    protected int defaultExpandLevel;
+    protected boolean isHide;
 
     /**
      * 点击的回调接口
@@ -67,6 +70,19 @@ public abstract class TreeListViewAdapter<T> extends BaseAdapter {
         this.onTreeNodeClickListener = onTreeNodeClickListener;
     }
 
+    public void setDatas(List<T> datas)throws IllegalArgumentException, IllegalAccessException {
+        this.datas = datas;
+        /**
+         * 对所有的Node进行排序
+         */
+        mAllNodes = TreeHelper
+                .getSortedNodes(datas, defaultExpandLevel, isHide);
+        /**
+         * 过滤出可见的Node
+         */
+        mNodes = TreeHelper.filterVisibleNode(mAllNodes);
+        notifyDataSetChanged();
+    }
     /**
      *
      * @param mTree
@@ -81,6 +97,9 @@ public abstract class TreeListViewAdapter<T> extends BaseAdapter {
                                int defaultExpandLevel, boolean isHide)
             throws IllegalArgumentException, IllegalAccessException {
         mContext = context;
+        this.datas = datas;
+        this.defaultExpandLevel = defaultExpandLevel;
+        this.isHide = isHide;
         /**
          * 对所有的Node进行排序
          */
