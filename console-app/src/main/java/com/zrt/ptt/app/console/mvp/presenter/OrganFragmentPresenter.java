@@ -11,6 +11,7 @@ import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 import com.zrt.ptt.app.console.mvp.view.IView.IOrgFragmentView;
 
 import java.util.List;
+import java.util.Set;
 
 import io.reactivex.disposables.Disposable;
 
@@ -28,7 +29,7 @@ public class OrganFragmentPresenter {
         this.iFragmentView = iFragmentView;
     }
 
-    public void showAll(){
+    public void showAll(String label){
         iFragmentModel.getDepartUser(new IOrgFragmentModel.callDisposListener() {
             @Override
             public void callDisposable(Disposable disposable) {
@@ -41,36 +42,61 @@ public class OrganFragmentPresenter {
             }
 
             @Override
-            public void getNodeData(List<OrgNodeBean> list,List<ContactUser> contactUser) {
+            public void getNodeData(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        iFragmentView.showAll(list,contactUser);
+                        iFragmentView.showAll(list,contactUserSize,onLineUserSize);
                     }
                 });
 
-            }
-        });
-    }
-
-    //处理在线用户展示
-    public void showOnlineUser(){
-        iFragmentModel.getOnLineUser( new IOrgFragmentModel.callOnlineData() {
-            @Override
-            public void callDisposable(Disposable disposable) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        iFragmentView.callDisposable(disposable);
-                    }
-                });
             }
 
             @Override
             public void callOnlineUser(List<OrgNodeBean> list) {
-                        iFragmentView.showOnLine(list);
+
             }
-        });
+        },label);
+    }
+
+    //处理在线用户展示
+    public void showOnlineUser(String label){
+        iFragmentModel.getDepartUser(new IOrgFragmentModel.callDisposListener() {
+            @Override
+            public void callDisposable(Disposable disposable) {
+                iFragmentView.callDisposable(disposable);
+            }
+
+            @Override
+            public void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize) {
+                iFragmentView.showOnLine(list,contactUserSize,onLineUserSize);
+            }
+
+            @Override
+            public void callOnlineUser(List<OrgNodeBean> list) {
+
+            }
+        },label);
+    }
+
+    //处理在线用户展示
+    public void showOfflineUser(String label){
+        iFragmentModel.getDepartUser(new IOrgFragmentModel.callDisposListener() {
+            @Override
+            public void callDisposable(Disposable disposable) {
+                iFragmentView.callDisposable(disposable);
+            }
+
+            @Override
+            public void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize) {
+                iFragmentView.showOffline(list,contactUserSize,onLineUserSize);
+            }
+
+            @Override
+            public void callOnlineUser(List<OrgNodeBean> list) {
+
+            }
+        },label);
     }
     class orgHandler  extends Handler {
         @Override

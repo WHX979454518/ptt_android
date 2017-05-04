@@ -33,14 +33,12 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 
 
 /**
@@ -59,7 +57,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private Disposable dposable;
     private LinearLayout showAllUsers,showOnlineUsers,showOfflineUsers,showSelectedUsers;
     private OrganFragmentPresenter fragPresen;
-    private TextView allUserNum;
+    private TextView allUserNum,onlinePersNum,offlinePersNum,selectedPersNum;
+    private static final String all = "ALL";
+    private static final String ON_LINE = "ON_LINE";
+    private static final String OFF_LINE = "OFF_LINE";
 
     public OrganizationFragment() {
         // Required empty public constructor
@@ -72,8 +73,18 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         // Inflate the layout for this fragment
         super.onCreate(savedInstanceState);
          view = inflater.inflate(R.layout.fragment_organization, container, false);
+        initView(view);
+        fragPresen.showAll(all);
+        return view;
+
+    }
+
+    private void initView(View view){
         treeLv = (ListView) view.findViewById(R.id.tree_lv);
         allUserNum = (TextView) view.findViewById(R.id.all_user_nun);
+        onlinePersNum = (TextView) view.findViewById(R.id.online_pers_num);
+        offlinePersNum = (TextView) view.findViewById(R.id.offline_pers_num);
+        selectedPersNum = (TextView) view.findViewById(R.id.selected_pers_num);
         showAllUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_all);
         showAllUsers.setOnClickListener(this);
         showOnlineUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_online);
@@ -83,107 +94,51 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         showSelectedUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_selected);
         showSelectedUsers.setOnClickListener(this);
         fragPresen = new OrganFragmentPresenter(this);
-
-//        getOrgAndUserData();
-        fragPresen.showAll();
-        return view;
-
     }
-
-    public void getOrgAndUserData(){
-        AppComponent appComponent = (AppComponent) App.getInstance().getApplicationContext();
-        Observable<ContactEnterprise> contactEnterprise = appComponent.getSignalBroker().getEnterprise();
-        contactEnterprise.observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<ContactEnterprise>() {
-            @Override
-            public void onSubscribe(Disposable disposable) {
-                Log.e("Disposable","Disposable已经执行了"+disposable);
-//                dposable = disposable;
-            }
-
-            @Override
-            public void onNext(ContactEnterprise contactEnterprise) {
-                List<ContactDepartment> contactDepartment = contactEnterprise.getDepartments();
-                OrgNodeBean org ;
-                Log.e("contactDepartment","contactDepartment:"+contactDepartment);
-                for (ContactDepartment department :contactDepartment){
-                    org = new OrgNodeBean(department.getId(),department.getParentObjectId(),department.getName());
-                    Log.e(""+department.getName()+":",""+department.getName());
-                    mDatas.add(org);
-
-                }
-
-                List<ContactUser> contactUser = contactEnterprise.getDirectUsers();
-                Log.e("contactUser:------->",""+contactUser);
-                for (ContactUser user:contactUser){
-                    org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
-                    mDatas.add(org);
-                }
-
-                initAdapter(treeLv,mDatas,isHide);
-
-                treeLv.setAdapter(adapter);
-
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                Log.e("throwable",""+throwable.getMessage());
-                throwable.printStackTrace();
-            }
-
-            @Override
-            public void onComplete() {
-
-                Log.e("是否完毕","已完毕");
-            }
-        });
-    }
-
-
-
 
     //所有人员，在线，离线，已勾选点击事件
     @Override
     public void onClick(View v) {
-
         switch (v.getId()){
             case R.id.show_orgzation_all:
                 mDatas.clear();
-                fragPresen.showAll();
-
-
+                onlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                offlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                selectedPersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                fragPresen.showAll(all);
                 break;
             case R.id.show_orgzation_online:
-                fragPresen.showOnlineUser();
+                onlinePersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
+                offlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                selectedPersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                fragPresen.showOnlineUser(ON_LINE);
                 break;
             case R.id.show_orgzation_offline:
+                onlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                offlinePersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
+                selectedPersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                fragPresen.showOfflineUser(OFF_LINE);
                 break;
             case R.id.show_orgzation_selected:
+                onlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                offlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                selectedPersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
                 break;
         }
     }
 
     //通过presenter拿到所有数据回调展示
     @Override
-    public void showAll(List<OrgNodeBean> list,List<ContactUser> contactUser) {
-        mDatas.clear();
-        for(OrgNodeBean node:list){
-            mDatas.add(node);
-        }
-        if (adapter == null) {
-            initAdapter(treeLv,mDatas,isHide);
-            adapter.notifyDataSetChanged();
-        }else {
-            try {
-                adapter.setDatas(mDatas);
-                adapter.notifyDataSetChanged();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        allUserNum.setText("("+contactUser.size()+")");
+    public void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
+        setAdapterData(list,contactUserSize,onLineUserSize);
+        setTVText(contactUserSize,onLineUserSize);
     }
 
+    private void setTVText(int contactUserSize, int onLineUserSize){
+        allUserNum.setText("("+contactUserSize+")");
+        onlinePersNum.setText("在线("+onLineUserSize+")");
+        offlinePersNum.setText("离线("+(contactUserSize - onLineUserSize)+")");
+    }
     //初始化适配器
     private void initAdapter(ListView treeLv, List<OrgNodeBean> mDatas, boolean isHide) {
         try {
@@ -219,29 +174,35 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
 
     //通过presenter拿到在线用户数据回调展示
     @Override
-    public void showOnLine(List<OrgNodeBean> list) {
-        mDatas.clear();
-        for (OrgNodeBean node:list) {
-           mDatas.add(node);
-        }
-        /*try {
-            adapter = new MyTreeListViewAdapter<>(treeLv,getActivity(),mDatas,0,isHide);
-
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }*/
-        try {
-            adapter.setDatas(mDatas);
-            adapter.notifyDataSetChanged();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+    public void showOnLine(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
+        setAdapterData(list,contactUserSize,onLineUserSize);
     }
 
     //通过presenter拿到离线用户数据回调展示
     @Override
-    public void showOffline() {
+    public void showOffline(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
+        setAdapterData(list,contactUserSize,onLineUserSize);
+    }
 
+    private void setAdapterData(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize){
+        mDatas.clear();
+        for (OrgNodeBean node:list) {
+            mDatas.add(node);
+        }
+
+        if(adapter == null){
+                initAdapter(treeLv,mDatas,isHide);
+                adapter.notifyDataSetChanged();
+        }else {
+            try {
+                adapter.setDatas(mDatas);
+                adapter.notifyDataSetChanged();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        setTVText(contactUserSize,onLineUserSize);
     }
 
     //通过presenter拿到已勾选用户数据回调展示

@@ -29,13 +29,18 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp"
         android:orientation="vertical"
        >
         <LinearLayout
             android:id="@+id/show_orgzation_all"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingLeft="5dp">
+            android:gravity="center_vertical"
+            android:paddingBottom="5dp"
+            android:paddingTop="2dp"
+            android:paddingLeft="2dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -56,6 +61,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingBottom="5dp"
+            android:paddingTop="5dp"
             android:orientation="horizontal"
             android:gravity="center"
             >
@@ -72,24 +79,13 @@
                     android:scaleType="centerCrop"
                     android:src="@drawable/online_head"/>
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:textSize="12sp"
-                    android:text="在线("/>
-                <TextView
                     android:id="@+id/online_pers_num"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="10sp"
                     android:singleLine="true"
-                    android:textColor="#E22626"
-                    android:text="388"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:text=")"/>
+                    android:layout_marginLeft="3dp"
+                    android:text="在线(0)"/>
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/show_orgzation_offline"
@@ -103,24 +99,13 @@
                     android:scaleType="centerCrop"
                     android:src="@drawable/offline_head"/>
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:textSize="12sp"
-                    android:text="离线("/>
-                <TextView
                     android:id="@+id/offline_pers_num"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="10sp"
+                    android:layout_marginLeft="3dp"
                     android:singleLine="true"
-                    android:textColor="@android:color/black"
-                    android:text="399"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:text=")"/>
+                    android:text="离线(0)"/>
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/show_orgzation_selected"
@@ -134,24 +119,14 @@
                     android:scaleType="centerCrop"
                     android:src="@drawable/selected_head"/>
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:textSize="12sp"
-                    android:text="已选人员("/>
-                <TextView
                     android:id="@+id/selected_pers_num"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginLeft="3dp"
                     android:textSize="10sp"
                     android:textColor="@android:color/black"
                     android:singleLine="true"
-                    android:text="3999"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:text=")"/>
+                    android:text="已选人员(0)"/>
             </LinearLayout>
         </LinearLayout>
         <View

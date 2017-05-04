@@ -156,16 +156,28 @@ public class TreeHelper {
             Node n = nodes.get(i);
             for (int j = i + 1; j < nodes.size(); j++) {
                 Node m = nodes.get(j);
-                if(m.getFather()==null||n.getFather()==null){
+                /*if(m.getFather()==null||n.getFather()==null){
                     break;
+                }*/
+                if(m.getFather() != null){
+                    if (n.get_id().equals(m.getFather()) ) {
+                        n.getChildrenNodes().add(m);
+                        m.setParent(n);
+                    }
                 }
-                if (n.get_id().equals(m.getFather()) ) {
+                if(n.getFather() != null){
+                    if(n.getFather().equals(m.get_id())){
+                        n.setParent(m);
+                        m.getChildrenNodes().add(n);
+                    }
+                }
+               /* if (n.get_id().equals(m.getFather()) ) {
                     n.getChildrenNodes().add(m);
                     m.setParent(n);
                 } else if (n.getFather().equals(m.get_id())) {
                     n.setParent(m);
                     m.getChildrenNodes().add(n);
-                }
+                }*/
             }
         }
 

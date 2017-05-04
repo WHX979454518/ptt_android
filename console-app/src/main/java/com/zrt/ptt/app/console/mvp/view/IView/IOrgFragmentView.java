@@ -4,6 +4,7 @@ import com.xianzhitech.ptt.data.ContactUser;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 
 import java.util.List;
+import java.util.Set;
 
 import io.reactivex.disposables.Disposable;
 
@@ -13,9 +14,9 @@ import io.reactivex.disposables.Disposable;
 
 public interface IOrgFragmentView {
     //第二个参数方便统计用户数量
-    void showAll(List<OrgNodeBean> list,List<ContactUser> contactUser);
-    void showOnLine(List<OrgNodeBean> list);
-    void showOffline();
+    void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
+    void showOnLine(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
+    void showOffline(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
     void showSlected();
     void callDisposable(Disposable disposable);
 }

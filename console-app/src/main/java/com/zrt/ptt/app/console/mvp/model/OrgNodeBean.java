@@ -40,8 +40,7 @@ public class OrgNodeBean {
     private String mail;
     private Privileges privileges;//权限
     private boolean isParent;//是否是父节点
-
-
+    private boolean isOnline;//false不在线,true在线
 
 
 
@@ -51,6 +50,14 @@ public class OrgNodeBean {
         this._id = id;
         this.father = pId;
         this.name = name;
+    }
+
+    public boolean isOnline() {
+        return isOnline;
+    }
+
+    public void setOnline(boolean online) {
+        isOnline = online;
     }
 
     public class Privileges{
