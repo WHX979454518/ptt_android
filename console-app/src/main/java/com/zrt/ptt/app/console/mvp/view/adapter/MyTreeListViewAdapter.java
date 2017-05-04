@@ -45,6 +45,7 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
                     .findViewById(R.id.id_treenode_icon);
             viewHolder.label = (TextView) convertView
                     .findViewById(R.id.id_treenode_name);
+            viewHolder.head = (ImageView) convertView.findViewById(R.id.id_head_icon);
             viewHolder.checkBox = (CheckBox)convertView.findViewById(R.id.id_treeNode_check);
 
             convertView.setTag(viewHolder);
@@ -63,6 +64,18 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
             viewHolder.icon.setImageResource(node.getIcon());
         }
 
+        //是否是叶子节点不是就关闭头像
+        if(node.isLeaf()){
+            viewHolder.head.setVisibility(View.VISIBLE);
+        }else {
+            viewHolder.head.setVisibility(View.GONE);
+        }
+
+        if(node.isOnline()){
+            viewHolder.label.setTextColor(mContext.getResources().getColor(R.color.title_bg_red));
+        }else {
+            viewHolder.label.setTextColor(mContext.getResources().getColor(R.color.dark_grey));
+        }
         if(node.isHideChecked()){
             viewHolder.checkBox.setVisibility(View.GONE);
         }else{
@@ -78,6 +91,7 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
     private final class ViewHolder
     {
         ImageView icon;
+        ImageView head;
         TextView label;
         CheckBox checkBox;
     }

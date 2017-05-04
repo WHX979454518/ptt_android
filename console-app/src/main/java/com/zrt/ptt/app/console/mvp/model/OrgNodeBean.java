@@ -40,7 +40,7 @@ public class OrgNodeBean {
     private String mail;
     private Privileges privileges;//权限
     private boolean isParent;//是否是父节点
-    private boolean isOnline;//false不在线,true在线
+    private boolean isOnline = false;//false不在线,true在线
 
 
 

@@ -46,15 +46,25 @@ public class Node {
      * 节点的父节点
      */
     private Node parent;
+    private boolean isOnline;//false不在线,true在线
+
+    public boolean isOnline() {
+        return isOnline;
+    }
+
+    public void setOnline(boolean online) {
+        isOnline = online;
+    }
 
     public Node() {
     }
 
-    public Node(String id, String pId, String name) {
+    public Node(String id, String pId, String name,boolean isOnline) {
         super();
         this._id = id;
         this.father = pId;
         this.name = name;
+        this.isOnline = isOnline;
     }
 
 

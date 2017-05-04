@@ -97,12 +97,12 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                 for (ContactUser user :contactUser){
                     org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
                     for (String id:setLine) {
+                        //TODO 待有实际部门值时移除此段随机代码
+                        Random rd = new Random(); //创建一个Random类对象实例
+                        int x = rd.nextInt(3)+1;
+                        org.setFather("ssssssss"+x);
                         if(org.get_id().equals(id)){
                             org.setOnline(true);
-                            //TODO 待有实际部门值时移除此段随机代码
-                            Random rd = new Random(); //创建一个Random类对象实例
-                            int x = rd.nextInt(3)+1;
-                            org.setFather("ssssssss"+x);
                             online.add(org);
                             break;
                         }

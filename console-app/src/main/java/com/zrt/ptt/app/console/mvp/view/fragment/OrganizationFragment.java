@@ -51,6 +51,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private ListView treeLv;
     private MyTreeListViewAdapter<OrgNodeBean> adapter;
     private List<OrgNodeBean> mDatas = new ArrayList<OrgNodeBean>();
+    public List<Node> checkedNode;
     //标记是显示Checkbox还是隐藏
     private boolean isHide = false;
     private View view;
@@ -102,21 +103,31 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         switch (v.getId()){
             case R.id.show_orgzation_all:
                 mDatas.clear();
+
                 onlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
                 offlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
                 selectedPersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                /*if(checkedNode.size()==0){
+                    fragPresen.showAll(all);
+                }*/
                 fragPresen.showAll(all);
                 break;
             case R.id.show_orgzation_online:
                 onlinePersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
                 offlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
                 selectedPersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                /*if(checkedNode.size()==0){
+                    fragPresen.showOnlineUser(ON_LINE);
+                }*/
                 fragPresen.showOnlineUser(ON_LINE);
                 break;
             case R.id.show_orgzation_offline:
                 onlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
                 offlinePersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
                 selectedPersNum.setTextColor(getResources().getColor(R.color.dark_grey));
+                /*if(checkedNode.size()==0){
+                    fragPresen.showOfflineUser(OFF_LINE);
+                }*/
                 fragPresen.showOfflineUser(OFF_LINE);
                 break;
             case R.id.show_orgzation_selected:
@@ -149,6 +160,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         }
 
         adapter.setOnTreeNodeClickListener(new TreeListViewAdapter.OnTreeNodeClickListener() {
+
+
             @Override
             public void onClick(Node node, int position) {
                 if (node.isLeaf()) {
@@ -163,8 +176,9 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 // TODO Auto-generated method stub
 
                 StringBuffer sb = new StringBuffer();
+                checkedNode = checkedNodes;
                 for (Node n : checkedNodes) {
-
+                    n.isChecked();
                 }
             }
 
