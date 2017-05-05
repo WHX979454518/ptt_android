@@ -51,7 +51,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private ListView treeLv;
     private MyTreeListViewAdapter<OrgNodeBean> adapter;
     private List<OrgNodeBean> mDatas = new ArrayList<OrgNodeBean>();
-    public List<Node> checkedNode;
+    private List<OrgNodeBean> checkDatas = new ArrayList<OrgNodeBean>();//选中专用存储所有用户过来的新数据
+    public List<Node> NodeAddDelet = new ArrayList<Node>();
     //标记是显示Checkbox还是隐藏
     private boolean isHide = false;
     private View view;
@@ -134,6 +135,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 onlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
                 offlinePersNum.setTextColor(getResources().getColor(R.color.dark_grey));
                 selectedPersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
+                setCheckAdapter(NodeAddDelet,checkDatas);
                 break;
         }
     }
@@ -141,6 +143,16 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     //通过presenter拿到所有数据回调展示
     @Override
     public void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
+        checkDatas.clear();
+        for (OrgNodeBean node:list) {
+            for(Node bean:NodeAddDelet){
+                if(node.get_id().equals(bean.get_id())){
+                    node.setChecked(true);
+                    break;
+                }
+            }
+            checkDatas.add(node);
+        }
         setAdapterData(list,contactUserSize,onLineUserSize);
         setTVText(contactUserSize,onLineUserSize);
     }
@@ -174,12 +186,28 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
             public void onCheckChange(Node node, int position,
                                       List<Node> checkedNodes) {
                 // TODO Auto-generated method stub
-
-                StringBuffer sb = new StringBuffer();
-                checkedNode = checkedNodes;
-                for (Node n : checkedNodes) {
-                    n.isChecked();
+                NodeAddDelet = checkedNodes;
+                int num = 0;
+                for (Node bean:checkedNodes){
+                    if(bean.isLeaf()){
+                        num++;
+                    }
                 }
+                selectedPersNum.setText("已选人员("+num+")");
+               /* if(NodeAddDelet.contains(node)){
+                    if(!node.isChecked()){
+                        NodeAddDelet.remove(node);
+                    }
+                }
+                for (Node n : checkedNodes) {
+                    if(NodeAddDelet.contains(n)){
+                        if(NodeAddDelet.get(NodeAddDelet.indexOf(n)).isChecked()!= n.isChecked()){
+                            NodeAddDelet.get(NodeAddDelet.indexOf(n)).setChecked(n.isChecked());
+                        };
+                    }else {
+                        NodeAddDelet.add(n);
+                    }
+                }*/
             }
 
         });
@@ -198,9 +226,54 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         setAdapterData(list,contactUserSize,onLineUserSize);
     }
 
+
+    //勾选适配器数据展示
+    private void setCheckAdapter(List<Node> NodeAddDelet,List<OrgNodeBean> checkDatas){
+        List<OrgNodeBean> checkData = new ArrayList<>();
+        int num =0;
+        for (OrgNodeBean node:checkDatas) {
+            for(Node bean:NodeAddDelet){
+                if(node.get_id().equals(bean.get_id())){
+                    node.setChecked(true);
+                    if(!checkData.contains(node)){
+                        checkData.add(node);
+                    }
+                }
+                if(bean.getFather().equals(node.get_id())){
+                    if (!checkData.contains(node)){
+                        checkData.add(node);
+                    }
+                }
+            }
+        }
+
+        for (Node bean:NodeAddDelet){
+            if(bean.isLeaf()){
+                num++;
+            }
+        }
+        if(adapter == null){
+            initAdapter(treeLv,checkData,isHide);
+            adapter.notifyDataSetChanged();
+        }else {
+            try {
+                adapter.setDatas(checkData);
+                adapter.notifyDataSetChanged();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        selectedPersNum.setText("已选人员("+num+")");
+    }
     private void setAdapterData(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize){
         mDatas.clear();
         for (OrgNodeBean node:list) {
+            for(Node bean:NodeAddDelet){
+                if(node.get_id().equals(bean.get_id())){
+                    node.setChecked(true);
+                    break;
+                }
+            }
             mDatas.add(node);
         }
 

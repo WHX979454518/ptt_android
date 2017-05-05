@@ -71,6 +71,7 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
             viewHolder.head.setVisibility(View.GONE);
         }
 
+
         if(node.isOnline()){
             viewHolder.label.setTextColor(mContext.getResources().getColor(R.color.title_bg_red));
         }else {
@@ -80,6 +81,35 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
             viewHolder.checkBox.setVisibility(View.GONE);
         }else{
             viewHolder.checkBox.setVisibility(View.VISIBLE);
+        }
+
+        //是叶子节点才直接设置选中赋值，否则判断该子类所有元素是都是选中状态在设置
+        if(node.isLeaf()){
+            setCheckBoxBg(viewHolder.checkBox,node.isChecked());
+        }else if(!node.isChecked()){
+            int num =0;
+            for(Node child :node.getChildrenNodes()){
+                if(!child.isChecked()){
+                    node.setChecked(false);
+                    setCheckBoxBg(viewHolder.checkBox,node.isChecked());
+                    break;
+                }
+                num++;
+
+            }
+            if(num == node.getChildrenNodes().size()){
+                node.setChecked(true);
+                setCheckBoxBg(viewHolder.checkBox,node.isChecked());
+            }
+
+        }else {
+            for(Node child :node.getChildrenNodes()){
+                if(!child.isChecked()){
+                    node.setChecked(false);
+                    break;
+                }
+
+            }
             setCheckBoxBg(viewHolder.checkBox,node.isChecked());
         }
         viewHolder.label.setText(node.getName());

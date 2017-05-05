@@ -41,9 +41,15 @@ public class OrgNodeBean {
     private Privileges privileges;//权限
     private boolean isParent;//是否是父节点
     private boolean isOnline = false;//false不在线,true在线
+    private boolean isChecked =false;//默认不选中数据用于切换时已勾选人员设置数据传值
 
+    public boolean isChecked() {
+        return isChecked;
+    }
 
-
+    public void setChecked(boolean checked) {
+        isChecked = checked;
+    }
 
     public OrgNodeBean(String id, String pId, String name) {
         super();

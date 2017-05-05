@@ -109,6 +109,7 @@ public class TreeHelper {
             String  father = null;
             String name = null;
             boolean isOnline = false;//默认false
+            boolean isChecked = false;//默认不选中
 
             Class<? extends Object> clazz = t.getClass();
             Field[] declaredFields = clazz.getDeclaredFields();
@@ -131,6 +132,10 @@ public class TreeHelper {
                     name = (String) f.get(t);
                 }
 
+                if("isChecked".equals(f.getName())){
+                    f.setAccessible(true);
+                    isChecked = (boolean) f.get(t);
+                }
                 if("isOnline".equals(f.getName())){
                     f.setAccessible(true);
                     isOnline = (boolean) f.get(t);
@@ -144,13 +149,14 @@ public class TreeHelper {
                     continue;
                 }
 
-                if(_id != null && name != null && isOnline != false){
+                if(_id != null && name != null && isOnline != false && isChecked ==true){
                     break;
                 }
 
             }
 
             node = new Node(_id, father, name,isOnline);
+            node.setChecked(isChecked);
             node.setHideChecked(isHide);
             nodes.add(node);
         }
