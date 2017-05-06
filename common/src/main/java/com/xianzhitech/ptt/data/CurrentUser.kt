@@ -26,7 +26,10 @@ class CurrentUser : User, Event {
     override val phoneNumber: String? = null
 
     @get:JsonProperty("enterId")
-    val enterpriseId: String? = null
+    val enterpriseIdNumber: String? = null
+
+    @get:JsonProperty("enterObjectId")
+    val enterpriseObjectId : String? = null
 
     @get:JsonProperty("enterName")
     val enterpriseName: String? = null

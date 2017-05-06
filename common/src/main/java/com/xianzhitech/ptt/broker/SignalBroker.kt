@@ -77,7 +77,7 @@ class SignalBroker(private val appComponent: AppComponent,
                 }
 
                 ContactEnterprise(
-                        departments = departmentParentMap[null] ?: emptyList<ContactDepartment>(),
+                        departments = departmentParentMap[currentUser.value.get().enterpriseObjectId] ?: emptyList<ContactDepartment>(),
                         directUsers = directUsers
                 )
             }
