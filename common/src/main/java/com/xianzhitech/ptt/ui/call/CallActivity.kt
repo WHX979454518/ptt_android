@@ -56,13 +56,15 @@ class CallActivity : BaseActivity(), GroupChatView {
     }
 
     override fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
-        appComponent.signalBroker.joinVideoRoom(roomId, false)
-                .observeOn(AndroidSchedulers.mainThread())
-                .logErrorAndForget {
-                    Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
-                    finish()
-                }
-                .subscribe()
+        if (appComponent.signalBroker.currentVideoRoomId.value.orNull() != roomId) {
+            appComponent.signalBroker.joinVideoRoom(roomId, false)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .logErrorAndForget {
+                        Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                    .subscribe()
+        }
     }
 
     override fun onResume() {

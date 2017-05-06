@@ -103,7 +103,6 @@ class SignalBroker(private val appComponent: AppComponent,
     private var videoChatPeerConnection: PeerConnection? = null
     private var videoChatRemoteStream: MediaStream? = null
     private var videoChatVideoCapturer: Camera1Capturer? = null
-    private var videoChatRoomId: String? = null
     private val groupChatViews : MutableList<GroupChatView> = arrayListOf()
 
     val isLoggedIn: Boolean
@@ -541,13 +540,13 @@ class SignalBroker(private val appComponent: AppComponent,
 
                     videoChatVideoCapturer!!.startCapture(512, 512, 30)
                     videoChatPeerConnection = p
-                    videoChatRoomId = roomId
+                    currentVideoRoomId.onNext(roomId.toOptional())
 
                 }
     }
 
     fun quitVideoRoom() {
-        videoChatRoomId?.let {
+        currentVideoRoomId.value.orNull()?.let {
             signalApi.quitVideoChat(it).logErrorAndForget().subscribe()
 
             sendMessage(createMessage(it, MessageType.NOTIFY_END_VIDEO_CHAT)).toMaybe().logErrorAndForget().subscribe()
@@ -563,19 +562,19 @@ class SignalBroker(private val appComponent: AppComponent,
         videoChatVideoCapturer = null
         videoChatRemoteStream = null
         videoChatPeerConnection = null
-        videoChatRoomId = null
+        currentVideoRoomId.onNext(Optional.absent())
     }
 
     fun attachToVideoChat(chatView: GroupChatView) {
         if (groupChatViews.contains(chatView).not()) {
             groupChatViews.add(chatView)
-            videoChatRemoteStream?.videoTracks?.first?.addRenderer(chatView.remoteRenderer)
+            videoChatRemoteStream?.videoTracks?.firstOrNull()?.addRenderer(chatView.remoteRenderer)
         }
     }
 
     fun detachFromVideoChat(chatView: GroupChatView) {
         if (groupChatViews.remove(chatView)) {
-            videoChatRemoteStream?.videoTracks?.first?.removeRenderer(chatView.remoteRenderer)
+            videoChatRemoteStream?.videoTracks?.firstOrNull()?.removeRenderer(chatView.remoteRenderer)
         }
     }
 
