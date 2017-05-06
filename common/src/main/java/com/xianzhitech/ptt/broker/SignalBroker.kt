@@ -17,7 +17,11 @@ import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.*
+import com.xianzhitech.ptt.service.handler.GroupChatView
 import com.xianzhitech.ptt.util.InputStreamReadReporter
+import com.xianzhitech.ptt.util.SimpleCameraEventsHandler
+import com.xianzhitech.ptt.util.SimplePeerConnectionObserver
+import com.xianzhitech.ptt.util.SimpleSdpObserver
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
@@ -29,6 +33,14 @@ import okhttp3.RequestBody
 import okio.BufferedSink
 import okio.Okio
 import org.slf4j.LoggerFactory
+import org.webrtc.Camera1Capturer
+import org.webrtc.Camera1Enumerator
+import org.webrtc.IceCandidate
+import org.webrtc.MediaConstraints
+import org.webrtc.MediaStream
+import org.webrtc.PeerConnection
+import org.webrtc.PeerConnectionFactory
+import org.webrtc.SessionDescription
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -87,6 +99,12 @@ class SignalBroker(private val appComponent: AppComponent,
         get() = signalApi.onlineUserIds
 
     private var joinWalkieDisposable: Disposable? = null
+
+    private var videoChatPeerConnection: PeerConnection? = null
+    private var videoChatRemoteStream: MediaStream? = null
+    private var videoChatVideoCapturer: Camera1Capturer? = null
+    private var videoChatRoomId: String? = null
+    private val groupChatViews : MutableList<GroupChatView> = arrayListOf()
 
     val isLoggedIn: Boolean
         get() = signalApi.currentUser.value.isPresent
@@ -212,6 +230,10 @@ class SignalBroker(private val appComponent: AppComponent,
 
             is CurrentUser -> {
                 currentUser.onNext(event.toOptional())
+            }
+
+            is IceCandidateEvent -> {
+                videoChatPeerConnection?.addIceCandidate(event.toWebrtc())
             }
 
             is Message -> {
@@ -424,10 +446,137 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
     fun joinVideoRoom(roomId: String, audioOnly: Boolean): Completable {
-        return Completable.complete()
+        return signalApi.joinVideoChat(roomId)
+                .doOnSubscribe {
+                    videoChatPeerConnection?.let {
+                        it.close()
+                        it.dispose()
+                    }
+
+                    quitWalkieRoom()
+                }
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnComplete {
+                    sendMessage(createMessage(roomId, MessageType.NOTIFY_START_VIDEO_CHAT)).toMaybe().logErrorAndForget().subscribe()
+
+                    val factory = PeerConnectionFactory(PeerConnectionFactory.Options())
+                    val mediaConstraints = MediaConstraints()
+                    mediaConstraints.mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
+                    mediaConstraints.mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"))
+                    val p = factory.createPeerConnection(PeerConnection.RTCConfiguration(listOf(
+                            //                            PeerConnection.IceServer("stun:121.43.152.43:3478"),
+//                            PeerConnection.IceServer("stun:123.207.148.55:3478"),
+//                            PeerConnection.IceServer("stun:121.41.22.11:3478")
+//                            PeerConnection.IceServer("turn:123.207.148.55:3478?transport=udp", "feihe1234", "feihe"),
+//                            PeerConnection.IceServer("turn:192.168.0.167?transport=udp", "ptt", "ptt1234")
+                    )).apply {
+                        this.continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+                        this.tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED
+                    },
+                            //                    val p = factory.createPeerConnection(emptyList(),
+                            mediaConstraints,
+                            object : SimplePeerConnectionObserver() {
+                                override fun onIceCandidate(iceCandidate: IceCandidate) {
+                                    super.onIceCandidate(iceCandidate)
+
+                                    signalApi.sendIceCandidate(iceCandidate)
+                                            .logErrorAndForget()
+                                            .subscribe()
+                                }
+
+                                override fun onAddStream(p0: MediaStream) {
+                                    super.onAddStream(p0)
+
+                                    AndroidSchedulers.mainThread().scheduleDirect {
+                                        videoChatRemoteStream = p0
+                                        val videoTrack = p0.videoTracks.first
+                                        videoTrack.setEnabled(groupChatViews.isNotEmpty())
+                                        groupChatViews.forEach {
+                                            videoTrack.addRenderer(it.remoteRenderer)
+                                        }
+
+                                        p0.audioTracks.first.setEnabled(true)
+                                    }
+                                }
+
+                                override fun onRemoveStream(p0: MediaStream) {
+                                    super.onRemoveStream(p0)
+
+                                    AndroidSchedulers.mainThread().scheduleDirect {
+                                    if (videoChatRemoteStream == p0) {
+                                            val videoTrack = videoChatRemoteStream!!.videoTracks.first
+                                            groupChatViews.forEach { videoTrack.removeRenderer(it.remoteRenderer) }
+                                            videoChatRemoteStream = null
+                                        }
+                                    }
+                                }
+                            })
+
+                    val enumerator = Camera1Enumerator()
+                    val cameraName = enumerator.deviceNames.firstOrNull { enumerator.isFrontFacing(it) } ?: enumerator.deviceNames.first()
+                    videoChatVideoCapturer = Camera1Capturer(cameraName, SimpleCameraEventsHandler(), false)
+
+                    val mediaStream = factory.createLocalMediaStream("local-stream")
+                    val audioTrack = factory.createAudioTrack("audio", factory.createAudioSource(MediaConstraints()))
+                    val videoTrack = factory.createVideoTrack("video", factory.createVideoSource(videoChatVideoCapturer))
+                    mediaStream.addTrack(audioTrack)
+                    mediaStream.addTrack(videoTrack)
+
+                    p.addStream(mediaStream)
+
+                    p.createOffer(object : SimpleSdpObserver() {
+                        override fun onCreateSuccess(offer: SessionDescription) {
+                            super.onCreateSuccess(offer)
+
+                            p.setLocalDescription(SimpleSdpObserver(), offer)
+
+                            signalApi.offerVideoChat(offer.description)
+                                    .toMaybe()
+                                    .logErrorAndForget()
+                                    .subscribe {
+                                        p.setRemoteDescription(SimpleSdpObserver(), SessionDescription(SessionDescription.Type.ANSWER, it))
+                                    }
+                        }
+                    }, MediaConstraints())
+
+                    videoChatVideoCapturer!!.startCapture(512, 512, 30)
+                    videoChatPeerConnection = p
+                    videoChatRoomId = roomId
+
+                }
     }
 
     fun quitVideoRoom() {
+        videoChatRoomId?.let {
+            signalApi.quitVideoChat(it).logErrorAndForget().subscribe()
+
+            sendMessage(createMessage(it, MessageType.NOTIFY_END_VIDEO_CHAT)).toMaybe().logErrorAndForget().subscribe()
+        }
+
+        groupChatViews.forEach(this::detachFromVideoChat)
+        videoChatVideoCapturer?.dispose()
+        videoChatPeerConnection?.let {
+            it.close()
+            it.dispose()
+        }
+
+        videoChatVideoCapturer = null
+        videoChatRemoteStream = null
+        videoChatPeerConnection = null
+        videoChatRoomId = null
+    }
+
+    fun attachToVideoChat(chatView: GroupChatView) {
+        if (groupChatViews.contains(chatView).not()) {
+            groupChatViews.add(chatView)
+            videoChatRemoteStream?.videoTracks?.first?.addRenderer(chatView.remoteRenderer)
+        }
+    }
+
+    fun detachFromVideoChat(chatView: GroupChatView) {
+        if (groupChatViews.remove(chatView)) {
+            videoChatRemoteStream?.videoTracks?.first?.removeRenderer(chatView.remoteRenderer)
+        }
     }
 
     fun peekUserId(): String? = currentUser.value.orNull()?.id
@@ -461,10 +610,6 @@ class SignalBroker(private val appComponent: AppComponent,
 
     fun sendLocationData(locations: List<Location>): Completable {
         return signalApi.sendLocationData(locations)
-    }
-
-    fun quitGroupChat() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     fun updateRoom(roomId: String): Single<Room> {

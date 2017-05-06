@@ -204,6 +204,10 @@ class ChatViewModel(private val appComponent: AppComponent,
                     BaseApp.instance.getString(R.string.user_join_walkie, user?.name ?: ""))
             MessageType.NOTIFY_QUIT_ROOM -> NotificationMessageViewModel(appComponent, message,
                     BaseApp.instance.getString(R.string.user_quit_walkie, user?.name ?: ""))
+            MessageType.NOTIFY_START_VIDEO_CHAT -> NotificationMessageViewModel(appComponent, message,
+                    BaseApp.instance.getString(R.string.user_join_video_chat, user?.name ?: ""))
+            MessageType.NOTIFY_END_VIDEO_CHAT -> NotificationMessageViewModel(appComponent, message,
+                    BaseApp.instance.getString(R.string.user_quit_video_chat, user?.name ?: ""))
             MessageType.LOCATION -> LocationMessageViewModel(appComponent, message, isSingleRoom, navigator)
             else -> null
         }

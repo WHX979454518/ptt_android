@@ -26,8 +26,8 @@ open class SimpleSdpObserver : SdpObserver {
 open class SimplePeerConnectionObserver : PeerConnection.Observer {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    override fun onIceCandidate(p0: IceCandidate) {
-        logger.info("onIceCandidate: {}", p0)
+    override fun onIceCandidate(iceCandidate: IceCandidate) {
+        logger.info("onIceCandidate: {}", iceCandidate)
     }
 
     override fun onDataChannel(p0: DataChannel?) {

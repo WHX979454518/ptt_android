@@ -8,8 +8,11 @@ import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.databinding.ActivityCallBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.handler.GroupChatView
 import com.xianzhitech.ptt.ui.base.BaseActivity
+import io.reactivex.android.schedulers.AndroidSchedulers
 import org.webrtc.EglBase
 import org.webrtc.VideoRenderer
 
@@ -25,7 +28,7 @@ class CallActivity : BaseActivity(), GroupChatView {
 
         binding.callRemoteView.init(eglBase.eglBaseContext, null)
         binding.callEnd.setOnClickListener {
-            appComponent.signalBroker.quitGroupChat()
+            appComponent.signalBroker.quitVideoRoom()
             finish()
         }
 
@@ -53,23 +56,26 @@ class CallActivity : BaseActivity(), GroupChatView {
     }
 
     override fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
-//        if (appComponent.signalHandler.groupChatRoomId == null || (appComponent.signalHandler.groupChatRoomId != roomId)) {
-//            appComponent.signalHandler.quitRoom()
-//            appComponent.signalHandler.startGroupChat(roomId)
-//        }
+        appComponent.signalBroker.joinVideoRoom(roomId, false)
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget {
+                    Toast.makeText(this, it.describeInHumanMessage(this), Toast.LENGTH_LONG).show()
+                    finish()
+                }
+                .subscribe()
     }
 
     override fun onResume() {
         super.onResume()
 
         remoteRenderer = VideoRenderer(binding.callRemoteView)
-//        appComponent.signalHandler.attachToGroupChat(this)
+        appComponent.signalBroker.attachToVideoChat(this)
     }
 
     override fun onPause() {
         super.onPause()
 
-//        appComponent.signalHandler.detachFromGroupChat(this)
+        appComponent.signalBroker.detachFromVideoChat(this)
         remoteRenderer?.dispose()
         remoteRenderer = null
     }

@@ -570,7 +570,7 @@
 //        if (groupChatRoomId != null) {
 //            QuitGroupChatCommand(groupChatRoomId!!).send().subscribeSimple()
 //        }
-//        groupChatViews.forEach { detachFromGroupChat(it)}
+//        groupChatViews.forEach { detachFromVideoChat(it)}
 //        groupChatVideoCapturer?.dispose()
 //        groupChatPeerConnection?.let {
 //            it.close()
@@ -583,14 +583,14 @@
 //        groupChatRoomId = null
 //    }
 //
-//    fun attachToGroupChat(chatView: GroupChatView) {
+//    fun attachToVideoChat(chatView: GroupChatView) {
 //        if (groupChatViews.contains(chatView).not()) {
 //            groupChatViews.add(chatView)
 //            groupChatRemoteStream?.videoTracks?.first?.addRenderer(chatView.remoteRenderer)
 //        }
 //    }
 //
-//    fun detachFromGroupChat(chatView: GroupChatView) {
+//    fun detachFromVideoChat(chatView: GroupChatView) {
 //        if (groupChatViews.remove(chatView)) {
 //            groupChatRemoteStream?.videoTracks?.first?.removeRenderer(chatView.remoteRenderer)
 //        }

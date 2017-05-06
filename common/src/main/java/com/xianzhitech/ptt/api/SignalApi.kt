@@ -33,6 +33,7 @@ import okhttp3.RequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import org.webrtc.IceCandidate
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -446,6 +447,26 @@ class SignalApi(private val appComponent: AppComponent,
         return rpc<Int>("c_invite_room_members", roomId).toSingle()
     }
 
+    fun joinVideoChat(roomId: String) : Completable {
+        return rpc<Unit>("c_join_video_chat", roomId).ignoreElement()
+    }
+
+    fun quitVideoChat(roomId: String) : Completable {
+        return rpc<Unit>("c_quit_video_chat", roomId).ignoreElement()
+    }
+
+    fun offerVideoChat(offer : String) : Single<String> {
+        return rpc<String>("c_offer", offer).toSingle()
+    }
+
+    fun sendIceCandidate(iceCandidate: IceCandidate) : Completable {
+        return rpc<Unit>("c_ice_candidate", JSONObject().apply {
+            put("sdpMid", iceCandidate.sdpMLineIndex)
+            put("candidate", iceCandidate.sdpMLineIndex)
+            put("sdpMLineIndex", iceCandidate.sdpMLineIndex)
+        }).ignoreElement()
+    }
+
     fun changePassword(oldPassword: String, password: String): Completable {
         return Completable.defer {
             val oldUserCredentials = currentUserCredentials!!
@@ -554,6 +575,7 @@ class SignalApi(private val appComponent: AppComponent,
                 "s_member_update" to Room::class.java,
                 "s_user_update" to CurrentUser::class.java,
                 "s_room_message" to Message::class.java,
+                "s_ice_candidate" to IceCandidateEvent::class.java,
                 "s_kick_out_room" to RoomKickOutEvent
         )
 
