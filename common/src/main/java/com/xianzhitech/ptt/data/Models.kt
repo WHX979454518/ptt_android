@@ -81,15 +81,16 @@ interface ContactGroup : Persistable, NamedModel, Parcelable, Serializable {
     val memberIds: Set<String>
 }
 
-data class ContactEnterprise(val departments: List<ContactDepartment>,
-                             val directUsers: List<ContactUser>)
+data class ContactEnterprise(val departments: Collection<ContactDepartment>,
+                             val directUsers: Collection<ContactUser>,
+                             val name: String)
 
 data class ContactDepartment @JvmOverloads constructor(
         @get:JsonProperty("_id") val id: String = "",
         @get:JsonProperty("name") val name: String = "",
         @get:JsonProperty("father") val parentObjectId: String? = null,
-        @JsonIgnore val children: MutableList<ContactDepartment> = arrayListOf(),
-        @JsonIgnore val members: MutableList<ContactUser> = arrayListOf())
+        @JsonIgnore val children: MutableCollection<ContactDepartment> = linkedSetOf(),
+        @JsonIgnore val members: MutableCollection<ContactUser> = linkedSetOf())
 
 @Entity
 @Table(name = "rooms")

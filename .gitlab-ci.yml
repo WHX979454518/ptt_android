@@ -3,7 +3,16 @@ stages:
   - deploy
 
 build:
-  image: runmymind/docker-android-sdk
+  image: openjdk:8-jdk
+  before_script:
+    - apt-get --quiet update --yes
+    - apt-get --quiet install --yes wget tar unzip lib32stdc++6 lib32z1 openssh-client
+    - curl https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip > android_sdk.zip
+    - mkdir -p android-sdk-linux/licenses
+    - unzip android_sdk.zip -d android-sdk-linux
+    - echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > android-sdk-linux/licenses/android-sdk-license
+    - export ANDROID_HOME=$PWD/android-sdk-linux
+    - export PATH=$PATH:$PWD/android-sdk-linux/platform-tools/
   stage: build
   variables:
       APP_SERVER_URL: "http://netptt.cn:25002"

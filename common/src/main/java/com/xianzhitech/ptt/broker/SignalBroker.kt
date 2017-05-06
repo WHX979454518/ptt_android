@@ -69,11 +69,11 @@ class SignalBroker(private val appComponent: AppComponent,
             return combineLatest(
                     appComponent.storage.getAllUsers(),
                     signalApi.getAllDepartments().toObservable()) { users, departments ->
-                val departmentParentMap = hashMapOf<String?, ArrayList<ContactDepartment>>()
+                val departmentParentMap = hashMapOf<String?, MutableCollection<ContactDepartment>>()
                 val departmentMap = departments.associateBy(ContactDepartment::id)
 
                 departments.forEach { department ->
-                    departmentParentMap.getOrPut(department.parentObjectId) { arrayListOf() }.add(department)
+                    departmentParentMap.getOrPut(department.parentObjectId) { linkedSetOf() }.add(department)
                 }
 
                 departmentParentMap.entries.forEach { (parentObjectId, departmentList) ->
@@ -82,15 +82,17 @@ class SignalBroker(private val appComponent: AppComponent,
                     }
                 }
 
-                val directUsers = arrayListOf<ContactUser>()
+                val directUsers = linkedSetOf<ContactUser>()
 
                 users.forEach { user ->
                     user.parentObjectId?.let { departmentMap[it]?.members?.add(user) } ?: directUsers.add(user)
                 }
 
+                val currUser = currentUser.value.orNull()
                 ContactEnterprise(
-                        departments = departmentParentMap[currentUser.value.get().enterpriseObjectId] ?: emptyList<ContactDepartment>(),
-                        directUsers = directUsers
+                        departments = departmentParentMap[currUser?.enterpriseObjectId] ?: emptyList<ContactDepartment>(),
+                        directUsers = directUsers,
+                        name = currUser?.name ?: ""
                 )
             }
         }

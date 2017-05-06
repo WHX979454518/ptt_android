@@ -12,6 +12,7 @@ import com.zrt.ptt.app.console.mvp.model.Imodel.IOrgFragmentModel;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -74,7 +75,7 @@ public class OrgFragmentModel implements IOrgFragmentModel {
         }
         OrgNodeBean org ;
         List<OrgNodeBean> list = new ArrayList<OrgNodeBean>();
-        List<ContactDepartment> contactDepartment = contactEnterprise.getDepartments();
+        Collection<ContactDepartment> contactDepartment = contactEnterprise.getDepartments();
         for (ContactDepartment department :contactDepartment){
             org = new OrgNodeBean(department.getId(),department.getParentObjectId(),department.getName());
             Log.e(""+department.getName()+":",""+department.getName());
@@ -85,7 +86,7 @@ public class OrgFragmentModel implements IOrgFragmentModel {
             org = new OrgNodeBean("ssssssss"+i,null,"aaaaa"+i);
             list.add(org);
         }
-        List<ContactUser> contactUser = contactEnterprise.getDirectUsers();
+        Collection<ContactUser> contactUser = contactEnterprise.getDirectUsers();
         Set<String> setLine = data.second;
         setLine.add("500001");
         setLine.add("500003");
