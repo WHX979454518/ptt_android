@@ -239,7 +239,11 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                         checkData.add(node);
                     }
                 }
-                if(bean.getFather().equals(node.get_id())){
+                if(bean.getFather() == null && bean.get_id().equals(node.get_id())){
+                    if (!checkData.contains(node)){
+                        checkData.add(node);
+                    }
+                }else if(bean.getFather() != null && bean.getFather().equals(node.get_id())){
                     if (!checkData.contains(node)){
                         checkData.add(node);
                     }
