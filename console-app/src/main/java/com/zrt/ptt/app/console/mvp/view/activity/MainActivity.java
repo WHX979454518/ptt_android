@@ -17,10 +17,14 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.map.MapView;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
 import com.zrt.ptt.app.console.R;
+import com.zrt.ptt.app.console.baidu.MyLocationListener;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
@@ -79,7 +83,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
     private View rootView;
     private LinearLayout logRecord;
     private LinearLayout playBack;
+    private ImageView userLocation;
     private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
+    public LocationClient mLocationClient = null;
+    public BDLocationListener myListener = new MyLocationListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,15 +97,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         mMapView = (MapView) findViewById(R.id.bmapView);
-        View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
+
         setSelected(rb1.getId());
         initView();
+        mLocationClient = new LocationClient(getApplicationContext());
+        //声明LocationClient类
+        mLocationClient.registerLocationListener( myListener );
+        //注册监听函数
+        initLocation();
 //        mainPresenter.UpDataOrganzation();
     }
 
     private void initView() {
+        View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
         rootView = findViewById(R.id.main_title);
-
+        userLocation = (ImageView) view.findViewById(R.id.user_location);
+        userLocation.setOnClickListener(this);
         View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
         logRecord = (LinearLayout) popupView.findViewById(R.id.log_record);
         logRecord.setOnClickListener(this);
@@ -302,6 +316,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
             case R.id.play_back:
                 popupWindow.dismiss();
                 break;
+            case R.id.user_location:
+                mLocationClient.start();
+                break;
         }
     }
 
@@ -309,5 +326,44 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
     public void UpDateOrganization(JSONObject data) {
         Toast.makeText(this,"执行了",Toast.LENGTH_LONG).show();
         Log.e("Organization" , data.toString());
+    }
+
+    private void initLocation(){
+        LocationClientOption option = new LocationClientOption();
+        option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
+        //可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
+
+        option.setCoorType("bd09ll");
+        //可选，默认gcj02，设置返回的定位结果坐标系
+
+        int span=1000;
+        option.setScanSpan(span);
+        //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
+
+        option.setIsNeedAddress(true);
+        //可选，设置是否需要地址信息，默认不需要
+
+        option.setOpenGps(true);
+        //可选，默认false,设置是否使用gps
+
+        option.setLocationNotify(true);
+        //可选，默认false，设置是否当GPS有效时按照1S/1次频率输出GPS结果
+
+        option.setIsNeedLocationDescribe(true);
+        //可选，默认false，设置是否需要位置语义化结果，可以在BDLocation.getLocationDescribe里得到，结果类似于“在北京天安门附近”
+
+        option.setIsNeedLocationPoiList(true);
+        //可选，默认false，设置是否需要POI结果，可以在BDLocation.getPoiList里得到
+
+        option.setIgnoreKillProcess(false);
+        //可选，默认true，定位SDK内部是一个SERVICE，并放到了独立进程，设置是否在stop的时候杀死这个进程，默认不杀死
+
+        option.SetIgnoreCacheException(false);
+        //可选，默认false，设置是否收集CRASH信息，默认收集
+
+        option.setEnableSimulateGps(false);
+        //可选，默认false，设置是否需要过滤GPS仿真结果，默认需要
+
+        mLocationClient.setLocOption(option);
     }
 }
