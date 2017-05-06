@@ -461,8 +461,8 @@ class SignalApi(private val appComponent: AppComponent,
 
     fun sendIceCandidate(iceCandidate: IceCandidate) : Completable {
         return rpc<Unit>("c_ice_candidate", JSONObject().apply {
-            put("sdpMid", iceCandidate.sdpMLineIndex)
-            put("candidate", iceCandidate.sdpMLineIndex)
+            put("sdpMid", iceCandidate.sdpMid)
+            put("candidate", iceCandidate.sdp)
             put("sdpMLineIndex", iceCandidate.sdpMLineIndex)
         }).ignoreElement()
     }
