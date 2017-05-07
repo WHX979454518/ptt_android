@@ -86,6 +86,23 @@ public class OrgFragmentModel implements IOrgFragmentModel {
             }
         }
     }
+
+    //递归部门中的用户
+    private void addAllDepartUser(List<OrgNodeBean> contactUserlist,LinkedHashSet<ContactDepartment> contactDepartment ){
+        OrgNodeBean  org;
+        for (ContactDepartment department :contactDepartment){
+            LinkedHashSet<ContactUser> userSet = (LinkedHashSet<ContactUser>) department.getMembers();
+            if(userSet.size()!=0){
+                for (ContactUser user:userSet) {
+                    org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
+                    contactUserlist.add(org);
+                }
+            }
+            if(department.getChildren().size()!=0){
+                addAllDepartUser(contactUserlist, (LinkedHashSet<ContactDepartment>) department.getChildren());
+            }
+        }
+    }
     private void handUserMassage(callDisposListener listener,Pair<ContactEnterprise, Set<String>> data,String label){
         List<OrgNodeBean> online = new ArrayList<OrgNodeBean>();
         ContactEnterprise contactEnterprise = data.first;
@@ -94,10 +111,12 @@ public class OrgFragmentModel implements IOrgFragmentModel {
         }*/
         OrgNodeBean org ;
         List<OrgNodeBean> departlist = new ArrayList<OrgNodeBean>();
+        List<OrgNodeBean> contactUserlist = new ArrayList<>();
         String compayName = contactEnterprise.getName();
         LinkedHashSet<ContactDepartment> contactDepartment = (LinkedHashSet<ContactDepartment>) contactEnterprise.getDepartments();
         departlist.add(new OrgNodeBean(contactDepartment.iterator().next().getParentObjectId(),null,compayName));
         addAllDepartment(departlist,contactDepartment);
+        addAllDepartUser(contactUserlist,contactDepartment);
         LinkedHashSet<ContactUser> contactUser = (LinkedHashSet<ContactUser>) contactEnterprise.getDirectUsers();
         Set<String> setLine = data.second;
        /* setLine.add("500001");
@@ -105,9 +124,10 @@ public class OrgFragmentModel implements IOrgFragmentModel {
         setLine.add("500002");
         setLine.add("500004");
         setLine.add("500005");*/
+        int userNum =0;
         switch (label){
             case all:
-                List<OrgNodeBean> allOrgList = new ArrayList<OrgNodeBean>();
+//                List<OrgNodeBean> allOrgList = new ArrayList<OrgNodeBean>();
                 for (ContactUser user :contactUser){
                     org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
                     for (String id:setLine) {
@@ -120,12 +140,13 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                             break;
                         }
                     }
-                    allOrgList.add(org);
+                    contactUserlist.add(org);
                 }
-                listener.getNodeData(returnOrgData(departlist,allOrgList),contactUser.size(),setLine.size());
+                userNum = contactUserlist.size();
+                listener.getNodeData(returnOrgData(departlist,contactUserlist),userNum,setLine.size());
                 break;
             case ON_LINE:
-                List<OrgNodeBean> onLineOrgList = new ArrayList<OrgNodeBean>();
+//                List<OrgNodeBean> onLineOrgList = new ArrayList<OrgNodeBean>();
                 for (ContactUser user :contactUser){
                     org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
                     for (String id:setLine) {
@@ -134,15 +155,16 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                             Random rd = new Random(); //创建一个Random类对象实例
                             int x = rd.nextInt(3)+1;
                             online.add(org);
-                            onLineOrgList.add(org);
+                            contactUserlist.add(org);
                             break;
                         }
                     }
                 }
-                listener.getNodeData(returnOrgData(departlist,onLineOrgList),contactUser.size(),setLine.size());
+                userNum = contactUserlist.size();
+                listener.getNodeData(returnOrgData(departlist,contactUserlist),userNum,setLine.size());
                 break;
             case OFF_LINE:
-                List<OrgNodeBean> offLineOrgList = new ArrayList<OrgNodeBean>();
+//                List<OrgNodeBean> offLineOrgList = new ArrayList<OrgNodeBean>();
                 List<ContactUser> contaUser = new ArrayList<ContactUser>();
                 for(ContactUser user :contactUser){
                     contaUser.add(user);
@@ -166,13 +188,17 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                     Random rd = new Random(); //创建一个Random类对象实例
                     int x = rd.nextInt(3)+1;
                     org.setOnline(false);
-                    offLineOrgList.add(org);
+                    contactUserlist.add(org);
                 }
-                listener.getNodeData(returnOrgData(departlist,offLineOrgList),contactUser.size(),setLine.size());
+                userNum = contactUserlist.size();
+                listener.getNodeData(returnOrgData(departlist,contactUserlist),userNum,setLine.size());
                 break;
         }
 
         listener.callOnlineUser(online);
+        departlist = null;
+        contactUserlist = null;
+        userNum=0;
 
     }
 

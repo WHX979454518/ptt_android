@@ -3,6 +3,8 @@ package com.zrt.ptt.app.console.mvp.view.fragment;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +14,7 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
@@ -37,6 +40,7 @@ public class SystemStateFragment extends Fragment {
     //标记是显示Checkbox还是隐藏
     private boolean isHide = false;
     private View view;
+    private RoomListFragment roomListFragment;
 
     public SystemStateFragment() {
         // Required empty public constructor
@@ -49,7 +53,15 @@ public class SystemStateFragment extends Fragment {
         view = inflater.inflate(R.layout.fragment_system_state, container, false);
 
         super.onCreate(savedInstanceState);
-
+        FragmentManager fm = getActivity().getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        if (roomListFragment == null) {
+            roomListFragment = new RoomListFragment();
+            ft.add(R.id.roomlist_fragment, roomListFragment);
+        }else {
+            ft.show(roomListFragment);
+        }
+        ft.commitAllowingStateLoss();
         /*initDatas();
         treeLv = (ListView) view.findViewById(R.id.sys_state_tree_lv);
 
