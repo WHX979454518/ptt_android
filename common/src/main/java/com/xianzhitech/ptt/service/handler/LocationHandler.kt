@@ -1,12 +1,12 @@
 package com.xianzhitech.ptt.service.handler
 
-import android.content.Context
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.api.SignalApi
-import com.xianzhitech.ptt.broker.SignalBroker
+import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
 import com.xianzhitech.ptt.data.CurrentUser
-import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.d
+import com.xianzhitech.ptt.ext.hasActiveConnection
 import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.util.Locations
@@ -28,13 +28,19 @@ class LocationHandler(appComponent: AppComponent) {
                 }
                 .switchMap { (user, locationEnabled) ->
                     if (locationEnabled) {
-                        logger.i { "Start collecting locations every ${user.locationScanIntervalSeconds} ms" }
-                        Locations.requestLocationUpdate(TimeUnit.SECONDS.toMillis(Math.max(1L, user.locationReportIntervalSeconds.toLong())), 10f)
-                                .doOnNext {
-                                    logger.d { "Got location $it" }
-                                    appComponent.storage.savePendingLocations(listOf(it))
-                                            .logErrorAndForget()
-                                            .subscribe()
+                        logger.i { "Start collecting locations every ${user.locationScanIntervalSeconds} s" }
+                        Locations.requestLocationUpdate(TimeUnit.SECONDS.toMillis(Math.max(1L, user.locationReportIntervalSeconds.toLong())))
+                                .flatMap {
+                                    val locations = listOf(it)
+                                    if (appComponent.signalBroker.connectionState.value != SignalApi.ConnectionState.CONNECTED
+                                            || BaseApp.instance.hasActiveConnection().not()) {
+                                        appComponent.storage.savePendingLocations(locations).toObservable<Unit>()
+                                    }
+                                    else {
+                                        appComponent.signalBroker.sendLocationData(locations)
+                                                .onErrorResumeNext { appComponent.storage.savePendingLocations(locations) }
+                                                .toObservable<Unit>()
+                                    }
                                 }
                     } else {
                         Observable.never()
@@ -51,13 +57,33 @@ class LocationHandler(appComponent: AppComponent) {
                     if (connected) {
                         appComponent.storage.getPendingLocations()
                                 .flatMap { locations ->
-                                    appComponent.signalBroker.sendLocationData(locations)
-                                            .andThen(appComponent.storage.removePendingLocations(locations))
-                                            .andThen(Observable.empty<Unit>())
+                                    if (BaseApp.instance.hasActiveConnection()) {
+                                        appComponent.signalBroker.sendLocationData(locations)
+                                                .andThen(appComponent.storage.removePendingLocations(locations))
+                                                .toObservable<Unit>()
+                                                .logErrorAndForget()
+                                    }
+                                    else {
+                                        Observable.empty()
+                                    }
                                 }
                     } else {
                         Observable.empty<Unit>()
                     }
+                }
+                .logErrorAndForget()
+                .subscribe()
+
+        appComponent.signalBroker
+                .events
+                .filter { it is RequestLocationUpdateEvent }
+                .flatMapSingle {
+                    Locations.requestSingleLocationUpdate()
+                }
+                .flatMap { loc ->
+                    appComponent.signalBroker.sendLocationData(listOf(loc))
+                            .onErrorResumeNext { appComponent.storage.savePendingLocations(listOf(loc)) }
+                            .toObservable<Unit>()
                 }
                 .logErrorAndForget()
                 .subscribe()

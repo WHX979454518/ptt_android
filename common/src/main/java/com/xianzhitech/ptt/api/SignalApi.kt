@@ -12,13 +12,33 @@ import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
 import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.UserLocation
-import com.xianzhitech.ptt.api.event.*
-import com.xianzhitech.ptt.data.*
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.api.event.Event
+import com.xianzhitech.ptt.api.event.IceCandidateEvent
+import com.xianzhitech.ptt.api.event.LoginFailedEvent
+import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
+import com.xianzhitech.ptt.api.event.RoomKickOutEvent
+import com.xianzhitech.ptt.api.event.UserKickedOutEvent
+import com.xianzhitech.ptt.api.event.WalkieRoomActiveInfoUpdateEvent
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.api.event.WalkieRoomSpeakerUpdateEvent
+import com.xianzhitech.ptt.data.ContactDepartment
+import com.xianzhitech.ptt.data.CurrentUser
+import com.xianzhitech.ptt.data.LatLng
+import com.xianzhitech.ptt.data.Location
+import com.xianzhitech.ptt.data.Message
+import com.xianzhitech.ptt.data.Room
+import com.xianzhitech.ptt.data.UserCredentials
+import com.xianzhitech.ptt.ext.hasActiveConnection
+import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.toBase64
+import com.xianzhitech.ptt.ext.toMD5
+import com.xianzhitech.ptt.ext.toOptional
+import com.xianzhitech.ptt.ext.w
+import com.xianzhitech.ptt.ext.waitForConnection
 import com.xianzhitech.ptt.service.ServerException
 import io.reactivex.Completable
 import io.reactivex.Maybe
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -39,7 +59,13 @@ import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.jackson.JacksonConverterFactory
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.Part
+import retrofit2.http.Path
+import retrofit2.http.Query
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -126,7 +152,7 @@ class SignalApi(private val appComponent: AppComponent,
         appComponent.appApi.retrieveAppConfig(currentUser.value.orNull()?.id ?: "", appComponent.currentVersion)
                 .observeOn(AndroidSchedulers.mainThread())
                 .toMaybe()
-                .logErrorAndForget(this::onSocketError)
+                .logErrorAndForget(this::onConnectionEnd)
                 .doOnSubscribe { retrieveAppConfigDisposable = it }
                 .subscribe { config ->
                     logger.i { "Got app config $config" }
@@ -182,7 +208,7 @@ class SignalApi(private val appComponent: AppComponent,
                     }
 
                     socket.listen(Socket.EVENT_ERROR) {
-                        onSocketError(it as? Throwable)
+                        onConnectionEnd(it as? Throwable)
                     }
 
                     socket.listenOnce("s_logon", CurrentUser::class.java) { user ->
@@ -283,7 +309,7 @@ class SignalApi(private val appComponent: AppComponent,
                 })
     }
 
-    private fun onSocketError(err: Throwable?) {
+    private fun onConnectionEnd(err: Throwable? = null) {
         logger.i { "Connection error: $err" }
 
         // Clear state
@@ -303,6 +329,8 @@ class SignalApi(private val appComponent: AppComponent,
             currentUserCredentials = null
             return
         }
+
+        connectionState.onNext(ConnectionState.DISCONNECTED)
 
         if (appContext.hasActiveConnection()) {
             // Try again later
@@ -585,7 +613,7 @@ class SignalApi(private val appComponent: AppComponent,
                 "s_online_member_update" to WalkieRoomActiveInfoUpdateEvent::class.java,
                 "s_speaker_changed" to WalkieRoomSpeakerUpdateEvent::class.java,
                 "s_member_update" to Room::class.java,
-                "s_user_update" to CurrentUser::class.java,
+                "s_user_updated" to CurrentUser::class.java,
                 "s_room_message" to Message::class.java,
                 "s_ice_candidate" to IceCandidateEvent::class.java,
                 "s_kick_out_room" to RoomKickOutEvent

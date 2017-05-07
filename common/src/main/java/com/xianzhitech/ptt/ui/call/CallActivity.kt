@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.databinding.ActivityCallBinding
+import com.xianzhitech.ptt.databinding.FragmentCallBinding
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.service.describeInHumanMessage
@@ -17,13 +17,13 @@ import org.webrtc.EglBase
 import org.webrtc.VideoRenderer
 
 class CallActivity : BaseActivity(), GroupChatView {
-    private lateinit var binding : ActivityCallBinding
+    private lateinit var binding : FragmentCallBinding
     private val audioManager : AudioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityCallBinding.inflate(layoutInflater)
+        binding = FragmentCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.callRemoteView.init(eglBase.eglBaseContext, null)

@@ -173,7 +173,7 @@ class MapFragment : BaseFragment() {
                     .bindToLifecycle()
         }
 
-        Locations.requestLocationUpdate(TimeUnit.SECONDS.toMillis(1), 5f)
+        Locations.requestLocationUpdate(TimeUnit.SECONDS.toMillis(1))
                 .observeOn(AndroidSchedulers.mainThread())
                 .logErrorAndForget()
                 .subscribe {

@@ -60,7 +60,8 @@
                 android:background="@drawable/bg_circle"
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_volume_mute"
-                android:tint="@color/blue_grey" />
+                tools:tint="@color/blue_grey"
+                app:colorFilter="@{@color/blue_grey}" />
 
         </FrameLayout>
 
@@ -75,7 +76,8 @@
             android:background="@drawable/bg_circle"
             android:padding="@dimen/unit_one"
             android:src="@drawable/ic_call_end_large"
-            android:tint="@color/red" />
+            tools:tint="@color/red"
+            app:colorFilter="@{@color/red}" />
 
         <FrameLayout
             android:layout_width="wrap_content"

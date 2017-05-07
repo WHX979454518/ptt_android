@@ -481,6 +481,8 @@ class Storage(context: Context,
             return Completable.complete()
         }
 
+        logger.i { "Saving ${locations.size} locations to database" }
+
         return Completable.defer {
             val pendingLocations = locations.map {
                 PendingLocationEntity().apply {
