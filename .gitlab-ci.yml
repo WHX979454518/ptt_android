@@ -6,7 +6,7 @@ build:
   image: openjdk:8-jdk
   before_script:
     - apt-get --quiet update --yes
-    - apt-get --quiet install --yes wget tar unzip lib32stdc++6 lib32z1 openssh-client
+    - apt-get --quiet install --yes wget tar unzip lib32stdc++6 lib32z1 openssh-client curl
     - curl https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip > android_sdk.zip
     - mkdir -p android-sdk-linux/licenses
     - unzip android_sdk.zip -d android-sdk-linux
@@ -28,7 +28,7 @@ deploy_app_staging:
   stage: deploy
   when: manual
   before_script:
-    - apt-get -y update && apt-get -y install openssh-client git
+    - apt-get -y update && apt-get -y install openssh-client git curl
     - eval $(ssh-agent -s)
     - ssh-add <(echo "$SSH_PRIVATE_KEY")
     - mkdir -p ~/.ssh
