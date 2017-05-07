@@ -11,6 +11,7 @@ import com.xianzhitech.ptt.api.dto.Contact
 import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
 import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
+import com.xianzhitech.ptt.api.dto.UserLocation
 import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.ext.*
@@ -74,11 +75,11 @@ class SignalApi(private val appComponent: AppComponent,
             return map.keys().iterator()
         }
 
-        fun add(element : String) : Boolean {
+        fun add(element: String): Boolean {
             return map.put(element, Unit) == null
         }
 
-        fun remove(element : String) : Boolean {
+        fun remove(element: String): Boolean {
             return map.remove(element) != null
         }
 
@@ -90,7 +91,7 @@ class SignalApi(private val appComponent: AppComponent,
     val currentUser: BehaviorSubject<Optional<CurrentUser>> = BehaviorSubject.createDefault(Optional.absent())
     val connectionState: BehaviorSubject<ConnectionState> = BehaviorSubject.createDefault(ConnectionState.IDLE)
     val events: PublishSubject<Pair<String, Event>> = PublishSubject.create()
-    val onlineUserIds : BehaviorSubject<Set<String>> = BehaviorSubject.createDefault(onlineUserIdSet)
+    val onlineUserIds: BehaviorSubject<Set<String>> = BehaviorSubject.createDefault(onlineUserIdSet)
 
     init {
         currentUser.onNext(appComponent.preference.currentUser.toOptional())
@@ -264,20 +265,21 @@ class SignalApi(private val appComponent: AppComponent,
         return waitForLoggedIn()
                 .andThen(Maybe.defer {
                     Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
-                    restfulApi!!.syncContact(currentUser.value.get().id, currentUserCredentials!!.password.toMD5(), version)
+                    restfulApi!!.syncContact(version)
                             .toMaybe()
                             .onErrorComplete { it is HttpException && it.code() == 304 }
                 })
     }
 
     fun sendLocationData(locations: List<Location>): Completable {
+        if (locations.isEmpty()) {
+            return Completable.complete()
+        }
+
         return waitForLoggedIn()
                 .andThen(Completable.defer {
                     Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
-                    restfulApi!!.updateLocations(currentUser.value.get().id,
-                            currentUserCredentials!!.password.toMD5(),
-                            locations
-                    )
+                    restfulApi!!.updateLocations(locations)
                 })
     }
 
@@ -447,19 +449,19 @@ class SignalApi(private val appComponent: AppComponent,
         return rpc<Int>("c_invite_room_members", roomId).toSingle()
     }
 
-    fun joinVideoChat(roomId: String) : Completable {
+    fun joinVideoChat(roomId: String): Completable {
         return rpc<Unit>("c_join_video_chat", roomId).ignoreElement()
     }
 
-    fun quitVideoChat(roomId: String) : Completable {
+    fun quitVideoChat(roomId: String): Completable {
         return rpc<Unit>("c_quit_video_chat", roomId).ignoreElement()
     }
 
-    fun offerVideoChat(offer : String) : Single<String> {
+    fun offerVideoChat(offer: String): Single<String> {
         return rpc<String>("c_offer", offer).toSingle()
     }
 
-    fun sendIceCandidate(iceCandidate: IceCandidate) : Completable {
+    fun sendIceCandidate(iceCandidate: IceCandidate): Completable {
         return rpc<Unit>("c_ice_candidate", JSONObject().apply {
             put("sdpMid", iceCandidate.sdpMid)
             put("candidate", iceCandidate.sdp)
@@ -503,6 +505,16 @@ class SignalApi(private val appComponent: AppComponent,
         return rpc<Array<MessageQueryResult>>("c_query_messages", queries).toSingle().map { it.toList() }
     }
 
+    fun findNearByPeople(topLeft: LatLng, bottomRight: LatLng): Single<List<UserLocation>> {
+        return waitForLoggedIn()
+                .andThen(Single.defer { restfulApi!!.findNearbyPeople(topLeft.lat, topLeft.lng, bottomRight.lat, bottomRight.lng) })
+    }
+
+    fun findUserLocations(userIds: List<String>, startTime: Long, endTime: Long): Single<List<UserLocation>> {
+        return waitForLoggedIn()
+                .andThen(Single.defer { restfulApi!!.findUserLocations(userIds, startTime, endTime) })
+    }
+
     private fun waitForLoggedIn(): Completable {
         return connectionState
                 .filter { it == ConnectionState.IDLE || it == ConnectionState.CONNECTED }
@@ -510,8 +522,7 @@ class SignalApi(private val appComponent: AppComponent,
                 .flatMapCompletable {
                     if (it == ConnectionState.IDLE) {
                         Completable.error(UserNotLoggedInException)
-                    }
-                    else {
+                    } else {
                         Completable.complete()
                     }
                 }
@@ -529,19 +540,20 @@ class SignalApi(private val appComponent: AppComponent,
 
     private interface RestfulApi {
 
-        @GET("api/contact/sync/{idNumber}/{password}/{version}")
-        fun syncContact(@Path("idNumber") idNumber: String,
-                        @Path("password") password: String,
-                        @Path("version") version: Long): Single<Contact>
+        @GET("api/contact/sync/{version}")
+        fun syncContact(@Path("version") version: Long): Single<Contact>
 
         @POST("api/location")
-        fun updateLocations(@Query("idNumber") idNumber: String,
-                            @Query("password") password: String,
-                            @Body locations: List<Location>): Completable
+        fun updateLocations(@Body locations: List<Location>): Completable
 
         @GET("api/nearby")
         fun findNearbyPeople(@Query("minLat") minLat: Double, @Query("minLng") minLng: Double,
-                             @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<JSONArray>
+                             @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<List<UserLocation>>
+
+        @GET("api/locations")
+        fun findUserLocations(@Query("userIds[]") userIds: List<String>,
+                              @Query("startTime") startTime: Long,
+                              @Query("endTime") endTime: Long): Single<List<UserLocation>>
 
         @POST("upload/do/binary")
         @Multipart

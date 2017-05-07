@@ -1,9 +1,7 @@
 package com.xianzhitech.ptt.ui.map
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.location.Location
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v4.graphics.drawable.DrawableCompat
@@ -17,6 +15,7 @@ import com.baidu.mapapi.map.MarkerOptions
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.utils.CoordinateConverter
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.ui.base.BaseFragment
 
 
@@ -28,13 +27,9 @@ class LocationViewFragment : BaseFragment() {
         mapView.onCreate(context, savedInstanceState)
         mapView.showScaleControl(true)
 
-        val loc : Location = arguments.getParcelable(ARG_LOCATION)
+        val loc : Location = arguments.getSerializable(ARG_LOCATION) as Location
 
-        val position = CoordinateConverter().let {
-            it.from(CoordinateConverter.CoordType.GPS)
-            it.coord(LatLng(loc.latitude, loc.longitude))
-            it.convert()
-        }
+        val position = loc.latLng.convertToBaidu()
 
         mapView.map.animateMapStatus(MapStatusUpdateFactory.newLatLng(position))
 
@@ -84,7 +79,7 @@ class LocationViewFragment : BaseFragment() {
         fun create(location : Location) : LocationViewFragment {
             return LocationViewFragment().apply {
                 arguments = Bundle(1).apply {
-                    putParcelable(ARG_LOCATION, location)
+                    putSerializable(ARG_LOCATION, location)
                 }
             }
         }

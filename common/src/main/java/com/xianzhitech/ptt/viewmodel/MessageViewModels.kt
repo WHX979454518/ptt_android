@@ -2,13 +2,13 @@ package com.xianzhitech.ptt.viewmodel
 
 import android.databinding.ObservableField
 import android.databinding.ObservableMap
-import android.location.Location
 import android.text.format.DateUtils
 import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.ImageMessageBody
+import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.data.LocationMessageBody
 import com.xianzhitech.ptt.data.Message
 import com.xianzhitech.ptt.data.MessageBody
@@ -116,15 +116,10 @@ class LocationMessageViewModel(appComponent: AppComponent, message: Message, isS
         get() = body.isEmpty
 
     override val text: String
-        get() = if (isEmpty) BaseApp.instance.getString(R.string.locating) else String.format("%.3f,%.3f", body.lat, body.lng)
+        get() = if (isEmpty) BaseApp.instance.getString(R.string.locating) else String.format("%.3f,%.3f", body.loc.latLng.lat, body.loc.latLng.lng)
 
     override fun onClickMessage() {
-        navigator.navigateToMap(Location("gps").apply {
-            accuracy = body.accuracy
-            latitude = body.lat
-            longitude = body.lng
-            time = message.sendTime.time
-        })
+        navigator.navigateToMap(body.loc)
     }
 
     interface Navigator {

@@ -21,7 +21,7 @@
 //import com.xianzhitech.ptt.model.Room
 //import com.xianzhitech.ptt.service.*
 //import com.xianzhitech.ptt.service.dto.JoinRoomResult
-//import com.xianzhitech.ptt.service.dto.NearbyUser
+//import com.xianzhitech.ptt.service.dto.UserLocation
 //import com.xianzhitech.ptt.service.dto.RoomOnlineMemberUpdate
 //import com.xianzhitech.ptt.service.dto.RoomSpeakerUpdate
 //import com.xianzhitech.ptt.ui.KickOutActivity
@@ -707,7 +707,7 @@
 //        }.subscribeOn(AndroidSchedulers.mainThread())
 //    }
 //
-//    fun searchNearbyUsers(bounds : LatLngBounds): Observable<List<NearbyUser>> {
+//    fun searchNearbyUsers(bounds : LatLngBounds): Observable<List<UserLocation>> {
 //        return Observable.interval(2, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
 //                .onBackpressureLatest()
 //                .switchMap { FindNearbyPeopleCommand(bounds).send().toObservable() }

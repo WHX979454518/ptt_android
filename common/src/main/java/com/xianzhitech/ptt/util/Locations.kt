@@ -9,6 +9,7 @@ import android.location.LocationProvider
 import android.os.Bundle
 import android.os.Looper
 import com.xianzhitech.ptt.BaseApp
+import io.reactivex.Observable
 import io.reactivex.Single
 
 object Locations {
@@ -20,7 +21,45 @@ object Locations {
         return manager.getProviders(criteria, true).firstOrNull()
     }
 
-    fun requestLocationUpdate(criteria: Criteria = accurateCriteria): Single<Location> {
+    fun requestLocationUpdate(minTime : Long,
+                              minDistance : Float,
+                              criteria: Criteria = accurateCriteria): Observable<com.xianzhitech.ptt.data.Location> {
+        return Observable.create { emitter ->
+            val manager = BaseApp.instance.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val provider = manager.getProviders(criteria, true).firstOrNull()
+
+            if (provider == null) {
+                emitter.onError(LocationProviderNotAvailableException())
+                return@create
+            }
+
+            val listener = object : LocationListener {
+                override fun onLocationChanged(loc: Location) {
+                    emitter.onNext(com.xianzhitech.ptt.data.Location.from(loc))
+                }
+
+                override fun onStatusChanged(provider: String, status: Int, data: Bundle?) {
+                    if (status == LocationProvider.OUT_OF_SERVICE) {
+                        emitter.onError(LocationProviderNotAvailableException(provider))
+                    }
+                }
+
+                override fun onProviderEnabled(providerName: String) {
+                }
+
+                override fun onProviderDisabled(providerName: String) {
+                    emitter.onError(LocationProviderNotAvailableException(providerName))
+                }
+            }
+
+            manager.requestLocationUpdates(provider, minTime, minDistance, listener)
+            emitter.setCancellable { manager.removeUpdates(listener) }
+        }
+    }
+
+
+
+    fun requestSingleLocationUpdate(criteria: Criteria = accurateCriteria): Single<com.xianzhitech.ptt.data.Location> {
         return Single.create { emitter ->
             val manager = BaseApp.instance.getSystemService(Context.LOCATION_SERVICE) as LocationManager
             val provider = manager.getProviders(criteria, true).firstOrNull()
@@ -32,7 +71,7 @@ object Locations {
 
             val listener = object : LocationListener {
                 override fun onLocationChanged(loc: Location) {
-                    emitter.onSuccess(loc)
+                    emitter.onSuccess(com.xianzhitech.ptt.data.Location.from(loc))
                 }
 
                 override fun onStatusChanged(provider: String, status: Int, data: Bundle?) {

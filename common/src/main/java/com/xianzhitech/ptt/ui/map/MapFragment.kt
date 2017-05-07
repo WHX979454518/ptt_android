@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import com.baidu.location.LocationClient
 import com.baidu.mapapi.map.BitmapDescriptorFactory
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
@@ -15,7 +14,8 @@ import com.baidu.mapapi.map.MarkerOptions
 import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.model.LatLng
 import com.xianzhitech.ptt.R
-import com.xianzhitech.ptt.api.dto.NearbyUser
+import com.xianzhitech.ptt.api.dto.UserLocation
+import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.findView
 import com.xianzhitech.ptt.ext.getTintedDrawable
@@ -26,8 +26,8 @@ import com.xianzhitech.ptt.ui.base.BaseFragment
 import com.xianzhitech.ptt.ui.user.UserPopupDialog
 import com.xianzhitech.ptt.ui.widget.drawable.TextDrawable
 import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
-import com.xianzhitech.ptt.util.receiveLocation
-import com.xianzhitech.ptt.util.receiveMapStatus
+import com.xianzhitech.ptt.util.Locations
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
@@ -122,39 +122,34 @@ class MapFragment : BaseFragment() {
         mapView?.let{
             it.onResume()
             val map = it.map
-            map.receiveMapStatus()
-                    .map { it.bound }
-                    .distinctUntilChanged()
-                    // 最小请求间隔为1秒
-                    .debounce(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                    .switchMapSingle { appComponent.signalBroker.searchNearbyUsers(it) }
+            Observable.interval(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    .switchMap {
+                        //FIXME: Find boundary?
+                        appComponent.signalBroker.findNearbyPeople(
+                                com.xianzhitech.ptt.data.LatLng(-180.0, -90.0),
+                                com.xianzhitech.ptt.data.LatLng(180.0, 90.0))
+                    }
                     .map { users ->
                         val currentUserId = appComponent.signalBroker.peekUserId()
                         users.filterNot { it.userId == currentUserId }
-                    }
-                    .switchMap { users ->
-                        val userMaps : Map<String, NearbyUser> = users.associateBy { it.userId }
-                        appComponent.storage.getUsers(userMaps.keys)
-                                .map { userObjects ->
-                                    userObjects.forEach { userMaps[it.id]!!.user = it }
-                                    userMaps
-                                }
                     }
                     .logErrorAndForget()
                     .subscribe { users ->
                         logger.i { "Got ${users.size} users within current boundaries. Existing marker size ${userMarkers.size}" }
 
+                        val usersMap = users.associateBy(UserLocation::userId)
+
                         val removingMarkers = arrayListOf<MarkerData>()
                         val existingMarkersIter = userMarkers.iterator()
                         while (existingMarkersIter.hasNext()) {
                             val entry = existingMarkersIter.next()
-                            if (users.containsKey(entry.key).not()) {
+                            if (usersMap.containsKey(entry.key).not()) {
                                 existingMarkersIter.remove()
                                 removingMarkers.add(entry.value)
                             }
                         }
 
-                        users.values.forEach { user ->
+                        users.forEach { user ->
                             var existingMarker = userMarkers[user.userId]
 
                             // 如果当前用户没有缓存图像，那么看看可不可以从待删除的用户中拿一个？
@@ -178,17 +173,18 @@ class MapFragment : BaseFragment() {
                     .bindToLifecycle()
         }
 
-        LocationClient(context).receiveLocation(false, 1000)
+        Locations.requestLocationUpdate(TimeUnit.SECONDS.toMillis(1), 5f)
                 .observeOn(AndroidSchedulers.mainThread())
                 .logErrorAndForget()
                 .subscribe {
                     val firstLocation = myLocation == null
+                    val latLng = it.latLng.convertToBaidu()
                     myLocation = MyLocationData.Builder()
-                            .latitude(it.lat)
-                            .longitude(it.lng)
-                            .accuracy(it.radius.toFloat())
-                            .speed(it.speed.toFloat())
-                            .direction(it.direction)
+                            .latitude(latLng.latitude)
+                            .longitude(latLng.longitude)
+                            .accuracy(it.radius?.toFloat() ?: -1f)
+                            .speed(it.speed?.toFloat() ?: 0f)
+                            .direction(it?.direction ?: -1f)
                             .build()
                     mapView?.map?.setMyLocationData(myLocation!!)
 
@@ -211,8 +207,8 @@ class MapFragment : BaseFragment() {
         super.onPause()
     }
 
-    private fun NearbyUser.toMarker(marker: Marker) : Marker {
-        marker.position = latLng
+    private fun UserLocation.toMarker(marker: Marker) : Marker {
+        marker.position = location.latLng.convertToBaidu()
         val drawable = user?.createAvatarDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
         val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
         view.setImageDrawable(drawable)
@@ -232,9 +228,9 @@ class MapFragment : BaseFragment() {
         return marker
     }
 
-    private fun NearbyUser.toMarkerOption() : MarkerOptions {
+    private fun UserLocation.toMarkerOption() : MarkerOptions {
         return MarkerOptions().apply {
-            position(latLng)
+            position(location.latLng.convertToBaidu())
             val drawable = user?.createAvatarDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
             val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
             view.setImageDrawable(drawable)
@@ -254,7 +250,7 @@ class MapFragment : BaseFragment() {
         }
     }
 
-    private data class MarkerData(val user : NearbyUser,
+    private data class MarkerData(val user : UserLocation,
                                   val marker: Marker)
 
     companion object {

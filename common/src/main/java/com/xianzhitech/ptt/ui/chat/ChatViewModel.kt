@@ -91,10 +91,10 @@ class ChatViewModel(private val appComponent: AppComponent,
         val msg = appComponent.signalBroker.createMessage(roomId, MessageType.LOCATION, LocationMessageBody())
 
         appComponent.storage.saveMessage(msg)
-                .flatMap { Locations.requestLocationUpdate() }
+                .flatMap { Locations.requestSingleLocationUpdate() }
                 .flatMap { loc ->
                     val updatedMsg = msg.copy {
-                        setBody(LocationMessageBody(lat = loc.latitude, lng = loc.longitude, accuracy = loc.accuracy))
+                        setBody(LocationMessageBody(loc))
                     }
 
                     appComponent.signalBroker.sendMessage(updatedMsg)

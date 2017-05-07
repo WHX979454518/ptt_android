@@ -28,7 +28,7 @@ deploy_app_staging:
   stage: deploy
   when: manual
   before_script:
-    - apt-get -y update && apt-get -y install openssh-client
+    - apt-get -y update && apt-get -y install openssh-client git
     - eval $(ssh-agent -s)
     - ssh-add <(echo "$SSH_PRIVATE_KEY")
     - mkdir -p ~/.ssh
@@ -52,7 +52,7 @@ deploy_console_staging:
   stage: deploy
   when: manual
   before_script:
-    - apt-get -y update && apt-get -y install openssh-client
+    - apt-get -y update && apt-get -y install openssh-client git
     - eval $(ssh-agent -s)
     - ssh-add <(echo "$SSH_PRIVATE_KEY")
     - mkdir -p ~/.ssh

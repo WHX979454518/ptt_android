@@ -15,7 +15,10 @@ import io.reactivex.Single
 import io.reactivex.functions.BiFunction
 import io.reactivex.functions.Function3
 import io.reactivex.schedulers.Schedulers
+import io.requery.Column
+import io.requery.Entity
 import io.requery.Persistable
+import io.requery.Table
 import io.requery.android.sqlite.DatabaseSource
 import io.requery.cache.EntityCacheBuilder
 import io.requery.query.Return
@@ -426,7 +429,8 @@ class Storage(context: Context,
                 data.delete(ContactGroup::class.java).get().single(),
                 data.delete(RoomInfo::class.java).get().single(),
                 data.delete(Room::class.java).get().single(),
-                data.delete(Message::class.java).get().single()
+                data.delete(Message::class.java).get().single(),
+                data.delete(PendingLocation::class.java).get().single()
         )
     }
 
@@ -472,6 +476,48 @@ class Storage(context: Context,
                 .toCompletable()
     }
 
+    fun savePendingLocations(locations: Collection<Location>): Completable {
+        if (locations.isEmpty()) {
+            return Completable.complete()
+        }
+
+        return Completable.defer {
+            val pendingLocations = locations.map {
+                PendingLocationEntity().apply {
+                    setLocationText(appComponent.objectMapper.writeValueAsString(it))
+                }
+            }
+
+            data.upsert(pendingLocations).toCompletable()
+        }.subscribeOn(writeScheduler)
+    }
+
+    fun getPendingLocations(): Observable<List<Location>> {
+        return data.select(PendingLocation::class.java)
+                .get()
+                .observableResult()
+                .subscribeOn(readScheduler)
+                .map { result ->
+                    result.map {
+                        appComponent.objectMapper.readValue(it.locationText, Location::class.java)
+                    }
+                }
+    }
+
+    fun removePendingLocations(locations: Collection<Location>): Completable {
+        if (locations.isEmpty()) {
+            return Completable.complete()
+        }
+
+        return Completable.defer {
+            data.delete(PendingLocation::class.java)
+                    .where(PendingLocationEntity.LOCATION_TEXT.`in`(locations.map(appComponent.objectMapper::writeValueAsString)))
+                    .get()
+                    .single()
+                    .toCompletable()
+        }.subscribeOn(writeScheduler)
+    }
+
     private fun runInTransaction(vararg actions: Single<*>): Completable {
         return Completable.fromObservable(data.runInTransaction(*actions).subscribeOn(writeScheduler))
     }
@@ -482,6 +528,13 @@ class Storage(context: Context,
                 .doOnError { logger.e(it) { "Error executing storage query: " } }
                 .map { it.toList() }
     }
+}
+
+@Entity
+@Table(name = "pending_locations")
+interface PendingLocation : Persistable {
+    @get:Column(name = "location_text", unique = true)
+    val locationText: String
 }
 
 data class MessageWithSender(val message: Message,

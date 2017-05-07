@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule
 import com.github.piasy.biv.BigImageViewer
 import com.github.piasy.biv.loader.glide.GlideImageLoader
-import com.github.piasy.biv.view.BigImageView
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xianzhitech.ptt.api.AppApi
 import com.xianzhitech.ptt.broker.SignalBroker
@@ -114,7 +113,7 @@ abstract class BaseApp : MultiDexApplication(), AppComponent {
         AudioHandler(this, signalBroker, mediaButtonHandler, httpClient, preference)
         ServiceHandler(this, this)
         RoomAutoQuitHandler(preference, activityProvider, signalBroker)
-        LocationHandler(this, signalBroker)
+        LocationHandler(this)
         statisticCollector = StatisticCollector(signalBroker)
         WakeLockHandler(signalBroker, this)
         MessageSync(this)

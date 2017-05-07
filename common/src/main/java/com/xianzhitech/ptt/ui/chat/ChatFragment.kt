@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
-import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -18,6 +17,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.databinding.FragmentChatBinding
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.callbacks
@@ -181,7 +181,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
                 FragmentDisplayActivity.createIntent(
                         LocationViewFragment::class.java,
                         Bundle(1).apply {
-                            putParcelable(LocationViewFragment.ARG_LOCATION, location)
+                            putSerializable(LocationViewFragment.ARG_LOCATION, location)
                         }
                 )
         )

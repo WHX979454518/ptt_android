@@ -12,7 +12,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
-import com.xianzhitech.ptt.api.dto.NearbyUser
+import com.xianzhitech.ptt.api.dto.UserLocation
 import com.xianzhitech.ptt.api.event.*
 import com.xianzhitech.ptt.data.*
 import com.xianzhitech.ptt.ext.*
@@ -610,6 +610,7 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
     fun sendLocationData(locations: List<Location>): Completable {
+        logger.i { "Sending ${locations.size} location data" }
         return signalApi.sendLocationData(locations)
     }
 
@@ -629,8 +630,24 @@ class SignalBroker(private val appComponent: AppComponent,
                 }
     }
 
-    fun searchNearbyUsers(bounds: LatLngBounds): Single<List<NearbyUser>> {
-        TODO("not implemented")
+    fun findNearbyPeople(topLeft : LatLng, bottomRight : LatLng): Observable<List<UserLocation>> {
+        return signalApi.findNearByPeople(topLeft, bottomRight).attachUserInfo()
+    }
+
+    fun findUserLocations(userIds: List<String>, startTime: Long, endTime: Long): Observable<List<UserLocation>> {
+        return signalApi.findUserLocations(userIds, startTime, endTime).attachUserInfo()
+    }
+
+    private fun Single<List<UserLocation>>.attachUserInfo() : Observable<List<UserLocation>> {
+        return flatMapObservable { locations ->
+            appComponent.storage.getUsers(locations.mapTo(hashSetOf(), UserLocation::userId))
+                    .map { users ->
+                        val userMap = users.associateBy(User::id)
+
+                        locations.forEach { it.user = userMap[it.userId] }
+                        locations
+                    }
+        }
     }
 
     fun inviteRoomMembers(roomId: String): Single<Int> {
