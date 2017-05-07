@@ -1,7 +1,13 @@
 package com.zrt.ptt.app.console.mvp.view.activity;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
@@ -20,9 +26,15 @@ import android.widget.Toast;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
+import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.baidu.MyLocationListener;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
@@ -32,11 +44,13 @@ import com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment;
 
 import org.json.JSONObject;
 
+import java.util.List;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener,IMainActivityView{
+public class MainActivity extends BaseActivity implements View.OnClickListener, IMainActivityView {
     @BindView(R.id.pupmenu)
     ImageView pupmenu;
     @BindView(R.id.all_call)
@@ -53,12 +67,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
     ImageView logo;
     @BindView(R.id.main_title)
     LinearLayout mainTitle;
-    @BindView(R.id.rb1)
+   /* @BindView(R.id.rb1)
     RadioButton rb1;
     @BindView(R.id.rb2)
     RadioButton rb2;
     @BindView(R.id.rb3)
-    RadioButton rb3;
+    RadioButton rb3;*/
     @BindView(R.id.contacts_container)
     LinearLayout contactsContainer;
     @BindView(R.id.bmapView)
@@ -67,8 +81,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
     FrameLayout mapContainer;
     @BindView(R.id.main_content)
     LinearLayout mainContent;
-    @BindView(R.id.linear_check_lay)
-    LinearLayout linearCheckLay;
     @BindView(R.id.organiz_func_container)
     FrameLayout organizFuncContainer;
     @BindView(R.id.organiz_function_inc)
@@ -87,6 +99,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
     private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
     public LocationClient mLocationClient = null;
     public BDLocationListener myListener = new MyLocationListener();
+    //定位都要通过LocationManager这个类实现
+    private LocationManager locationManager;
+    private String provider;
+    BaiduMap baiduMap;
+    boolean ifFrist = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,23 +114,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);//remove notification bar 即全屏
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        mMapView = (MapView) findViewById(R.id.bmapView);
 
-        setSelected(rb1.getId());
+        initMapViewLocation();
         initView();
         mLocationClient = new LocationClient(getApplicationContext());
         //声明LocationClient类
-        mLocationClient.registerLocationListener( myListener );
+        mLocationClient.registerLocationListener(myListener);
         //注册监听函数
         initLocation();
+        mLocationClient.start();
 //        mainPresenter.UpDataOrganzation();
     }
 
     private void initView() {
         View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
         rootView = findViewById(R.id.main_title);
-        userLocation = (ImageView) view.findViewById(R.id.user_location);
-        userLocation.setOnClickListener(this);
         View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
         logRecord = (LinearLayout) popupView.findViewById(R.id.log_record);
         logRecord.setOnClickListener(this);
@@ -126,6 +142,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
         popupWindow.setBackgroundDrawable(new BitmapDrawable());
         popupWindow.setFocusable(true);
         popupWindow.setTouchable(true);
+        initFragment();
 
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
@@ -156,45 +173,34 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
     /**
      * 切换左侧Fragment
      *
-     * @param id
+     *
      */
-    public void setSelected(int id) {
-        checkRadio(id);
+    public void initFragment() {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
-        hideFragment(ft, id);
-        switch (id) {
-            case R.id.rb1:
                 if (organizationFragment == null) {
                     organizationFragment = new OrganizationFragment();
                     ft.add(R.id.contacts_container, organizationFragment);
-                } else if (!organizationFragment.isVisible())
+                } else
                     ft.show(organizationFragment);
-                break;
-            case R.id.rb2:
+
                 if (stateFragment == null) {
                     stateFragment = new SystemStateFragment();
-                    ft.add(R.id.contacts_container, stateFragment);
-                } else if (!stateFragment.isVisible())
+                    ft.add(R.id.system_state_container, stateFragment);
+                } else
                     ft.show(stateFragment);
-                break;
-            case R.id.rb3:
-                if (roomListFragment == null) {
+
+                /*if (roomListFragment == null) {
                     roomListFragment = new RoomListFragment();
                     ft.add(R.id.contacts_container, roomListFragment);
                 } else if (!roomListFragment.isVisible())
-                    ft.show(roomListFragment);
-                break;
-        }
+                    ft.show(roomListFragment);*/
+
         ft.commitAllowingStateLoss();
     }
 
-    /**
-     * 左侧切换钮背景等相关处理
-     *
-     * @param id
-     */
-    public void checkRadio(int id) {
+
+   /* public void checkRadio(int id) {
         switch (id) {
             case R.id.rb1:
                 rb1.setChecked(true);
@@ -227,29 +233,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
                 rb2.setChecked(false);
                 break;
         }
-    }
+    }*/
 
-    /**
-     * 隐藏fragment
-     *
-     * @param ft
-     * @param id
-     */
-    private void hideFragment(FragmentTransaction ft, int id) {
-        if (organizationFragment != null && id != rb1.getId())
-            ft.hide(organizationFragment);
-        if (stateFragment != null && id != rb2.getId())
-            ft.hide(stateFragment);
-        if (roomListFragment != null && id != rb3.getId())
-            ft.hide(roomListFragment);
-
-    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
+        if (locationManager != null) {
+            locationManager.removeUpdates(locationListener);
+        }
         mMapView.onDestroy();
+        baiduMap.setMyLocationEnabled(false);
     }
 
     @Override
@@ -271,7 +266,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
      *
      * @param view
      */
-    @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.rb1, R.id.rb2, R.id.rb3, R.id.contacts_container, R.id.bmapView})
+    @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.contacts_container, R.id.bmapView})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.pupmenu:
@@ -290,15 +285,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
                 break;
             case R.id.sign_out:
                 break;
-            case R.id.rb1:
-                setSelected(rb1.getId());
-                break;
-            case R.id.rb2:
-                setSelected(rb2.getId());
-                break;
-            case R.id.rb3:
-                setSelected(rb3.getId());
-                break;
             case R.id.contacts_container:
                 break;
             case R.id.bmapView:
@@ -316,19 +302,57 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
             case R.id.play_back:
                 popupWindow.dismiss();
                 break;
-            case R.id.user_location:
-                mLocationClient.start();
-                break;
         }
     }
 
     @Override
     public void UpDateOrganization(JSONObject data) {
-        Toast.makeText(this,"执行了",Toast.LENGTH_LONG).show();
-        Log.e("Organization" , data.toString());
+        Toast.makeText(this, "执行了", Toast.LENGTH_LONG).show();
+        Log.e("Organization", data.toString());
     }
 
-    private void initLocation(){
+    private void initLocation() {
+        //获取定位服务
+        locationManager = (LocationManager) getSystemService(App.getInstance().getApplicationContext().LOCATION_SERVICE);
+        //获取当前可用的位置控制器
+        List<String> list = locationManager.getProviders(true);
+
+        if (list.contains(LocationManager.GPS_PROVIDER)) {
+            //是否为GPS位置控制器
+            provider = LocationManager.GPS_PROVIDER;
+        } else if (list.contains(LocationManager.NETWORK_PROVIDER)) {
+            //是否为网络位置控制器
+            provider = LocationManager.NETWORK_PROVIDER;
+
+        } else {
+            Toast.makeText(this, "请检查网络或GPS是否打开",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        Location location = locationManager.getLastKnownLocation(provider);
+        if (location != null) {
+            //获取当前位置，这里只用到了经纬度
+            String string = "纬度为：" + location.getLatitude() + ",经度为："
+                    + location.getLongitude();
+        }
+
+//绑定定位事件，监听位置是否改变
+//第一个参数为控制器类型第二个参数为监听位置变化的时间间隔（单位：毫秒）
+//第三个参数为位置变化的间隔（单位：米）第四个参数为位置监听器
+        locationManager.requestLocationUpdates(provider, 2000, 2,
+                locationListener);
+
+
         LocationClientOption option = new LocationClientOption();
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
         //可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
@@ -336,12 +360,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
         option.setCoorType("bd09ll");
         //可选，默认gcj02，设置返回的定位结果坐标系
 
-        int span=1000;
+        int span = 1000;
         option.setScanSpan(span);
         //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
 
         option.setIsNeedAddress(true);
         //可选，设置是否需要地址信息，默认不需要
+
+        option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
+        );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
+        option.setCoorType("gcj02");//可选，默认gcj02，设置返回的定位结果坐标系
+        //int span = 1000;
+        //option.setScanSpan(span);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
 
         option.setOpenGps(true);
         //可选，默认false,设置是否使用gps
@@ -365,5 +395,92 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,I
         //可选，默认false，设置是否需要过滤GPS仿真结果，默认需要
 
         mLocationClient.setLocOption(option);
+    }
+
+    LocationListener locationListener = new LocationListener() {
+
+        @Override
+        public void onStatusChanged(String arg0, int arg1, Bundle arg2) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void onProviderEnabled(String arg0) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void onProviderDisabled(String arg0) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void onLocationChanged(Location arg0) {
+            // TODO Auto-generated method stub
+            // 更新当前经纬度
+            navigateTo(arg0);
+        }
+    };
+
+    private void initMapViewLocation() {
+        mMapView = (MapView) findViewById(R.id.bmapView);
+        // 获取baiduMap对象
+        baiduMap = mMapView.getMap();
+        // 设置可改变地图位置
+        baiduMap.setMyLocationEnabled(true);
+        locationManager = (LocationManager) getSystemService(App.getInstance().getApplicationContext().LOCATION_SERVICE);
+        List<String> list = locationManager.getProviders(true);
+        if (list.contains(LocationManager.GPS_PROVIDER)) {
+            provider = LocationManager.GPS_PROVIDER;
+        } else if (list.contains(LocationManager.NETWORK_PROVIDER)) {
+            provider = LocationManager.NETWORK_PROVIDER;
+
+        } else {
+            Toast.makeText(this, "当前不能提供位置信息", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        Location location = locationManager.getLastKnownLocation(provider);
+        if (location != null) {
+            navigateTo(location);
+        }
+        locationManager.requestLocationUpdates(provider, 5000, 1,
+                locationListener);
+
+    }
+
+    private void navigateTo(Location location) {
+        // 按照经纬度确定地图位置
+        if (ifFrist) {
+            LatLng ll = new LatLng(location.getLatitude(),
+                    location.getLongitude());
+            MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
+            // 移动到某经纬度
+            baiduMap.animateMapStatus(update);
+            update = MapStatusUpdateFactory.zoomBy(5f);
+            // 放大
+            baiduMap.animateMapStatus(update);
+
+            ifFrist = false;
+        }
+        // 显示个人位置图标
+        MyLocationData.Builder builder = new MyLocationData.Builder();
+        builder.latitude(location.getLatitude());
+        builder.longitude(location.getLongitude());
+        MyLocationData data = builder.build();
+        baiduMap.setMyLocationData(data);
+
     }
 }

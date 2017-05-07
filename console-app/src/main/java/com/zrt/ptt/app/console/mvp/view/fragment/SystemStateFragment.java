@@ -50,7 +50,7 @@ public class SystemStateFragment extends Fragment {
 
         super.onCreate(savedInstanceState);
 
-        initDatas();
+        /*initDatas();
         treeLv = (ListView) view.findViewById(R.id.sys_state_tree_lv);
 
         try {
@@ -72,7 +72,7 @@ public class SystemStateFragment extends Fragment {
                     // TODO Auto-generated method stub
 
                     StringBuffer sb = new StringBuffer();
-                    /*for (Node n : checkedNodes) {
+                    *//*for (Node n : checkedNodes) {
                         int pos = n.getId() - 1;
                         sb.append(mDatas.get(pos).getName()).append("---")
                                 .append(pos + 1).append(";");
@@ -80,7 +80,7 @@ public class SystemStateFragment extends Fragment {
                     }
 
                     Toast.makeText(getActivity().getApplicationContext(), sb.toString(),
-                            Toast.LENGTH_SHORT).show();*/
+                            Toast.LENGTH_SHORT).show();*//*
                 }
 
             });
@@ -91,7 +91,7 @@ public class SystemStateFragment extends Fragment {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        treeLv.setAdapter(adapter);
+        treeLv.setAdapter(adapter);*/
 
 
         return view;

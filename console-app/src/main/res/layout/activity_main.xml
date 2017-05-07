@@ -24,10 +24,10 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="4"
-            android:background="@android:color/white">
+            android:layout_weight="3"
+            android:background="#d3e5e4">
 
-            <LinearLayout
+           <!-- <LinearLayout
                 android:id="@+id/linear_check_lay"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
@@ -35,7 +35,7 @@
                 android:layout_alignParentBottom="true"
                 android:layout_gravity="bottom"
                 android:gravity="center_vertical"
-                android:background="#fff">
+                android:background="#d3e5e4">
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -85,19 +85,19 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-            </LinearLayout>
+            </LinearLayout>-->
             <LinearLayout
 
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:layout_above="@+id/linear_check_lay"
                 android:layout_alignParentTop="true">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_alignParentTop="true"
                     android:gravity="center_vertical"
+                    android:background="#d3e5e4"
                     android:padding="5dp"
                     android:orientation="horizontal">
                     <EditText
@@ -132,11 +132,19 @@
                 </LinearLayout>
             </LinearLayout>
         </RelativeLayout>
+        <LinearLayout
+            android:id="@+id/system_state_container"
+            android:layout_width="0dp"
+            android:orientation="vertical"
+            android:layout_weight="4"
+            android:layout_height="match_parent">
+
+        </LinearLayout>
         <FrameLayout
             android:id="@+id/map_container"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="7"
+            android:layout_weight="5"
             android:orientation="vertical">
             <com.baidu.mapapi.map.MapView
                 android:id="@+id/bmapView"

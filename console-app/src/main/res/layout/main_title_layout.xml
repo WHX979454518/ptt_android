@@ -132,7 +132,7 @@
             android:layout_marginRight="40dp"
             android:layout_toLeftOf="@+id/console"
             android:gravity="center_vertical"
-            android:src="@drawable/logo" />
+            android:src="@drawable/logo_console" />
 
         <LinearLayout
             android:layout_width="wrap_content"

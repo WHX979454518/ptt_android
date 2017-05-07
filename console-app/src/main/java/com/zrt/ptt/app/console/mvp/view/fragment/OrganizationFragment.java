@@ -15,11 +15,6 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.xianzhitech.ptt.AppComponent;
-import com.xianzhitech.ptt.data.ContactDepartment;
-import com.xianzhitech.ptt.data.ContactEnterprise;
-import com.xianzhitech.ptt.data.ContactUser;
-import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 import com.zrt.ptt.app.console.mvp.model.Node;
@@ -33,11 +28,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-
-import io.reactivex.Observable;
-import io.reactivex.Observer;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 
 
@@ -193,7 +183,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                         num++;
                     }
                 }
-                selectedPersNum.setText("已选人员("+num+")");
+                selectedPersNum.setText("已选("+num+")");
                /* if(NodeAddDelet.contains(node)){
                     if(!node.isChecked()){
                         NodeAddDelet.remove(node);
@@ -267,7 +257,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 e.printStackTrace();
             }
         }
-        selectedPersNum.setText("已选人员("+num+")");
+        selectedPersNum.setText("已选("+num+")");
     }
     private void setAdapterData(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize){
         mDatas.clear();
