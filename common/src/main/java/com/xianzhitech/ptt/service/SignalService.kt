@@ -454,9 +454,9 @@
 //    }
 //}
 //
-//class FindNearbyPeopleCommand(val latLngBounds: LatLngBounds) : Command<List<NearbyUser>, JSONArray>("") {
-//    override fun convert(value: JSONArray): List<NearbyUser> {
-//        return value.transform { NearbyUser.fromJSON(it as JSONObject) }
+//class FindNearbyPeopleCommand(val latLngBounds: LatLngBounds) : Command<List<UserLocation>, JSONArray>("") {
+//    override fun convert(value: JSONArray): List<UserLocation> {
+//        return value.transform { UserLocation.fromJSON(it as JSONObject) }
 //    }
 //}
 //

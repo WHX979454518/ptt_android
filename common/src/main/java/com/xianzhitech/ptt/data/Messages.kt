@@ -87,13 +87,11 @@ data class VideoMessageBody @JvmOverloads constructor(
 }
 
 data class LocationMessageBody @JvmOverloads constructor(
-        @get:JsonProperty("lat") val lat: Double = 0.0,
-        @get:JsonProperty("lng") val lng: Double = 0.0,
-        @get:JsonProperty("accuracy") val accuracy: Float = 0f,
+        @get:JsonProperty("loc") val loc: Location = Location.EMPTY,
         @get:JsonProperty("desc") val desc: String? = null) : MessageBody {
 
     val isEmpty: Boolean
-        get() = lat == 0.0 && lng == 0.0 && accuracy == 0f
+        get() = loc == Location.EMPTY
 
     override fun toDisplayText(context: Context): CharSequence {
         return if (desc.isNullOrBlank()) {

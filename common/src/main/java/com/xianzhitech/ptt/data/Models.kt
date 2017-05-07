@@ -1,9 +1,11 @@
 package com.xianzhitech.ptt.data
 
 import android.os.Parcelable
+import com.baidu.mapapi.utils.CoordinateConverter
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.JsonUnwrapped
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.xianzhitech.ptt.api.event.Event
 import com.xianzhitech.ptt.util.MessageBodyConverter
@@ -180,3 +182,43 @@ interface Message : Persistable, Serializable, Event {
 
 val Room.isSingle: Boolean
     get() = groupIds.isEmpty() && extraMemberIds.size < 3
+
+
+data class LatLng(@get:JsonProperty("lat") val lat: Double = Double.MIN_VALUE,
+                  @get:JsonProperty("lng") val lng: Double = Double.MIN_VALUE) : Serializable {
+
+    fun convertToBaidu() : com.baidu.mapapi.model.LatLng {
+        return CoordinateConverter()
+                .from(CoordinateConverter.CoordType.GPS)
+                .coord(com.baidu.mapapi.model.LatLng(lat, lng))
+                .convert()
+    }
+
+    companion object {
+        @JvmStatic val EMPTY = LatLng()
+    }
+}
+
+data class Location @JvmOverloads constructor(@get:JsonUnwrapped val latLng: LatLng = LatLng.EMPTY,
+                                              @get:JsonProperty("radius") val radius: Int? = null,
+                                              @get:JsonProperty("alt") val altitude: Int? = null,
+                                              @get:JsonProperty("speed") val speed: Int? = null,
+                                              @get:JsonProperty("repTime") val time: Long? = null,
+                                              @get:JsonProperty("direction") val direction: Float? = null) : Serializable {
+
+
+    companion object {
+        @JvmStatic val EMPTY = Location()
+
+        fun from(location: android.location.Location): Location {
+            return Location(
+                    latLng = LatLng(lat = location.latitude, lng = location.longitude),
+                    radius = location.accuracy.toInt(),
+                    altitude = location.altitude.toInt(),
+                    speed = location.speed.toInt(),
+                    time = location.time,
+                    direction = location.bearing
+            )
+        }
+    }
+}
