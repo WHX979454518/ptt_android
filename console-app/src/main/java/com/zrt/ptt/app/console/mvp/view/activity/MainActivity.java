@@ -27,16 +27,23 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.baidu.MyLocationListener;
+import com.zrt.ptt.app.console.baidu.MyOrientationListener;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
@@ -98,7 +105,33 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     private ImageView userLocation;
     private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
     public LocationClient mLocationClient = null;
-    public BDLocationListener myListener = new MyLocationListener();
+    /**
+     * 当前定位的模式
+     */
+    private LocationMode mCurrentMode = LocationMode.NORMAL;
+    /**
+     * 方向传感器X方向的值
+     */
+    private int mXDirection;
+    /**
+     * 方向传感器的监听器
+     */
+    private MyOrientationListener myOrientationListener;
+    /***
+     * 是否是第一次定位
+     */
+
+    /**
+     * 最新一次的经纬度
+     */
+    private double mCurrentLantitude;
+    private double mCurrentLongitude;
+    /**
+     * 当前的精度
+     */
+    private float mCurrentAccracy;
+    private volatile boolean isFristLocation = true;
+    public BDLocationListener myListener ;
     //定位都要通过LocationManager这个类实现
     private LocationManager locationManager;
     private String provider;
@@ -114,15 +147,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);//remove notification bar 即全屏
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        // 第一次定位
+        isFristLocation = true;
 
-        initMapViewLocation();
+//        initMapViewLocation();
         initView();
-        mLocationClient = new LocationClient(getApplicationContext());
-        //声明LocationClient类
-        mLocationClient.registerLocationListener(myListener);
-        //注册监听函数
-        initLocation();
-        mLocationClient.start();
 //        mainPresenter.UpDataOrganzation();
     }
 
@@ -142,6 +171,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         popupWindow.setBackgroundDrawable(new BitmapDrawable());
         popupWindow.setFocusable(true);
         popupWindow.setTouchable(true);
+        mMapView = (MapView) findViewById(R.id.bmapView);
+        // 获取baiduMap对象
+        baiduMap = mMapView.getMap();
+        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
+        baiduMap.setMapStatus(msu);
         initFragment();
 
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
@@ -161,6 +195,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 return false;
             }
         });
+
+        initMyLocation();
+        initOritationListener();
     }
 
     public void setBackgroundAlpha(float bgAlpha) {
@@ -240,11 +277,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     protected void onDestroy() {
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
-        if (locationManager != null) {
-            locationManager.removeUpdates(locationListener);
-        }
         mMapView.onDestroy();
         baiduMap.setMyLocationEnabled(false);
+    }
+
+    @Override
+    protected void onStart()
+    {
+        // 开启图层定位
+        baiduMap.setMyLocationEnabled(true);
+        if (!mLocationClient.isStarted())
+        {
+            mLocationClient.start();
+        }
+        // 开启方向传感器
+        myOrientationListener.start();
+        super.onStart();
     }
 
     @Override
@@ -259,6 +307,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         super.onPause();
         //在activity执行onPause时执行mMapView. onPause ()，实现地图生命周期管理
         mMapView.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // 关闭图层定位
+        baiduMap.setMyLocationEnabled(false);
+        mLocationClient.stop();
+
+        // 关闭方向传感器
+        myOrientationListener.stop();
+        super.onStop();
     }
 
     /**
@@ -311,48 +371,94 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         Log.e("Organization", data.toString());
     }
 
-    private void initLocation() {
-        //获取定位服务
-        locationManager = (LocationManager) getSystemService(App.getInstance().getApplicationContext().LOCATION_SERVICE);
-        //获取当前可用的位置控制器
-        List<String> list = locationManager.getProviders(true);
+    /**
+     * 初始化定位相关代码
+     */
+    private void initMyLocation()
+    {
+        // 定位初始化
+        mLocationClient = new LocationClient(this);
+        myListener = new MyLocationListener(mMapView,baiduMap,isFristLocation);
+        mLocationClient.registerLocationListener(myListener);
+        // 设置定位的相关配置
+        LocationClientOption option = new LocationClientOption();
+        option.setOpenGps(true);// 打开gps
+        option.setCoorType("bd09ll"); // 设置坐标类型
+        option.setScanSpan(1000);
+        mLocationClient.setLocOption(option);
+    }
 
-        if (list.contains(LocationManager.GPS_PROVIDER)) {
-            //是否为GPS位置控制器
-            provider = LocationManager.GPS_PROVIDER;
-        } else if (list.contains(LocationManager.NETWORK_PROVIDER)) {
-            //是否为网络位置控制器
-            provider = LocationManager.NETWORK_PROVIDER;
+    /**
+     * 初始化方向传感器
+     */
+    private void initOritationListener()
+    {
+        myOrientationListener = new MyOrientationListener(
+                getApplicationContext());
+        myOrientationListener
+                .setOnOrientationListener(new MyOrientationListener.OnOrientationListener()
+                {
+                    @Override
+                    public void onOrientationChanged(float x)
+                    {
+                        mXDirection = (int) x;
 
-        } else {
-            Toast.makeText(this, "请检查网络或GPS是否打开",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        Location location = locationManager.getLastKnownLocation(provider);
-        if (location != null) {
-            //获取当前位置，这里只用到了经纬度
-            String string = "纬度为：" + location.getLatitude() + ",经度为："
-                    + location.getLongitude();
-        }
+                        // 构造定位数据
+                        MyLocationData locData = new MyLocationData.Builder()
+                                .accuracy(mCurrentAccracy)
+                                // 此处设置开发者获取到的方向信息，顺时针0-360
+                                .direction(mXDirection)
+                                .latitude(mCurrentLantitude)
+                                .longitude(mCurrentLongitude).build();
+                        // 设置定位数据
+                        baiduMap.setMyLocationData(locData);
+                        // 设置自定义图标
+                        BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
+                                .fromResource(R.drawable.navi_map_gps_locked);
+                        MyLocationConfiguration config = new MyLocationConfiguration(
+                                mCurrentMode, true, mCurrentMarker);
+                        baiduMap.setMyLocationConfigeration(config);
 
-//绑定定位事件，监听位置是否改变
-//第一个参数为控制器类型第二个参数为监听位置变化的时间间隔（单位：毫秒）
-//第三个参数为位置变化的间隔（单位：米）第四个参数为位置监听器
-        locationManager.requestLocationUpdates(provider, 2000, 2,
-                locationListener);
+                    }
+                });
+    }
 
+    private void initMapViewLocation() {
 
+        // 设置可改变地图位置
+        baiduMap.setMyLocationEnabled(true);
+        mLocationClient = new LocationClient(App.getInstance().getApplicationContext());
+        //声明LocationClient类
+        mLocationClient.registerLocationListener( myListener );
+        initLocation();
+        mLocationClient.start();
+        //定义Maker坐标点
+        LatLng point = new LatLng(103.982949,30.737337);
+//构建Marker图标
+        BitmapDescriptor bitmap = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_marka);
+//构建MarkerOption，用于在地图上添加Marker
+        OverlayOptions option = new MarkerOptions()
+                .position(point)
+                .icon(bitmap);
+//在地图上添加Marker，并显示
+        baiduMap.addOverlay(option);
+
+        // 构造定位数据
+        MyLocationData locData = new MyLocationData.Builder()
+                .accuracy((float) 30.0)//
+                .direction((float) 100.0)// 方向
+                .latitude(103.982949)//
+                .longitude(30.737337)//
+                .build();
+        // 设置定位数据
+        baiduMap.setMyLocationData(locData);
+        LatLng ll = new LatLng(103.982949, 30.737337);
+        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(ll);
+        baiduMap.animateMapStatus(msu);
+    }
+
+    private void initLocation(){
         LocationClientOption option = new LocationClientOption();
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
         //可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
@@ -360,18 +466,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         option.setCoorType("bd09ll");
         //可选，默认gcj02，设置返回的定位结果坐标系
 
-        int span = 1000;
+        int span=1000;
         option.setScanSpan(span);
         //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
 
         option.setIsNeedAddress(true);
         //可选，设置是否需要地址信息，默认不需要
-
-        option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
-        );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
-        option.setCoorType("gcj02");//可选，默认gcj02，设置返回的定位结果坐标系
-        //int span = 1000;
-        //option.setScanSpan(span);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
 
         option.setOpenGps(true);
         //可选，默认false,设置是否使用gps
@@ -397,90 +497,4 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         mLocationClient.setLocOption(option);
     }
 
-    LocationListener locationListener = new LocationListener() {
-
-        @Override
-        public void onStatusChanged(String arg0, int arg1, Bundle arg2) {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public void onProviderEnabled(String arg0) {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public void onProviderDisabled(String arg0) {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public void onLocationChanged(Location arg0) {
-            // TODO Auto-generated method stub
-            // 更新当前经纬度
-            navigateTo(arg0);
-        }
-    };
-
-    private void initMapViewLocation() {
-        mMapView = (MapView) findViewById(R.id.bmapView);
-        // 获取baiduMap对象
-        baiduMap = mMapView.getMap();
-        // 设置可改变地图位置
-        baiduMap.setMyLocationEnabled(true);
-        locationManager = (LocationManager) getSystemService(App.getInstance().getApplicationContext().LOCATION_SERVICE);
-        List<String> list = locationManager.getProviders(true);
-        if (list.contains(LocationManager.GPS_PROVIDER)) {
-            provider = LocationManager.GPS_PROVIDER;
-        } else if (list.contains(LocationManager.NETWORK_PROVIDER)) {
-            provider = LocationManager.NETWORK_PROVIDER;
-
-        } else {
-            Toast.makeText(this, "当前不能提供位置信息", Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        Location location = locationManager.getLastKnownLocation(provider);
-        if (location != null) {
-            navigateTo(location);
-        }
-        locationManager.requestLocationUpdates(provider, 5000, 1,
-                locationListener);
-
-    }
-
-    private void navigateTo(Location location) {
-        // 按照经纬度确定地图位置
-        if (ifFrist) {
-            LatLng ll = new LatLng(location.getLatitude(),
-                    location.getLongitude());
-            MapStatusUpdate update = MapStatusUpdateFactory.newLatLng(ll);
-            // 移动到某经纬度
-            baiduMap.animateMapStatus(update);
-            update = MapStatusUpdateFactory.zoomBy(5f);
-            // 放大
-            baiduMap.animateMapStatus(update);
-
-            ifFrist = false;
-        }
-        // 显示个人位置图标
-        MyLocationData.Builder builder = new MyLocationData.Builder();
-        builder.latitude(location.getLatitude());
-        builder.longitude(location.getLongitude());
-        MyLocationData data = builder.build();
-        baiduMap.setMyLocationData(data);
-
-    }
 }

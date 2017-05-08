@@ -5,6 +5,18 @@ import android.util.Log;
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.Poi;
+import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
+import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.model.LatLng;
+import com.zrt.ptt.app.console.R;
+import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
+import com.baidu.mapapi.map.MyLocationData;
 
 import java.util.List;
 
@@ -13,96 +25,73 @@ import java.util.List;
  */
 
 public class MyLocationListener implements BDLocationListener {
+    /**
+     * 当前定位的模式
+     */
+    private LocationMode mCurrentMode = LocationMode.NORMAL;
+    /***
+     * 是否是第一次定位
+     */
+    private volatile boolean isFristLocation = true;
+
+    /**
+     * 最新一次的经纬度
+     */
+    private double mCurrentLantitude;
+    private double mCurrentLongitude;
+    /**
+     * 当前的精度
+     */
+    private float mCurrentAccracy;
+    /**
+     * 方向传感器的监听器
+     */
+    private MyOrientationListener myOrientationListener;
+    /**
+     * 方向传感器X方向的值
+     */
+    private int mXDirection;
+    private MapView mMapView;
+    BaiduMap baiduMap;
+
+    public MyLocationListener(MapView mMapView, BaiduMap baiduMap,boolean isFristLocation) {
+        this.mMapView = mMapView;
+        this.baiduMap = baiduMap;
+        this.isFristLocation = isFristLocation;
+    }
+
     @Override
     public void onReceiveLocation(BDLocation location) {
-        //获取定位结果
-        StringBuffer sb = new StringBuffer(256);
 
-        sb.append("time : ");
-        sb.append(location.getTime());    //获取定位时间
-
-        sb.append("\nerror code : ");
-        sb.append(location.getLocType());    //获取类型类型
-
-        sb.append("\nlatitude : ");
-        sb.append(location.getLatitude());    //获取纬度信息
-
-        sb.append("\nlontitude : ");
-        sb.append(location.getLongitude());    //获取经度信息
-
-        sb.append("\nradius : ");
-        sb.append(location.getRadius());    //获取定位精准度
-
-        if (location.getLocType() == BDLocation.TypeGpsLocation){
-
-            // GPS定位结果
-            sb.append("\nspeed : ");
-            sb.append(location.getSpeed());    // 单位：公里每小时
-
-            sb.append("\nsatellite : ");
-            sb.append(location.getSatelliteNumber());    //获取卫星数
-
-            sb.append("\nheight : ");
-            sb.append(location.getAltitude());    //获取海拔高度信息，单位米
-
-            sb.append("\ndirection : ");
-            sb.append(location.getDirection());    //获取方向信息，单位度
-
-            sb.append("\naddr : ");
-            sb.append(location.getAddrStr());    //获取地址信息
-
-            sb.append("\ndescribe : ");
-            sb.append("gps定位成功");
-
-        } else if (location.getLocType() == BDLocation.TypeNetWorkLocation){
-
-            // 网络定位结果
-            sb.append("\naddr : ");
-            sb.append(location.getAddrStr());    //获取地址信息
-
-            sb.append("\noperationers : ");
-            sb.append(location.getOperators());    //获取运营商信息
-
-            sb.append("\ndescribe : ");
-            sb.append("网络定位成功");
-
-        } else if (location.getLocType() == BDLocation.TypeOffLineLocation) {
-
-            // 离线定位结果
-            sb.append("\ndescribe : ");
-            sb.append("离线定位成功，离线定位结果也是有效的");
-
-        } else if (location.getLocType() == BDLocation.TypeServerError) {
-
-            sb.append("\ndescribe : ");
-            sb.append("服务端网络定位失败，可以反馈IMEI号和大体定位时间到loc-bugs@baidu.com，会有人追查原因");
-
-        } else if (location.getLocType() == BDLocation.TypeNetWorkException) {
-
-            sb.append("\ndescribe : ");
-            sb.append("网络不同导致定位失败，请检查网络是否通畅");
-
-        } else if (location.getLocType() == BDLocation.TypeCriteriaException) {
-
-            sb.append("\ndescribe : ");
-            sb.append("无法获取有效定位依据导致定位失败，一般是由于手机的原因，处于飞行模式下一般会造成这种结果，可以试着重启手机");
-
+        // map view 销毁后不在处理新接收的位置
+        if (location == null || mMapView == null)
+            return;
+        // 构造定位数据
+        MyLocationData locData = new MyLocationData.Builder()
+                .accuracy(location.getRadius())
+                // 此处设置开发者获取到的方向信息，顺时针0-360
+                .direction(mXDirection).latitude(location.getLatitude())
+                .longitude(location.getLongitude()).build();
+        mCurrentAccracy = location.getRadius();
+        // 设置定位数据
+        baiduMap.setMyLocationData(locData);
+        mCurrentLantitude = location.getLatitude();
+        mCurrentLongitude = location.getLongitude();
+        // 设置自定义图标
+        BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
+                .fromResource(R.drawable.navi_map_gps_locked);
+        MyLocationConfiguration config = new MyLocationConfiguration(
+                mCurrentMode, true, mCurrentMarker);
+        baiduMap.setMyLocationConfigeration(config);
+        // 第一次定位时，将地图位置移动到当前位置
+        if (isFristLocation)
+        {
+            isFristLocation = false;
+            LatLng ll = new LatLng(location.getLatitude(),
+                    location.getLongitude());
+            MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(ll);
+            baiduMap.animateMapStatus(u);
         }
-
-        sb.append("\nlocationdescribe : ");
-        sb.append(location.getLocationDescribe());    //位置语义化信息
-
-        List<Poi> list = location.getPoiList();    // POI数据
-        if (list != null) {
-            sb.append("\npoilist size = : ");
-            sb.append(list.size());
-            for (Poi p : list) {
-                sb.append("\npoi= : ");
-                sb.append(p.getId() + " " + p.getName() + " " + p.getRank());
-            }
-        }
-
-        Log.i("BaiduLocationApiDem", sb.toString());
     }
 }
 
