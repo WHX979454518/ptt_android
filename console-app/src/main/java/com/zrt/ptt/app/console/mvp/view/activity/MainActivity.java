@@ -46,6 +46,7 @@ import com.zrt.ptt.app.console.baidu.MyLocationListener;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
+import com.zrt.ptt.app.console.mvp.view.fragment.ConsoleMapFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment;
 
@@ -82,61 +83,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     RadioButton rb3;*/
     @BindView(R.id.contacts_container)
     LinearLayout contactsContainer;
-    @BindView(R.id.bmapView)
-    MapView bmapView;
     @BindView(R.id.map_container)
     FrameLayout mapContainer;
     @BindView(R.id.main_content)
     LinearLayout mainContent;
-    @BindView(R.id.organiz_func_container)
-    FrameLayout organizFuncContainer;
-    @BindView(R.id.organiz_function_inc)
-    LinearLayout organizFunctionInc;
-    @BindView(R.id.sys_state_func_inc)
-    LinearLayout sysStateFuncInc;
     private MapView mMapView;
     private OrganizationFragment organizationFragment;
     private SystemStateFragment stateFragment;
-    private RoomListFragment roomListFragment;
+    private ConsoleMapFragment consoleMapFragment;
     private PopupWindow popupWindow;
     private View rootView;
     private LinearLayout logRecord;
     private LinearLayout playBack;
     private ImageView userLocation;
     private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
-    public LocationClient mLocationClient = null;
-    /**
-     * 当前定位的模式
-     */
-    private LocationMode mCurrentMode = LocationMode.NORMAL;
-    /**
-     * 方向传感器X方向的值
-     */
-    private int mXDirection;
-    /**
-     * 方向传感器的监听器
-     */
-    private MyOrientationListener myOrientationListener;
-    /***
-     * 是否是第一次定位
-     */
-
-    /**
-     * 最新一次的经纬度
-     */
-    private double mCurrentLantitude;
-    private double mCurrentLongitude;
-    /**
-     * 当前的精度
-     */
-    private float mCurrentAccracy;
-    private volatile boolean isFristLocation = true;
-    public BDLocationListener myListener ;
-    //定位都要通过LocationManager这个类实现
-    private LocationManager locationManager;
-    private String provider;
-    BaiduMap baiduMap;
-    boolean ifFrist = true;
 
 
     @Override
@@ -147,10 +107,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);//remove notification bar 即全屏
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        // 第一次定位
-        isFristLocation = true;
-
-//        initMapViewLocation();
         initView();
 //        mainPresenter.UpDataOrganzation();
     }
@@ -171,11 +127,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         popupWindow.setBackgroundDrawable(new BitmapDrawable());
         popupWindow.setFocusable(true);
         popupWindow.setTouchable(true);
-        mMapView = (MapView) findViewById(R.id.bmapView);
-        // 获取baiduMap对象
-        baiduMap = mMapView.getMap();
-        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
-        baiduMap.setMapStatus(msu);
         initFragment();
 
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
@@ -195,9 +146,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 return false;
             }
         });
-
-        initMyLocation();
-        initOritationListener();
     }
 
     public void setBackgroundAlpha(float bgAlpha) {
@@ -227,11 +175,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 } else
                     ft.show(stateFragment);
 
-                /*if (roomListFragment == null) {
-                    roomListFragment = new RoomListFragment();
-                    ft.add(R.id.contacts_container, roomListFragment);
-                } else if (!roomListFragment.isVisible())
-                    ft.show(roomListFragment);*/
+                if (consoleMapFragment == null) {
+                    consoleMapFragment = new ConsoleMapFragment();
+                    ft.add(R.id.map_container, consoleMapFragment);
+                } else
+                    ft.show(consoleMapFragment);
 
         ft.commitAllowingStateLoss();
     }
@@ -276,48 +224,26 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
-        mMapView.onDestroy();
-        baiduMap.setMyLocationEnabled(false);
     }
 
     @Override
     protected void onStart()
     {
-        // 开启图层定位
-        baiduMap.setMyLocationEnabled(true);
-        if (!mLocationClient.isStarted())
-        {
-            mLocationClient.start();
-        }
-        // 开启方向传感器
-        myOrientationListener.start();
         super.onStart();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        //在activity执行onResume时执行mMapView. onResume ()，实现地图生命周期管理
-        mMapView.onResume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        //在activity执行onPause时执行mMapView. onPause ()，实现地图生命周期管理
-        mMapView.onPause();
     }
 
     @Override
     protected void onStop() {
-        super.onStop();
-        // 关闭图层定位
-        baiduMap.setMyLocationEnabled(false);
-        mLocationClient.stop();
-
-        // 关闭方向传感器
-        myOrientationListener.stop();
         super.onStop();
     }
 
@@ -326,7 +252,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      *
      * @param view
      */
-    @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.contacts_container, R.id.bmapView})
+    @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.contacts_container})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.pupmenu:
@@ -346,8 +272,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             case R.id.sign_out:
                 break;
             case R.id.contacts_container:
-                break;
-            case R.id.bmapView:
                 break;
         }
     }
@@ -371,59 +295,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         Log.e("Organization", data.toString());
     }
 
-    /**
-     * 初始化定位相关代码
-     */
-    private void initMyLocation()
-    {
-        // 定位初始化
-        mLocationClient = new LocationClient(this);
-        myListener = new MyLocationListener(mMapView,baiduMap,isFristLocation);
-        mLocationClient.registerLocationListener(myListener);
-        // 设置定位的相关配置
-        LocationClientOption option = new LocationClientOption();
-        option.setOpenGps(true);// 打开gps
-        option.setCoorType("bd09ll"); // 设置坐标类型
-        option.setScanSpan(1000);
-        mLocationClient.setLocOption(option);
-    }
 
-    /**
-     * 初始化方向传感器
-     */
-    private void initOritationListener()
-    {
-        myOrientationListener = new MyOrientationListener(
-                getApplicationContext());
-        myOrientationListener
-                .setOnOrientationListener(new MyOrientationListener.OnOrientationListener()
-                {
-                    @Override
-                    public void onOrientationChanged(float x)
-                    {
-                        mXDirection = (int) x;
 
-                        // 构造定位数据
-                        MyLocationData locData = new MyLocationData.Builder()
-                                .accuracy(mCurrentAccracy)
-                                // 此处设置开发者获取到的方向信息，顺时针0-360
-                                .direction(mXDirection)
-                                .latitude(mCurrentLantitude)
-                                .longitude(mCurrentLongitude).build();
-                        // 设置定位数据
-                        baiduMap.setMyLocationData(locData);
-                        // 设置自定义图标
-                        BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
-                                .fromResource(R.drawable.navi_map_gps_locked);
-                        MyLocationConfiguration config = new MyLocationConfiguration(
-                                mCurrentMode, true, mCurrentMarker);
-                        baiduMap.setMyLocationConfigeration(config);
 
-                    }
-                });
-    }
 
-    private void initMapViewLocation() {
+   /* private void initMapViewLocation() {
 
         // 设置可改变地图位置
         baiduMap.setMyLocationEnabled(true);
@@ -496,5 +372,5 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         mLocationClient.setLocOption(option);
     }
-
+*/
 }

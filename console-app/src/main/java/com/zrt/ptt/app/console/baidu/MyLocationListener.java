@@ -75,8 +75,10 @@ public class MyLocationListener implements BDLocationListener {
         mCurrentAccracy = location.getRadius();
         // 设置定位数据
         baiduMap.setMyLocationData(locData);
-        mCurrentLantitude = location.getLatitude();
-        mCurrentLongitude = location.getLongitude();
+//        mCurrentLantitude = location.getLatitude();
+        mCurrentLantitude = 104.072218;
+//        mCurrentLongitude = location.getLongitude();
+        mCurrentLongitude = 30.663468;
         // 设置自定义图标
         BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
                 .fromResource(R.drawable.navi_map_gps_locked);
@@ -87,8 +89,8 @@ public class MyLocationListener implements BDLocationListener {
         if (isFristLocation)
         {
             isFristLocation = false;
-            LatLng ll = new LatLng(location.getLatitude(),
-                    location.getLongitude());
+            LatLng ll = new LatLng(104.072218,
+                    30.663468);
             MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(ll);
             baiduMap.animateMapStatus(u);
         }

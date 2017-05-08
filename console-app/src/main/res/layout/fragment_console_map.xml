@@ -1,0 +1,39 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <com.baidu.mapapi.map.MapView
+        android:id="@+id/bmapView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:clickable="true" />
+    <FrameLayout
+        android:id="@+id/organiz_func_container"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_gravity="bottom"
+        android:background="#50323232"
+        android:gravity="center_vertical"
+        >
+
+        <LinearLayout
+            android:id="@+id/organiz_function_inc"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible">
+            <include layout="@layout/organiz_function_btn_ly" />
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/sys_state_func_inc"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+            <include layout="@layout/sys_state_func_ly"/>
+        </LinearLayout>
+
+
+    </FrameLayout>
+</FrameLayout>
