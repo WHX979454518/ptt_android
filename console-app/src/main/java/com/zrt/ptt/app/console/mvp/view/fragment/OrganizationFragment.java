@@ -1,6 +1,7 @@
 package com.zrt.ptt.app.console.mvp.view.fragment;
 
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -8,17 +9,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.baidu.mapapi.model.LatLng;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 import com.zrt.ptt.app.console.mvp.model.Node;
+import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.presenter.OrganFragmentPresenter;
+import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 import com.zrt.ptt.app.console.mvp.view.IView.IOrgFragmentView;
 import com.zrt.ptt.app.console.mvp.view.adapter.MyTreeListViewAdapter;
 import com.zrt.ptt.app.console.mvp.view.adapter.TreeListViewAdapter;
@@ -49,15 +54,33 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private Disposable dposable;
     private LinearLayout showAllUsers,showOnlineUsers,showOfflineUsers,showSelectedUsers;
     private OrganFragmentPresenter fragPresen;
+    private MainActivityPresenter mainActivityPresenter;
     private TextView allUserNum,onlinePersNum,offlinePersNum,selectedPersNum;
     private static final String all = "ALL";
     private static final String ON_LINE = "ON_LINE";
     private static final String OFF_LINE = "OFF_LINE";
+    private ImageView userLocation;
+    private List<LatLng> locations = new ArrayList<>();
 
     public OrganizationFragment() {
         // Required empty public constructor
     }
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        try {
+            mainActivityPresenter = new MainActivityPresenter((IMainActivityView) context);
+        }catch (ClassCastException e) {
+            throw new ClassCastException(getActivity().getClass().getName()
+                    +" must implements interface MyListener");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -84,6 +107,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         showOfflineUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_offline);
         showOfflineUsers.setOnClickListener(this);
         showSelectedUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_selected);
+        userLocation = (ImageView) view.findViewById(R.id.user_location);
+        userLocation.setOnClickListener(this);
         showSelectedUsers.setOnClickListener(this);
         fragPresen = new OrganFragmentPresenter(this);
     }
@@ -127,9 +152,20 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 selectedPersNum.setTextColor(getResources().getColor(R.color.title_bg_red));
                 setCheckAdapter(NodeAddDelet,checkDatas);
                 break;
+            case R.id.user_location:
+                initLatLng();
+                mainActivityPresenter.showLocations(locations);
+                break;
         }
     }
 
+    private void initLatLng(){
+        locations.add(new LatLng(30.664214,104.074297));
+        locations.add(new LatLng(30.663197,104.069231));
+        locations.add(new LatLng(30.662498,104.07401));
+        locations.add(new LatLng(30.663888,104.076552));
+        locations.add(new LatLng(30.662288,104.070704));
+    }
     //通过presenter拿到所有数据回调展示
     @Override
     public void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
@@ -167,8 +203,9 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
             @Override
             public void onClick(Node node, int position) {
                 if (node.isLeaf()) {
-                    Toast.makeText(getActivity().getApplicationContext(), node.getName(),
-                            Toast.LENGTH_SHORT).show();
+                    locations.clear();
+                    locations.add(new LatLng(30.664214,104.074297));
+                    mainActivityPresenter.showLocation(locations);
                 }
             }
 

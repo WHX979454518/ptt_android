@@ -19,4 +19,5 @@ public interface IOrgFragmentView {
     void showOffline(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
     void showSlected();
     void callDisposable(Disposable disposable);
+
 }

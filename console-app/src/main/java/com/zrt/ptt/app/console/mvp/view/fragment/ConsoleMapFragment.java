@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
+import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
@@ -20,19 +21,25 @@ import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.Marker;
+import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.model.LatLng;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
-import com.zrt.ptt.app.console.baidu.MyLocationListener;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
+import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
+
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
 
 
-public class ConsoleMapFragment extends Fragment {
+public class ConsoleMapFragment extends Fragment implements IConsoMapView {
 
     @BindView(R.id.bmapView)
     MapView bmapView;
@@ -63,8 +70,8 @@ public class ConsoleMapFragment extends Fragment {
     /**
      * 最新一次的经纬度
      */
-    private double mCurrentLantitude;
-    private double mCurrentLongitude;
+    private double mCurrentLantitude = 30.667437;
+    private double mCurrentLongitude = 104.066832;
     /**
      * 当前的精度
      */
@@ -98,43 +105,10 @@ public class ConsoleMapFragment extends Fragment {
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
         baiduMap.setMapStatus(msu);
         initMyLocation();
-        initOritationListener();
+//        initOritationListener();
     }
 
-    /**
-     * 初始化方向传感器
-     */
-    private void initOritationListener()
-    {
-        myOrientationListener = new MyOrientationListener(
-                App.getInstance().getApplicationContext());
-        myOrientationListener
-                .setOnOrientationListener(new MyOrientationListener.OnOrientationListener()
-                {
-                    @Override
-                    public void onOrientationChanged(float x)
-                    {
-                        mXDirection = (int) x;
 
-                        // 构造定位数据
-                        MyLocationData locData = new MyLocationData.Builder()
-                                .accuracy(mCurrentAccracy)
-                                // 此处设置开发者获取到的方向信息，顺时针0-360
-                                .direction(mXDirection)
-                                .latitude(mCurrentLantitude)
-                                .longitude(mCurrentLongitude).build();
-                        // 设置定位数据
-                        baiduMap.setMyLocationData(locData);
-                        // 设置自定义图标
-                        BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
-                                .fromResource(R.drawable.navi_map_gps_locked);
-                        MyLocationConfiguration config = new MyLocationConfiguration(
-                                mCurrentMode, true, mCurrentMarker);
-                        baiduMap.setMyLocationConfigeration(config);
-
-                    }
-                });
-    }
 
     /**
      * 初始化定位相关代码
@@ -142,7 +116,7 @@ public class ConsoleMapFragment extends Fragment {
     private void initMyLocation() {
         // 定位初始化
         mLocationClient = new LocationClient(getActivity());
-        myListener = new MyLocationListener(bmapView,baiduMap,isFristLocation);
+        myListener = new MyLocationListener();
         mLocationClient.registerLocationListener(myListener);
         // 设置定位的相关配置
         LocationClientOption option = new LocationClientOption();
@@ -185,7 +159,7 @@ public class ConsoleMapFragment extends Fragment {
             mLocationClient.start();
         }
         // 开启方向传感器
-        myOrientationListener.start();
+//        myOrientationListener.start();
         super.onStart();
     }
 
@@ -211,7 +185,119 @@ public class ConsoleMapFragment extends Fragment {
         mLocationClient.stop();
 
         // 关闭方向传感器
-        myOrientationListener.stop();
+//        myOrientationListener.stop();
         super.onStop();
+    }
+
+    //展示传递过来的用户参数坐标定位
+    @Override
+    public void showUsersLocation(List<LatLng> locations) {
+        baiduMap.clear();
+        LatLng latLng = null;
+        Marker marker = null;
+        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+        OverlayOptions options;
+        for (LatLng latLin : locations)
+        {
+            // 经纬度
+            latLng = new LatLng(latLin.latitude, latLin.longitude);
+            // 图标
+            options = new MarkerOptions().position(latLng).icon(mMarker)
+                    .zIndex(5);
+            marker = (Marker) baiduMap.addOverlay(options);
+            //屏蔽代码属于描述maker展示的详情
+            /*Bundle arg0 = new Bundle();
+            arg0.putSerializable("info", latLin);
+            marker.setExtraInfo(arg0);*/
+        }
+//        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
+        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(latLng);
+        baiduMap.setMaxAndMinZoomLevel(21.0f,15.0f);
+        baiduMap.setMapStatus(msu);
+        msu = MapStatusUpdateFactory.zoomTo(20.0f);
+        baiduMap.setMapStatus(msu);
+    }
+
+
+    public class MyLocationListener implements BDLocationListener {
+
+        @Override
+        public void onReceiveLocation(BDLocation location) {
+
+            // map view 销毁后不在处理新接收的位置
+            if (location == null || bmapView == null)
+                return;
+       /* // 构造定位数据
+       MyLocationData data = new MyLocationData.Builder()//
+					.direction(mCurrentX)//
+					.accuracy(location.getRadius())//
+					.latitude(location.getLatitude())//
+					.longitude(location.getLongitude())//
+					.build();*/
+       //西宁101.764866,36.640738
+            // 构造定位数据假数据上线再去掉
+            MyLocationData locData = new MyLocationData.Builder()
+                    .accuracy(location.getRadius())
+                    // 此处设置开发者获取到的方向信息，顺时针0-360
+                    .direction(mXDirection).latitude(36.640738)
+                    .longitude(101.764866).build();
+            mCurrentAccracy = location.getRadius();
+            // 设置定位数据
+            baiduMap.setMyLocationData(locData);
+//        mCurrentLantitude = location.getLatitude();
+//        mCurrentLongitude = location.getLongitude();
+            mCurrentLantitude = 30.667437;
+            mCurrentLongitude = 104.066832;
+            // 设置自定义图标
+            BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
+                    .fromResource(R.drawable.icon_marka);
+            MyLocationConfiguration config = new MyLocationConfiguration(
+                    mCurrentMode, true, null);
+            baiduMap.setMyLocationConfigeration(config);
+            // 第一次定位时，将地图位置移动到当前位置
+            if (isFristLocation)
+            {
+                LatLng ll = new LatLng(36.640738,
+                        101.764866);
+                MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(ll);
+                baiduMap.animateMapStatus(u);
+                isFristLocation = false;
+            }
+        }
+    }
+
+    /**
+     * 初始化方向传感器
+     */
+    private void initOritationListener()
+    {
+        myOrientationListener = new MyOrientationListener(
+                App.getInstance().getApplicationContext());
+        myOrientationListener
+                .setOnOrientationListener(new MyOrientationListener.OnOrientationListener()
+                {
+                    @Override
+                    public void onOrientationChanged(float x)
+                    {
+                        mXDirection = (int) x;
+
+                        // 构造定位数据
+                        MyLocationData locData = new MyLocationData.Builder()
+                                .accuracy(mCurrentAccracy)
+                                // 此处设置开发者获取到的方向信息，顺时针0-360
+                                .direction(mXDirection)
+                                .latitude(mCurrentLantitude)
+                                .longitude(mCurrentLongitude).build();
+                        // 设置定位数据
+                        baiduMap.setMyLocationData(locData);
+                        // 设置自定义图标
+                        BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory
+                                .fromResource(R.drawable.icon_marka);
+                        MyLocationConfiguration config = new MyLocationConfiguration(
+                                mCurrentMode, true, mCurrentMarker);
+                        baiduMap.setMyLocationConfigeration(config);
+
+                    }
+                });
     }
 }

@@ -1,13 +1,7 @@
 package com.zrt.ptt.app.console.mvp.view.activity;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.graphics.drawable.BitmapDrawable;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
@@ -19,38 +13,23 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
-import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.baidu.location.BDLocationListener;
-import com.baidu.location.LocationClient;
-import com.baidu.location.LocationClientOption;
-import com.baidu.mapapi.map.BaiduMap;
-import com.baidu.mapapi.map.BitmapDescriptor;
-import com.baidu.mapapi.map.BitmapDescriptorFactory;
-import com.baidu.mapapi.map.MapStatusUpdate;
-import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
-import com.baidu.mapapi.map.MarkerOptions;
-import com.baidu.mapapi.map.MyLocationConfiguration;
-import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
-import com.baidu.mapapi.map.MyLocationData;
-import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
-import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
-import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
-import com.zrt.ptt.app.console.baidu.MyLocationListener;
-import com.zrt.ptt.app.console.baidu.MyOrientationListener;
+import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
+import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 import com.zrt.ptt.app.console.mvp.view.fragment.ConsoleMapFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment;
 
 import org.json.JSONObject;
+
 
 import java.util.List;
 
@@ -293,6 +272,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public void UpDateOrganization(JSONObject data) {
         Toast.makeText(this, "执行了", Toast.LENGTH_LONG).show();
         Log.e("Organization", data.toString());
+    }
+
+
+    /**
+     * 传递点极坐标参数
+     * @param locations
+     */
+    @Override
+    public void showLocation(List<LatLng> locations) {
+        IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
+        imapView.showUsersLocation(locations);
     }
 
 
