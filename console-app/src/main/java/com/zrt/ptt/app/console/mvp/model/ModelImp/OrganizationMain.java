@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 /**
  * Created by surpass on 2017-4-27.
@@ -46,12 +47,13 @@ public class OrganizationMain implements IOranizationMain {
     //rxjava异步处理获得数据
     @Override
     public void getSingleLocation(callBackLocations backLocation) {
-//        Observable.combineLatest()
+//        Observable.combineLatest().observeOn(AndroidSchedulers.mainThread()).subscribeOn(new Observable<>());
         backLocation.getSingleData();
     }
 
     @Override
     public void getAllLocation(callBackLocations backLocation) {
+//        Observable.combineLatest().observeOn(AndroidSchedulers.mainThread()).subscribeOn(new Observable<>());
         backLocation.getAllLocations();
     }
 

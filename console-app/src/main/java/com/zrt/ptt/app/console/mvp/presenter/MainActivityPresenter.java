@@ -60,7 +60,7 @@ public class MainActivityPresenter {
 
     //多人定位
     public void showLocations(List<LatLng> locations ){
-        iOrgMain.getSingleLocation(new IOranizationMain.callBackLocations() {
+        iOrgMain.getAllLocation(new IOranizationMain.callBackLocations() {
             @Override
             public void getSingleData() {
 
