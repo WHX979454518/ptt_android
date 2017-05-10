@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.viewmodel
 
+import android.os.Bundle
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import org.slf4j.Logger
@@ -21,6 +22,14 @@ abstract class LifecycleViewModel : ViewModel {
 
         disposable?.dispose()
         disposable = null
+    }
+
+    open fun onSaveState(out : Bundle) {
+
+    }
+
+    open fun onRestoreState(state : Bundle) {
+
     }
 
     fun <T : LifecycleViewModel> addChildModel(model: T): T {

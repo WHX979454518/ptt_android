@@ -19,10 +19,17 @@ abstract class BaseViewModelActivity<VM : LifecycleViewModel, VB : ViewDataBindi
 
         binding = onCreateViewBinding(layoutInflater)
         viewModel = onCreateViewModel()
+        savedInstanceState?.let(viewModel::onRestoreState)
 
         binding.setVariable(BR.viewModel, viewModel)
 
         setContentView(binding.root)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        viewModel.onSaveState(outState)
     }
 
     override fun onStart() {

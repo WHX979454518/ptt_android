@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Parcelable
+import android.os.SystemClock
 import com.baidu.mapapi.model.LatLngBounds
 import com.google.common.base.Optional
 import com.google.common.base.Preconditions
@@ -207,6 +208,7 @@ class SignalBroker(private val appComponent: AppComponent,
                 if (state.currentRoomId == event.roomId) {
                     currentWalkieRoomState.onNext(state.copy(
                             speakerId = event.speakerId,
+                            speakerStartTime = if (state.speakerId == null && event.speakerId != null) SystemClock.elapsedRealtime() else state.speakerStartTime,
                             speakerPriority = event.speakerPriority,
                             onlineMemberIds = event.onlineMemberIds
                     ))
@@ -217,6 +219,7 @@ class SignalBroker(private val appComponent: AppComponent,
                 val state = currentWalkieRoomState.value
                 if (state.currentRoomId == event.roomId) {
                     currentWalkieRoomState.onNext(state.copy(
+                            speakerStartTime = SystemClock.elapsedRealtime(),
                             speakerId = event.speakerId,
                             speakerPriority = event.speakerPriority
                     ))
@@ -339,6 +342,7 @@ class SignalBroker(private val appComponent: AppComponent,
                             currentWalkieRoomState.onNext(currState.copy(
                                     status = if (peekUserId() == speakerId) RoomStatus.ACTIVE else RoomStatus.JOINED,
                                     speakerId = speakerId,
+                                    speakerStartTime = SystemClock.elapsedRealtime(),
                                     speakerPriority = speakerPriority,
                                     currentRoomInitiatorUserId = initiatorUserId,
                                     onlineMemberIds = onlineMemberIds,
@@ -407,6 +411,7 @@ class SignalBroker(private val appComponent: AppComponent,
                             currentWalkieRoomState.onNext(newRoomState.copy(
                                     speakerId = currentUser.id,
                                     speakerPriority = currentUser.priority,
+                                    speakerStartTime = SystemClock.elapsedRealtime(),
                                     status = RoomStatus.ACTIVE
                             ))
                         }

@@ -78,6 +78,18 @@ class RoomActivity : BaseActivity(), RoomFragment.Callbacks, RoomInvitationFragm
         }
     }
 
+    override fun navigateToRoomDetailsPage(roomId: String) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun navigateToUserDetailsPage(id: String) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun navigateToRoomMemberListPage(it: String) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun showInvitationList(invitations: List<WalkieRoomInvitationEvent>) {
         RoomInvitationListFragment.build(invitations).show(supportFragmentManager, TAG_INVITATION_LIST_DIALOG)
         supportFragmentManager.executePendingTransactions()

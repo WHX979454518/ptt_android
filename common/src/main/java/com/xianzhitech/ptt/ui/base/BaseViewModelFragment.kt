@@ -19,6 +19,7 @@ abstract class BaseViewModelFragment<T : LifecycleViewModel, VB : ViewDataBindin
         super.onCreate(savedInstanceState)
 
         viewModel = onCreateViewModel()
+        savedInstanceState?.let(viewModel::onRestoreState)
     }
 
     override fun onStart() {
@@ -31,6 +32,12 @@ abstract class BaseViewModelFragment<T : LifecycleViewModel, VB : ViewDataBindin
         viewModel.onStop()
 
         super.onStop()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        viewModel.onSaveState(outState)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

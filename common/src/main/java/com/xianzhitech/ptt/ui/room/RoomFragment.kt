@@ -31,7 +31,6 @@ import com.xianzhitech.ptt.ext.getTintedDrawable
 import com.xianzhitech.ptt.ext.isAbsent
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.ext.setVisible
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ext.toLevelString
 import com.xianzhitech.ptt.ext.toOptional
@@ -39,8 +38,6 @@ import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseFragment
-import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
-import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.user.UserItemHolder
 import com.xianzhitech.ptt.ui.user.UserListAdapter
 import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
@@ -50,8 +47,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
 
-class RoomFragment : BaseFragment()
-        , BackPressable {
+class RoomFragment : BaseFragment(), BackPressable {
 
     private class Views(rootView: View,
                         val titleView: TextView = rootView.findView(R.id.room_title),
@@ -99,10 +95,7 @@ class RoomFragment : BaseFragment()
 
 
         rootView.findViewById(R.id.room_info)?.setOnClickListener {
-            val roomId = appComponent.signalBroker.peekWalkieRoomId()
-            if (roomId != null) {
-                activity.startActivityWithAnimation(RoomDetailsActivity.build(context, roomId))
-            }
+            appComponent.signalBroker.peekWalkieRoomId()?.let { callbacks<Callbacks>()?.navigateToRoomDetailsPage(it) }
         }
 
         views.notificationView.setOnClickListener {
@@ -158,10 +151,7 @@ class RoomFragment : BaseFragment()
         }
 
         views.speakerView.setOnClickListener {
-            val speaker = it.getTag(R.id.key_last_speaker) as? User
-            if (speaker != null) {
-                activity.startActivityWithAnimation(UserDetailsActivity.build(activity, speaker.id))
-            }
+            (it.getTag(R.id.key_last_speaker) as? User)?.let { callbacks<Callbacks>()?.navigateToUserDetailsPage(it.id) }
         }
 
         this.views = views
@@ -190,13 +180,7 @@ class RoomFragment : BaseFragment()
             adapter = onlineUserAdapter
         }
         view.findViewById(R.id.roomOnlineInfo_all)!!.setOnClickListener {
-            val currentRoomId = appComponent.signalBroker.peekWalkieRoomId()
-            if (currentRoomId != null) {
-                val args = Bundle(1).apply { putString(RoomMemberListFragment.ARG_ROOM_ID, currentRoomId) }
-                activity.startActivityWithAnimation(
-                        FragmentDisplayActivity.createIntent(RoomMemberListFragment::class.java, args)
-                )
-            }
+            appComponent.signalBroker.peekWalkieRoomId()?.let { callbacks<Callbacks>()?.navigateToRoomMemberListPage(it) }
         }
         return view
     }
@@ -356,5 +340,8 @@ class RoomFragment : BaseFragment()
     interface Callbacks {
         fun setTitle(title: CharSequence)
         fun onRoomQuited()
+        fun navigateToRoomDetailsPage(roomId : String)
+        fun navigateToUserDetailsPage(id: String)
+        fun navigateToRoomMemberListPage(it: String)
     }
 }
