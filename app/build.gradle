@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'io.fabric'
 
 
 project.ext.buildNumber = System.getenv('BUILD_NUMBER') ?: 'dev'
@@ -13,12 +14,10 @@ println("Building app version $buildName($buildNumber)")
 buildscript {
     repositories {
         jcenter()
-        maven { url 'http://oss.sonatype.org/content/repositories/snapshots' }
         maven { url 'https://maven.fabric.io/public' }
     }
 
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'io.fabric.tools:gradle:1.22.1'
     }
 }
@@ -45,7 +44,7 @@ android {
 
         buildConfigField("String", "BUILD_NUMBER", "\"$buildNumber\"")
         ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86'
+            abiFilters 'armeabi-v7a', 'x86'
         }
     }
 
@@ -74,6 +73,7 @@ android {
         }
     }
 
+    flavorDimensions 'abi', 'audience'
 
     productFlavors {
         dev {
@@ -84,6 +84,16 @@ android {
             println("Using $appServerUrl as app server for dev build")
 
             buildConfigField("boolean", "IS_PRODUCTION", "false")
+            dimension 'audience'
+        }
+
+        pre21 {
+            dimension 'abi'
+        }
+
+        post21 {
+            dimension 'abi'
+            minSdkVersion 21
         }
 
         prod {
@@ -93,6 +103,7 @@ android {
             println("Using $appServerUrl as app server for production build")
 
             buildConfigField("boolean", "IS_PRODUCTION", "true")
+            dimension 'audience'
         }
     }
 

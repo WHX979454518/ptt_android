@@ -27,7 +27,7 @@ data class OfflineCityViewModel(val downloadStatusMap: ObservableMap<Int, Int>,
         get() = displayInProgress
 
     val displayDeleteButton = createCompositeObservable(downloadStatusMap) {
-        downloadStatusMap.getOrDefault(city.cityID, MapDownloadService.DOWNLOAD_STATUS_IDLE) == MapDownloadService.DOWNLOAD_STATUS_DOWNLOADED
+        downloadStatusMap.getOrElse(city.cityID) { MapDownloadService.DOWNLOAD_STATUS_IDLE } == MapDownloadService.DOWNLOAD_STATUS_DOWNLOADED
     }
 
     fun onClickToggleDownload() {

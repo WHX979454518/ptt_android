@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.databinding.FragmentContactsBinding
@@ -42,7 +43,7 @@ class ContactsFragment : ModelListFragment<ContactsViewModel, FragmentContactsBi
     }
 
     override fun displayContactSyncSuccess() {
-        Toast.makeText(context, R.string.contact_updated, Toast.LENGTH_LONG).show()
+        Toast.makeText(BaseApp.instance, R.string.contact_updated, Toast.LENGTH_LONG).show()
     }
 
     override fun displayContactSyncError(err: Throwable) {
