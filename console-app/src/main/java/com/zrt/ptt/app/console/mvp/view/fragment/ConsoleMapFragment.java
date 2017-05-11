@@ -114,7 +114,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_console_map, container, false);
         unbinder = ButterKnife.bind(this, view);
-        initTrace(inflater);
+//        initTrace(inflater);
+        View btnView = view.findViewById(R.id.organiz_function_inc);
+        playIv = (ImageView) btnView.findViewById(R.id.location_ivPlay);
+        playIv.setOnClickListener(this);
         initView();
         return view;
     }
@@ -125,16 +128,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
         baiduMap.setMapStatus(msu);
         initMyLocation();
-        addRouteLine(routeList);// 添加路线
-//        initOritationListener();
-    }
-
-    //轨迹初始化
-    private void initTrace( LayoutInflater inflater){
-        View view = inflater.inflate(R.layout.organiz_function_btn_ly,null);
-        playIv = (ImageView)view.findViewById(R.id.location_ivPlay);
-        playIv.setOnClickListener(this);
-        parseJson();// 解析json
+        parseJson();
     }
 
     /**
@@ -159,128 +153,76 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
 
     }
 
-
-    /**
-     * 添加路线
-     *
-     * @param routeList
-     */
-    private void addRouteLine(List<LatLng> routeList) {
+    private void painStroke(ArrayList<LatLng> routeList){
         baiduMap.clear();
-        // 百度最多支持10000个点连线
-        if (routeList.size() > 10000) {
-            routeList = routeList.subList(0, 10000);
-        }
-        baiduMap.addOverlay(new PolylineOptions().width(5).color(0xFF1694FF)
-                .points(routeList));
-        moveToLocation(routeList.get(routeList.size() / 2), true);
+        LatLng latLng = null;
+        Marker marker = null;
+        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+        OverlayOptions options;
 
+            // 经纬度
+            latLng = routeList.get(routeList.size()/2);
+            // 图标
+            options = new MarkerOptions().position(latLng).icon(mMarker)
+                    .zIndex(5);
+            marker = (Marker) baiduMap.addOverlay(options);
+            //屏蔽代码属于描述maker展示的详情
+            /*Bundle arg0 = new Bundle();
+            arg0.putSerializable("info", latLin);
+            marker.setExtraInfo(arg0);*/
+
+//        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
+        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(latLng);
+        baiduMap.setMapStatus(msu);
+        msu = MapStatusUpdateFactory.zoomTo(15.0f);
+        baiduMap.setMapStatus(msu);
+        //构造纹理资源
+        BitmapDescriptor custom1 = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_road_red_arrow);
+        BitmapDescriptor custom2 = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_road_green_arrow);
+        BitmapDescriptor custom3 = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_road_blue_arrow);
+// 定义点
+        LatLng pt1 = new LatLng(39.93923, 116.357428);
+        LatLng pt2 = new LatLng(39.91923, 116.327428);
+        LatLng pt3 = new LatLng(39.89923, 116.347428);
+        LatLng pt4 = new LatLng(39.89923, 116.367428);
+        LatLng pt5 = new LatLng(39.91923, 116.387428);
+
+//构造纹理队列
+        List<BitmapDescriptor> customList = new ArrayList<BitmapDescriptor>();
+        customList.add(custom1);
+        customList.add(custom2);
+        customList.add(custom3);
+
+//        List<LatLng> points = new ArrayList<LatLng>();
+        List<LatLng> points = routeList;
+        List<Integer> index = new ArrayList<Integer>();
+        points.add(pt1);//点元素
+        index.add(0);//设置该点的纹理索引
+        points.add(pt2);//点元素
+        index.add(0);//设置该点的纹理索引
+        points.add(pt3);//点元素
+        index.add(1);//设置该点的纹理索引
+        points.add(pt4);//点元素
+        index.add(2);//设置该点的纹理索引
+        points.add(pt5);//点元素
+//构造对象
+        OverlayOptions ooPolyline = new PolylineOptions().width(15).color(0xAAFF0000).points(points).customTextureList(customList).textureIndex(index);
+//添加到地图
+        baiduMap.addOverlay(ooPolyline);
     }
 
-    /**
-     * 移动到指定位置 并缩放
-     *
-     * @param latlng
-     */
-    private void moveToLocation(LatLng latlng, boolean flag) {
-        MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(latlng);// 设置新的中心点
-        baiduMap.animateMapStatus(u);
-        if (flag && baiduMap.getMapStatus().zoom < 12.0f) {
-            // 加个延时播放的效果,就可以有先平移 ，再缩放的效果
-            mTimer.start();
-        }
-    }
 
-    private CountDownTimer mTimer = new CountDownTimer(2000, 2000) {
 
-        @Override
-        public void onTick(long millisUntilFinished) {
 
-        }
-
-        @Override
-        public void onFinish() {
-            if (baiduMap != null) {
-                MapStatusUpdate u1 = MapStatusUpdateFactory.zoomTo(12.0f);
-                baiduMap.animateMapStatus(u1);
-            }
-        }
-    };
-
-    private int routeIndex;
-    private boolean routeFlag;
-    private final int ROUTE = 0;
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.location_ivPlay) {
-            if (routeList == null || routeList.size() <= 0) {
-                return;
-            }
-            routeFlag = !routeFlag;
-            playIv.setImageResource(routeFlag ? R.drawable.pause
-                    : R.drawable.play);
-
-            if (routeFlag) {
-                if (routeIndex == 0) {
-                    baiduMap.clear();
-                    routeMarker = null;
-                }
-                mHandler.sendEmptyMessageDelayed(ROUTE, 0);
-            } else {
-                mHandler.removeMessages(0);
-            }
-        }
+        painStroke(routeList);
     }
 
-    private Marker routeMarker;
-    private int ROUTETIME = 300;
-    private Handler mHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            if (msg.what == ROUTE) {
-//                mHandler.sendEmptyMessage(PROGRESS);
-                if (routeIndex == routeList.size() - 1) {
-                    routeFlag = false;
-                    playIv.setImageResource(R.drawable.play);
-                    Toast.makeText(getActivity(), "播放完毕", Toast.LENGTH_LONG)
-                            .show();
-                    routeIndex = 0;
-                    if (routeMarker != null) {
-                        routeMarker.remove();
-                        routeMarker = null;
-                    }
-                    addRouteLine(routeList);
-                    return;
-                }
-                if (routeIndex != 0) {
-                    OverlayOptions polyLine = new PolylineOptions()
-                            .width(5)
-                            .color(0xFF1694FF)
-                            .points(routeList.subList(routeIndex - 1,
-                                    routeIndex + 1));
-                    baiduMap.addOverlay(polyLine);
 
-                }
-                // 页面跟随移动,注掉这行就是在原图上绘制
-                // moveToLocation(routeList.get(routeIndex), false);
-                if (routeMarker == null) {
-                    OverlayOptions cur = new MarkerOptions()
-                            .position(routeList.get(routeIndex++))
-                            .perspective(false).anchor(0.5f, 0.5f).zIndex(10);
-                } else {
-                    routeMarker.setPosition(routeList.get(routeIndex++));
-                }
-                mHandler.sendEmptyMessageDelayed(ROUTE, ROUTETIME);
-            }
-
-            /*if (msg.what == PROGRESS) {
-                if (routeIndex == 0) {// 因为播放完毕时routeIndex被赋值成了0，不写进度条会直接跳到0的位置
-                    setProgss(100);
-                } else {
-                    setProgss((routeIndex + 1) * 100 / routeList.size());
-                }
-            }*/
-        };
-    };
 
     /**
      * 初始化定位相关代码
@@ -325,6 +267,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
 
     @Override
     public void onStart() {
+        super.onStart();
         // 开启图层定位
         baiduMap.setMyLocationEnabled(true);
         if (!mLocationClient.isStarted()) {
@@ -332,7 +275,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
         }
         // 开启方向传感器
 //        myOrientationListener.start();
-        super.onStart();
+
     }
 
     @Override
@@ -340,6 +283,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
         super.onResume();
         //在activity执行onResume时执行mMapView. onResume ()，实现地图生命周期管理
         bmapView.onResume();
+//                addRouteLine(routeList);// 添加路线
 
     }
 
