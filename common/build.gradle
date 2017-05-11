@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 25
@@ -104,8 +104,4 @@ dependencies {
         exclude group: 'com.github.bumptech.glide'
     }
     compile 'com.github.piasy:ProgressPieIndicator:1.2.9'
-}
-
-kapt {
-    generateStubs = true
 }
