@@ -39,8 +39,10 @@ object Locations {
 
             client.registerLocationListener(listener)
             emitter.setCancellable {
-                client.unRegisterLocationListener(listener)
-                client.stop()
+                AndroidSchedulers.mainThread().scheduleDirect {
+                    client.stop()
+                    client.unRegisterLocationListener(listener)
+                }
             }
             client.start()
         }.subscribeOn(AndroidSchedulers.mainThread())

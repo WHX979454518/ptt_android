@@ -5,7 +5,6 @@ import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.api.SignalApi
 import com.xianzhitech.ptt.api.event.RequestLocationUpdateEvent
 import com.xianzhitech.ptt.data.CurrentUser
-import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.hasActiveConnection
 import com.xianzhitech.ptt.ext.i
 import com.xianzhitech.ptt.ext.logErrorAndForget
@@ -90,11 +89,11 @@ class LocationHandler(appComponent: AppComponent) {
     }
 
     private fun CurrentUser.observeLocationScanEnable(): Observable<Boolean> {
-        if (locationEnabled.not()) {
-            return Observable.just(false)
-        }
-
         return Observable.defer<Boolean> {
+            if (locationEnabled.not()) {
+                return@defer Observable.just(false)
+            }
+
             // Calculate the interval time
             val now = ZonedDateTime.now()
 
@@ -112,7 +111,8 @@ class LocationHandler(appComponent: AppComponent) {
                     AndroidSchedulers.mainThread())
                     .flatMap { Observable.empty<Boolean>() }
                     .startWith(enabled)
-        }.repeat()
+        }.observeOn(AndroidSchedulers.mainThread())
+                .repeat()
                 .distinctUntilChanged()
     }
 

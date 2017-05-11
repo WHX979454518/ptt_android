@@ -1,2 +1,4 @@
-include ':app', ':bd_loc_sdk', ':voice_engine', ':common'
+include ':app'
+include ':voice_engine'
+include ':common'
 include ':console-app'

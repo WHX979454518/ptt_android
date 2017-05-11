@@ -23,3 +23,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Baidu
+-keep class com.baidu.**
+-keepnames class com.baidu.**
+-keepnames class com.baidu.** { *; }
+-keepclassmembernames class com.baidu.** { *; }
+-keepclassmembers class com.baidu.** { *; }
+-dontwarn com.baidu.**
+-keep class vi.com.** {*;}
