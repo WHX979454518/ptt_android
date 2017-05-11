@@ -309,6 +309,23 @@ class SignalApi(private val appComponent: AppComponent,
                 })
     }
 
+    fun getLastLocationByUserIds(userIds: List<String>):Maybe<List<LastLocationByUser>>{
+        return waitForLoggedIn()
+                .andThen(Maybe.defer {
+                    Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
+                    restfulApi!!.getLastLocationByUserIds(userIds.joinToString(","))
+                            .toMaybe()
+                            .onErrorComplete { it is HttpException && it.code() == 304 }
+                })
+                .map {
+                    if(it.data == null) {
+                        return@map emptyList<LastLocationByUser>()
+                    }
+
+                    it.data
+                }
+    }
+
     private fun onConnectionEnd(err: Throwable? = null) {
         logger.i { "Connection error: $err" }
 
@@ -589,6 +606,11 @@ class SignalApi(private val appComponent: AppComponent,
 
         @GET("api/contact/departments")
         fun getAllDepartments(): Single<Dto<List<ContactDepartment>>>
+
+
+        @GET("api/queryLastLoc")
+        fun getLastLocationByUserIds(@Query("userId") userIds: String): Single<Dto<List<LastLocationByUser>>>
+
     }
 
     enum class ConnectionState {
