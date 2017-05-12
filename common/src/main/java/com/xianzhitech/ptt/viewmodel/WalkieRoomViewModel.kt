@@ -6,17 +6,19 @@ import android.databinding.ObservableInt
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.format.DateUtils
+import android.widget.Toast
 import com.google.common.base.Optional
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.BaseApp
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.User
-import com.xianzhitech.ptt.ext.combineLatest
-import com.xianzhitech.ptt.ext.doOnLoading
-import com.xianzhitech.ptt.ext.i
-import com.xianzhitech.ptt.ext.logErrorAndForget
-import com.xianzhitech.ptt.ext.toOptional
+import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.service.NoSuchRoomException
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
+import com.xianzhitech.ptt.service.toast
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.Function
 import java.util.concurrent.TimeUnit
@@ -37,6 +39,8 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
     val currentSpeakingDuration = ObservableField<String>()
     val canGrabMic = ObservableBoolean()
     val currentSpeaker = ObservableField<User>()
+    val hasCurrentSpeaker = ObservableBoolean()
+    val displaySpeakerView = ObservableBoolean()
 
     override fun onStart() {
         super.onStart()
@@ -100,12 +104,29 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                 .map { it.speakerId.toOptional() }
                 .distinctUntilChanged()
                 .switchMap { it.orNull()?.let(storage::getUser) ?: Observable.just(Optional.absent()) }
-                .replay(1)
-                .refCount()
+                .share()
 
         currentSpeaker
                 .logErrorAndForget()
-                .subscribe { this.currentSpeaker.set(it.orNull()) }
+                .subscribe {
+                    this.currentSpeaker.set(it.orNull())
+                    this.hasCurrentSpeaker.set(it.isPresent)
+                }
+                .bindToLifecycle()
+
+        currentSpeaker
+                .map { it.isPresent }
+                .distinctUntilChanged()
+                .switchMap { hasSpeaker ->
+                    if (hasSpeaker) {
+                        Observable.just(hasSpeaker)
+                    } else {
+                        Observable.timer(2, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                                .map { hasSpeaker }
+                    }
+                }
+                .logErrorAndForget()
+                .subscribe(displaySpeakerView::set)
                 .bindToLifecycle()
 
         combineLatest(
@@ -135,6 +156,29 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                 .subscribe()
     }
 
+    fun onClickLeaveRoom() {
+        appComponent.signalBroker.quitWalkieRoom()
+        navigator.closeRoomPage()
+    }
+
+    fun onClickViewMember() {
+        appComponent.signalBroker.peekWalkieRoomId()?.let(navigator::navigateToRoomMemberPage)
+    }
+
+    fun onClickNotification() {
+        val result = appComponent.signalBroker.peekWalkieRoomId()?.let(appComponent.signalBroker::inviteRoomMembers) ?: Single.error(NoSuchRoomException(null))
+        result.observeOn(AndroidSchedulers.mainThread())
+                .subscribe { invitedCount, err ->
+                    err?.toast() ?: return@subscribe
+
+                    if (invitedCount > 0) {
+                        Toast.makeText(BaseApp.instance, BaseApp.instance.getString(R.string.member_invitation_sent, invitedCount), Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(BaseApp.instance, R.string.member_invitation_sent_none, Toast.LENGTH_LONG).show()
+                    }
+                }
+    }
+
     override fun onSaveState(out: Bundle) {
         super.onSaveState(out)
 
@@ -150,6 +194,8 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
     interface Navigator {
         fun navigateToRoomNoLongerExistsPage()
         fun navigateToErrorPage(throwable: Throwable)
+        fun closeRoomPage()
+        fun navigateToRoomMemberPage(roomId : String)
         fun displayNoPermissionError()
     }
 
