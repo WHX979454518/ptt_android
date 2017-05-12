@@ -14,24 +14,27 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <AbsoluteLayout
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@drawable/login_bg"
-            android:gravity="top|center_horizontal"
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginLeft="900dp"
+                android:layout_marginTop="620dp"
                 android:layout_x="340dp"
                 android:src="@drawable/login_logo"
                 android:layout_y="200dp"/>
 
             <android.support.design.widget.TextInputLayout
                 android:id="@+id/login_nameField"
-                android:layout_width="200dp"
-                android:layout_height="50dp"
+                android:layout_width="400dp"
+                android:layout_height="60dp"
+                android:layout_marginLeft="1100dp"
+                android:layout_marginTop="580dp"
                 android:layout_x="430dp"
                 android:layout_y="184dp"
                 app:error="@{viewModel.nameError}">
@@ -51,8 +54,10 @@
 
             <android.support.design.widget.TextInputLayout
                 android:id="@+id/login_passwordField"
-                android:layout_width="200dp"
-                android:layout_height="50dp"
+                android:layout_width="400dp"
+                android:layout_height="60dp"
+                android:layout_marginLeft="1100dp"
+                android:layout_marginTop="680dp"
                 android:layout_x="430dp"
                 android:layout_y="234dp"
                 app:error="@{viewModel.passwordError}">
@@ -71,11 +76,13 @@
             </android.support.design.widget.TextInputLayout>
 
             <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="100dp"
+                android:layout_height="80dp"
+                android:layout_marginLeft="1050dp"
+                android:layout_marginTop="780dp"
                 android:layout_x="450dp"
                 android:layout_y="280dp"
-                android:layout_marginTop="@dimen/unit_one"
+                android:layout_centerHorizontal="true"
                 android:gravity="center"
                 android:orientation="horizontal">
 
@@ -95,7 +102,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
-                android:layout_marginBottom="@dimen/unit_one"
+                android:layout_marginTop="980dp"
+                android:layout_centerHorizontal="true"
                 android:layout_x="460dp"
                 android:layout_y="380dp"
                 android:gravity="bottom|center_horizontal"
@@ -109,12 +117,13 @@
                     android:background="?attr/selectableItemBackground"
                     android:onClick="@{ignored -> viewModel.onClickAbout()}"
                     android:padding="@dimen/unit_one"
+                    android:textSize="20sp"
                     android:text="@string/about"/>
 
 
             </LinearLayout>
 
-        </AbsoluteLayout>
+        </RelativeLayout>
 
         <include
             layout="@layout/view_progress"

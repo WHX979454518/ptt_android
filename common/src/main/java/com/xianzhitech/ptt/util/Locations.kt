@@ -21,7 +21,7 @@ object Locations {
         return Observable.create<Location> { emitter ->
             val client = LocationClient(BaseApp.instance, LocationClientOption().apply {
                 coorType = "bd09ll"
-                isIgnoreKillProcess = false
+                isIgnoreKillProcess = true
                 enableSimulateGps = BuildConfig.DEBUG
                 scanSpan = minTimeMills.toInt()
             })
@@ -39,8 +39,10 @@ object Locations {
 
             client.registerLocationListener(listener)
             emitter.setCancellable {
-                client.unRegisterLocationListener(listener)
-                client.stop()
+                AndroidSchedulers.mainThread().scheduleDirect {
+                    client.stop()
+                    client.unRegisterLocationListener(listener)
+                }
             }
             client.start()
         }.subscribeOn(AndroidSchedulers.mainThread())

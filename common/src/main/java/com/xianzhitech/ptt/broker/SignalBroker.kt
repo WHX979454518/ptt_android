@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.SignalApi
+import com.xianzhitech.ptt.api.dto.LastLocationByUser
 import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.UserLocation
@@ -24,6 +25,7 @@ import com.xianzhitech.ptt.util.SimpleCameraEventsHandler
 import com.xianzhitech.ptt.util.SimplePeerConnectionObserver
 import com.xianzhitech.ptt.util.SimpleSdpObserver
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -617,6 +619,10 @@ class SignalBroker(private val appComponent: AppComponent,
     fun sendLocationData(locations: List<Location>): Completable {
         logger.i { "Sending ${locations.size} location data" }
         return signalApi.sendLocationData(locations)
+    }
+
+    fun getLastLocationByUserIds(userIds: List<String>): Maybe<List<LastLocationByUser>> {
+        return signalApi.getLastLocationByUserIds(userIds);
     }
 
     fun updateRoom(roomId: String): Single<Room> {
