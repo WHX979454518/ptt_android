@@ -7,6 +7,12 @@ import com.google.common.base.Optional
 import com.google.common.base.Preconditions
 import com.google.common.primitives.Primitives
 import com.xianzhitech.ptt.AppComponent
+import com.xianzhitech.ptt.api.dto.Contact
+import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
+import com.xianzhitech.ptt.api.dto.LastLocationByUser
+import com.xianzhitech.ptt.api.dto.MessageQuery
+import com.xianzhitech.ptt.api.dto.MessageQueryResult
+import com.xianzhitech.ptt.api.dto.UserLocation
 import com.xianzhitech.ptt.api.dto.*
 import com.xianzhitech.ptt.api.event.Event
 import com.xianzhitech.ptt.api.event.IceCandidateEvent
