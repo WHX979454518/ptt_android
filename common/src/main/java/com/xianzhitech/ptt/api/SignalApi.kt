@@ -9,6 +9,7 @@ import com.google.common.primitives.Primitives
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.api.dto.Contact
 import com.xianzhitech.ptt.api.dto.JoinWalkieRoomResponse
+import com.xianzhitech.ptt.api.dto.LastLocationByUser
 import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.UserLocation
