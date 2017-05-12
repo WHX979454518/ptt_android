@@ -21,7 +21,7 @@ object Locations {
         return Observable.create<Location> { emitter ->
             val client = LocationClient(BaseApp.instance, LocationClientOption().apply {
                 coorType = "bd09ll"
-                isIgnoreKillProcess = true
+                isIgnoreKillProcess = false
                 enableSimulateGps = BuildConfig.DEBUG
                 scanSpan = minTimeMills.toInt()
             })

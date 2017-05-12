@@ -157,15 +157,13 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
         baiduMap.clear();
         LatLng latLng = null;
         Marker marker = null;
-        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_geo);
         OverlayOptions options;
 
             // 经纬度
             latLng = routeList.get(routeList.size()/2);
             // 图标
-            options = new MarkerOptions().position(latLng).icon(mMarker)
-                    .zIndex(5);
-            marker = (Marker) baiduMap.addOverlay(options);
+
             //屏蔽代码属于描述maker展示的详情
             /*Bundle arg0 = new Bundle();
             arg0.putSerializable("info", latLin);
@@ -208,6 +206,11 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
         points.add(pt4);//点元素
         index.add(2);//设置该点的纹理索引
         points.add(pt5);//点元素
+        for(LatLng lat:points){
+            options = new MarkerOptions().position(lat).icon(mMarker)
+                    .zIndex(5);
+            baiduMap.addOverlay(options);
+        }
 //构造对象
         OverlayOptions ooPolyline = new PolylineOptions().width(15).color(0xAAFF0000).points(points).customTextureList(customList).textureIndex(index);
 //添加到地图

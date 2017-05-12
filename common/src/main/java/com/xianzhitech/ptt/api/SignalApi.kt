@@ -13,6 +13,7 @@ import com.xianzhitech.ptt.api.dto.LastLocationByUser
 import com.xianzhitech.ptt.api.dto.MessageQuery
 import com.xianzhitech.ptt.api.dto.MessageQueryResult
 import com.xianzhitech.ptt.api.dto.UserLocation
+import com.xianzhitech.ptt.api.dto.*
 import com.xianzhitech.ptt.api.event.Event
 import com.xianzhitech.ptt.api.event.IceCandidateEvent
 import com.xianzhitech.ptt.api.event.LoginFailedEvent
