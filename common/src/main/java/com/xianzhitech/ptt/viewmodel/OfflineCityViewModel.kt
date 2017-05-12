@@ -15,12 +15,12 @@ data class OfflineCityViewModel(val downloadStatusMap: ObservableMap<Int, Int>,
         get() = String(CharArray(level * 2) { '\t' })
 
     val displayDownloadButton = createCompositeObservable(downloadStatusMap) {
-        downloadStatusMap.getOrDefault(city.cityID, MapDownloadService.DOWNLOAD_STATUS_IDLE)
+        downloadStatusMap.getOrElse(city.cityID) { MapDownloadService.DOWNLOAD_STATUS_IDLE }
                 .let { it == MapDownloadService.DOWNLOAD_STATUS_IDLE || it == MapDownloadService.DOWNLOAD_STATUS_PAUSED }
     }
 
     val displayInProgress = createCompositeObservable(downloadStatusMap) {
-        downloadStatusMap.getOrDefault(city.cityID, MapDownloadService.DOWNLOAD_STATUS_IDLE) == MapDownloadService.DOWNLOAD_STATUS_IN_PROGRESS
+        downloadStatusMap.getOrElse(city.cityID) { MapDownloadService.DOWNLOAD_STATUS_IDLE } == MapDownloadService.DOWNLOAD_STATUS_IN_PROGRESS
     }
 
     val displayPauseButton: ObservableField<Boolean>
