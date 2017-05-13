@@ -17,7 +17,6 @@ import com.xianzhitech.ptt.ui.chat.ChatFragment
 import com.xianzhitech.ptt.ui.contact.ContactSelectionFragment
 import com.xianzhitech.ptt.ui.login.LoginActivity
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
-import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment
 import com.xianzhitech.ptt.viewmodel.HomeViewModel
 

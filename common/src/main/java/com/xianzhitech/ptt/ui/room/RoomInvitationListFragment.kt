@@ -25,7 +25,6 @@ import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import com.xianzhitech.ptt.ui.user.UserDetailsActivity
 import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -115,7 +114,7 @@ class RoomInvitationListFragment : BottomSheetDialogFragment() {
                 }
 
                 val onClickListener: (View) -> Unit = {
-                    activity.startActivityWithAnimation(UserDetailsActivity.build(it.context, invitationList[adapterPosition].invitation.inviterId))
+                    (activity as? BaseActivity)?.navigateToUserDetailsPage(invitationList[adapterPosition].invitation.inviterId)
                 }
                 inviterIconView.setOnClickListener(onClickListener)
                 inviterNameView.setOnClickListener(onClickListener)

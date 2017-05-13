@@ -7,13 +7,14 @@ import android.widget.TextView
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.databinding.ViewModelListBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.callbacks
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import com.xianzhitech.ptt.ui.widget.SideNavigationView
 import com.xianzhitech.ptt.viewmodel.RoomMemberListViewModel
 
 
-class RoomMemberListFragment : ModelListFragment<RoomMemberListViewModel, ViewModelListBinding>() {
+class RoomMemberListFragment : ModelListFragment<RoomMemberListViewModel, ViewModelListBinding>(), RoomMemberListViewModel.Navigator {
     override val recyclerView: RecyclerView
         get() = dataBinding.recyclerView
     override val sideNavigationView: SideNavigationView
@@ -31,9 +32,15 @@ class RoomMemberListFragment : ModelListFragment<RoomMemberListViewModel, ViewMo
         (activity as? FragmentDisplayActivity)?.title = getString(R.string.room_members)
     }
 
-    override fun onCreateViewModel(): RoomMemberListViewModel {
-        return RoomMemberListViewModel(appComponent, arguments.getString(ARG_ROOM_ID))
+    override fun navigateToUserDetailsPage(id: String) {
+        callbacks<Callbacks>()!!.navigateToUserDetailsPage(id)
     }
+
+    override fun onCreateViewModel(): RoomMemberListViewModel {
+        return RoomMemberListViewModel(appComponent, this, arguments.getString(ARG_ROOM_ID))
+    }
+
+    interface Callbacks : RoomMemberListViewModel.Navigator
 
     companion object {
         const val ARG_ROOM_ID = "room_id"

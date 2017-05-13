@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.service.handler
 
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
@@ -10,6 +11,7 @@ import com.google.common.base.Optional
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.SignalApi
+import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.ext.getConnectivityObservable
 import com.xianzhitech.ptt.ext.i
@@ -19,9 +21,7 @@ import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.ext.w
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
-import com.xianzhitech.ptt.ui.call.CallActivity
-import com.xianzhitech.ptt.ui.home.HomeActivity
-import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.Function6
@@ -118,9 +118,24 @@ class ServiceHandler(private val appContext: Context,
                     val roomState = signalService.currentWalkieRoomState.value
                     if (roomState.currentRoomId != null && roomState.status != RoomStatus.IDLE) {
                         logger.i { "Screen turning on and current in room. Open room activity." }
-                        appContext.startActivity(Intent(appContext, RoomActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK))
+                        navigateToCurrentWalkiePage()
                     }
                 }
+    }
+
+    private fun navigateToCurrentWalkiePage() {
+        val activity = appComponent.activityProvider.currentStartedActivity as? BaseActivity
+
+        if (activity == null) {
+            appContext.startActivity(Intent(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_LAUNCHER)
+                    .setPackage(appContext.packageName)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra(BaseActivity.EXTRA_NAVIGATE_TO_WALKIE, true)
+            )
+        } else {
+            activity.navigateToWalkieTalkiePage()
+        }
     }
 
     private fun onStateChanged(state: State) {
@@ -140,45 +155,39 @@ class ServiceHandler(private val appContext: Context,
 
         val icon: Int
         val text : String?
-        val intent : Intent
 
         val connectionState = appComponent.signalBroker.connectionState.value
 
         when {
             connectionState == SignalApi.ConnectionState.RECONNECTING -> {
                 text = appContext.getString(R.string.notification_user_logging_in, user.name)
-                intent = Intent(appContext, HomeActivity::class.java)
                 icon = R.drawable.ic_notification_offline
             }
 
             state.connectivity.not() || connectionState == SignalApi.ConnectionState.DISCONNECTED -> {
                 text = appContext.getString(R.string.notification_user_offline, user.name)
-                intent = Intent(appContext, HomeActivity::class.java)
                 icon = R.drawable.ic_notification_offline
             }
 
             state.videoRoomName != null -> {
                 text = appContext.getString(R.string.video_chatting, state.videoRoomName)
-                intent = Intent(appContext, CallActivity::class.java)
                 icon = R.drawable.ic_videocam_white_24dp
             }
 
             state.walkieRoomName != null -> {
                 text = appContext.getString(R.string.is_in_walkie_talkie, state.walkieRoomName)
-                intent = Intent(appContext, RoomActivity::class.java)
                 icon = R.drawable.ic_notification_joined_room
             }
 
             else -> {
                 text = appContext.getString(R.string.notification_user_online, user.name)
-                intent = Intent(appContext, HomeActivity::class.java)
                 icon = R.drawable.ic_notification_logged_on
             }
         }
 
         builder.setSmallIcon(icon)
         builder.setContentText(text)
-        builder.setContentIntent(PendingIntent.getActivity(appContext, 1, intent, 0))
+        builder.setContentIntent(PendingIntent.getBroadcast(appContext, 1, Intent(appContext, NotificationNavigationReceiver::class.java), 0))
 
         appContext.startService(Intent(appContext, BackgroundService::class.java).apply {
             action = BackgroundService.Companion.ACTION_UPDATE_NOTIFICATION
@@ -186,4 +195,32 @@ class ServiceHandler(private val appContext: Context,
         })
     }
 
+}
+
+class NotificationNavigationReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val appComponent = context.appComponent
+
+        val connectionState = appComponent.signalBroker.connectionState.value
+        val activity = appComponent.activityProvider.currentStartedActivity as? BaseActivity
+
+        val launchIntent : Intent by lazy {
+            Intent(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_LAUNCHER)
+                    .setPackage(context.packageName)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        if (connectionState == SignalApi.ConnectionState.CONNECTED &&
+                appComponent.signalBroker.currentWalkieRoomState.value.status.inRoom) {
+            if (activity == null) {
+                context.startActivity(launchIntent.putExtra(BaseActivity.EXTRA_NAVIGATE_TO_WALKIE, true))
+            } else {
+                activity.navigateToWalkieTalkiePage()
+            }
+        }
+        else if (activity == null) {
+            context.startActivity(launchIntent)
+        }
+    }
 }

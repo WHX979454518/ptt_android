@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.ui.base
 
 import android.Manifest
 import android.app.DownloadManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,20 +12,30 @@ import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.dto.AppConfig
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
 import com.xianzhitech.ptt.data.Room
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.dismissImmediately
+import com.xianzhitech.ptt.ext.e
+import com.xianzhitech.ptt.ext.findFragment
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ext.toFormattedString
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.call.CallActivity
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
-import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.room.RoomMemberListFragment
+import com.xianzhitech.ptt.ui.user.UserDetailsFragment
+import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment
 import com.xianzhitech.ptt.update.installPackage
 import io.reactivex.SingleObserver
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -71,6 +80,11 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     private fun handleIntent(intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_NAVIGATE_TO_WALKIE, false)) {
+            navigateToWalkieTalkiePage()
+            return
+        }
+
         intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
             val fromInvitation = intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITATION, false)
             if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false)) {
@@ -81,6 +95,8 @@ abstract class BaseActivity : AppCompatActivity(),
             intent.removeExtra(EXTRA_JOIN_ROOM_ID)
             intent.removeExtra(EXTRA_JOIN_ROOM_CONFIRMED)
         }
+
+        intent.getParcelableArrayListExtra<WalkieRoomInvitationEvent>(EXTRA_PENDING_INVITATION)?.let(this::onNewPendingInvitation)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -127,15 +143,36 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     fun navigateToWalkieTalkiePage() {
-        startActivityWithAnimation(Intent(this, RoomActivity::class.java))
+        appComponent.signalBroker.peekWalkieRoomId()?.let { joinRoom(it, fromInvitation = false) } ?: logger.e { "No walkie room to go to" }
     }
 
-    fun navigateToVideoChatPage(roomId: String) {
+    open fun navigateToVideoChatPage(roomId: String) {
         joinRoom(roomId, fromInvitation = false, isVideoChat = true)
     }
 
-    fun navigateToVideoChatPage() {
+    open fun navigateToVideoChatPage() {
+        //TODO: Create call fragment...
         startActivityWithAnimation(Intent(this, CallActivity::class.java))
+    }
+
+    open fun navigateToRoomMemberPage(roomId: String) {
+        startActivityWithAnimation(
+                FragmentDisplayActivity.createIntent(
+                        RoomMemberListFragment::class.java,
+                        RoomMemberListFragment.ARG_ROOM_ID,
+                        roomId
+                )
+        )
+    }
+
+    open fun navigateToUserDetailsPage(userId : String) {
+        startActivityWithAnimation(
+                FragmentDisplayActivity.createIntent(
+                        UserDetailsFragment::class.java,
+                        UserDetailsFragment.ARG_USER_ID,
+                        userId
+                )
+        )
     }
 
     private fun startDownload(appConfig: AppConfig) {
@@ -192,14 +229,50 @@ abstract class BaseActivity : AppCompatActivity(),
     }
 
     open fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
-        val intent = if (isVideoChat) Intent(this, CallActivity::class.java) else Intent(this, RoomActivity::class.java)
+        if (!isVideoChat) {
+            val frag = supportFragmentManager.fragments.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment
+            if (frag == null) {
+                startActivityWithAnimation(
+                        FragmentDisplayActivity.createIntent(WalkieRoomFragment::class.java, Bundle(2).apply {
+                            putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId)
+                            putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation)
+                        }).withRoomDisplayFlags()
+                )
+                return
+            }
 
-        // Base 类不知道具体怎么加入房间, 打开Activity来加入房间
-        startActivityWithAnimation(intent
-                .addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
-                .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
-                .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true),
-                R.anim.slide_in_from_right, R.anim.slide_out_to_left, R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+            frag.joinRoom(roomId, fromInvitation)
+        }
+        else {
+            TODO("Implement video room entry")
+        }
+    }
+
+    open fun onNewPendingInvitation(pendingInvitations: List<WalkieRoomInvitationEvent>) {
+        val frag = supportFragmentManager.fragments.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment
+        if (frag == null) {
+            startActivityWithAnimation(
+                    FragmentDisplayActivity.createIntent(
+                            WalkieRoomFragment::class.java,
+                            Bundle(1).apply {
+                                putParcelableArrayList(WalkieRoomFragment.ARG_PENDING_INVITATIONS, ArrayList(pendingInvitations))
+                            }
+                    ).withRoomDisplayFlags()
+            )
+
+            return
+        }
+
+        frag.onNewPendingInvitation(pendingInvitations)
+    }
+
+    private fun Intent.withRoomDisplayFlags() : Intent {
+        return putExtra(FragmentDisplayActivity.EXTRA_THEME, R.style.AppTheme_Room)
+                .putExtra(FragmentDisplayActivity.EXTRA_WINDOW_FLAGS,
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                                or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                                or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                                or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
     }
 
     fun joinRoom(groupIds: List<String> = emptyList(),
@@ -212,7 +285,26 @@ abstract class BaseActivity : AppCompatActivity(),
         signalService.createRoom(userIds = userIds, groupIds = groupIds)
                 .timeout(Constants.JOIN_ROOM_TIMEOUT_SECONDS, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(CreateRoomSubscriber(applicationContext, isVideoChat))
+                .subscribe(object : SingleObserver<Room> {
+                    override fun onSuccess(t: Room) {
+                        hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+                        joinRoom(roomId = t.id, fromInvitation = false, isVideoChat = isVideoChat)
+                    }
+
+                    override fun onSubscribe(d: Disposable) {
+                        d.bindToLifecycle()
+                    }
+
+                    override fun onError(e: Throwable) {
+                        logger.e(e) { "Error creating room" }
+                        hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
+                        e.toast()
+                    }
+                })
+    }
+
+    open fun onCloseWalkieRoom() {
+        (supportFragmentManager.fragments.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment)?.closeRoomPage()
     }
 
     fun navigateToDialPhone(phoneNumber: String) {
@@ -282,7 +374,7 @@ abstract class BaseActivity : AppCompatActivity(),
             }
         }
 
-        appComponent.appApi.retrieveAppConfig(appComponent.signalBroker.peekUserId() ?: "", appComponent.currentVersion.toString())
+        appComponent.appApi.retrieveAppConfig(appComponent.signalBroker.peekUserId() ?: "", appComponent.currentVersion)
                 .toMaybe()
                 .logErrorAndForget()
                 .subscribe(this::handleUpdate)
@@ -327,27 +419,6 @@ abstract class BaseActivity : AppCompatActivity(),
         return this
     }
 
-    private inner class CreateRoomSubscriber(private val appContext: Context, private val isVideoChat: Boolean) : SingleObserver<Room> {
-        override fun onSubscribe(d: Disposable?) {
-
-        }
-
-        override fun onError(error: Throwable) {
-            error.toast()
-            hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
-        }
-
-        override fun onSuccess(value: Room) {
-            hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
-            val currentActivity = (appContext as AppComponent).activityProvider.currentStartedActivity as? BaseActivity
-            if (currentActivity != null) {
-                currentActivity.joinRoom(value.id, false, isVideoChat)
-            } else {
-                startActivityJoiningRoom(appContext, RoomActivity::class.java, value.id)
-            }
-        }
-    }
-
     private data class JoinRoomBundle(val roomId: String,
                                       val fromInvitation: Boolean,
                                       val isVideoChat: Boolean) : Serializable {
@@ -370,6 +441,8 @@ abstract class BaseActivity : AppCompatActivity(),
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
         const val EXTRA_JOIN_ROOM_FROM_INVITATION = "extra_fi"
         const val EXTRA_JOIN_ROOM_IS_VIDEO_CHAT = "extra_isv"
+        const val EXTRA_PENDING_INVITATION = "pending_invitation"
+        const val EXTRA_NAVIGATE_TO_WALKIE = "navigate_to_walkie"
 
         private const val STATE_PENDING_DENIED_PERMISSIONS = "state_pending_denied_permissions"
 
@@ -381,14 +454,6 @@ abstract class BaseActivity : AppCompatActivity(),
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.CAMERA
         )
-
-        fun startActivityJoiningRoom(context: Context, activity: Class<*>, roomId: String) {
-            context.startActivity(Intent(context, activity)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, roomId)
-                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true))
-
-        }
     }
 
 

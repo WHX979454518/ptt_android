@@ -3,6 +3,9 @@ package com.xianzhitech.ptt.ext
 import android.app.Activity
 import android.databinding.BindingAdapter
 import android.databinding.InverseBindingAdapter
+import android.graphics.drawable.AnimatedStateListDrawable
+import android.graphics.drawable.AnimationDrawable
+import android.graphics.drawable.Drawable
 import android.support.annotation.IdRes
 import android.support.annotation.LayoutRes
 import android.view.LayoutInflater
@@ -58,6 +61,14 @@ fun setImageUrl(view: ImageView, url: String) {
     Glide.with(view.context)
             .load(url)
             .into(view)
+}
+
+@BindingAdapter("animationSrc")
+fun setImageAnimatedSrc(view: ImageView, drawable: Drawable) {
+    view.setImageDrawable(drawable)
+    if (drawable is AnimationDrawable) {
+        drawable.start()
+    }
 }
 
 

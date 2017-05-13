@@ -11,12 +11,14 @@ import com.google.common.base.Optional
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
 import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.NoSuchRoomException
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.service.toast
+import com.xianzhitech.ptt.util.ObservableArrayList
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -27,6 +29,7 @@ import java.util.concurrent.TimeUnit
 class WalkieRoomViewModel(private val appComponent: AppComponent,
                           private var requestJoinRoomId: String?,
                           private var requestJoinRoomFromInvitation: Boolean,
+                          private var pendingInvitations : List<WalkieRoomInvitationEvent>,
                           private val navigator: Navigator) : LifecycleViewModel() {
     private val signalBroker = appComponent.signalBroker
 
@@ -41,6 +44,8 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
     val currentSpeaker = ObservableField<User>()
     val hasCurrentSpeaker = ObservableBoolean()
     val displaySpeakerView = ObservableBoolean()
+    val onlineMembers = ObservableArrayList<User>()
+    val isSpeakerMe = ObservableBoolean()
 
     override fun onStart() {
         super.onStart()
@@ -51,14 +56,8 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
             return
         }
 
-        if (requestJoinRoomId != signalBroker.peekWalkieRoomId()) {
-            signalBroker.joinWalkieRoom(requestJoinRoomId!!, requestJoinRoomFromInvitation)
-                    .doOnLoading(isLoading::set)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .logErrorAndForget(navigator::navigateToErrorPage)
-                    .subscribe()
-                    .bindToLifecycle()
-
+        if (requestJoinRoomId != null && requestJoinRoomId != signalBroker.peekWalkieRoomId()) {
+            joinRoom(requestJoinRoomId!!, requestJoinRoomFromInvitation)
             requestJoinRoomId = null
         } else {
             isLoading.set(false)
@@ -78,6 +77,31 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                 .subscribe(title::set)
                 .bindToLifecycle()
 
+        currentRoom
+                .switchMap {
+                    if (it.isPresent) {
+                        Observable.just(it)
+                    } else {
+                        Observable.just(it).delay(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+                    }
+                }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    if (it.isAbsent) {
+                        navigator.navigateToRoomNoLongerExistsPage()
+                    }
+                }
+                .bindToLifecycle()
+
+        signalBroker.currentWalkieRoomState
+                .map(RoomState::onlineMemberIds)
+                .distinctUntilChanged()
+                .switchMap(storage::getUsers)
+                .logErrorAndForget()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(onlineMembers::replaceAll)
+                .bindToLifecycle()
+
         signalBroker.currentWalkieRoomState
                 .subscribe { onlineUserNumber.set(if (it.status.inRoom) it.onlineMemberIds.size else 0) }
                 .bindToLifecycle()
@@ -92,7 +116,7 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                 .switchMap { state ->
                     if (state.speakerId != null && state.speakerStartTime > 0) {
                         Observable.interval(0, 1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                                .map { DateUtils.formatElapsedTime(SystemClock.elapsedRealtime() - state.speakerStartTime) }
+                                .map { DateUtils.formatElapsedTime((SystemClock.elapsedRealtime() - state.speakerStartTime) / 1000L) }
                     } else {
                         Observable.just("")
                     }
@@ -109,7 +133,10 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
         currentSpeaker
                 .logErrorAndForget()
                 .subscribe {
-                    this.currentSpeaker.set(it.orNull())
+                    if (it.isPresent) {
+                        this.currentSpeaker.set(it.get())
+                    }
+                    this.isSpeakerMe.set(it.orNull()?.id == appComponent.signalBroker.peekUserId())
                     this.hasCurrentSpeaker.set(it.isPresent)
                 }
                 .bindToLifecycle()
@@ -121,8 +148,7 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                     if (hasSpeaker) {
                         Observable.just(hasSpeaker)
                     } else {
-                        Observable.timer(2, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
-                                .map { hasSpeaker }
+                        Observable.just(hasSpeaker).delay(2, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     }
                 }
                 .logErrorAndForget()
@@ -141,6 +167,19 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                 .distinctUntilChanged()
                 .subscribe(isRequestingMic::set)
                 .bindToLifecycle()
+    }
+
+    fun joinRoom(roomId: String, fromInvitation: Boolean) {
+        signalBroker.joinWalkieRoom(roomId, fromInvitation)
+                .doOnLoading(isLoading::set)
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget(navigator::navigateToErrorPage)
+                .subscribe()
+                .bindToLifecycle()
+    }
+
+    fun onClickSpeakerView() {
+        currentSpeaker.get()?.id?.let(navigator::navigateToUserDetailsPage)
     }
 
     fun onClickRequestMic() {
@@ -169,7 +208,10 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
         val result = appComponent.signalBroker.peekWalkieRoomId()?.let(appComponent.signalBroker::inviteRoomMembers) ?: Single.error(NoSuchRoomException(null))
         result.observeOn(AndroidSchedulers.mainThread())
                 .subscribe { invitedCount, err ->
-                    err?.toast() ?: return@subscribe
+                    if (err != null) {
+                        err.toast()
+                        return@subscribe
+                    }
 
                     if (invitedCount > 0) {
                         Toast.makeText(BaseApp.instance, BaseApp.instance.getString(R.string.member_invitation_sent, invitedCount), Toast.LENGTH_LONG).show()
@@ -177,6 +219,10 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
                         Toast.makeText(BaseApp.instance, R.string.member_invitation_sent_none, Toast.LENGTH_LONG).show()
                     }
                 }
+    }
+
+    fun onClickTitle() {
+        navigator.showOnlinePopupWindow()
     }
 
     override fun onSaveState(out: Bundle) {
@@ -197,6 +243,8 @@ class WalkieRoomViewModel(private val appComponent: AppComponent,
         fun closeRoomPage()
         fun navigateToRoomMemberPage(roomId : String)
         fun displayNoPermissionError()
+        fun showOnlinePopupWindow()
+        fun navigateToUserDetailsPage(userId: String)
     }
 
     companion object {

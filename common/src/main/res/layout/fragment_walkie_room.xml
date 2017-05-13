@@ -56,7 +56,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="@dimen/unit_two"
             android:onClick="@{ignored -> viewModel.onClickLeaveRoom()}"
-            tools:src="@drawable/ic_power" />
+            android:src="@drawable/ic_power_red" />
 
         <ImageView
             android:id="@+id/room_info"
@@ -86,8 +86,8 @@
             android:paddingLeft="@dimen/unit_one"
             android:paddingRight="@dimen/unit_one"
             android:singleLine="true"
-            tools:drawableRight="@drawable/ic_expand_more_24dp"
-            tools:drawableTint="@android:color/white"
+            android:onClick="@{ignored -> viewModel.onClickTitle()}"
+            android:drawableRight="@drawable/ic_expand_more_white_24dp"
             android:text="@{viewModel.title}"
             tools:text="商务部事宜非常非常非常长的名字(12/24)" />
 
@@ -117,6 +117,7 @@
             android:layout_centerHorizontal="true"
             android:layout_marginTop="@dimen/unit_two"
             android:background="@color/dark_grey"
+            android:onClick="@{ignored -> viewModel.onClickSpeakerView()}"
             android:padding="@dimen/unit_one"
             tools:visibility="visible"
             app:show="@{viewModel.displaySpeakerView}">
@@ -148,7 +149,8 @@
                 android:layout_alignLeft="@+id/room_speakerName"
                 android:layout_below="@+id/room_speakerName"
                 app:show="@{viewModel.hasCurrentSpeaker}"
-                tools:src="@drawable/receiving" />
+                tools:src="@drawable/sending"
+                app:animationSrc="@{viewModel.isSpeakerMe ? @drawable/sending: @drawable/receiving}" />
 
             <TextView
                 android:id="@+id/room_speakerEllapseTime"

@@ -23,7 +23,7 @@ data class JoinWalkieRoomResponse(
         val room : Room,
 
         @param:JsonProperty("initiatorUserId")
-        val initiatorUserId: String,
+        val initiatorUserId: String?,
 
         @param:JsonProperty("onlineMemberIds")
         val onlineMemberIds: Set<String>,
