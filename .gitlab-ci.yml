@@ -17,7 +17,7 @@ build:
   variables:
       APP_SERVER_URL: "http://netptt.cn:25002"
       BUILD_NUMBER: ${CI_PIPELINE_ID}
-  script: ./gradlew --no-daemon clean :app:assembleDevRelease :console-app:assembleDevDebug
+  script: ./gradlew --no-daemon clean :app:assembleDev :console-app:assembleDevDebug
   artifacts:
     paths:
       - app/build/outputs
@@ -39,7 +39,7 @@ deploy_app_staging:
   script:
     - export CHANGE_LOG="`./generate_gitlog.sh`"
     - echo $CHANGE_LOG
-    - scp app/build/outputs/apk/app-dev-release.apk root@netptt.cn:/serverDisk/apks/zrt_staging/zrt-ptt-staging-${CI_PIPELINE_ID}.apk
+    - scp app/build/outputs/apk/app-pre21-dev-release.apk root@netptt.cn:/serverDisk/apks/zrt_staging/zrt-ptt-staging-${CI_PIPELINE_ID}.apk
     - >
         curl -X POST
         -H "Content-Type: application/json"

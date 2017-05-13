@@ -104,7 +104,7 @@ class MapDownloadService : Service(), MapDownloadServiceConnection {
             ACTION_TOGGLE_DOWNLOAD -> {
                 val cityId = intent.getIntExtra(EXTRA_CITY_ID, -1)
                 val statusMap = downloadStatusMap.value
-                when (statusMap.getOrDefault(cityId, DOWNLOAD_STATUS_IDLE)) {
+                when (statusMap.getOrElse(cityId) { DOWNLOAD_STATUS_IDLE }) {
                     DOWNLOAD_STATUS_IN_PROGRESS -> {
                         offlineMap.pause(cityId)
                         statusMap[cityId] = DOWNLOAD_STATUS_PAUSED
