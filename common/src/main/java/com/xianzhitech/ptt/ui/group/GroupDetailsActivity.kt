@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.TextView
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.R
+import com.xianzhitech.ptt.broker.RoomMode
 import com.xianzhitech.ptt.data.ContactGroup
 import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.findView
@@ -51,7 +52,7 @@ class GroupDetailsActivity : BaseActivity() {
         }
 
         findViewById(R.id.groupDetails_videoChat).setOnClickListener {
-            joinRoom(groupIds = listOf(groupId), isVideoChat = true)
+            joinRoom(groupIds = listOf(groupId), roomMode = RoomMode.VIDEO)
         }
 
         allMemberLabel.setOnClickListener {

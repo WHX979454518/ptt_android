@@ -266,6 +266,13 @@
     <string name="offline_map_downloading">正在下载离线地图数据</string>
     <string name="user_join_video_chat">%1$s 加入视频聊天</string>
     <string name="user_quit_video_chat">%1$s 退出视频聊天</string>
+    <string name="audio_conversation">语音对话中</string>
+    <string name="mute_on">静音： 开</string>
+    <string name="mute_off">静音： 关</string>
+    <string name="speaker_on">扬声器： 开</string>
+    <string name="speaker_off">扬声器： 关</string>
+    <string name="video_on">视频： 开</string>
+    <string name="video_off">视频： 关</string>
 
     <string-array name="level_number">
         <item>管理员</item>

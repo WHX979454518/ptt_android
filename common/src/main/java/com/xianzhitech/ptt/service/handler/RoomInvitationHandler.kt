@@ -6,6 +6,7 @@ import android.content.Intent
 import com.google.common.base.Optional
 import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.broker.RoomMode
 import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Permission
 import com.xianzhitech.ptt.data.RoomInfo
@@ -104,11 +105,11 @@ class RoomInvitationHandler : BroadcastReceiver() {
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.room.id)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, invitation.room.id)
-                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false)
+                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_MODE, RoomMode.NORMAL)
                 )
             }
             else {
-                startedActivity.joinRoomConfirmed(invitation.room.id, true, false)
+                startedActivity.joinRoomConfirmed(invitation.room.id, true, RoomMode.NORMAL)
             }
         } else {
             logger.i { "Sending out invitation" }

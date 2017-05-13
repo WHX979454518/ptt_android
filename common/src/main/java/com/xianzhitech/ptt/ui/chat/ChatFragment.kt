@@ -126,8 +126,8 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         }
     }
 
-    override fun navigateToVideoChatPage(roomId: String) {
-        callbacks<Callbacks>()?.navigateToVideoChatPage(roomId)
+    override fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean) {
+        callbacks<Callbacks>()?.navigateToVideoChatPage(roomId, audioOnly)
     }
 
     override fun navigateToWalkieTalkie(roomId: String) {
@@ -248,7 +248,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         fun navigateToWalkieTalkiePage(roomId: String)
         fun navigateToWalkieTalkiePage()
         fun navigateToVideoChatPage()
-        fun navigateToVideoChatPage(roomId: String)
+        fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean)
     }
 
     companion object {

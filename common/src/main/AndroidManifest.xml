@@ -87,6 +87,7 @@
 
         <activity
             android:name=".ui.call.CallActivity"
+            android:launchMode="singleTop"
             android:label="@string/group_chat"
             android:theme="@style/AppTheme.Room"/>
 

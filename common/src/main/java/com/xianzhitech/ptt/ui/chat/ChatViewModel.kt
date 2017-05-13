@@ -112,11 +112,11 @@ class ChatViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickVideo() {
-        navigator.navigateToVideoChatPage(roomId)
+        navigator.navigateToVideoChatPage(roomId, false)
     }
 
     fun onClickVoice() {
-
+        navigator.navigateToVideoChatPage(roomId, true)
     }
 
     fun onClickCamera() {
@@ -218,7 +218,7 @@ class ChatViewModel(private val appComponent: AppComponent,
         fun navigateToLatestMessageIfPossible()
         fun displayNoPermissionToWalkie()
         fun openEmojiDrawer()
-        fun navigateToVideoChatPage(roomId: String)
+        fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean)
         fun navigateToPickAlbum()
         fun navigateToCamera()
         fun navigateToImageViewer(url: String)

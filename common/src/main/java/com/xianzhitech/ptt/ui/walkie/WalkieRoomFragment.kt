@@ -6,6 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.telecom.Call
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -135,12 +136,7 @@ class WalkieRoomFragment : BaseViewModelFragment<WalkieRoomViewModel, FragmentWa
     }
 
     override fun closeRoomPage() {
-        if (activity is WalkieRoomActivity) {
-            activity.finish()
-        }
-        else {
-            dismiss()
-        }
+        callbacks<Callbacks>()!!.closeRoomPage()
     }
 
     override fun navigateToUserDetailsPage(userId: String) {
@@ -178,6 +174,7 @@ class WalkieRoomFragment : BaseViewModelFragment<WalkieRoomViewModel, FragmentWa
     interface Callbacks {
         fun navigateToRoomMemberPage(roomId: String)
         fun navigateToUserDetailsPage(userId: String)
+        fun closeRoomPage()
     }
 
     companion object {

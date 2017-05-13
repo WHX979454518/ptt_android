@@ -18,6 +18,7 @@ import com.xianzhitech.ptt.Constants
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
+import com.xianzhitech.ptt.broker.RoomMode
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ext.dismissImmediately
@@ -30,6 +31,7 @@ import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.PhoneCallHandler
 import com.xianzhitech.ptt.ui.call.CallActivity
+import com.xianzhitech.ptt.ui.call.CallFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomMemberListFragment
@@ -44,6 +46,7 @@ import io.reactivex.disposables.Disposable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.Serializable
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 abstract class BaseActivity : AppCompatActivity(),
@@ -88,9 +91,17 @@ abstract class BaseActivity : AppCompatActivity(),
         intent.getStringExtra(EXTRA_JOIN_ROOM_ID)?.let { roomId ->
             val fromInvitation = intent.getBooleanExtra(EXTRA_JOIN_ROOM_FROM_INVITATION, false)
             if (intent.getBooleanExtra(EXTRA_JOIN_ROOM_CONFIRMED, false)) {
-                joinRoomConfirmed(roomId, fromInvitation, intent.getBooleanExtra(EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false))
+                joinRoomConfirmed(
+                        roomId = roomId,
+                        fromInvitation = fromInvitation,
+                        roomMode = intent.getSerializableExtra(EXTRA_JOIN_ROOM_MODE) as? RoomMode ?: RoomMode.NORMAL
+                )
             } else {
-                joinRoom(roomId, fromInvitation, intent.getBooleanExtra(EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false))
+                joinRoom(
+                        roomId = roomId,
+                        fromInvitation = fromInvitation,
+                        roomMode = intent.getSerializableExtra(EXTRA_JOIN_ROOM_MODE) as? RoomMode ?: RoomMode.NORMAL
+                )
             }
             intent.removeExtra(EXTRA_JOIN_ROOM_ID)
             intent.removeExtra(EXTRA_JOIN_ROOM_CONFIRMED)
@@ -146,13 +157,14 @@ abstract class BaseActivity : AppCompatActivity(),
         appComponent.signalBroker.peekWalkieRoomId()?.let { joinRoom(it, fromInvitation = false) } ?: logger.e { "No walkie room to go to" }
     }
 
-    open fun navigateToVideoChatPage(roomId: String) {
-        joinRoom(roomId, fromInvitation = false, isVideoChat = true)
+    open fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean) {
+        joinRoom(roomId, fromInvitation = false, roomMode = if (audioOnly) RoomMode.AUDIO else RoomMode.VIDEO)
     }
 
-    open fun navigateToVideoChatPage() {
-        //TODO: Create call fragment...
-        startActivityWithAnimation(Intent(this, CallActivity::class.java))
+    fun navigateToVideoChatPage() {
+        appComponent.signalBroker.peekVideoRoomId()?.let {
+            navigateToVideoChatPage(it, appComponent.signalBroker.videoChatVideoOn.not())
+        }
     }
 
     open fun navigateToRoomMemberPage(roomId: String) {
@@ -165,7 +177,7 @@ abstract class BaseActivity : AppCompatActivity(),
         )
     }
 
-    open fun navigateToUserDetailsPage(userId : String) {
+    open fun navigateToUserDetailsPage(userId: String) {
         startActivityWithAnimation(
                 FragmentDisplayActivity.createIntent(
                         UserDetailsFragment::class.java,
@@ -204,18 +216,19 @@ abstract class BaseActivity : AppCompatActivity(),
         }
     }
 
-    fun joinRoom(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean = false) {
+    fun joinRoom(roomId: String, fromInvitation: Boolean, roomMode: RoomMode = RoomMode.NORMAL) {
         val appComponent = application as AppComponent
 
         val currentRoomID = appComponent.signalBroker.peekWalkieRoomId()
 
-        if ((isVideoChat && currentRoomID != null) || (currentRoomID != roomId && currentRoomID != null)) {
+        if (((roomMode == RoomMode.AUDIO || roomMode == RoomMode.VIDEO) && currentRoomID != null) ||
+                (currentRoomID != roomId && currentRoomID != null)) {
             AlertDialogFragment.Builder().apply {
                 title = R.string.dialog_confirm_switch_title.toFormattedString(this@BaseActivity)
                 message = R.string.room_prompt_switching_message.toFormattedString(this@BaseActivity)
                 btnPositive = R.string.dialog_yes_switch.toFormattedString(this@BaseActivity)
                 btnNegative = R.string.dialog_cancel.toFormattedString(this@BaseActivity)
-                attachment = JoinRoomBundle(roomId, fromInvitation, isVideoChat)
+                attachment = JoinRoomBundle(roomId, fromInvitation, roomMode)
 
                 show(supportFragmentManager, TAG_SWITCH_ROOM_CONFIRMATION)
             }
@@ -225,26 +238,30 @@ abstract class BaseActivity : AppCompatActivity(),
 
         // 如果用户已经加入这个房间, 直接确认这个操作
         // 如果用户没有加入任意一个房间, 则确认操作
-        joinRoomConfirmed(roomId, fromInvitation, isVideoChat)
+        joinRoomConfirmed(roomId, fromInvitation, roomMode)
     }
 
-    open fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
-        if (!isVideoChat) {
-            val frag = supportFragmentManager.fragments?.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment
-            if (frag == null) {
-                startActivityWithAnimation(
-                        Intent(this, WalkieRoomActivity::class.java)
-                                .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId)
-                                .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation)
-                )
-                return
+    open fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, roomMode: RoomMode) {
+        val intent: Intent
+
+        when (roomMode) {
+            RoomMode.EMERGENCY -> TODO()
+            RoomMode.BROADCAST -> TODO()
+            RoomMode.SYSTEM_CALL -> TODO()
+            RoomMode.NORMAL -> {
+                intent = Intent(this, WalkieRoomActivity::class.java)
+                        .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId)
+                        .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation)
             }
 
-            frag.joinRoom(roomId, fromInvitation)
+            RoomMode.VIDEO, RoomMode.AUDIO -> {
+                intent = Intent(this, CallActivity::class.java)
+                        .putExtra(CallFragment.ARG_JOIN_ROOM_ID, roomId)
+                        .putExtra(CallFragment.ARG_JOIN_ROOM_AUDIO_ONLY, roomMode == RoomMode.AUDIO)
+            }
         }
-        else {
-            TODO("Implement video room entry")
-        }
+
+        startActivityWithAnimation(intent)
     }
 
     open fun onNewPendingInvitation(pendingInvitations: List<WalkieRoomInvitationEvent>) {
@@ -263,7 +280,8 @@ abstract class BaseActivity : AppCompatActivity(),
 
 
     fun joinRoom(groupIds: List<String> = emptyList(),
-                 userIds: List<String> = emptyList(), isVideoChat: Boolean = false) {
+                 userIds: List<String> = emptyList(),
+                 roomMode: RoomMode = RoomMode.NORMAL) {
         val component = application as AppComponent
         val signalService = component.signalBroker
 
@@ -275,7 +293,7 @@ abstract class BaseActivity : AppCompatActivity(),
                 .subscribe(object : SingleObserver<Room> {
                     override fun onSuccess(t: Room) {
                         hideProgressDialog(TAG_CREATE_ROOM_PROGRESS)
-                        joinRoom(roomId = t.id, fromInvitation = false, isVideoChat = isVideoChat)
+                        joinRoom(roomId = t.id, fromInvitation = false, roomMode = roomMode)
                     }
 
                     override fun onSubscribe(d: Disposable) {
@@ -408,7 +426,7 @@ abstract class BaseActivity : AppCompatActivity(),
 
     private data class JoinRoomBundle(val roomId: String,
                                       val fromInvitation: Boolean,
-                                      val isVideoChat: Boolean) : Serializable {
+                                      val roomMode: RoomMode) : Serializable {
         companion object {
             private const val serialVersionUID = 1L
         }
@@ -427,7 +445,7 @@ abstract class BaseActivity : AppCompatActivity(),
         const val EXTRA_JOIN_ROOM_ID = "extra_jri"
         const val EXTRA_JOIN_ROOM_CONFIRMED = "extra_jrc"
         const val EXTRA_JOIN_ROOM_FROM_INVITATION = "extra_fi"
-        const val EXTRA_JOIN_ROOM_IS_VIDEO_CHAT = "extra_isv"
+        const val EXTRA_JOIN_ROOM_MODE = "extra_jrm"
         const val EXTRA_PENDING_INVITATION = "pending_invitation"
         const val EXTRA_NAVIGATE_TO_WALKIE = "navigate_to_walkie"
 

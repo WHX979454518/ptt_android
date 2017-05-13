@@ -44,6 +44,7 @@ import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.SessionDescription
+import org.webrtc.VideoTrack
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -108,7 +109,22 @@ class SignalBroker(private val appComponent: AppComponent,
     private var videoChatPeerConnection: PeerConnection? = null
     private var videoChatRemoteStream: MediaStream? = null
     private var videoChatVideoCapturer: Camera1Capturer? = null
+    private var videoChatLocalStream : MediaStream? = null
     private val groupChatViews : MutableList<GroupChatView> = arrayListOf()
+
+    var videoChatVideoOn : Boolean = false
+    set(value) {
+        if (field != value) {
+            field = value
+            videoChatLocalStream?.videoTracks?.first()?.setEnabled(value)
+            videoChatRemoteStream?.videoTracks?.first()?.setEnabled(value)
+            if (value) {
+                videoChatVideoCapturer?.startCapture(CAPTURE_WIDTH, CAPTURE_HEIGHT, CAPTURE_RATE)
+            } else {
+                videoChatVideoCapturer?.stopCapture()
+            }
+        }
+    }
 
     val isLoggedIn: Boolean
         get() = signalApi.currentUser.value.isPresent
@@ -462,6 +478,7 @@ class SignalBroker(private val appComponent: AppComponent,
                     }
 
                     quitWalkieRoom()
+                    videoChatVideoOn = audioOnly.not()
                 }
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnComplete {
@@ -525,10 +542,13 @@ class SignalBroker(private val appComponent: AppComponent,
                     videoChatVideoCapturer = Camera1Capturer(cameraName, SimpleCameraEventsHandler(), false)
 
                     val mediaStream = factory.createLocalMediaStream("local-stream")
+                    videoChatLocalStream = mediaStream
                     val audioTrack = factory.createAudioTrack("audio", factory.createAudioSource(MediaConstraints()))
                     val videoTrack = factory.createVideoTrack("video", factory.createVideoSource(videoChatVideoCapturer))
                     mediaStream.addTrack(audioTrack)
                     mediaStream.addTrack(videoTrack)
+
+                    videoTrack.setEnabled(audioOnly.not())
 
                     p.addStream(mediaStream)
 
@@ -547,7 +567,10 @@ class SignalBroker(private val appComponent: AppComponent,
                         }
                     }, MediaConstraints())
 
-                    videoChatVideoCapturer!!.startCapture(512, 512, 30)
+                    if (audioOnly.not()) {
+                        videoChatVideoCapturer!!.startCapture(512, 512, 30)
+                    }
+
                     videoChatPeerConnection = p
                     currentVideoRoomId.onNext(roomId.toOptional())
 
@@ -571,6 +594,7 @@ class SignalBroker(private val appComponent: AppComponent,
         videoChatVideoCapturer = null
         videoChatRemoteStream = null
         videoChatPeerConnection = null
+        videoChatLocalStream = null
         currentVideoRoomId.onNext(Optional.absent())
     }
 
@@ -589,8 +613,7 @@ class SignalBroker(private val appComponent: AppComponent,
 
     fun peekUserId(): String? = currentUser.value.orNull()?.id
 
-    private fun peekVideoRoomId(): String? = currentVideoRoomId.value.orNull()
-
+    fun peekVideoRoomId(): String? = currentVideoRoomId.value.orNull()
     fun peekWalkieRoomId(): String? = currentWalkieRoomState.value.currentRoomId
 
     fun sendMessage(message: Message): Single<Message> {
@@ -713,6 +736,10 @@ class SignalBroker(private val appComponent: AppComponent,
 
     companion object {
         const val EXTRA_EVENT = "event"
+
+        private const val CAPTURE_WIDTH = 512
+        private const val CAPTURE_HEIGHT = 512
+        private const val CAPTURE_RATE = 30
     }
 }
 

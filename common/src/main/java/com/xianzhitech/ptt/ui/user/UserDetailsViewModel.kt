@@ -60,13 +60,13 @@ class UserDetailsViewModel(private val appComponent: AppComponent,
                 .toMaybe()
                 .observeOn(AndroidSchedulers.mainThread())
                 .logErrorAndForget(Throwable::toast)
-                .subscribe { room -> navigator.navigateToVideoChatPage(room.id)}
+                .subscribe { room -> navigator.navigateToVideoChatPage(room.id, false)}
                 .bindToLifecycle()
     }
 
     interface Navigator {
         fun navigateToWalkieTalkiePage(roomId: String)
-        fun navigateToVideoChatPage(roomId: String)
+        fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean)
         fun navigateToDialPhone(phoneNumber: String)
     }
 }
