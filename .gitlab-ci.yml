@@ -17,7 +17,7 @@ build:
   variables:
       APP_SERVER_URL: "http://netptt.cn:25002"
       BUILD_NUMBER: ${CI_PIPELINE_ID}
-  script: ./gradlew --no-daemon clean :app:assembleDev
+  script: ./gradlew --no-daemon clean :app:assemblePre21DevRelease
   artifacts:
     paths:
       - app/build/outputs
