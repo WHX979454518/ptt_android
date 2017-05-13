@@ -6,7 +6,6 @@ import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.data.User
 import com.xianzhitech.ptt.ext.createCompositeObservable
 import com.xianzhitech.ptt.ext.doOnLoadingState
-import com.xianzhitech.ptt.ext.fromOptional
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.ext.toLevelString
 import com.xianzhitech.ptt.service.toast

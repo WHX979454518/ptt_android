@@ -26,6 +26,6 @@ class RoomMemberListViewModel(private val appComponent: AppComponent,
     }
 
     interface Navigator {
-        fun navigateToUserDetailsPage(id: String)
+        fun navigateToUserDetailsPage(userId: String)
     }
 }

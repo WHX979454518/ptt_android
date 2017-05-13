@@ -135,7 +135,7 @@ class WalkieRoomFragment : BaseViewModelFragment<WalkieRoomViewModel, FragmentWa
     }
 
     override fun closeRoomPage() {
-        if (activity is FragmentDisplayActivity) {
+        if (activity is WalkieRoomActivity) {
             activity.finish()
         }
         else {

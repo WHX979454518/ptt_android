@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.xianzhitech.ptt.app"
-    android:installLocation="internalOnly">
+          package="com.xianzhitech.ptt.app"
+          android:installLocation="internalOnly">
 
 
     <application
@@ -15,29 +15,34 @@
 
         <meta-data
             android:name="io.fabric.ApiKey"
-            android:value="3562376117e656a0ce17f29b2e524d6bb0116630" />
+            android:value="3562376117e656a0ce17f29b2e524d6bb0116630"/>
 
         <meta-data
             android:name="com.xianzhitech.ptt.BaseApp$AppGlideModule"
-            android:value="GlideModule" />
+            android:value="GlideModule"/>
 
         <activity
             android:name="com.xianzhitech.ptt.ui.login.LoginActivity"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
         <activity
+            android:name="com.xianzhitech.ptt.ui.walkie.WalkieRoomActivity"
+            android:theme="@style/AppTheme.Room"
+            android:launchMode="singleTop"/>
+
+        <activity
             android:name="com.xianzhitech.ptt.ui.app.BaseAboutActivity"
-            android:label="@string/about" />
+            android:label="@string/about"/>
 
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
-            android:value="${BD_LOCATION_SDK_KEY}" />  <!--http://lbsyun.baidu.com/apiconsole/key-->
+            android:value="${BD_LOCATION_SDK_KEY}"/>  <!--http://lbsyun.baidu.com/apiconsole/key-->
 
     </application>
 

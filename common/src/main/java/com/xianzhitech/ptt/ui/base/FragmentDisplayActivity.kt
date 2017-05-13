@@ -8,12 +8,10 @@ import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.ui.chat.ChatFragment
 import com.xianzhitech.ptt.ui.room.RoomMemberListFragment
 import com.xianzhitech.ptt.ui.user.UserDetailsFragment
-import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment
 
 
 class FragmentDisplayActivity : BaseActivity(),
         ChatFragment.Callbacks,
-        WalkieRoomFragment.Callbacks,
         RoomMemberListFragment.Callbacks,
         UserDetailsFragment.Callbacks {
 

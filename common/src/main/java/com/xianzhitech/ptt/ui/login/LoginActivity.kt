@@ -10,7 +10,7 @@ import com.xianzhitech.ptt.ui.home.HomeActivity
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
 
-open class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
+open class LoginActivity : AppCompatActivity(), LoginFragment.Callbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -29,7 +29,10 @@ open class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
     }
 
     override fun navigateToHome() {
-        startActivity(Intent(this, HomeActivity::class.java))
+        startActivity(Intent(this, HomeActivity::class.java).apply {
+            // Pass 
+            intent.extras?.let(this::putExtras)
+        })
         finish()
     }
 

@@ -100,14 +100,12 @@ class RoomInvitationHandler : BroadcastReceiver() {
             //  2. 上一次房间有动作的时刻已经很久远
             //  3. 邀请者是拥有最高权限
             if (startedActivity == null) {
-                context.startActivity(Intent(Intent.ACTION_MAIN)
-                        .addCategory(Intent.CATEGORY_LAUNCHER)
-                        .setPackage(context.packageName)
+                context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.room.id)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, invitation.room.id)
                         .putExtra(BaseActivity.EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                )
             }
             else {
                 startedActivity.joinRoomConfirmed(invitation.room.id, true, false)
@@ -116,11 +114,9 @@ class RoomInvitationHandler : BroadcastReceiver() {
             logger.i { "Sending out invitation" }
 
             if (startedActivity == null) {
-                context.startActivity(Intent(Intent.ACTION_MAIN)
-                        .addCategory(Intent.CATEGORY_LAUNCHER)
-                        .setPackage(context.packageName)
+                context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)
                         .putParcelableArrayListExtra(BaseActivity.EXTRA_PENDING_INVITATION, arrayListOf(invitation))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                )
             }
             else {
                 startedActivity.onNewPendingInvitation(listOf(invitation))

@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.view.WindowManager
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
@@ -11,7 +12,7 @@ import com.xianzhitech.ptt.ui.home.login.ConsoleLoginFragment
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
 
-open class ConsoleLoginBaseActivity : BaseActivity(), ConsoleLoginFragment.Callbacks {
+open class ConsoleLoginBaseActivity : AppCompatActivity(), ConsoleLoginFragment.Callbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -32,7 +33,10 @@ open class ConsoleLoginBaseActivity : BaseActivity(), ConsoleLoginFragment.Callb
     }
 
     override fun navigateToHome() {
-        startActivity(Intent(this, HomeActivity::class.java))
+        startActivity(Intent(this, HomeActivity::class.java).apply {
+            // Pass
+            intent.extras?.let(this::putExtras)
+        })
         finish()
     }
 

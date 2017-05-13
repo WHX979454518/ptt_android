@@ -127,10 +127,8 @@ class ServiceHandler(private val appContext: Context,
         val activity = appComponent.activityProvider.currentStartedActivity as? BaseActivity
 
         if (activity == null) {
-            appContext.startActivity(Intent(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_LAUNCHER)
-                    .setPackage(appContext.packageName)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
+            appContext.startActivity(appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)
                     .putExtra(BaseActivity.EXTRA_NAVIGATE_TO_WALKIE, true)
             )
         } else {
@@ -205,10 +203,7 @@ class NotificationNavigationReceiver : BroadcastReceiver() {
         val activity = appComponent.activityProvider.currentStartedActivity as? BaseActivity
 
         val launchIntent : Intent by lazy {
-            Intent(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_LAUNCHER)
-                    .setPackage(context.packageName)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.packageManager.getLaunchIntentForPackage(context.packageName)
         }
 
         if (connectionState == SignalApi.ConnectionState.CONNECTED &&

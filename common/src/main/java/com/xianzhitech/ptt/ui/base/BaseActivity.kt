@@ -12,7 +12,6 @@ import android.support.v4.app.DialogFragment
 import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
 import android.view.View
-import android.view.WindowManager
 import android.widget.Toast
 import com.xianzhitech.ptt.AppComponent
 import com.xianzhitech.ptt.Constants
@@ -35,6 +34,7 @@ import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
 import com.xianzhitech.ptt.ui.room.RoomMemberListFragment
 import com.xianzhitech.ptt.ui.user.UserDetailsFragment
+import com.xianzhitech.ptt.ui.walkie.WalkieRoomActivity
 import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment
 import com.xianzhitech.ptt.update.installPackage
 import io.reactivex.SingleObserver
@@ -230,13 +230,12 @@ abstract class BaseActivity : AppCompatActivity(),
 
     open fun joinRoomConfirmed(roomId: String, fromInvitation: Boolean, isVideoChat: Boolean) {
         if (!isVideoChat) {
-            val frag = supportFragmentManager.fragments.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment
+            val frag = supportFragmentManager.fragments?.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment
             if (frag == null) {
                 startActivityWithAnimation(
-                        FragmentDisplayActivity.createIntent(WalkieRoomFragment::class.java, Bundle(2).apply {
-                            putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId)
-                            putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation)
-                        }).withRoomDisplayFlags()
+                        Intent(this, WalkieRoomActivity::class.java)
+                                .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId)
+                                .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation)
                 )
                 return
             }
@@ -252,12 +251,8 @@ abstract class BaseActivity : AppCompatActivity(),
         val frag = supportFragmentManager.fragments.firstOrNull { it is WalkieRoomFragment } as? WalkieRoomFragment
         if (frag == null) {
             startActivityWithAnimation(
-                    FragmentDisplayActivity.createIntent(
-                            WalkieRoomFragment::class.java,
-                            Bundle(1).apply {
-                                putParcelableArrayList(WalkieRoomFragment.ARG_PENDING_INVITATIONS, ArrayList(pendingInvitations))
-                            }
-                    ).withRoomDisplayFlags()
+                    Intent(this, WalkieRoomActivity::class.java)
+                            .putParcelableArrayListExtra(WalkieRoomFragment.ARG_PENDING_INVITATIONS, ArrayList(pendingInvitations))
             )
 
             return
@@ -266,14 +261,6 @@ abstract class BaseActivity : AppCompatActivity(),
         frag.onNewPendingInvitation(pendingInvitations)
     }
 
-    private fun Intent.withRoomDisplayFlags() : Intent {
-        return putExtra(FragmentDisplayActivity.EXTRA_THEME, R.style.AppTheme_Room)
-                .putExtra(FragmentDisplayActivity.EXTRA_WINDOW_FLAGS,
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                                or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                                or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                                or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
-    }
 
     fun joinRoom(groupIds: List<String> = emptyList(),
                  userIds: List<String> = emptyList(), isVideoChat: Boolean = false) {
