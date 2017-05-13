@@ -24,6 +24,7 @@ import android.widget.ListView;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xianzhitech.ptt.AppComponent;
+import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.broker.SignalBroker;
 import com.xianzhitech.ptt.data.Room;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
@@ -33,9 +34,7 @@ import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 import com.zrt.ptt.app.console.mvp.view.adapter.MyTreeListViewAdapter;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 
 /**
@@ -183,22 +182,22 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
 
     }
 
-    public void showChatRoomView(List<String> usersIds, List<String> groupIds, boolean isVideoChat) {
-        Log.d(TAG, "showChatRoomView() called with: usersIds = [" + usersIds + "], groupIds = [" + groupIds + "], isVideoChat = [" + isVideoChat + "]");
+    public void showChatRoomView(List<String> usersIds, List<String> groupIds, RoomMode roomMode) {
+        Log.d(TAG, "showChatRoomView() called with: usersIds = [" + usersIds + "], groupIds = [" + groupIds + "], roomMode = [" + roomMode + "]");
 
         SignalBroker signalBroker = ((AppComponent) App.getInstance()).getSignalBroker();
         signalBroker.createRoom(usersIds, groupIds)
                 .doOnSuccess(new Consumer<Room>() {
                     @Override
                     public void accept(@NonNull Room room) throws Exception {
-                        joinRoom(room.getId(), false, isVideoChat);
+                        joinRoom(room.getId(), false, roomMode);
                     }
                 })
                 .subscribe();
     }
 
-    public void showChatRoomView(String roomId, boolean fromInvitation, boolean isVideoChat) {
-        joinRoom(roomId, fromInvitation, isVideoChat);
+    public void showChatRoomView(String roomId, boolean fromInvitation, RoomMode roomMode) {
+        joinRoom(roomId, fromInvitation, roomMode);
     }
 
 
@@ -208,7 +207,8 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     @Override
     public void navigateToChatRoomPage(@NotNull Room room) {
         Log.d(TAG, "navigateToChatRoomPage() called with: room = [" + room + "]");
-        joinRoom(room.getId(), false, false);
+        //FIXME(feihe)://此处写死了room类型，后面需要修改
+        joinRoom(room.getId(), false, RoomMode.NORMAL);
     }
 
     @Override
@@ -232,12 +232,22 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
         LogUtils.d(TAG, "navigateToUserDetailsPage() called with: roomId = [" + roomId + "]");
     }
 
+    @Override
+    public void closeRoomPage() {
+        LogUtils.d(TAG, "closeRoomPage() called");
+
+        FragmentManager fm = getChildFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.hide(walkieRoomFragment);
+        ft.commitAllowingStateLoss();
+    }
+
 
     ////////////////////////////////////////////////////////////////////////////////
     ///////////////////////Private Inner help methods///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
-    private void joinRoom(String roomId,  boolean fromInvitation, boolean isVideoChat) {
-        LogUtils.d(TAG, "joinRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], isVideoChat = [" + isVideoChat + "]");
+    private void joinRoom(String roomId,  boolean fromInvitation, RoomMode roomMode) {
+        LogUtils.d(TAG, "joinRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], roomMode = [" + roomMode + "]");
 
         Bundle bundle = new Bundle();
         bundle.putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId);

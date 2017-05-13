@@ -1,6 +1,7 @@
 package com.zrt.ptt.app.console.mvp.view.IView;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 
 import org.json.JSONObject;
@@ -32,7 +33,7 @@ public interface IMainActivityView {
      * 创建房间并加入房间聊天，跳转到聊天界面
      * @param userIds 参与聊天的用户
      * @param groupIds 参与聊天的预定义组
-     * @param isVideoChat 聊天类型 是否是视频聊天
+     * @param roomMode 聊天类型
      */
-    void showChatRoomView(List<String> userIds, List<String> groupIds, boolean isVideoChat);
+    void showChatRoomView(List<String> userIds, List<String> groupIds, RoomMode roomMode);
 }

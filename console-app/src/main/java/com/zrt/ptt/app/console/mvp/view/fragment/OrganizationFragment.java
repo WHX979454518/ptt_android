@@ -15,6 +15,7 @@ import android.widget.TextView;
 import com.baidu.mapapi.model.LatLng;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 import com.zrt.ptt.app.console.mvp.model.Node;
@@ -158,7 +159,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 //FIXME:暂时使用假数据
                 List<String> userIds = new ArrayList<String>();
                 userIds.add("500006");
-                mainActivityPresenter.showChatkRoom(userIds, new ArrayList<>(), false);
+                mainActivityPresenter.showChatkRoom(userIds, new ArrayList<>(), RoomMode.NORMAL);
         }
     }
 

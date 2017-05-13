@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.model.ModelImp.OrganizationMain;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
@@ -76,8 +77,8 @@ public class MainActivityPresenter {
         iMainView.showLocation(locations);
     }
 
-    public void showChatkRoom(List<String> userIds, List<String> groupIds, boolean isVideoChat){
-       iMainView.showChatRoomView(userIds, groupIds, isVideoChat);
+    public void showChatkRoom(List<String> userIds, List<String> groupIds, RoomMode roomMode){
+       iMainView.showChatRoomView(userIds, groupIds, roomMode);
     }
 
     class orgHandler  extends Handler {

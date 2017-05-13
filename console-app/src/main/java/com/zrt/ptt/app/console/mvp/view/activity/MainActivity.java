@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
@@ -290,9 +291,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
-    public void showChatRoomView(List<String> userIds, List<String> groupIds, boolean isVideoChat) {
+    public void showChatRoomView(List<String> userIds, List<String> groupIds, RoomMode roomMode) {
         SystemStateFragment systemStateFragment = (SystemStateFragment)getSupportFragmentManager().findFragmentById(R.id.system_state_container);
-        systemStateFragment.showChatRoomView(userIds, groupIds, isVideoChat);
+        systemStateFragment.showChatRoomView(userIds, groupIds, roomMode);
     }
 
     /* private void initMapViewLocation() {
@@ -374,11 +375,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     //////////////////////////////////////////////Override methods from BaseActivity /////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
-    public void joinRoomConfirmed(@NotNull String roomId, boolean fromInvitation, boolean isVideoChat) {
+    public void joinRoomConfirmed(@NotNull String roomId, boolean fromInvitation, RoomMode roomMode) {
 //        super.joinRoomConfirmed(roomId, fromInvitation, isVideoChat);
-        LogUtils.d(TAG, "joinRoomConfirmed() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], isVideoChat = [" + isVideoChat + "]");
+        LogUtils.d(TAG, "joinRoomConfirmed() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], roomMode = [" + roomMode + "]");
 
         SystemStateFragment systemStateFragment = (SystemStateFragment)getSupportFragmentManager().findFragmentById(R.id.system_state_container);
-        systemStateFragment.showChatRoomView(roomId, fromInvitation, isVideoChat);
+        systemStateFragment.showChatRoomView(roomId, fromInvitation, roomMode);
     }
 }
