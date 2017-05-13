@@ -9,7 +9,9 @@ import com.xianzhitech.ptt.ext.doOnLoadingState
 import com.xianzhitech.ptt.ext.fromOptional
 import com.xianzhitech.ptt.ext.logErrorAndForget
 import com.xianzhitech.ptt.ext.toLevelString
+import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.viewmodel.LifecycleViewModel
+import io.reactivex.android.schedulers.AndroidSchedulers
 
 
 class UserDetailsViewModel(private val appComponent: AppComponent,
@@ -19,6 +21,7 @@ class UserDetailsViewModel(private val appComponent: AppComponent,
     val user = ObservableField<User>()
     val userLevel = createCompositeObservable(user) { user.get()?.priority?.toLevelString() }
     val loading = ObservableBoolean()
+    val isMe = ObservableBoolean()
 
     override fun onStart() {
         super.onStart()
@@ -27,7 +30,10 @@ class UserDetailsViewModel(private val appComponent: AppComponent,
                 .getUser(userId)
                 .doOnLoadingState(loading::set)
                 .logErrorAndForget()
-                .subscribe(user::fromOptional)
+                .subscribe {
+                    user.set(it.orNull())
+                    isMe.set(appComponent.signalBroker.peekUserId() == it.orNull()?.id)
+                }
                 .bindToLifecycle()
     }
 
@@ -38,23 +44,25 @@ class UserDetailsViewModel(private val appComponent: AppComponent,
     }
 
     fun onClickStartWalkieTalkie() {
-//        appComponent.signalHandler
-//                .createRoom(emptyList(), listOf(userId))
-//                .map(Room::id)
-//                .observeOnMainThread()
-//                .doOnLoadingState(loading::set)
-//                .subscribeSimple(navigator::navigateToWalkieTalkiePage)
-//                .bindToLifecycle()
+        appComponent.signalBroker
+                .createRoom(userIds = listOf(userId))
+                .doOnLoadingState(loading::set)
+                .toMaybe()
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget(Throwable::toast)
+                .subscribe { room -> navigator.navigateToWalkieTalkiePage(room.id)}
+                .bindToLifecycle()
     }
 
     fun onClickStartVideoChat() {
-//        appComponent.signalHandler
-//                .createRoom(emptyList(), listOf(userId))
-//                .map(Room::id)
-//                .observeOnMainThread()
-//                .doOnLoadingState(loading::set)
-//                .subscribeSimple(navigator::navigateToVideoChatPage)
-//                .bindToLifecycle()
+        appComponent.signalBroker
+                .createRoom(userIds = listOf(userId))
+                .doOnLoadingState(loading::set)
+                .toMaybe()
+                .observeOn(AndroidSchedulers.mainThread())
+                .logErrorAndForget(Throwable::toast)
+                .subscribe { room -> navigator.navigateToVideoChatPage(room.id)}
+                .bindToLifecycle()
     }
 
     interface Navigator {

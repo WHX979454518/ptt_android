@@ -1,18 +1,22 @@
 package com.xianzhitech.ptt.ui.home
 
+import android.app.Activity
 import android.content.Intent
+import android.os.Bundle
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.databinding.ActivityHomeBinding
 import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.startActivityForResultWithAnimation
 import com.xianzhitech.ptt.ext.startActivityWithAnimation
 import com.xianzhitech.ptt.ext.toRxObservable
 import com.xianzhitech.ptt.ui.base.BaseViewModelActivity
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
 import com.xianzhitech.ptt.ui.chat.ChatFragment
+import com.xianzhitech.ptt.ui.contact.ContactSelectionFragment
 import com.xianzhitech.ptt.ui.login.LoginActivity
-import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.modellist.ModelListFragment
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment
 import com.xianzhitech.ptt.viewmodel.HomeViewModel
 
@@ -70,10 +74,34 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_CREATE_ROOM_SELECTION && resultCode == Activity.RESULT_OK && data != null) {
+            (supportFragmentManager
+                    .fragments
+                    .firstOrNull { it is RoomListFragment } as? RoomListFragment)
+                    ?.onCreateRoomMemberSelectionResult(data.getSerializableExtra(ModelListFragment.RESULT_EXTRA_SELECTED_IDS) as List<String>)
+        }
+    }
+
+    override fun navigateToCreateRoomMemberSelectionPage() {
+        startActivityForResultWithAnimation(
+                FragmentDisplayActivity.createIntent(
+                        ContactSelectionFragment::class.java,
+                        Bundle.EMPTY
+                ),
+                REQUEST_CREATE_ROOM_SELECTION
+        )
+    }
 
     override fun navigateToChatRoomPage(room: Room) {
         startActivityWithAnimation(
                 FragmentDisplayActivity.createIntent(ChatFragment::class.java, ChatFragment.ARG_ROOM_ID, room.id)
         )
+    }
+
+    companion object {
+        const val REQUEST_CREATE_ROOM_SELECTION = 1
     }
 }

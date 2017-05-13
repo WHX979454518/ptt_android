@@ -177,6 +177,16 @@ class Storage(context: Context,
                 }
     }
 
+    fun getRoomMemberNumber(room: Room): Observable<Int> {
+        return getGroups(room.groupIds)
+                .map {
+                    it.fold(room.extraMemberIds.toMutableSet()) { set, group ->
+                        set.addAll(group.memberIds)
+                        set
+                    }.size
+                }
+    }
+
     fun getRoomMembers(roomId: String, limit: Int? = null, includeSelf: Boolean = true): Observable<List<User>> {
         return getRoom(roomId)
                 .switchMap { room ->
@@ -344,11 +354,11 @@ class Storage(context: Context,
                 }
     }
 
+
     fun getUser(userId: String): Observable<Optional<User>> {
         return getUsers(listOf(userId))
                 .map { it.firstOrNull().toOptional() }
     }
-
 
     fun getMessagesUpTo(date: Date?,
                         roomId: String,

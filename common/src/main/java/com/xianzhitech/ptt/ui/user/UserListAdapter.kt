@@ -1,14 +1,12 @@
 package com.xianzhitech.ptt.ui.user
 
-import android.app.Activity
-import android.content.Intent
 import android.support.annotation.LayoutRes
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.xianzhitech.ptt.data.User
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import java.text.Collator
 import java.util.*
 
@@ -57,8 +55,7 @@ open class UserListAdapter(@LayoutRes private val itemLayoutId: Int) : RecyclerV
     open fun onItemClicked(userItemHolder: UserItemHolder) {
         val v = userItemHolder.itemView
         val userId = userItemHolder.userId!!
-        (v.context as? Activity)?.startActivityWithAnimation(UserDetailsActivity.build(v.context, userId))
-                ?: v.context.startActivity(UserDetailsActivity.build(v.context, userId).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+        (v.context as? BaseActivity)?.navigateToUserDetailsPage(userId)
     }
 
 }

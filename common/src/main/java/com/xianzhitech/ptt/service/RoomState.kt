@@ -15,12 +15,13 @@ enum class RoomStatus(val inRoom: Boolean) {
 data class RoomState(val status: RoomStatus,
                      val currentRoomId: String?,
                      val currentRoomInitiatorUserId : String?,
+                     val speakerStartTime: Long,
                      val speakerId: String?,
                      val speakerPriority : Int?,
                      val onlineMemberIds: Set<String>,
                      val voiceServer: VoiceServerConfig?) {
     companion object {
-        @JvmStatic val EMPTY = RoomState(RoomStatus.IDLE, null, null, null, null, emptySet(), null)
+        @JvmStatic val EMPTY = RoomState(RoomStatus.IDLE, null, null, 0L, null, null, emptySet(), null)
     }
 
     init {

@@ -12,6 +12,8 @@ import android.support.v4.content.FileProvider
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -50,6 +52,14 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         super.onCreate(savedInstanceState)
 
         photoFile = savedInstanceState?.getParcelable(STATE_PHOTO_PATH)
+
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+
+
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -166,13 +176,6 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     override fun navigateToPickAlbum() {
         val getIntent = Intent(Intent.ACTION_GET_CONTENT)
         getIntent.type = "image/*"
-//
-//        val pickIntent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-//        pickIntent.type = "image/*"
-//
-//        val chooserIntent = Intent.createChooser(getIntent, getString(R.string.pick_photo))
-//        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(pickIntent))
-
         startActivityForResult(getIntent, REQUEST_ALBUM)
     }
 

@@ -26,7 +26,6 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-        android:name=".BaseApp"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
@@ -49,14 +48,6 @@
         <activity android:name=".ui.home.HomeActivity"/>
 
         <activity
-            android:name=".ui.room.RoomActivity"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:showForAllUsers="true"
-            android:showOnLockScreen="true"
-            android:theme="@style/AppTheme.Room"/>
-
-        <activity
             android:name=".ui.settings.SettingsActivity"
             android:label="@string/settings"
             android:launchMode="singleTask"/>
@@ -72,17 +63,9 @@
         <activity
             android:name=".ui.user.ChangePasswordActivity"
             android:label="@string/change_password"/>
-
-        <activity
-            android:name=".ui.room.RoomDetailsActivity"
-            android:label="@string/room_info"/>
-
         <activity
             android:name=".ui.base.FragmentDisplayActivity"/>
 
-        <activity
-            android:name=".ui.user.UserDetailsActivity"
-            android:label="@string/user_info"/>
 
         <activity android:name=".ui.app.TextInputActivity"/>
 
@@ -131,6 +114,8 @@
                 <action android:name="s_invite_to_join"/>
             </intent-filter>
         </receiver>
+
+        <receiver android:name=".service.handler.NotificationNavigationReceiver" />
 
         <receiver
             android:name=".service.handler.UserKickedOutReceiver"

@@ -7,7 +7,7 @@ import com.xianzhitech.ptt.ext.d
 import com.xianzhitech.ptt.service.RoomState
 import com.xianzhitech.ptt.service.RoomStatus
 import com.xianzhitech.ptt.ui.ActivityProvider
-import com.xianzhitech.ptt.ui.room.RoomActivity
+import com.xianzhitech.ptt.ui.base.BaseActivity
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
@@ -66,7 +66,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
                     if (signalBroker.peekWalkieRoomId() != null) {
                         logger.d { "Auto quit room because room is put to idle" }
                         signalBroker.quitWalkieRoom()
-                        (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
+                        (activityProvider.currentStartedActivity as? BaseActivity)?.onCloseWalkieRoom()
                     }
                 }
 
@@ -81,7 +81,7 @@ class RoomAutoQuitHandler(private val preference: Preference,
                 preference.autoExit) {
 
             signalBroker.quitWalkieRoom()
-            (activityProvider.currentStartedActivity as? RoomActivity)?.finish()
+            (activityProvider.currentStartedActivity as? BaseActivity)?.onCloseWalkieRoom()
         }
     }
 }

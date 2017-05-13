@@ -36,7 +36,7 @@ class UserPopupDialog : BottomSheetDialogFragment() {
             }
 
             view.setOnClickListener {
-                activity.startActivityWithAnimation(UserDetailsActivity.build(context, arguments.getString(ARG_USER_ID)))
+                (activity as? BaseActivity)?.navigateToUserDetailsPage(arguments.getString(ARG_USER_ID))
             }
         }
     }

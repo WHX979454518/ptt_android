@@ -30,7 +30,11 @@
             android:gravity="center"
             android:text="@string/error_no_rooms"
             android:textColor="@color/grey_300"
-            app:show="@{viewModel.emptyViewVisible}" />
+            app:show="@{viewModel.emptyViewVisible &amp;&amp; !viewModel.isLoading}" />
+
+        <include
+            layout="@layout/view_progress"
+            app:loading="@{viewModel.isLoading}" />
 
     </FrameLayout>
 </layout>

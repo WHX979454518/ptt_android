@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="viewModel"
+            type="com.xianzhitech.ptt.viewmodel.WalkieRoomViewModel" />
+    </data>
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <View
+            android:id="@+id/view"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:background="?attr/colorPrimary" />
+
+        <com.xianzhitech.ptt.ui.widget.CircleShadowView
+            android:id="@+id/room_circleShadow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/view"
+            android:layerType="software"
+            app:circleRadius="110dp"
+            app:fgColor="?attr/colorPrimary" />
+
+        <com.xianzhitech.ptt.ui.widget.PushToTalkButton
+            android:id="@+id/room_pushToTalkButton"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_alignBottom="@+id/room_circleShadow"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="-100dp"
+            android:background="@drawable/bg_push_button"
+            android:scaleType="center"
+            android:src="@drawable/ic_voice_large"
+            android:tint="?attr/colorPrimary" />
+
+        <ImageView
+            android:id="@+id/room_leave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/unit_two"
+            android:onClick="@{ignored -> viewModel.onClickLeaveRoom()}"
+            android:src="@drawable/ic_power_red" />
+
+        <ImageView
+            android:id="@+id/room_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/room_leave"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:onClick="@{ignored -> viewModel.onClickViewMember()}"
+            android:padding="@dimen/unit_two"
+            android:src="@drawable/ic_people_filled" />
+
+        <TextView
+            android:id="@+id/room_title"
+            style="@style/Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/room_info"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/room_info"
+            android:layout_toRightOf="@+id/room_leave"
+            android:background="?attr/selectableItemBackground"
+            android:ellipsize="middle"
+            android:gravity="center"
+            android:paddingLeft="@dimen/unit_one"
+            android:paddingRight="@dimen/unit_one"
+            android:singleLine="true"
+            android:onClick="@{ignored -> viewModel.onClickTitle()}"
+            android:drawableRight="@drawable/ic_expand_more_white_24dp"
+            android:text="@{viewModel.title}"
+            tools:text="商务部事宜非常非常非常长的名字(12/24)" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:onClick="@{ignored -> viewModel.onClickNotification()}"
+            android:layout_marginBottom="@dimen/unit_five">
+
+            <ImageView
+                android:id="@+id/room_notification"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="@dimen/unit_one"
+                android:src="@drawable/ic_notification_white" />
+
+        </FrameLayout>
+
+        <RelativeLayout
+            android:id="@+id/room_speakerView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/room_title"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/unit_two"
+            android:background="@color/dark_grey"
+            android:onClick="@{ignored -> viewModel.onClickSpeakerView()}"
+            android:padding="@dimen/unit_one"
+            tools:visibility="visible"
+            app:show="@{viewModel.displaySpeakerView}">
+
+            <com.xianzhitech.ptt.ui.widget.ModelView
+                android:id="@+id/room_speakerAvatar"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_centerVertical="true"
+                app:model="@{viewModel.currentSpeaker}"
+                tools:src="@color/blue" />
+
+            <TextView
+                android:id="@+id/room_speakerName"
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/unit_one"
+                android:layout_toRightOf="@+id/room_speakerAvatar"
+                android:ellipsize="end"
+                android:text="@{viewModel.currentSpeaker.name}"
+                android:singleLine="true"
+                tools:text="长长长长长的用户名" />
+
+            <ImageView
+                android:id="@+id/room_speakerAnimationView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/room_speakerAvatar"
+                android:layout_alignLeft="@+id/room_speakerName"
+                android:layout_below="@+id/room_speakerName"
+                app:show="@{viewModel.hasCurrentSpeaker}"
+                tools:src="@drawable/sending"
+                app:animationSrc="@{viewModel.isSpeakerMe ? @drawable/sending: @drawable/receiving}" />
+
+            <TextView
+                android:id="@+id/room_speakerEllapseTime"
+                style="@style/Text.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/room_speakerAvatar"
+                android:layout_alignLeft="@+id/room_speakerName"
+                android:layout_below="@+id/room_speakerName"
+                android:gravity="center_vertical|left"
+                android:text="@string/just_now"
+                app:show="@{!viewModel.hasCurrentSpeaker}"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/room_speakerDuration"
+                style="@style/Text.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/room_speakerAnimationView"
+                android:layout_alignRight="@+id/room_speakerName"
+                android:layout_alignTop="@+id/room_speakerAnimationView"
+                android:layout_toRightOf="@+id/room_speakerAnimationView"
+                android:gravity="right|center_vertical"
+                app:show="@{viewModel.hasCurrentSpeaker}"
+                android:text="@{viewModel.currentSpeakingDuration}"
+                tools:text="00:03" />
+
+
+        </RelativeLayout>
+
+        <include
+            layout="@layout/view_progress"
+            app:loading="@{viewModel.isLoading || viewModel.isOffline}" />
+
+    </RelativeLayout>
+
+</layout>

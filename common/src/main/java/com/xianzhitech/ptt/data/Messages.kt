@@ -43,7 +43,8 @@ object MessageType {
         JsonSubTypes.Type(name = "text", value = TextMessageBody::class),
         JsonSubTypes.Type(name = "image", value = ImageMessageBody::class),
         JsonSubTypes.Type(name = "video", value = VideoMessageBody::class),
-        JsonSubTypes.Type(name = "location", value = LocationMessageBody::class)
+        JsonSubTypes.Type(name = "location", value = LocationMessageBody::class),
+        JsonSubTypes.Type(name = "add_room_members", value = AddRoomMembersMessageBody::class)
 )
 interface MessageBody : Serializable {
     fun toDisplayText(context: Context): CharSequence

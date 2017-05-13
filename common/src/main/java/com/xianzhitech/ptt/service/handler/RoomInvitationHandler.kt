@@ -9,15 +9,19 @@ import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
 import com.xianzhitech.ptt.broker.SignalBroker
 import com.xianzhitech.ptt.data.Permission
 import com.xianzhitech.ptt.data.RoomInfo
-import com.xianzhitech.ptt.ext.*
+import com.xianzhitech.ptt.ext.appComponent
+import com.xianzhitech.ptt.ext.d
+import com.xianzhitech.ptt.ext.e
+import com.xianzhitech.ptt.ext.i
+import com.xianzhitech.ptt.ext.logErrorAndForget
+import com.xianzhitech.ptt.ext.w
+import com.xianzhitech.ptt.ext.without
 import com.xianzhitech.ptt.ui.base.BaseActivity
-import com.xianzhitech.ptt.ui.room.RoomActivity
 import com.xianzhitech.ptt.util.isDownTime
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
 import org.threeten.bp.LocalTime
-import java.io.Serializable
 
 
 class RoomInvitationHandler : BroadcastReceiver() {
@@ -83,7 +87,7 @@ class RoomInvitationHandler : BroadcastReceiver() {
 
         logger.d { "Receive room invitation $invitation, currRoomId: $currentRoomId, currRoomInfo: $currentRoomInfo" }
 
-        val intent = Intent(context, RoomActivity::class.java)
+        val startedActivity = appComponent.activityProvider.currentStartedActivity as? BaseActivity
 
         if (currentRoomInfo == null ||
                 currentRoomInfo.lastWalkieActiveTime == null ||
@@ -95,21 +99,34 @@ class RoomInvitationHandler : BroadcastReceiver() {
             //  1. 当前没有对讲房间
             //  2. 上一次房间有动作的时刻已经很久远
             //  3. 邀请者是拥有最高权限
-            intent.putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.room.id)
-                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, true)
-                    .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
+            if (startedActivity == null) {
+                context.startActivity(Intent(Intent.ACTION_MAIN)
+                        .addCategory(Intent.CATEGORY_LAUNCHER)
+                        .setPackage(context.packageName)
+                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_CONFIRMED, true)
+                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_ID, invitation.room.id)
+                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_FROM_INVITATION, invitation.room.id)
+                        .putExtra(BaseActivity.EXTRA_JOIN_ROOM_IS_VIDEO_CHAT, false)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            }
+            else {
+                startedActivity.joinRoomConfirmed(invitation.room.id, true, false)
+            }
         } else {
             logger.i { "Sending out invitation" }
-            intent.putExtra(RoomActivity.EXTRA_INVITATIONS, listOf(invitation) as Serializable)
+
+            if (startedActivity == null) {
+                context.startActivity(Intent(Intent.ACTION_MAIN)
+                        .addCategory(Intent.CATEGORY_LAUNCHER)
+                        .setPackage(context.packageName)
+                        .putParcelableArrayListExtra(BaseActivity.EXTRA_PENDING_INVITATION, arrayListOf(invitation))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            }
+            else {
+                startedActivity.onNewPendingInvitation(listOf(invitation))
+            }
         }
 
-        val startedActivity = appComponent.activityProvider.currentStartedActivity
-
-        if (startedActivity != null) {
-            startedActivity.startActivityWithAnimation(intent)
-        } else {
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
-        }
     }
 
     companion object {

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
         <variable
             name="viewModel"
-            type="com.xianzhitech.ptt.ui.user.UserDetailsViewModel" />
+            type="com.xianzhitech.ptt.ui.user.UserDetailsViewModel"/>
     </data>
 
     <FrameLayout
@@ -32,7 +32,7 @@
                     android:layout_height="@dimen/profile_icon_size"
                     android:layout_margin="@dimen/unit_two"
                     app:userId="@{viewModel.user.id}"
-                    tools:src="@color/blue" />
+                    tools:src="@color/blue"/>
 
                 <TextView
                     style="@style/Text.Subhead"
@@ -43,21 +43,21 @@
                     android:paddingBottom="@dimen/unit_half"
                     android:paddingTop="@dimen/unit_half"
                     android:text="@{viewModel.user.name}"
-                    tools:text="User 1" />
+                    tools:text="User 1"/>
             </LinearLayout>
 
-            <View style="@style/Divider.Lighter" />
+            <View style="@style/Divider.Lighter"/>
 
             <include
                 layout="@layout/view_profile_row"
                 app:label="@{@string/phone_number}"
                 app:onClick="@{ignored -> viewModel.onClickPhoneNumber()}"
-                app:value="@{viewModel.user.phoneNumber}" />
+                app:value="@{viewModel.user.phoneNumber}"/>
 
             <include
                 layout="@layout/view_profile_row"
                 app:label="@{@string/level}"
-                app:value="@{viewModel.userLevel}" />
+                app:value="@{viewModel.userLevel}"/>
 
             <Button
                 style="@style/Widget.AppCompat.Button.Colored"
@@ -67,7 +67,8 @@
                 android:layout_marginRight="@dimen/unit_one"
                 android:layout_marginTop="@dimen/unit_two"
                 android:onClick="@{ignored -> viewModel.onClickStartWalkieTalkie()}"
-                android:text="@string/chat_type_walkie_talkie" />
+                android:text="@string/chat_type_walkie_talkie"
+                app:show="@{!viewModel.isMe}"/>
 
             <Button
                 style="@style/Widget.AppCompat.Button"
@@ -76,14 +77,15 @@
                 android:layout_marginLeft="@dimen/unit_one"
                 android:layout_marginRight="@dimen/unit_one"
                 android:onClick="@{ignored -> viewModel.onClickStartVideoChat()}"
-                android:text="@string/chat_type_video" />
+                android:text="@string/chat_type_video"
+                app:show="@{!viewModel.isMe}"/>
 
 
         </LinearLayout>
 
         <include
             layout="@layout/view_progress"
-            app:loading="@{viewModel.loading}" />
+            app:loading="@{viewModel.loading}"/>
 
     </FrameLayout>
 
