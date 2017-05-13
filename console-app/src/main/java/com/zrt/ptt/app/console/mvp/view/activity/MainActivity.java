@@ -2,6 +2,7 @@ package com.zrt.ptt.app.console.mvp.view.activity;
 
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.os.health.SystemHealthManager;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
+import com.xianzhitech.ptt.ui.room.RoomFragment;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
@@ -285,11 +287,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         imapView.showUsersLocation(locations);
     }
 
+    @Override
+    public void showTalkView() {
+        SystemStateFragment systemStateFragment = (SystemStateFragment)getSupportFragmentManager().findFragmentById(R.id.system_state_container);
+        systemStateFragment.showTalkRoom();
+    }
 
-
-
-
-   /* private void initMapViewLocation() {
+    /* private void initMapViewLocation() {
 
         // 设置可改变地图位置
         baiduMap.setMyLocationEnabled(true);

@@ -156,6 +156,9 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 initLatLng();
                 mainActivityPresenter.showLocations(locations);
                 break;
+
+            case R.id.talk:
+                mainActivityPresenter.showTalkRoom();
         }
     }
 

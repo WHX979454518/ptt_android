@@ -20,4 +20,6 @@ public interface IMainActivityView {
      */
     void showLocation(List<LatLng> locations);
 
+
+    void showTalkView();
 }

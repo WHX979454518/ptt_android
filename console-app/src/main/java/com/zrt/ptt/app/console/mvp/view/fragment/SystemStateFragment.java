@@ -10,29 +10,35 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xianzhitech.ptt.AppComponent;
+import com.xianzhitech.ptt.broker.SignalBroker;
+import com.xianzhitech.ptt.data.Room;
+import com.xianzhitech.ptt.ui.room.RoomFragment;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
+import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
-import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
-import com.zrt.ptt.app.console.mvp.model.SysStateNodeBean;
-import com.zrt.ptt.app.console.mvp.model.SysStateNodeBean;
 import com.zrt.ptt.app.console.mvp.view.adapter.MyTreeListViewAdapter;
-import com.zrt.ptt.app.console.mvp.view.adapter.TreeListViewAdapter;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+
 /**
  * A simple {@link Fragment} subclass.
  */
-public class SystemStateFragment extends Fragment {
+public class SystemStateFragment extends Fragment implements RoomListFragment.Callbacks, RoomFragment.Callbacks {
     private ListView treeLv;
     private Button checkSwitchBtn;
     private MyTreeListViewAdapter<OrgNodeBean> adapter;
@@ -41,6 +47,9 @@ public class SystemStateFragment extends Fragment {
     private boolean isHide = false;
     private View view;
     private RoomListFragment roomListFragment;
+
+    private RoomFragment roomFragment;
+
 
     public SystemStateFragment() {
         // Required empty public constructor
@@ -58,9 +67,10 @@ public class SystemStateFragment extends Fragment {
         if (roomListFragment == null) {
             roomListFragment = new RoomListFragment();
             ft.add(R.id.roomlist_fragment, roomListFragment);
-        }else {
+        } else {
             ft.show(roomListFragment);
         }
+
         ft.commitAllowingStateLoss();
         /*initDatas();
         treeLv = (ListView) view.findViewById(R.id.sys_state_tree_lv);
@@ -145,14 +155,14 @@ public class SystemStateFragment extends Fragment {
         }
 
 //        JSONObject data = gson.fromJson(json,JSONObject.class);
-        if(data.has("data")){
+        if (data.has("data")) {
 
             try {
 //                String datas = data.getJSONArray("data");
                 String datas = data.getString("data");
                 List<OrgNodeBean> goodsLists = gson.fromJson(datas, new TypeToken<List<OrgNodeBean>>() {
                 }.getType());
-                for(OrgNodeBean user:goodsLists) {
+                for (OrgNodeBean user : goodsLists) {
                     mDatas.add(user);
                     System.out.printf(user.toString());
                 }
@@ -163,4 +173,67 @@ public class SystemStateFragment extends Fragment {
 
     }
 
+
+    public void showTalkRoom() {
+        ArrayList<String> userIds = new ArrayList<>();
+        userIds.add("500006");
+
+        SignalBroker signalBroker = ((AppComponent) App.getInstance()).getSignalBroker();
+        signalBroker.createRoom(userIds, new ArrayList<String>())
+                .doOnSuccess(new Consumer<Room>() {
+                    @Override
+                    public void accept(@NonNull Room room) throws Exception {
+                        joinRoom(room);
+                    }
+                })
+                .subscribe();
+    }
+
+    @Override
+    public void navigateToChatRoomPage(@NotNull Room room) {
+        joinRoom(room);
+    }
+
+    private void joinRoom(@NotNull Room room) {
+        ((AppComponent) App.getInstance()).getSignalBroker().joinWalkieRoom(room.getId(), false)
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnComplete(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        FragmentManager fm = getActivity().getSupportFragmentManager();
+                        FragmentTransaction ft = fm.beginTransaction();
+                        if (roomFragment == null) {
+                            roomFragment = new RoomFragment();
+                            ft.add(R.id.chatroom_fragment, roomFragment);
+                        } else {
+                            ft.show(roomFragment);
+                        }
+
+                        ft.commitAllowingStateLoss();
+                    }
+                })
+                .doOnError(new Consumer<Throwable>() {
+                    @Override
+                    public void accept(@NonNull Throwable throwable) throws Exception {
+
+                    }
+                })
+                .subscribe();
+    }
+
+    @Override
+    public void setTitle(@NotNull CharSequence title) {
+
+    }
+
+    @Override
+    public void onRoomQuited() {
+        FragmentManager fm = getActivity().getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        if (roomFragment == null) {
+            ft.hide(roomFragment);
+        }
+
+        ft.commitAllowingStateLoss();
+    }
 }
