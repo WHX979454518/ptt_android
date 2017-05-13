@@ -62,7 +62,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
         view = inflater.inflate(R.layout.fragment_system_state, container, false);
 
         super.onCreate(savedInstanceState);
-        FragmentManager fm = getActivity().getSupportFragmentManager();
+        FragmentManager fm = getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         if (roomListFragment == null) {
             roomListFragment = new RoomListFragment();
@@ -200,7 +200,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
                 .doOnComplete(new Action() {
                     @Override
                     public void run() throws Exception {
-                        FragmentManager fm = getActivity().getSupportFragmentManager();
+                        FragmentManager fm = getChildFragmentManager();
                         FragmentTransaction ft = fm.beginTransaction();
                         if (roomFragment == null) {
                             roomFragment = new RoomFragment();
@@ -228,7 +228,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
 
     @Override
     public void onRoomQuited() {
-        FragmentManager fm = getActivity().getSupportFragmentManager();
+        FragmentManager  fm = getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         if (roomFragment == null) {
             ft.hide(roomFragment);
