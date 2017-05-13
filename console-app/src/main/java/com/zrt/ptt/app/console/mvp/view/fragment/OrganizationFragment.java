@@ -4,16 +4,13 @@ package com.zrt.ptt.app.console.mvp.view.fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.baidu.mapapi.model.LatLng;
 import com.google.gson.Gson;
@@ -158,7 +155,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 break;
 
             case R.id.talk:
-                mainActivityPresenter.showTalkRoom();
+                //FIXME:暂时使用假数据
+                List<String> userIds = new ArrayList<String>();
+                userIds.add("500006");
+                mainActivityPresenter.showChatkRoom(userIds, new ArrayList<>(), false);
         }
     }
 

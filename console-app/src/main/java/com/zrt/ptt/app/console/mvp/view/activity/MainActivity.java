@@ -2,7 +2,6 @@ package com.zrt.ptt.app.console.mvp.view.activity;
 
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
-import android.os.health.SystemHealthManager;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
@@ -20,9 +19,7 @@ import android.widget.Toast;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
-import com.xianzhitech.ptt.ui.room.RoomFragment;
 import com.zrt.ptt.app.console.R;
-import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
@@ -30,6 +27,7 @@ import com.zrt.ptt.app.console.mvp.view.fragment.ConsoleMapFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.OrganizationFragment;
 import com.zrt.ptt.app.console.mvp.view.fragment.SystemStateFragment;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 
@@ -38,8 +36,11 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import utils.LogUtils;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener, IMainActivityView {
+    private final static String TAG = "MainActivity";
+
     @BindView(R.id.pupmenu)
     ImageView pupmenu;
     @BindView(R.id.all_call)
@@ -48,6 +49,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     LinearLayout signOut;
     @BindView(R.id.time_hms)
     TextView timeHms;
+
     @BindView(R.id.console)
     LinearLayout console;
     @BindView(R.id.time_ymd)
@@ -288,9 +290,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
-    public void showTalkView() {
+    public void showChatRoomView(List<String> userIds, List<String> groupIds, boolean isVideoChat) {
         SystemStateFragment systemStateFragment = (SystemStateFragment)getSupportFragmentManager().findFragmentById(R.id.system_state_container);
-        systemStateFragment.showTalkRoom();
+        systemStateFragment.showChatRoomView(userIds, groupIds, isVideoChat);
     }
 
     /* private void initMapViewLocation() {
@@ -367,4 +369,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         mLocationClient.setLocOption(option);
     }
 */
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////Override methods from BaseActivity /////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void joinRoomConfirmed(@NotNull String roomId, boolean fromInvitation, boolean isVideoChat) {
+//        super.joinRoomConfirmed(roomId, fromInvitation, isVideoChat);
+        LogUtils.d(TAG, "joinRoomConfirmed() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], isVideoChat = [" + isVideoChat + "]");
+
+        SystemStateFragment systemStateFragment = (SystemStateFragment)getSupportFragmentManager().findFragmentById(R.id.system_state_container);
+        systemStateFragment.showChatRoomView(roomId, fromInvitation, isVideoChat);
+    }
 }

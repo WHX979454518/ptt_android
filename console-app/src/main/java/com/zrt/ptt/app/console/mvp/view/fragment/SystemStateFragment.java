@@ -1,10 +1,20 @@
 package com.zrt.ptt.app.console.mvp.view.fragment;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import utils.LogUtils;
+
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,19 +26,12 @@ import com.google.gson.reflect.TypeToken;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.broker.SignalBroker;
 import com.xianzhitech.ptt.data.Room;
-import com.xianzhitech.ptt.ui.room.RoomFragment;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
+import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 import com.zrt.ptt.app.console.mvp.view.adapter.MyTreeListViewAdapter;
-
-import org.jetbrains.annotations.NotNull;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
@@ -38,7 +41,9 @@ import io.reactivex.functions.Consumer;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class SystemStateFragment extends Fragment implements RoomListFragment.Callbacks, RoomFragment.Callbacks {
+public class SystemStateFragment extends Fragment implements RoomListFragment.Callbacks, WalkieRoomFragment.Callbacks {
+    private static final String TAG = "SystemStateFragment";
+
     private ListView treeLv;
     private Button checkSwitchBtn;
     private MyTreeListViewAdapter<OrgNodeBean> adapter;
@@ -48,13 +53,17 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     private View view;
     private RoomListFragment roomListFragment;
 
-    private RoomFragment roomFragment;
+    private WalkieRoomFragment walkieRoomFragment;
 
 
     public SystemStateFragment() {
         // Required empty public constructor
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -116,6 +125,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
         treeLv.setAdapter(adapter);*/
 
 
+
         return view;
 
     }
@@ -173,65 +183,81 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
 
     }
 
-
-    public void showTalkRoom() {
-        ArrayList<String> userIds = new ArrayList<>();
-        userIds.add("500006");
+    public void showChatRoomView(List<String> usersIds, List<String> groupIds, boolean isVideoChat) {
+        Log.d(TAG, "showChatRoomView() called with: usersIds = [" + usersIds + "], groupIds = [" + groupIds + "], isVideoChat = [" + isVideoChat + "]");
 
         SignalBroker signalBroker = ((AppComponent) App.getInstance()).getSignalBroker();
-        signalBroker.createRoom(userIds, new ArrayList<String>())
+        signalBroker.createRoom(usersIds, groupIds)
                 .doOnSuccess(new Consumer<Room>() {
                     @Override
                     public void accept(@NonNull Room room) throws Exception {
-                        joinRoom(room);
+                        joinRoom(room.getId(), false, isVideoChat);
                     }
                 })
                 .subscribe();
     }
 
+    public void showChatRoomView(String roomId, boolean fromInvitation, boolean isVideoChat) {
+        joinRoom(roomId, fromInvitation, isVideoChat);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////Implement WalkieRoomFragment.Callbacks interface ////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
     public void navigateToChatRoomPage(@NotNull Room room) {
-        joinRoom(room);
-    }
-
-    private void joinRoom(@NotNull Room room) {
-        ((AppComponent) App.getInstance()).getSignalBroker().joinWalkieRoom(room.getId(), false)
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnComplete(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        FragmentManager fm = getChildFragmentManager();
-                        FragmentTransaction ft = fm.beginTransaction();
-                        if (roomFragment == null) {
-                            roomFragment = new RoomFragment();
-                            ft.add(R.id.chatroom_fragment, roomFragment);
-                        } else {
-                            ft.show(roomFragment);
-                        }
-
-                        ft.commitAllowingStateLoss();
-                    }
-                })
-                .doOnError(new Consumer<Throwable>() {
-                    @Override
-                    public void accept(@NonNull Throwable throwable) throws Exception {
-
-                    }
-                })
-                .subscribe();
+        Log.d(TAG, "navigateToChatRoomPage() called with: room = [" + room + "]");
+        joinRoom(room.getId(), false, false);
     }
 
     @Override
-    public void setTitle(@NotNull CharSequence title) {
+    public void navigateToCreateRoomMemberSelectionPage() {
+        Log.d(TAG, "navigateToCreateRoomMemberSelectionPage() called");
+    }
 
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////Implement WalkieRoomFragment.Callbacks interface ////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void navigateToRoomMemberPage(String roomId)
+    {
+        LogUtils.d(TAG, "navigateToRoomMemberPage() called with: roomId = [" + roomId + "]");
     }
 
     @Override
-    public void onRoomQuited() {
-        FragmentManager  fm = getChildFragmentManager();
+    public void navigateToUserDetailsPage(String roomId){
+        LogUtils.d(TAG, "navigateToUserDetailsPage() called with: roomId = [" + roomId + "]");
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////Private Inner help methods///////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    private void joinRoom(String roomId,  boolean fromInvitation, boolean isVideoChat) {
+        LogUtils.d(TAG, "joinRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], isVideoChat = [" + isVideoChat + "]");
+
+        Bundle bundle = new Bundle();
+        bundle.putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId);
+        bundle.putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation);
+
+        //FIXME://当前写死WalkieRoomFragment未考虑isVideoChat
+        if (walkieRoomFragment == null) {
+            walkieRoomFragment = new WalkieRoomFragment();
+        }
+
+        walkieRoomFragment.setArguments(bundle);
+
+        FragmentManager fm = getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
-        if (roomFragment == null) {
-            ft.hide(roomFragment);
+
+        if(walkieRoomFragment.getParentFragment() == null){
+            ft.add(R.id.chatroom_fragment, walkieRoomFragment);
+        }
+        else {
+            ft.show(walkieRoomFragment);
         }
 
         ft.commitAllowingStateLoss();

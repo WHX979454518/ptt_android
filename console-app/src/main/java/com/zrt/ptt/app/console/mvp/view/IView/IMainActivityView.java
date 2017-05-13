@@ -12,6 +12,13 @@ import java.util.List;
  */
 
 public interface IMainActivityView {
+
+//    public enum EChatType{
+//        ChatTypeText, //文字聊天
+//        ChatTypeAudio, //语音聊天
+//        ChatTypeVideo, //视频聊天
+//    }
+
     void UpDateOrganization(JSONObject json);
 
     /**
@@ -21,5 +28,11 @@ public interface IMainActivityView {
     void showLocation(List<LatLng> locations);
 
 
-    void showTalkView();
+    /**
+     * 创建房间并加入房间聊天，跳转到聊天界面
+     * @param userIds 参与聊天的用户
+     * @param groupIds 参与聊天的预定义组
+     * @param isVideoChat 聊天类型 是否是视频聊天
+     */
+    void showChatRoomView(List<String> userIds, List<String> groupIds, boolean isVideoChat);
 }
