@@ -1,5 +1,6 @@
 package com.xianzhitech.ptt.util
 
+import com.baidu.location.BDLocation
 import com.baidu.location.BDLocationListener
 import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
@@ -26,15 +27,20 @@ object Locations {
                 scanSpan = minTimeMills.toInt()
             })
 
-            val listener = BDLocationListener {
-                emitter.onNext(Location(
-                        latLng = LatLng(it.latitude, it.longitude),
-                        radius = it.radius.toInt(),
-                        altitude = it.altitude.toInt(),
-                        speed = it.speed.toInt(),
-                        time = System.currentTimeMillis(),
-                        direction = it.direction
-                ))
+            val listener = object : BDLocationListener {
+                override fun onReceiveLocation(loc: BDLocation) {
+                    emitter.onNext(Location(
+                            latLng = LatLng(loc.latitude, loc.longitude),
+                            radius = loc.radius.toInt(),
+                            altitude = loc.altitude.toInt(),
+                            speed = loc.speed.toInt(),
+                            time = System.currentTimeMillis(),
+                            direction = loc.direction
+                    ))
+                }
+
+                override fun onConnectHotSpotMessage(p0: String?, p1: Int) {
+                }
             }
 
             client.registerLocationListener(listener)
