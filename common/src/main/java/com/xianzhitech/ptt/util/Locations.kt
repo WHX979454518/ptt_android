@@ -20,41 +20,39 @@ object Locations {
     fun requestLocationUpdate(minTimeMills: Long): Observable<Location> {
         logger.i { "Requesting location update with $minTimeMills ms interval" }
         return Observable.create<Location> { emitter ->
-            val client = LocationClient(BaseApp.instance, LocationClientOption().apply {
-                coorType = "bd09ll"
-                isIgnoreKillProcess = true
-                enableSimulateGps = BuildConfig.DEBUG
-                scanSpan = minTimeMills.toInt()
-            })
+            AndroidSchedulers.mainThread().scheduleDirect {
+                val client = LocationClient(BaseApp.instance, LocationClientOption().apply {
+                    coorType = "bd09ll"
+                    enableSimulateGps = BuildConfig.DEBUG
+                    scanSpan = minTimeMills.toInt()
+                })
 
-            val listener = object : BDLocationListener {
-                override fun onReceiveLocation(loc: BDLocation) {
-                    emitter.onNext(Location(
-                            latLng = LatLng(loc.latitude, loc.longitude),
-                            radius = loc.radius.toInt(),
-                            altitude = loc.altitude.toInt(),
-                            speed = loc.speed.toInt(),
-                            time = System.currentTimeMillis(),
-                            direction = loc.direction
-                    ))
+                val listener = object : BDLocationListener {
+                    override fun onReceiveLocation(loc: BDLocation) {
+                        emitter.onNext(Location(
+                                latLng = LatLng(loc.latitude, loc.longitude),
+                                radius = loc.radius.toInt(),
+                                altitude = loc.altitude.toInt(),
+                                speed = loc.speed.toInt(),
+                                time = System.currentTimeMillis(),
+                                direction = loc.direction
+                        ))
+                    }
+
+                    override fun onConnectHotSpotMessage(p0: String?, p1: Int) {
+                    }
                 }
 
-                override fun onConnectHotSpotMessage(p0: String?, p1: Int) {
+                client.registerLocationListener(listener)
+                emitter.setCancellable {
+                    AndroidSchedulers.mainThread().scheduleDirect {
+                        client.stop()
+                        client.unRegisterLocationListener(listener)
+                    }
                 }
+                client.start()
             }
-
-            client.registerLocationListener(listener)
-            emitter.setCancellable {
-                AndroidSchedulers.mainThread().scheduleDirect {
-                    client.stop()
-                    client.unRegisterLocationListener(listener)
-                }
-            }
-            client.start()
-        }.subscribeOn(AndroidSchedulers.mainThread())
-                .doOnNext {
-                    logger.i { "Got location $it" }
-                }
+        }.doOnNext { logger.i { "Got location $it" } }
     }
 
     fun requestSingleLocationUpdate(): Single<Location> {
