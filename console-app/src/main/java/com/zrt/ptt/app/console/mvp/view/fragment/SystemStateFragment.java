@@ -27,6 +27,7 @@ import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.broker.SignalBroker;
 import com.xianzhitech.ptt.data.Room;
+import com.xianzhitech.ptt.ui.chat.ChatFragment;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
 import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment;
 import com.zrt.ptt.app.console.App;
@@ -36,6 +37,8 @@ import com.zrt.ptt.app.console.mvp.view.adapter.MyTreeListViewAdapter;
 
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Consumer;
+
+import static com.xianzhitech.ptt.broker.RoomMode.NORMAL;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -53,6 +56,9 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     private RoomListFragment roomListFragment;
 
     private WalkieRoomFragment walkieRoomFragment;
+
+    //Normal--文字聊天类型Fragment
+    private ChatFragment chatFragment;
 
 
     public SystemStateFragment() {
@@ -208,7 +214,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     public void navigateToChatRoomPage(@NotNull Room room) {
         Log.d(TAG, "navigateToChatRoomPage() called with: room = [" + room + "]");
         //FIXME(feihe)://此处写死了room类型，后面需要修改
-        joinRoom(room.getId(), false, RoomMode.NORMAL);
+        joinRoom(room.getId(), false, NORMAL);
     }
 
     @Override
@@ -248,27 +254,77 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     ////////////////////////////////////////////////////////////////////////////////
     private void joinRoom(String roomId,  boolean fromInvitation, RoomMode roomMode) {
         LogUtils.d(TAG, "joinRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], roomMode = [" + roomMode + "]");
+        switch (roomMode){
+            case NORMAL:{
+                joinNormalRoom(roomId);
+                break;
+            }
+            
+            case AUDIO:{
+                joinAuidoRoom(roomId, fromInvitation);
+                break;
+            }
+            
+            default:
+                LogUtils.e(TAG, "joinRoom: Unsupport roomMode = " + roomMode);
+        }
+    }
 
+
+    /**
+     * 加入语音类型的聊天
+     * @param roomId
+     * @param fromInvitation
+     */
+    private void joinAuidoRoom(String roomId, boolean fromInvitation){
+        Log.d(TAG, "joinAuidoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
         Bundle bundle = new Bundle();
         bundle.putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId);
         bundle.putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation);
-
-        //FIXME://当前写死WalkieRoomFragment未考虑isVideoChat
-        if (walkieRoomFragment == null) {
-            walkieRoomFragment = new WalkieRoomFragment();
+        if (walkieRoomFragment != null) {
+            removeFragment(walkieRoomFragment);
         }
 
         walkieRoomFragment.setArguments(bundle);
+        showFragment(walkieRoomFragment, R.id.chatroom_fragment);
+    }
 
+    /**
+     * 加入文字类型聊天
+     * @param roomId
+     */
+    private void joinNormalRoom(String roomId){
+        LogUtils.d(TAG, "joinNormalRoom() called with: roomId = [" + roomId + "]");
+        Bundle bundle = new Bundle();
+        bundle.putString(ChatFragment.ARG_ROOM_ID, roomId);
+        if (chatFragment != null) {
+            removeFragment(chatFragment);
+        }
+
+        chatFragment = new ChatFragment();
+        chatFragment.setArguments(bundle);
+
+        showFragment(chatFragment, R.id.chatroom_fragment);
+    }
+
+    private void showFragment(Fragment fragment, int fragmentId){
+        LogUtils.d(TAG, "showFragment() called with: fragment = [" + fragment + "], fragmentId = [" + fragmentId + "]");
         FragmentManager fm = getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
-
-        if(walkieRoomFragment.getParentFragment() == null){
-            ft.add(R.id.chatroom_fragment, walkieRoomFragment);
+        if(fragment.getParentFragment() == null){
+            ft.add(fragmentId,  fragment);
         }
         else {
-            ft.show(walkieRoomFragment);
+            ft.show(fragment);
         }
+
+        ft.commitAllowingStateLoss();
+    }
+
+    private void removeFragment(Fragment fragment){
+        FragmentManager fm = getChildFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.remove(chatFragment);
 
         ft.commitAllowingStateLoss();
     }
