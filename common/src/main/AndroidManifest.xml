@@ -139,9 +139,9 @@
 
         <service
             android:name="com.baidu.location.f"
-            android:enabled="true">
+            android:process=":bdlocation">
             <intent-filter>
-                <action android:name="com.baidu.location.service_v2.2"></action>
+                <action android:name="com.baidu.location.service_v2.2" />
             </intent-filter>
         </service>
 

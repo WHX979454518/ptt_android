@@ -11,6 +11,8 @@
 
 
     <RelativeLayout
+        android:theme="@style/AppTheme.Room"
+        android:background="?android:attr/windowBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -88,7 +90,7 @@
             android:singleLine="true"
             android:onClick="@{ignored -> viewModel.onClickTitle()}"
             android:drawableRight="@drawable/ic_expand_more_white_24dp"
-            android:text="@{viewModel.title}"
+            android:text="@{@string/room_title(viewModel.title, viewModel.onlineUserNumber, viewModel.roomMemberNumber)}"
             tools:text="商务部事宜非常非常非常长的名字(12/24)" />
 
         <FrameLayout

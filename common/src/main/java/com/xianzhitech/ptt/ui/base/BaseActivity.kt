@@ -20,13 +20,7 @@ import com.xianzhitech.ptt.api.dto.AppConfig
 import com.xianzhitech.ptt.api.event.WalkieRoomInvitationEvent
 import com.xianzhitech.ptt.broker.RoomMode
 import com.xianzhitech.ptt.data.Room
-import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.dismissImmediately
-import com.xianzhitech.ptt.ext.e
-import com.xianzhitech.ptt.ext.findFragment
-import com.xianzhitech.ptt.ext.logErrorAndForget
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.toFormattedString
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.service.describeInHumanMessage
 import com.xianzhitech.ptt.service.toast
 import com.xianzhitech.ptt.ui.PhoneCallHandler
@@ -62,7 +56,7 @@ abstract class BaseActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
 
         if (savedInstanceState == null) {
-            handleIntent(intent)
+            handleJoinRoomIntent(intent)
         } else {
             pendingDeniedPermissions = savedInstanceState.getSerializable(STATE_PENDING_DENIED_PERMISSIONS) as? List<String>
         }
@@ -79,10 +73,10 @@ abstract class BaseActivity : AppCompatActivity(),
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleIntent(intent)
+        handleJoinRoomIntent(intent)
     }
 
-    private fun handleIntent(intent: Intent) {
+    open fun handleJoinRoomIntent(intent: Intent) {
         if (intent.getBooleanExtra(EXTRA_NAVIGATE_TO_WALKIE, false)) {
             navigateToWalkieTalkiePage()
             return

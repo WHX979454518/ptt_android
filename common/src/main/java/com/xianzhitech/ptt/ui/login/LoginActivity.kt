@@ -2,7 +2,6 @@ package com.xianzhitech.ptt.ui.login
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -10,7 +9,7 @@ import com.xianzhitech.ptt.ui.home.HomeActivity
 import com.xianzhitech.ptt.ui.home.login.LoginFragment
 
 
-open class LoginActivity : AppCompatActivity(), LoginFragment.Callbacks {
+open class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -26,6 +25,9 @@ open class LoginActivity : AppCompatActivity(), LoginFragment.Callbacks {
                             intent.getStringExtra(EXTRA_KICKED_OUT_REASON)))
                     .commit()
         }
+    }
+
+    override fun handleJoinRoomIntent(intent: Intent) {
     }
 
     override fun navigateToHome() {

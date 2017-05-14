@@ -42,7 +42,7 @@
 //
 //        setContentView(R.layout.activity_room)
 //        if (savedInstanceState == null) {
-//            handleIntent(intent)
+//            handleJoinRoomIntent(intent)
 //        }
 //    }
 //
@@ -50,10 +50,10 @@
 //    override fun onNewIntent(intent: Intent) {
 //        super.onNewIntent(intent)
 //
-//        handleIntent(intent)
+//        handleJoinRoomIntent(intent)
 //    }
 //
-//    private fun handleIntent(intent: Intent) {
+//    private fun handleJoinRoomIntent(intent: Intent) {
 //        var roomFragment = supportFragmentManager.findFragmentById(R.id.room_content) as? RoomFragment
 //        if (roomFragment == null) {
 //            roomFragment = RoomFragment()

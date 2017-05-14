@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 class ChatViewModel(private val appComponent: AppComponent,
                     appContext: Context,
                     private val roomMessages: SortedList<MessageViewModel<MessageBody>>,
-                    private val roomId: String,
+                    val roomId: String,
                     private val navigator: Navigator) : LifecycleViewModel(), ImageMessageViewModel.Navigator {
     val room = ObservableField<Room>()
     val title = ObservableField<String>()

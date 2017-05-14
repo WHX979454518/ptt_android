@@ -22,9 +22,12 @@ object Locations {
         return Observable.create<Location> { emitter ->
             AndroidSchedulers.mainThread().scheduleDirect {
                 val client = LocationClient(BaseApp.instance, LocationClientOption().apply {
+                    locationMode = LocationClientOption.LocationMode.Device_Sensors
                     coorType = "bd09ll"
                     enableSimulateGps = BuildConfig.DEBUG
                     scanSpan = minTimeMills.toInt()
+                    setNeedDeviceDirect(true)
+                    isNeedAltitude = true
                 })
 
                 val listener = object : BDLocationListener {

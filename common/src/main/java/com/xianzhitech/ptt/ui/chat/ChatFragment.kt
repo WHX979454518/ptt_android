@@ -11,22 +11,13 @@ import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.Location
 import com.xianzhitech.ptt.databinding.FragmentChatBinding
-import com.xianzhitech.ptt.ext.appComponent
-import com.xianzhitech.ptt.ext.callbacks
-import com.xianzhitech.ptt.ext.e
-import com.xianzhitech.ptt.ext.show
-import com.xianzhitech.ptt.ext.startActivityWithAnimation
-import com.xianzhitech.ptt.ext.toRxObservable
+import com.xianzhitech.ptt.ext.*
 import com.xianzhitech.ptt.ui.base.BackPressable
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment
 import com.xianzhitech.ptt.ui.base.FragmentDisplayActivity
@@ -59,7 +50,12 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
 
-
+        inflater.inflate(R.menu.chat, menu)
+        menu.findItem(R.id.add_room_members)
+                .setOnMenuItemClickListener {
+                    callbacks<Callbacks>()!!.navigateToRoomMemberPage(viewModel.roomId)
+                    true
+                }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -249,6 +245,7 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
         fun navigateToWalkieTalkiePage()
         fun navigateToVideoChatPage()
         fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean)
+        fun navigateToRoomMemberPage(roomId: String)
     }
 
     companion object {
