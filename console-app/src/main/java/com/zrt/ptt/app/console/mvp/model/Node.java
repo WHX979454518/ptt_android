@@ -47,6 +47,14 @@ public class Node {
      */
     private Node parent;
     private boolean isOnline;//false不在线,true在线
+    private boolean isGroup = false;//是否是预定义组,默认不是
+    public boolean isGroup() {
+        return isGroup;
+    }
+
+    public void setGroup(boolean group) {
+        isGroup = group;
+    }
 
     public boolean isOnline() {
         return isOnline;
@@ -59,12 +67,13 @@ public class Node {
     public Node() {
     }
 
-    public Node(String id, String pId, String name,boolean isOnline) {
+    public Node(String id, String pId, String name,boolean isOnline,boolean isGroup) {
         super();
         this._id = id;
         this.father = pId;
         this.name = name;
         this.isOnline = isOnline;
+        this.isGroup = isGroup;
     }
 
 

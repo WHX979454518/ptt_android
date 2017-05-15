@@ -22,8 +22,15 @@ import java.util.Set;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function3;
+import io.reactivex.schedulers.Schedulers;
+import io.socket.client.IO;
+import utils.LogUtils;
 
 /**
  * Created by surpass on 2017-5-2.
@@ -40,23 +47,19 @@ public class OrgFragmentModel implements IOrgFragmentModel {
 
     }
     private void handeAllUser(callDisposListener listener,String label){
-        /*Observable.combineLatest(((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getEnterprise(),
-                ((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getOnlineUserIds(),
-                ((AppComponent) App.getInstance().getApplicationContext()).getStorage().getAllGroups(),
-                new Function3<ContactEnterprise, Set<String>, List<ContactGroup>, Object>() {
-                    @Override
-                    public Object apply(@NonNull ContactEnterprise contactEnterprise, @NonNull Set<String> strings, @NonNull List<ContactGroup> contactGroups) throws Exception {
-                        return new OrganizationBean(contactEnterprise,strings,contactGroups);
-                    }
-                }).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<OrganizationBean>() {
+        /*((AppComponent) App.getInstance().getApplicationContext())
+                .getStorage().getAllGroups()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<ContactGroup>>() {
             @Override
             public void onSubscribe(Disposable disposable) {
 
             }
 
             @Override
-            public void onNext(OrganizationBean organizationBean) {
+            public void onNext(List<ContactGroup> contactGroups) {
 
+                LogUtils.d("contactGroups","contactGroups:"+contactGroups+" contactGroups:"+contactGroups.size());
             }
 
             @Override
@@ -71,7 +74,13 @@ public class OrgFragmentModel implements IOrgFragmentModel {
         });*/
         Observable.combineLatest(((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getEnterprise(),
                 ((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getOnlineUserIds(),
-                Pair::create).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Pair<ContactEnterprise, Set<String>>>() {
+                ((AppComponent) App.getInstance().getApplicationContext()).getStorage().getAllGroups(),
+                new Function3<ContactEnterprise, Set<String>, List<ContactGroup>, OrganizationBean>() {
+                    @Override
+                    public OrganizationBean apply(@NonNull ContactEnterprise contactEnterprise, @NonNull Set<String> strings, @NonNull List<ContactGroup> contactGroups) throws Exception {
+                        return new OrganizationBean(contactEnterprise,strings,contactGroups);
+                    }
+                }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<OrganizationBean>() {
             @Override
             public void onSubscribe(Disposable disposable) {
                 if (disposable != null) {
@@ -80,8 +89,8 @@ public class OrgFragmentModel implements IOrgFragmentModel {
             }
 
             @Override
-            public void onNext(Pair<ContactEnterprise, Set<String>> data) {
-                handUserMassage(listener,data,label);
+            public void onNext(OrganizationBean organizationBean) {
+                handUserMassage(listener,organizationBean,label);
             }
 
             @Override
@@ -94,6 +103,31 @@ public class OrgFragmentModel implements IOrgFragmentModel {
 
             }
         });
+        /*Observable.combineLatest(((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getEnterprise(),
+                ((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getOnlineUserIds(),
+                Pair::create).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Pair<ContactEnterprise, Set<String>>>() {
+            @Override
+            public void onSubscribe(Disposable disposable) {
+                if (disposable != null) {
+                    listener.callDisposable(disposable);
+                }
+            }
+
+            @Override
+            public void onNext(Pair<ContactEnterprise, Set<String>> data) {
+//                handUserMassage(listener,data,label);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });*/
     }
 
     private List<OrgNodeBean> returnOrgData(List<OrgNodeBean> departlist ,List<OrgNodeBean> userList){
@@ -108,10 +142,25 @@ public class OrgFragmentModel implements IOrgFragmentModel {
         OrgNodeBean  org;
         for (ContactDepartment department :contactDepartment){
             org = new OrgNodeBean(department.getId(),department.getParentObjectId(),department.getName());
+            org.setGroup(false);
             departlist.add(org);
             if(department.getChildren().size()!=0){
                 addAllDepartment(departlist, (LinkedHashSet<ContactDepartment>) department.getChildren());
             }
+        }
+    }
+
+    //递归预定义组
+    private void addPredefinedGroups(List<OrgNodeBean> grouplist,List<ContactGroup> contactGroups){
+        OrgNodeBean  org;
+        for (ContactGroup group :contactGroups){
+            Set<String> memberIds = group.getMemberIds();
+            org = new OrgNodeBean(group.getId(),null,group.getName());
+            org.setGroup(true);
+            grouplist.add(org);
+            /*if(department.getChildren().size()!=0){
+                addAllDepartment(departlist, (LinkedHashSet<ContactDepartment>) department.getChildren());
+            }*/
         }
     }
 
@@ -123,6 +172,7 @@ public class OrgFragmentModel implements IOrgFragmentModel {
             if(userSet.size()!=0){
                 for (ContactUser user:userSet) {
                     org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
+                    org.setGroup(false);
                     contactUserlist.add(org);
                 }
             }
@@ -131,9 +181,9 @@ public class OrgFragmentModel implements IOrgFragmentModel {
             }
         }
     }
-    private void handUserMassage(callDisposListener listener,Pair<ContactEnterprise, Set<String>> data,String label){
+    private void handUserMassage(callDisposListener listener,OrganizationBean organizationBean,String label){
         List<OrgNodeBean> online = new ArrayList<OrgNodeBean>();
-        ContactEnterprise contactEnterprise = data.first;
+        ContactEnterprise contactEnterprise = organizationBean.getContactEnterprise();
         /*if(datas != null){
             datas.clear();
         }*/
@@ -146,7 +196,9 @@ public class OrgFragmentModel implements IOrgFragmentModel {
         addAllDepartment(departlist,contactDepartment);
         addAllDepartUser(contactUserlist,contactDepartment);
         LinkedHashSet<ContactUser> contactUser = (LinkedHashSet<ContactUser>) contactEnterprise.getDirectUsers();
-        Set<String> setLine = data.second;
+        Set<String> setLine = organizationBean.getStrings();
+        List<ContactGroup> contactGroups = organizationBean.getContactGroups();
+
        /* setLine.add("500001");
         setLine.add("500003");
         setLine.add("500002");
@@ -159,9 +211,6 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                 for (ContactUser user :contactUser){
                     org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
                     for (String id:setLine) {
-                        //TODO 待有实际部门值时移除此段随机代码
-                        Random rd = new Random(); //创建一个Random类对象实例
-                        int x = rd.nextInt(3)+1;
                         if(org.get_id().equals(id)){
                             org.setOnline(true);
                             online.add(org);
@@ -171,7 +220,9 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                     contactUserlist.add(org);
                 }
                 userNum = contactUserlist.size();
-                listener.getNodeData(returnOrgData(departlist,contactUserlist),userNum,setLine.size());
+                returnOrgData(departlist,contactUserlist);
+                addPredefinedGroups(contactUserlist,contactGroups);
+                listener.getNodeData(contactUserlist,userNum,setLine.size());
                 break;
             case ON_LINE:
 //                List<OrgNodeBean> onLineOrgList = new ArrayList<OrgNodeBean>();
@@ -180,8 +231,6 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                     for (String id:setLine) {
                         if(org.get_id().equals(id)){
                             org.setOnline(true);
-                            Random rd = new Random(); //创建一个Random类对象实例
-                            int x = rd.nextInt(3)+1;
                             online.add(org);
                             contactUserlist.add(org);
                             break;
@@ -189,7 +238,9 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                     }
                 }
                 userNum = contactUserlist.size();
-                listener.getNodeData(returnOrgData(departlist,contactUserlist),userNum,setLine.size());
+                returnOrgData(departlist,contactUserlist);
+                addPredefinedGroups(contactUserlist,contactGroups);
+                listener.getNodeData(contactUserlist,userNum,setLine.size());
                 break;
             case OFF_LINE:
 //                List<OrgNodeBean> offLineOrgList = new ArrayList<OrgNodeBean>();
@@ -213,13 +264,13 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                 }
                 for (ContactUser user :contaUser){
                     org = new OrgNodeBean(user.getId(),user.getParentObjectId(),user.getName());
-                    Random rd = new Random(); //创建一个Random类对象实例
-                    int x = rd.nextInt(3)+1;
                     org.setOnline(false);
                     contactUserlist.add(org);
                 }
                 userNum = contactUserlist.size();
-                listener.getNodeData(returnOrgData(departlist,contactUserlist),userNum,setLine.size());
+                returnOrgData(departlist,contactUserlist);
+                addPredefinedGroups(contactUserlist,contactGroups);
+                listener.getNodeData(contactUserlist,userNum,setLine.size());
                 break;
         }
 

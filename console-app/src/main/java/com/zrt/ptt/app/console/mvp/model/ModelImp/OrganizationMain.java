@@ -7,6 +7,7 @@ import android.os.Message;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.api.dto.LastLocationByUser;
+import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.xianzhitech.ptt.broker.SignalBroker;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
@@ -75,6 +76,18 @@ public class OrganizationMain implements IOranizationMain {
                         backLocation.getAllLocations(lastLocationByUsers);
                     }
                 });
+    }
+
+    //历史轨迹
+    @Override
+    public void getHistoryLocation(List<String> locationUserIds,Long startTime, long endTime) {
+        ((AppComponent)App.getInstance().getApplicationContext()).getSignalBroker().findUserLocations(locationUserIds,startTime,endTime)
+                .observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<List<UserLocation>>() {
+            @Override
+            public void accept(@NonNull List<UserLocation> userLocations) throws Exception {
+
+            }
+        });
     }
 
 }

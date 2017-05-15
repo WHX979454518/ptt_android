@@ -26,4 +26,5 @@ public interface IOranizationMain {
     }
     void getSingleLocation(callBackLocations backLocation,List<String> locationUserIds);
     void getAllLocation(callBackLocations backLocation,List<String> locationUserIds);
+    void getHistoryLocation(List<String> locationUserIds,Long startTime, long endTime);
 }

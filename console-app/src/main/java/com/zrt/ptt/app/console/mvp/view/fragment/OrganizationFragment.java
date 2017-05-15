@@ -229,7 +229,9 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 for (Node bean:checkedNodes){
                     if(bean.isLeaf()){
                         num++;
-                        locationUserIds.add(bean.get_id());
+                        if(!bean.isGroup()){
+                            locationUserIds.add(bean.get_id());
+                        }
                         multiMediaUserID.add(bean.get_id());
                     }
                 }

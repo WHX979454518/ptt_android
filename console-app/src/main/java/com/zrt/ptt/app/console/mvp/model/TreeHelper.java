@@ -110,6 +110,7 @@ public class TreeHelper {
             String name = null;
             boolean isOnline = false;//默认false
             boolean isChecked = false;//默认不选中
+            boolean isGroup = false;//默认不是预定意组
 
             Class<? extends Object> clazz = t.getClass();
             Field[] declaredFields = clazz.getDeclaredFields();
@@ -140,6 +141,10 @@ public class TreeHelper {
                     f.setAccessible(true);
                     isOnline = (boolean) f.get(t);
                 }
+                if("isGroup".equals(f.getName())){
+                    f.setAccessible(true);
+                    isGroup = (boolean) f.get(t);
+                }
 
                 if ("desc".equals(f.getName())) {
                     continue;
@@ -149,13 +154,13 @@ public class TreeHelper {
                     continue;
                 }
 
-                if(_id != null && name != null && isOnline != false && isChecked ==true){
+                if(_id != null && name != null && isOnline != false && isChecked ==true && isGroup == true){
                     break;
                 }
 
             }
 
-            node = new Node(_id, father, name,isOnline);
+            node = new Node(_id, father, name,isOnline,isGroup);
             node.setChecked(isChecked);
             node.setHideChecked(isHide);
             nodes.add(node);

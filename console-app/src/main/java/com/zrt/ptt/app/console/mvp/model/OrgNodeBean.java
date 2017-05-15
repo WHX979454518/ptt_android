@@ -7,7 +7,6 @@ package com.zrt.ptt.app.console.mvp.model;
 public class OrgNodeBean {
 
     /**
-
      * 节点_id
      */
     private String _id;
@@ -41,7 +40,27 @@ public class OrgNodeBean {
     private Privileges privileges;//权限
     private boolean isParent;//是否是父节点
     private boolean isOnline = false;//false不在线,true在线
-    private boolean isChecked =false;//默认不选中数据用于切换时已勾选人员设置数据传值
+    private boolean isChecked = false;//默认不选中数据用于切换时已勾选人员设置数据传值
+    private String group_id;//预定义组id,非树状结构
+    private boolean isGroup = false;//是否是预定义组,默认不是
+    public boolean isGroup() {
+        return isGroup;
+    }
+
+    public void setGroup(boolean group) {
+        isGroup = group;
+    }
+
+
+
+    public String getGroup_id() {
+        return group_id;
+    }
+
+    public void setGroup_id(String group_id) {
+        this.group_id = group_id;
+    }
+
 
     public boolean isChecked() {
         return isChecked;
@@ -58,6 +77,11 @@ public class OrgNodeBean {
         this.name = name;
     }
 
+    public void OrgNodeBean(String group_id, String name) {
+        this.group_id = group_id;
+        this.name = name;
+    }
+
     public boolean isOnline() {
         return isOnline;
     }
@@ -66,18 +90,18 @@ public class OrgNodeBean {
         isOnline = online;
     }
 
-    public class Privileges{
-        private int priority ;//权限等级默认3
-        private boolean  viewMap;//默认true,查看周围人
-        private boolean  muteAble;//默认true,
-        private boolean  powerInviteAble;//默认true,
-        private boolean  calledOuterAble;//默认true,
-        private boolean  callOuterAble;//默认true,
-        private boolean  forbidSpeak;//默认true,禁止发言
-        private boolean  joinAble;//默认true,
-        private boolean  calledAble;//默认true,
-        private boolean  groupAble;//默认true,
-        private boolean  callAble;//默认true,
+    public class Privileges {
+        private int priority;//权限等级默认3
+        private boolean viewMap;//默认true,查看周围人
+        private boolean muteAble;//默认true,
+        private boolean powerInviteAble;//默认true,
+        private boolean calledOuterAble;//默认true,
+        private boolean callOuterAble;//默认true,
+        private boolean forbidSpeak;//默认true,禁止发言
+        private boolean joinAble;//默认true,
+        private boolean calledAble;//默认true,
+        private boolean groupAble;//默认true,
+        private boolean callAble;//默认true,
 
         public int getPriority() {
             return priority;
@@ -305,8 +329,6 @@ public class OrgNodeBean {
     public void setMail(String mail) {
         this.mail = mail;
     }
-
-
 
 
 }
