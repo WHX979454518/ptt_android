@@ -3,6 +3,7 @@ package com.zrt.ptt.app.console.mvp.model.Imodel;
 import android.content.Context;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 
 import org.json.JSONObject;
@@ -20,9 +21,9 @@ public interface IOranizationMain {
         void upDateData(JSONObject json);
     }
     interface callBackLocations{
-        void getSingleData();
-        void getAllLocations();
+        void getSingleData(List<LastLocationByUser> lastLocationByUsers);
+        void getAllLocations(List<LastLocationByUser> lastLocationByUsers);
     }
-    void getSingleLocation(callBackLocations backLocation);
-    void getAllLocation(callBackLocations backLocation);
+    void getSingleLocation(callBackLocations backLocation,List<String> locationUserIds);
+    void getAllLocation(callBackLocations backLocation,List<String> locationUserIds);
 }

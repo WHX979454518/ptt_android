@@ -5,6 +5,10 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.AppComponent;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
+import com.xianzhitech.ptt.broker.SignalBroker;
+import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
@@ -20,6 +24,8 @@ import java.util.List;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by surpass on 2017-4-27.
@@ -46,15 +52,29 @@ public class OrganizationMain implements IOranizationMain {
 
     //rxjava异步处理获得数据
     @Override
-    public void getSingleLocation(callBackLocations backLocation) {
-//        Observable.combineLatest().observeOn(AndroidSchedulers.mainThread()).subscribeOn(new Observable<>());
-        backLocation.getSingleData();
+    public void getSingleLocation(callBackLocations backLocation,List<String> locationUserIds) {
+        SignalBroker signalBroker =((AppComponent)App.getInstance().getApplicationContext()).getSignalBroker();
+        signalBroker .getLastLocationByUserIds(locationUserIds)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<List<LastLocationByUser>>() {
+                    @Override
+                    public void accept(@NonNull List<LastLocationByUser> lastLocationByUsers) throws Exception {
+                        backLocation.getSingleData(lastLocationByUsers);
+
+                    }
+                });
     }
 
     @Override
-    public void getAllLocation(callBackLocations backLocation) {
-//        Observable.combineLatest().observeOn(AndroidSchedulers.mainThread()).subscribeOn(new Observable<>());
-        backLocation.getAllLocations();
+    public void getAllLocation(callBackLocations backLocation,List<String> locationUserIds) {
+        ((AppComponent)App.getInstance().getApplicationContext()).getSignalBroker().getLastLocationByUserIds(locationUserIds)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<List<LastLocationByUser>>() {
+                    @Override
+                    public void accept(@NonNull List<LastLocationByUser> lastLocationByUsers) throws Exception {
+                        backLocation.getAllLocations(lastLocationByUsers);
+                    }
+                });
     }
 
 }

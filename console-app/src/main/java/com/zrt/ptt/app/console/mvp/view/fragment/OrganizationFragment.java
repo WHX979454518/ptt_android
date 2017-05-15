@@ -57,8 +57,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private static final String all = "ALL";
     private static final String ON_LINE = "ON_LINE";
     private static final String OFF_LINE = "OFF_LINE";
-    private ImageView userLocation;
+    private ImageView userLocation,talk;
     private List<LatLng> locations = new ArrayList<>();
+    private List<String> locationUserIds = new ArrayList<>();
+    private List<String> multiMediaUserID = new ArrayList<>();
 
     public OrganizationFragment() {
         // Required empty public constructor
@@ -106,8 +108,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         showOfflineUsers.setOnClickListener(this);
         showSelectedUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_selected);
         userLocation = (ImageView) view.findViewById(R.id.user_location);
+        talk = (ImageView) view.findViewById(R.id.talk);
         userLocation.setOnClickListener(this);
         showSelectedUsers.setOnClickListener(this);
+        talk.setOnClickListener(this);
         fragPresen = new OrganFragmentPresenter(this);
     }
 
@@ -152,14 +156,14 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 break;
             case R.id.user_location:
                 initLatLng();
-                mainActivityPresenter.showLocations(locations);
+                mainActivityPresenter.showLocations(locationUserIds);
                 break;
 
             case R.id.talk:
                 //FIXME:暂时使用假数据
                 List<String> userIds = new ArrayList<String>();
                 userIds.add("500006");
-                mainActivityPresenter.showChatkRoom(userIds, new ArrayList<>(), RoomMode.NORMAL);
+                mainActivityPresenter.showChatkRoom(multiMediaUserID, new ArrayList<>(), RoomMode.NORMAL);
         }
     }
 
@@ -208,8 +212,11 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
             public void onClick(Node node, int position) {
                 if (node.isLeaf()) {
                     locations.clear();
+                    locationUserIds.clear();
+                    String locationUserId = node.get_id();
+                    locationUserIds.add(locationUserId);
                     locations.add(new LatLng(30.664214,104.074297));
-                    mainActivityPresenter.showLocation(locations);
+                    mainActivityPresenter.showLocation(locationUserIds);
                 }
             }
 
@@ -222,6 +229,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 for (Node bean:checkedNodes){
                     if(bean.isLeaf()){
                         num++;
+                        locationUserIds.add(bean.get_id());
+                        multiMediaUserID.add(bean.get_id());
                     }
                 }
                 selectedPersNum.setText("已选("+num+")");

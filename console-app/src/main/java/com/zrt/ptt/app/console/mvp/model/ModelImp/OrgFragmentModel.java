@@ -6,14 +6,14 @@ import android.util.Log;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.data.ContactDepartment;
 import com.xianzhitech.ptt.data.ContactEnterprise;
+import com.xianzhitech.ptt.data.ContactGroup;
 import com.xianzhitech.ptt.data.ContactUser;
 import com.zrt.ptt.app.console.App;
+import com.zrt.ptt.app.console.mvp.bean.OrganizationBean;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOrgFragmentModel;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,7 +22,6 @@ import java.util.Set;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 
@@ -41,6 +40,35 @@ public class OrgFragmentModel implements IOrgFragmentModel {
 
     }
     private void handeAllUser(callDisposListener listener,String label){
+        /*Observable.combineLatest(((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getEnterprise(),
+                ((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getOnlineUserIds(),
+                ((AppComponent) App.getInstance().getApplicationContext()).getStorage().getAllGroups(),
+                new Function3<ContactEnterprise, Set<String>, List<ContactGroup>, Object>() {
+                    @Override
+                    public Object apply(@NonNull ContactEnterprise contactEnterprise, @NonNull Set<String> strings, @NonNull List<ContactGroup> contactGroups) throws Exception {
+                        return new OrganizationBean(contactEnterprise,strings,contactGroups);
+                    }
+                }).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<OrganizationBean>() {
+            @Override
+            public void onSubscribe(Disposable disposable) {
+
+            }
+
+            @Override
+            public void onNext(OrganizationBean organizationBean) {
+
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });*/
         Observable.combineLatest(((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getEnterprise(),
                 ((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker().getOnlineUserIds(),
                 Pair::create).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Pair<ContactEnterprise, Set<String>>>() {

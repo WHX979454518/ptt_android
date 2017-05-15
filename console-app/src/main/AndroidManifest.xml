@@ -45,7 +45,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".mvp.view.activity.MainActivity" />
+        <activity android:name=".mvp.view.activity.MainActivity"
+            android:screenOrientation="landscape"/>
 
         <service
             android:name="com.baidu.location.f"

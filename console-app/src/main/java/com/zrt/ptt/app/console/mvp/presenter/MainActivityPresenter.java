@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.model.ModelImp.OrganizationMain;
@@ -11,6 +12,7 @@ import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,36 +47,51 @@ public class MainActivityPresenter {
     }
 
     //单人定位
-    public void showLocation(List<LatLng> locations ){
+    public void showLocation(List<String> locationUserIds){
         iOrgMain.getSingleLocation(new IOranizationMain.callBackLocations() {
             @Override
-            public void getSingleData() {
+            public void getSingleData(List<LastLocationByUser> lastLocationByUsers) {
+                List<LatLng> locations = new ArrayList<LatLng>();
+                LastLocationByUser cationUser =  lastLocationByUsers.get(0);
+                if(cationUser != null){
+                    LatLng lng = new LatLng(cationUser.getLat(),cationUser.getLng());
+                    locations.add(lng);
+                    iMainView.showLocation(locations);
+                }
 
             }
 
             @Override
-            public void getAllLocations() {
+            public void getAllLocations(List<LastLocationByUser> lastLocationByUsers) {
 
             }
-        });
-        iMainView.showLocation(locations);
+        },locationUserIds);
+
     }
 
 
     //多人定位
-    public void showLocations(List<LatLng> locations ){
+    public void showLocations(List<String> locationUserIds ){
         iOrgMain.getAllLocation(new IOranizationMain.callBackLocations() {
             @Override
-            public void getSingleData() {
+            public void getSingleData(List<LastLocationByUser> lastLocationByUsers) {
 
             }
 
             @Override
-            public void getAllLocations() {
+            public void getAllLocations(List<LastLocationByUser> lastLocationByUsers) {
+                List<LatLng> locations = new ArrayList<LatLng>();
+                LastLocationByUser cationUser =  lastLocationByUsers.get(0);
+                for(LastLocationByUser cationsUser :lastLocationByUsers){
+                    if(cationsUser != null){
+                        LatLng lng = new LatLng(cationsUser.getLat(),cationsUser.getLng());
+                        locations.add(lng);
+                        iMainView.showLocation(locations);
+                }
+            }
 
             }
-        });
-        iMainView.showLocation(locations);
+        },locationUserIds);
     }
 
     public void showChatkRoom(List<String> userIds, List<String> groupIds, RoomMode roomMode){

@@ -32,6 +32,7 @@ import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
+import com.zrt.ptt.app.console.baidu.MapMoveUtil;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 import android.os.Handler;
@@ -222,7 +223,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
 
     @Override
     public void onClick(View v) {
-        painStroke(routeList);
+//        painStroke(routeList);
+        MapMoveUtil map = new MapMoveUtil(bmapView,baiduMap);
+        map.moveLooper();
     }
 
 
@@ -264,7 +267,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
     public void onDestroy() {
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
-        bmapView.onDestroy();
+        if (bmapView != null) {
+            bmapView.onDestroy();
+        }
+
         baiduMap.setMyLocationEnabled(false);
     }
 
@@ -331,7 +337,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
 //        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
         MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(latLng);
         baiduMap.setMapStatus(msu);
-        msu = MapStatusUpdateFactory.zoomTo(20.0f);
+        msu = MapStatusUpdateFactory.zoomTo(15.0f);
         baiduMap.setMapStatus(msu);
     }
 
@@ -380,6 +386,11 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
                 baiduMap.animateMapStatus(u);
                 isFristLocation = false;
             }
+        }
+
+        @Override
+        public void onConnectHotSpotMessage(String s, int i) {
+
         }
     }
 
