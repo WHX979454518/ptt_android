@@ -84,7 +84,7 @@ public class MainActivityPresenter {
                 LastLocationByUser cationUser =  lastLocationByUsers.get(0);
                 for(LastLocationByUser cationsUser :lastLocationByUsers){
                     if(cationsUser != null){
-                        LatLng lng = new LatLng(cationsUser.getLat(),cationsUser.getLng());
+                        LatLng lng = new LatLng(cationsUser.getLatLng().getLat(),cationsUser.getLatLng().getLng());
                         locations.add(lng);
                         iMainView.showLocation(locations);
                 }
