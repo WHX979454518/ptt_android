@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
 private open class CompositeObservable<T>(private val observables: List<Any>,
                                           private val valueGetter: () -> T?) : ObservableField<T>() {
     val observableChangeListener = object : android.databinding.Observable.OnPropertyChangedCallback() {
-        override fun onPropertyChanged(p0: android.databinding.Observable?, p1: Int) {
+        override fun onPropertyChanged(observable: android.databinding.Observable?, p1: Int) {
             notifyChange()
         }
     }
@@ -93,7 +93,7 @@ fun <T> ObservableField<T>.toRxObservable(): io.reactivex.Observable<Optional<T>
         emitter.onNext(Optional.fromNullable(get()))
 
         val callback = object : android.databinding.Observable.OnPropertyChangedCallback() {
-            override fun onPropertyChanged(p0: android.databinding.Observable?, p1: Int) {
+            override fun onPropertyChanged(observable: android.databinding.Observable?, p1: Int) {
                 emitter.onNext(Optional.fromNullable(get()))
             }
         }

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import com.baidu.mapapi.map.BitmapDescriptorFactory
+import com.baidu.mapapi.map.MapStatus
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.Marker
@@ -27,25 +28,26 @@ import com.xianzhitech.ptt.ui.user.UserPopupDialog
 import com.xianzhitech.ptt.ui.widget.drawable.TextDrawable
 import com.xianzhitech.ptt.ui.widget.drawable.createAvatarDrawable
 import com.xianzhitech.ptt.util.Locations
+import com.xianzhitech.ptt.util.receiveMapStatus
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 class MapFragment : BaseFragment() {
-    private var mapView : MapView? = null
-    private var myLocation : MyLocationData? = null
-    private var userHasTouchedMap : Boolean = false
+    private var mapView: MapView? = null
+    private var myLocation: MyLocationData? = null
+    private var userHasTouchedMap: Boolean = false
     private val userMarkers = hashMapOf<String, MarkerData>()
-    private var selectedUserId : String? = null
-    private val personPinView : ImageView by lazy {
+    private var selectedUserId: String? = null
+    private val personPinView: ImageView by lazy {
         ImageView(context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             background = context.getTintedDrawable(R.drawable.ic_nearby_people, R.color.accent.toColorValue(context))
         }
     }
 
-    private val tintedPersonPinView : ImageView by lazy {
+    private val tintedPersonPinView: ImageView by lazy {
         ImageView(context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             background = context.getTintedDrawable(R.drawable.ic_nearby_people, R.color.red.toColorValue(context))
@@ -119,15 +121,18 @@ class MapFragment : BaseFragment() {
     override fun onResume() {
         super.onResume()
 
-        mapView?.let{
+        mapView?.let {
             it.onResume()
             val map = it.map
-            Observable.interval(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
+
+            map.receiveMapStatus()
+                    .map(MapStatus::bound)
+                    .distinctUntilChanged()
+                    .debounce(1, TimeUnit.SECONDS, AndroidSchedulers.mainThread())
                     .switchMap {
-                        //FIXME: Find boundary?
                         appComponent.signalBroker.findNearbyPeople(
-                                com.xianzhitech.ptt.data.LatLng(-180.0, -90.0),
-                                com.xianzhitech.ptt.data.LatLng(180.0, 90.0))
+                                com.xianzhitech.ptt.data.LatLng(it.southwest.latitude, it.southwest.longitude),
+                                com.xianzhitech.ptt.data.LatLng(it.northeast.latitude, it.northeast.longitude))
                     }
                     .map { users ->
                         val currentUserId = appComponent.signalBroker.peekUserId()
@@ -161,8 +166,7 @@ class MapFragment : BaseFragment() {
                             // 如果都没有待删除的用户了，只好新建一个
                             if (existingMarker == null) {
                                 userMarkers[user.userId] = MarkerData(user, map.addOverlay(user.toMarkerOption()) as Marker)
-                            }
-                            else {
+                            } else {
                                 // 有可以用的缓存...
                                 user.toMarker(existingMarker.marker)
                             }
@@ -207,7 +211,7 @@ class MapFragment : BaseFragment() {
         super.onPause()
     }
 
-    private fun UserLocation.toMarker(marker: Marker) : Marker {
+    private fun UserLocation.toMarker(marker: Marker): Marker {
         marker.position = location.latLng.convertToBaidu()
         val drawable = user?.createAvatarDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
         val view = if (userId == selectedUserId) tintedPersonPinView else personPinView
@@ -221,14 +225,13 @@ class MapFragment : BaseFragment() {
 
         if (selectedUserId == userId) {
             marker.zIndex = 1
-        }
-        else {
+        } else {
             marker.zIndex = 0
         }
         return marker
     }
 
-    private fun UserLocation.toMarkerOption() : MarkerOptions {
+    private fun UserLocation.toMarkerOption(): MarkerOptions {
         return MarkerOptions().apply {
             position(location.latLng.convertToBaidu())
             val drawable = user?.createAvatarDrawable() ?: TextDrawable("?", Color.TRANSPARENT)
@@ -243,14 +246,13 @@ class MapFragment : BaseFragment() {
 
             if (selectedUserId == userId) {
                 zIndex(1)
-            }
-            else {
+            } else {
                 zIndex(0)
             }
         }
     }
 
-    private data class MarkerData(val user : UserLocation,
+    private data class MarkerData(val user: UserLocation,
                                   val marker: Marker)
 
     companion object {

@@ -169,12 +169,18 @@ class SignalApi(private val appComponent: AppComponent,
                     val authHeader = "Basic ${token.toBase64()}"
                     val client = appComponent.httpClient.newBuilder()
                             .addNetworkInterceptor { chain ->
-                                chain.request()
+                                logger.i { "Request: ${chain.request()}" }
+
+                                val response = chain.request()
                                         .newBuilder()
                                         .addHeader("Authorization", authHeader)
                                         .addHeader("X-Device-Id", appComponent.preference.deviceId)
                                         .build()
                                         .let(chain::proceed)
+
+                                logger.i { "Response: $response" }
+
+                                response
                             }
                             .build()
 
@@ -555,6 +561,7 @@ class SignalApi(private val appComponent: AppComponent,
     fun findNearByPeople(topLeft: LatLng, bottomRight: LatLng): Single<List<UserLocation>> {
         return waitForLoggedIn()
                 .andThen(Single.defer { restfulApi!!.findNearbyPeople(topLeft.lat, topLeft.lng, bottomRight.lat, bottomRight.lng) })
+                .map { it.data }
     }
 
     fun findUserLocations(userIds: List<String>, startTime: Long, endTime: Long): Single<List<UserLocation>> {
@@ -595,7 +602,7 @@ class SignalApi(private val appComponent: AppComponent,
 
         @GET("api/nearby")
         fun findNearbyPeople(@Query("minLat") minLat: Double, @Query("minLng") minLng: Double,
-                             @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<List<UserLocation>>
+                             @Query("maxLat") maxLat: Double, @Query("maxLng") maxLng: Double): Single<Dto<List<UserLocation>>>
 
         @GET("api/locations")
         fun findUserLocations(@Query("userIds[]") userIds: List<String>,

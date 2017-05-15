@@ -645,7 +645,7 @@ class SignalBroker(private val appComponent: AppComponent,
     }
 
     fun getLastLocationByUserIds(userIds: List<String>): Maybe<List<LastLocationByUser>> {
-        return signalApi.getLastLocationByUserIds(userIds);
+        return signalApi.getLastLocationByUserIds(userIds)
     }
 
     fun updateRoom(roomId: String): Single<Room> {

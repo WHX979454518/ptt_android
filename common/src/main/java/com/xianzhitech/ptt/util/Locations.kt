@@ -4,6 +4,8 @@ import com.baidu.location.BDLocation
 import com.baidu.location.BDLocationListener
 import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
+import com.baidu.mapapi.map.BaiduMap
+import com.baidu.mapapi.map.MapStatus
 import com.xianzhitech.ptt.BaseApp
 import com.xianzhitech.ptt.BuildConfig
 import com.xianzhitech.ptt.data.LatLng
@@ -62,6 +64,7 @@ object Locations {
         logger.i { "Requesting single location" }
         return requestLocationUpdate(1000L).firstOrError()
     }
+
 
 
 //    val accurateCriteria = Criteria().apply { accuracy = Criteria.ACCURACY_FINE }
@@ -144,5 +147,26 @@ object Locations {
 //        }
 //    }
 }
+
+fun BaiduMap.receiveMapStatus() : Observable<MapStatus> {
+    return Observable.create { emitter ->
+        val listener = object : BaiduMap.OnMapStatusChangeListener {
+            override fun onMapStatusChangeStart(p0: MapStatus?) { }
+
+            override fun onMapStatusChange(status: MapStatus) {
+                emitter.onNext(status)
+            }
+
+            override fun onMapStatusChangeFinish(p0: MapStatus?) { }
+        }
+        setOnMapStatusChangeListener(listener)
+        emitter.setCancellable {
+            setOnMapStatusChangeListener(null)
+        }
+
+        emitter.onNext(mapStatus)
+    }
+}
+
 
 data class LocationProviderNotAvailableException(val name: String? = null) : RuntimeException("Location provider $name unavailable")

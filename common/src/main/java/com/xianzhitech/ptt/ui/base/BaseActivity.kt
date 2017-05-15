@@ -28,6 +28,7 @@ import com.xianzhitech.ptt.ui.call.CallActivity
 import com.xianzhitech.ptt.ui.call.CallFragment
 import com.xianzhitech.ptt.ui.dialog.AlertDialogFragment
 import com.xianzhitech.ptt.ui.dialog.ProgressDialogFragment
+import com.xianzhitech.ptt.ui.map.MapFragment
 import com.xianzhitech.ptt.ui.room.RoomMemberListFragment
 import com.xianzhitech.ptt.ui.user.UserDetailsFragment
 import com.xianzhitech.ptt.ui.walkie.WalkieRoomActivity
@@ -308,6 +309,14 @@ abstract class BaseActivity : AppCompatActivity(),
 
     fun navigateToDialPhone(phoneNumber: String) {
         startActivity(Intent(Intent.ACTION_DIAL).setData(Uri.parse("tel:$phoneNumber")))
+    }
+
+    fun navigateToNearByPage() {
+        startActivityWithAnimation(
+                FragmentDisplayActivity.createIntent(
+                        MapFragment::class.java
+                )
+        )
     }
 
     fun onLoginError(error: Throwable) {

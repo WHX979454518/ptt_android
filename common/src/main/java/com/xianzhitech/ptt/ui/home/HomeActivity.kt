@@ -2,9 +2,14 @@ package com.xianzhitech.ptt.ui.home
 
 import android.app.Activity
 import android.content.Intent
+import android.databinding.Observable
+import android.databinding.PropertyChangeRegistry
 import android.os.Bundle
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.data.Room
 import com.xianzhitech.ptt.databinding.ActivityHomeBinding
 import com.xianzhitech.ptt.ext.appComponent
@@ -26,6 +31,30 @@ class HomeActivity : BaseViewModelActivity<HomeViewModel, ActivityHomeBinding>()
 
     override fun onCreateViewModel(): HomeViewModel {
         return HomeViewModel(appComponent, applicationContext, this)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.home, menu)
+        val nearByItem = menu.findItem(R.id.home_nearby)
+
+        viewModel.displayMapMenu.addOnPropertyChangedCallback(object : Observable.OnPropertyChangedCallback() {
+            override fun onPropertyChanged(observable: Observable, p1: Int) {
+                nearByItem.isVisible = viewModel.displayMapMenu.get()
+            }
+        })
+
+        nearByItem.isVisible = viewModel.displayMapMenu.get()
+
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.home_nearby) {
+            viewModel.onClickMapView()
+            return true
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onStart() {
