@@ -301,6 +301,9 @@ class SignalApi(private val appComponent: AppComponent,
                     Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
                     restfulApi!!.syncContact(version)
                             .toMaybe()
+                            .doOnSuccess {
+                                logger.i { "Got ${it.members.size} users, ${it.groups.size} groups" }
+                            }
                             .onErrorComplete { it is HttpException && it.code() == 304 }
                 })
     }
@@ -317,7 +320,7 @@ class SignalApi(private val appComponent: AppComponent,
                 })
     }
 
-    fun getLastLocationByUserIds(userIds: List<String>):Maybe<List<LastLocationByUser>>{
+    fun getLastLocationByUserIds(userIds: List<String>): Maybe<List<LastLocationByUser>> {
         return waitForLoggedIn()
                 .andThen(Maybe.defer {
                     Preconditions.checkState(restfulApi != null && hasUser() && currentUserCredentials != null)
@@ -326,7 +329,7 @@ class SignalApi(private val appComponent: AppComponent,
                             .onErrorComplete { it is HttpException && it.code() == 304 }
                 })
                 .map {
-                    if(it.data == null) {
+                    if (it.data == null) {
                         return@map emptyList<LastLocationByUser>()
                     }
 

@@ -9,7 +9,6 @@ import com.xianzhitech.ptt.data.User
 
 data class LastLocationByUser @JvmOverloads constructor(@get:JsonProperty("userId") val userId: String = "",
                                                         @get:JsonUnwrapped val latLng: LatLng = LatLng.EMPTY,
-                                                        @get:JsonProperty("lat") val altitude: Int? = null,
                                                         @get:JsonProperty("repTime") val time: String? = null) {
 
     @get:JsonIgnore
