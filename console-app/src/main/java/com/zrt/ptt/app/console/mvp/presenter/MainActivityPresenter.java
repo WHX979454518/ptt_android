@@ -31,7 +31,7 @@ public class MainActivityPresenter {
         this.iMainView = iMainView;
     }
 
-    public  void UpDataOrganzation(){
+    public void UpDataOrganzation() {
         iOrgMain.getOrganizationData(new IOranizationMain.CallBackListener() {
             @Override
             public void upDateData(JSONObject json) {
@@ -47,17 +47,20 @@ public class MainActivityPresenter {
     }
 
     //单人定位
-    public void showLocation(List<String> locationUserIds){
+    public void showLocation(List<String> locationUserIds) {
         iOrgMain.getSingleLocation(new IOranizationMain.callBackLocations() {
             @Override
             public void getSingleData(List<LastLocationByUser> lastLocationByUsers) {
                 List<LatLng> locations = new ArrayList<LatLng>();
-                LastLocationByUser cationUser =  lastLocationByUsers.get(0);
-                if(cationUser != null){
-                    LatLng lng = new LatLng(cationUser.getLatLng().getLat(),cationUser.getLatLng().getLng());
-                    locations.add(lng);
-                    iMainView.showLocation(locations);
-                }
+                if (lastLocationByUsers.size() != 0) {
+                    LastLocationByUser cationUser = lastLocationByUsers.get(0);
+                    if (cationUser != null) {
+                        LatLng lng = new LatLng(cationUser.getLatLng().getLat(), cationUser.getLatLng().getLng());
+                        locations.add(lng);
+                        iMainView.showLocation(locations);
+                    }
+                } else return;
+
 
             }
 
@@ -65,13 +68,13 @@ public class MainActivityPresenter {
             public void getAllLocations(List<LastLocationByUser> lastLocationByUsers) {
 
             }
-        },locationUserIds);
+        }, locationUserIds);
 
     }
 
 
     //多人定位
-    public void showLocations(List<String> locationUserIds ){
+    public void showLocations(List<String> locationUserIds) {
         iOrgMain.getAllLocation(new IOranizationMain.callBackLocations() {
             @Override
             public void getSingleData(List<LastLocationByUser> lastLocationByUsers) {
@@ -81,28 +84,28 @@ public class MainActivityPresenter {
             @Override
             public void getAllLocations(List<LastLocationByUser> lastLocationByUsers) {
                 List<LatLng> locations = new ArrayList<LatLng>();
-                LastLocationByUser cationUser =  lastLocationByUsers.get(0);
-                for(LastLocationByUser cationsUser :lastLocationByUsers){
-                    if(cationsUser != null){
-                        LatLng lng = new LatLng(cationsUser.getLatLng().getLat(),cationsUser.getLatLng().getLng());
-                        locations.add(lng);
-                        iMainView.showLocation(locations);
+                if (lastLocationByUsers.size() != 0) {
+                    for (LastLocationByUser cationsUser : lastLocationByUsers) {
+                        if (cationsUser != null) {
+                            LatLng lng = new LatLng(cationsUser.getLatLng().getLat(), cationsUser.getLatLng().getLng());
+                            locations.add(lng);
+                            iMainView.showLocation(locations);
+                        }
+                    }
                 }
             }
-
-            }
-        },locationUserIds);
+        }, locationUserIds);
     }
 
-    public void showChatkRoom(List<String> userIds, List<String> groupIds, RoomMode roomMode){
-       iMainView.showChatRoomView(userIds, groupIds, roomMode);
+    public void showChatkRoom(List<String> userIds, List<String> groupIds, RoomMode roomMode) {
+        iMainView.showChatRoomView(userIds, groupIds, roomMode);
     }
 
-    public void showHistoryTraceDialog(){
+    public void showHistoryTraceDialog() {
         iMainView.showHistorytraceDialog();
     }
 
-    class orgHandler  extends Handler {
+    class orgHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);

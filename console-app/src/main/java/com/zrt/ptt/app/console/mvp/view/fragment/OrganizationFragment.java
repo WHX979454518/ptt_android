@@ -226,11 +226,11 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
             @Override
             public void onClick(Node node, int position) {
                 if (node.isLeaf()) {
-                    locations.clear();
+//                    locations.clear();
                     String locationUserId = node.get_id();
                     List<String> singleUserID = new ArrayList<String>();
                     singleUserID.add(locationUserId);
-                    locations.add(new LatLng(30.664214,104.074297));
+//                    locations.add(new LatLng(30.664214,104.074297));
                     mainActivityPresenter.showLocation(singleUserID);
                 }
             }
@@ -251,6 +251,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                     }
                 }
                 selectedPersNum.setText("已选("+num+")");
+                if(!node.isChecked()){
+                    locationUserIds.remove(node.get_id());
+                    multiMediaUserID.remove(node.get_id());
+                }
                /* if(NodeAddDelet.contains(node)){
                     if(!node.isChecked()){
                         NodeAddDelet.remove(node);
