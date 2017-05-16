@@ -32,7 +32,7 @@
         //
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="150dp"
             android:orientation="horizontal"
             android:layout_marginRight="20dp"
             android:layout_marginLeft="20dp"
@@ -99,7 +99,7 @@
                 android:textColor="#9E9E9E"
                 android:textSize="14sp"
                 android:text="已选 "/>
-            <view
+            <View
                 android:layout_width="1dp"
                 android:layout_height="20dp"
                 android:layout_marginLeft="20dp"

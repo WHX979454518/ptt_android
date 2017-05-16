@@ -40,6 +40,9 @@ public class TraceGridAdapter extends BaseAdapter {
     }
 
     public TraceGridAdapter(List<Node> traceData,Context context ) {
+        if(traceData==null){
+            traceData = new ArrayList<>();
+        }
         this.traceData = traceData;
         this.context = context;
         inflater = LayoutInflater.from(context);
