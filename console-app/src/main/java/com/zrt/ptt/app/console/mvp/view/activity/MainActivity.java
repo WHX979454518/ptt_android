@@ -254,6 +254,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             case R.id.all_call:
                 break;
             case R.id.sign_out:
+                finish();
                 break;
             case R.id.contacts_container:
                 break;
@@ -296,80 +297,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         systemStateFragment.showChatRoomView(userIds, groupIds, roomMode);
     }
 
-    /* private void initMapViewLocation() {
-
-        // 设置可改变地图位置
-        baiduMap.setMyLocationEnabled(true);
-        mLocationClient = new LocationClient(App.getInstance().getApplicationContext());
-        //声明LocationClient类
-        mLocationClient.registerLocationListener( myListener );
-        initLocation();
-        mLocationClient.start();
-        //定义Maker坐标点
-        LatLng point = new LatLng(103.982949,30.737337);
-//构建Marker图标
-        BitmapDescriptor bitmap = BitmapDescriptorFactory
-                .fromResource(R.drawable.icon_marka);
-//构建MarkerOption，用于在地图上添加Marker
-        OverlayOptions option = new MarkerOptions()
-                .position(point)
-                .icon(bitmap);
-//在地图上添加Marker，并显示
-        baiduMap.addOverlay(option);
-
-        // 构造定位数据
-        MyLocationData locData = new MyLocationData.Builder()
-                .accuracy((float) 30.0)//
-                .direction((float) 100.0)// 方向
-                .latitude(103.982949)//
-                .longitude(30.737337)//
-                .build();
-        // 设置定位数据
-        baiduMap.setMyLocationData(locData);
-        LatLng ll = new LatLng(103.982949, 30.737337);
-        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(ll);
-        baiduMap.animateMapStatus(msu);
+    @Override
+    public void showHistorytraceDialog() {
+        IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
+        imapView.showHistoryDialog();
     }
-
-    private void initLocation(){
-        LocationClientOption option = new LocationClientOption();
-        option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
-        //可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
-
-        option.setCoorType("bd09ll");
-        //可选，默认gcj02，设置返回的定位结果坐标系
-
-        int span=1000;
-        option.setScanSpan(span);
-        //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
-
-        option.setIsNeedAddress(true);
-        //可选，设置是否需要地址信息，默认不需要
-
-        option.setOpenGps(true);
-        //可选，默认false,设置是否使用gps
-
-        option.setLocationNotify(true);
-        //可选，默认false，设置是否当GPS有效时按照1S/1次频率输出GPS结果
-
-        option.setIsNeedLocationDescribe(true);
-        //可选，默认false，设置是否需要位置语义化结果，可以在BDLocation.getLocationDescribe里得到，结果类似于“在北京天安门附近”
-
-        option.setIsNeedLocationPoiList(true);
-        //可选，默认false，设置是否需要POI结果，可以在BDLocation.getPoiList里得到
-
-        option.setIgnoreKillProcess(false);
-        //可选，默认true，定位SDK内部是一个SERVICE，并放到了独立进程，设置是否在stop的时候杀死这个进程，默认不杀死
-
-        option.SetIgnoreCacheException(false);
-        //可选，默认false，设置是否收集CRASH信息，默认收集
-
-        option.setEnableSimulateGps(false);
-        //可选，默认false，设置是否需要过滤GPS仿真结果，默认需要
-
-        mLocationClient.setLocOption(option);
-    }
-*/
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////Override methods from BaseActivity /////////////////////////

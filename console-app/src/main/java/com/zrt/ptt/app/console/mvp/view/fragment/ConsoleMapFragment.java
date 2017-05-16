@@ -35,6 +35,8 @@ import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.baidu.MapMoveUtil;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
+import com.zrt.ptt.app.console.mvp.view.dialog.TrackPlayBackDialog;
+
 import android.os.Handler;
 import android.os.Message;
 import android.widget.Toast;
@@ -339,6 +341,11 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView, View.
         baiduMap.setMapStatus(msu);
         msu = MapStatusUpdateFactory.zoomTo(15.0f);
         baiduMap.setMapStatus(msu);
+    }
+
+    @Override
+    public void showHistoryDialog() {
+        new TrackPlayBackDialog(getActivity()).show();
     }
 
 

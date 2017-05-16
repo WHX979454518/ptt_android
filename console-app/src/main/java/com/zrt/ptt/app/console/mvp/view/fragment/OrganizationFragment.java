@@ -30,6 +30,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import io.reactivex.disposables.Disposable;
 
@@ -57,10 +58,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private static final String all = "ALL";
     private static final String ON_LINE = "ON_LINE";
     private static final String OFF_LINE = "OFF_LINE";
-    private ImageView userLocation,talk;
+    private ImageView userLocation,talk,trajectory_btn;
     private List<LatLng> locations = new ArrayList<>();
-    private List<String> locationUserIds = new ArrayList<>();
-    private List<String> multiMediaUserID = new ArrayList<>();
+    private HashSet<String> locationUserIds = new HashSet<>();
+    private HashSet<String> multiMediaUserID = new HashSet<>();
 
     public OrganizationFragment() {
         // Required empty public constructor
@@ -108,7 +109,9 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         showOfflineUsers.setOnClickListener(this);
         showSelectedUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_selected);
         userLocation = (ImageView) view.findViewById(R.id.user_location);
+        trajectory_btn = (ImageView) view.findViewById(R.id.trajectory_btn);
         talk = (ImageView) view.findViewById(R.id.talk);
+        trajectory_btn.setOnClickListener(this);
         userLocation.setOnClickListener(this);
         showSelectedUsers.setOnClickListener(this);
         talk.setOnClickListener(this);
@@ -156,14 +159,26 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 break;
             case R.id.user_location:
                 initLatLng();
-                mainActivityPresenter.showLocations(locationUserIds);
+                List<String> userLoactionsIds = new ArrayList<>();
+                for(String id:locationUserIds){
+                    userLoactionsIds.add(id);
+                }
+                mainActivityPresenter.showLocations(userLoactionsIds);
                 break;
 
             case R.id.talk:
                 //FIXME:暂时使用假数据
                 List<String> userIds = new ArrayList<String>();
                 userIds.add("500006");
-                mainActivityPresenter.showChatkRoom(multiMediaUserID, new ArrayList<>(), RoomMode.NORMAL);
+                List<String> usermultiMediaIds = new ArrayList<>();
+                for(String id:multiMediaUserID){
+                    usermultiMediaIds.add(id);
+                }
+                mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), RoomMode.NORMAL);
+                break;
+            case R.id.trajectory_btn:
+                mainActivityPresenter.showHistoryTraceDialog();
+                break;
         }
     }
 
@@ -212,11 +227,11 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
             public void onClick(Node node, int position) {
                 if (node.isLeaf()) {
                     locations.clear();
-                    locationUserIds.clear();
                     String locationUserId = node.get_id();
-                    locationUserIds.add(locationUserId);
+                    List<String> singleUserID = new ArrayList<String>();
+                    singleUserID.add(locationUserId);
                     locations.add(new LatLng(30.664214,104.074297));
-                    mainActivityPresenter.showLocation(locationUserIds);
+                    mainActivityPresenter.showLocation(singleUserID);
                 }
             }
 

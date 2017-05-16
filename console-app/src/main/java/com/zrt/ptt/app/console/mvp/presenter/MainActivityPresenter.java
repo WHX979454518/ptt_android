@@ -54,7 +54,7 @@ public class MainActivityPresenter {
                 List<LatLng> locations = new ArrayList<LatLng>();
                 LastLocationByUser cationUser =  lastLocationByUsers.get(0);
                 if(cationUser != null){
-                    LatLng lng = new LatLng(cationUser.getLat(),cationUser.getLng());
+                    LatLng lng = new LatLng(cationUser.getLatLng().getLat(),cationUser.getLatLng().getLng());
                     locations.add(lng);
                     iMainView.showLocation(locations);
                 }
@@ -96,6 +96,10 @@ public class MainActivityPresenter {
 
     public void showChatkRoom(List<String> userIds, List<String> groupIds, RoomMode roomMode){
        iMainView.showChatRoomView(userIds, groupIds, roomMode);
+    }
+
+    public void showHistoryTraceDialog(){
+        iMainView.showHistorytraceDialog();
     }
 
     class orgHandler  extends Handler {

@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="300dp"
     android:layout_height="match_parent"
-    android:background="@drawable/system_item_bg"
+    android:background="@drawable/tracedialog_bg"
     android:orientation="vertical">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+        //顶部部分选中的信息
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:padding="5dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -26,26 +29,222 @@
                 android:text=""/>
         </LinearLayout>
 
+        //
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent">
+            android:layout_height="200dp"
+            android:orientation="horizontal"
+            android:layout_marginRight="20dp"
+            android:layout_marginLeft="20dp"
+            android:padding="3dp"
+            android:background="@drawable/tracegrid_bg">
+            <RelativeLayout
+                android:id="@+id/control_btn"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"
+                android:layout_alignParentRight="true"
+                android:background="#F1F1F1">
 
-            </LinearLayout>
+                <ImageView
+                    android:id="@+id/turn_on"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_centerHorizontal="true"
+                    android:layout_alignParentTop="true"
+                    android:src="@drawable/trace_grid_go_up"
+                    />
+                <ImageView
+                    android:id="@+id/turn_down"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentBottom="true"
+                    android:src="@drawable/trace_grid_go_down"
+                    android:layout_centerHorizontal="true"
+                    />
+            </RelativeLayout>
+            <GridView
+                android:id="@+id/trace_user_label_grid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:scrollbars="none"
+                android:layout_toLeftOf="@+id/control_btn"
+                android:verticalSpacing="10dp"
+                android:horizontalSpacing="10dp"
+                android:numColumns="auto_fit">
+
+            </GridView>
+
 
         </RelativeLayout>
+        //选中信息行
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
+            android:layout_marginLeft="20dp"
+            android:gravity="center_vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="已选 "
+                android:textSize="14sp"
+                android:textColor="#9E9E9E"
+                />
+            <TextView
+                android:id="@+id/trace_selected_user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#9E9E9E"
+                android:textSize="14sp"
+                android:text="已选 "/>
+            <view
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:layout_marginLeft="20dp"
+                android:background="#9E9E9E"/>
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:text="全部"
+                android:textSize="14sp"
+                android:textColor="#9E9E9E"/>
+        </LinearLayout>
+        //时间筛选
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#9E9E9E"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/rililogo"
+                />
+            <TextView
+                android:id="@+id/trace_start_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:layout_marginLeft="10dp"
+                android:gravity="center"
+                android:textSize="12sp"
+                android:clickable="true"
+                android:text="2017-5-14 13:35"
+                android:background="@drawable/tracegrid_bg"/>
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/rili2"
+                android:layout_marginLeft="5dp"/>
+            <TextView
+                android:id="@+id/trace_end_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="3dp"
+                android:clickable="true"
+                android:layout_marginLeft="5dp"
+                android:gravity="center"
+                android:textSize="12sp"
+                android:text="2017-5-14 13:35"
+                android:background="@drawable/tracegrid_bg"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:orientation="horizontal">
+            <ImageView
+                android:id="@+id/trace_the_previous"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:src="@drawable/previous"/>
+            <ImageView
+                android:id="@+id/trace_previous_loaction"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/previous_loaction"/>
+            <ImageView
+                android:id="@+id/trace_play"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/traceplay"/>
+            <ImageView
+                android:id="@+id/trace_pause"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/tracepause"/>
+            <ImageView
+                android:id="@+id/trace_next_location"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/next_location"/>
+            <ImageView
+                android:id="@+id/trace_next_user"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/next"/>
+            <ImageView
+                android:id="@+id/trace_export"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="20dp"
+                android:layout_marginLeft="10dp"
+                android:src="@drawable/export"
+                />
+        </LinearLayout>
 
     </LinearLayout>
 
+    //中间蓝色部分
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
+        android:layout_height="60dp"
+        android:background="#89ABD9"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="5dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/textwhit"
+            android:text="当前数据："/>
+        <TextView
+            android:id="@+id/current_user"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textwhit"
+            android:textSize="14sp"
+            android:text="王珊"/>
     </LinearLayout>
+    //列表部分
     <ListView
+        android:id="@+id/tracehistory_listv"
+        android:divider="#B5B5B5"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></ListView>
+        android:layout_height="match_parent"
+        android:dividerHeight="@dimen/divider_normal"></ListView>
 </LinearLayout>

@@ -36,4 +36,5 @@ public interface IMainActivityView {
      * @param roomMode 聊天类型
      */
     void showChatRoomView(List<String> userIds, List<String> groupIds, RoomMode roomMode);
+    void showHistorytraceDialog();
 }

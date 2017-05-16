@@ -10,4 +10,5 @@ import java.util.List;
 
 public interface IConsoMapView {
     void showUsersLocation(List<LatLng> locations);
+    void showHistoryDialog();
 }
