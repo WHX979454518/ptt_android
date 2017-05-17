@@ -1,6 +1,7 @@
 package com.xianzhitech.ptt.ui.home.login
 
 import android.content.Intent
+import android.databinding.ViewDataBinding
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.view.LayoutInflater
@@ -20,8 +21,8 @@ import com.xianzhitech.ptt.viewmodel.LoginViewModel
  *
  * Created by fanchao on 17/12/15.
  */
-class LoginFragment : BaseViewModelFragment<LoginViewModel, FragmentLoginBinding>(), LoginViewModel.Navigator {
-    override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentLoginBinding {
+open class LoginFragment : BaseViewModelFragment<LoginViewModel, ViewDataBinding>(), LoginViewModel.Navigator {
+    override fun onCreateDataBinding(inflater: LayoutInflater, container: ViewGroup?): ViewDataBinding {
         return FragmentLoginBinding.inflate(inflater, container, false)
     }
 

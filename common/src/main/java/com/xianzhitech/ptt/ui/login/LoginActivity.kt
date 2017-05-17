@@ -2,6 +2,7 @@ package com.xianzhitech.ptt.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.support.v4.app.Fragment
 import com.xianzhitech.ptt.R
 import com.xianzhitech.ptt.ext.appComponent
 import com.xianzhitech.ptt.ui.base.BaseActivity
@@ -20,11 +21,16 @@ open class LoginActivity : BaseActivity(), LoginFragment.Callbacks {
         }
         else if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(android.R.id.content, LoginFragment.create(
-                            intent.getBooleanExtra(EXTRA_KICKED_OUT, false),
-                            intent.getStringExtra(EXTRA_KICKED_OUT_REASON)))
+                    .replace(android.R.id.content, onCreateFragment())
                     .commit()
         }
+    }
+
+    open fun onCreateFragment() : Fragment {
+        return LoginFragment.create(
+                intent.getBooleanExtra(EXTRA_KICKED_OUT, false),
+                intent.getStringExtra(EXTRA_KICKED_OUT_REASON)
+        )
     }
 
     override fun handleJoinRoomIntent(intent: Intent) {

@@ -41,10 +41,6 @@
             android:name="com.xianzhitech.ptt.BaseApp$AppGlideModule"
             android:value="GlideModule"/>
 
-        <activity
-            android:name=".ui.login.LoginActivity"
-            android:windowSoftInputMode="adjustPan"/>
-
         <activity android:name=".ui.home.HomeActivity"/>
 
         <activity

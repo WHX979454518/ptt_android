@@ -16,13 +16,13 @@ class UserKickedOutReceiver : BroadcastReceiver() {
 
         if (context.appComponent.activityProvider.currentStartedActivity !is LoginActivity) {
             val event = intent?.getSerializableExtra(SignalBroker.EXTRA_EVENT)
-            val reason : String? = when (event) {
+            val reason: String? = when (event) {
                 is UserKickedOutEvent -> context.getString(R.string.error_forced_logout)
                 is LoginFailedEvent -> event.message ?: context.getString(R.string.error_invalid_password)
                 else -> null
             }
 
-            context.startActivity(Intent(context, LoginActivity::class.java)
+            context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)
                     .putExtra(LoginActivity.EXTRA_KICKED_OUT, true)
                     .putExtra(LoginActivity.EXTRA_KICKED_OUT_REASON, reason)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
