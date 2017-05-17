@@ -24,12 +24,11 @@ import android.widget.ListView;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xianzhitech.ptt.AppComponent;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.broker.SignalBroker;
 import com.xianzhitech.ptt.data.Room;
-import com.xianzhitech.ptt.ui.chat.ChatFragment;
 import com.xianzhitech.ptt.ui.roomlist.RoomListFragment;
-import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
@@ -43,7 +42,7 @@ import static com.xianzhitech.ptt.broker.RoomMode.NORMAL;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class SystemStateFragment extends Fragment implements RoomListFragment.Callbacks, WalkieRoomFragment.Callbacks {
+public class SystemStateFragment extends Fragment implements RoomListFragment.Callbacks {
     private static final String TAG = "SystemStateFragment";
 
     private ListView treeLv;
@@ -54,11 +53,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     private boolean isHide = false;
     private View view;
     private RoomListFragment roomListFragment;
-
-    private WalkieRoomFragment walkieRoomFragment;
-
-    //Normal--文字聊天类型Fragment
-    private ChatFragment chatFragment;
+    private ChatRoomFragment chatRoom;
 
 
     public SystemStateFragment() {
@@ -84,6 +79,9 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
         } else {
             ft.show(roomListFragment);
         }
+
+        chatRoom = new ChatRoomFragment();
+        ft.add(R.id.chatroom_fragment, chatRoom);
 
         ft.commitAllowingStateLoss();
         /*initDatas();
@@ -206,9 +204,8 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
         joinRoom(roomId, fromInvitation, roomMode);
     }
 
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////Implement WalkieRoomFragment.Callbacks interface ////////////
+    ///////////////////////////////////////////Implement RoomListFragment.Callbacks interface ////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
     public void navigateToChatRoomPage(@NotNull Room room) {
@@ -222,110 +219,11 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
         Log.d(TAG, "navigateToCreateRoomMemberSelectionPage() called");
     }
 
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////Implement WalkieRoomFragment.Callbacks interface ////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    @Override
-    public void navigateToRoomMemberPage(String roomId)
-    {
-        LogUtils.d(TAG, "navigateToRoomMemberPage() called with: roomId = [" + roomId + "]");
-    }
-
-    @Override
-    public void navigateToUserDetailsPage(String roomId){
-        LogUtils.d(TAG, "navigateToUserDetailsPage() called with: roomId = [" + roomId + "]");
-    }
-
-    @Override
-    public void closeRoomPage() {
-        LogUtils.d(TAG, "closeRoomPage() called");
-
-        FragmentManager fm = getChildFragmentManager();
-        FragmentTransaction ft = fm.beginTransaction();
-        ft.hide(walkieRoomFragment);
-        ft.commitAllowingStateLoss();
-    }
-
-
     ////////////////////////////////////////////////////////////////////////////////
     ///////////////////////Private Inner help methods///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     private void joinRoom(String roomId,  boolean fromInvitation, RoomMode roomMode) {
         LogUtils.d(TAG, "joinRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], roomMode = [" + roomMode + "]");
-        switch (roomMode){
-            case NORMAL:{
-                joinNormalRoom(roomId);
-                break;
-            }
-            
-            case AUDIO:{
-                joinAuidoRoom(roomId, fromInvitation);
-                break;
-            }
-            
-            default:
-                LogUtils.e(TAG, "joinRoom: Unsupport roomMode = " + roomMode);
-        }
-    }
-
-
-    /**
-     * 加入语音类型的聊天
-     * @param roomId
-     * @param fromInvitation
-     */
-    private void joinAuidoRoom(String roomId, boolean fromInvitation){
-        Log.d(TAG, "joinAuidoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
-        Bundle bundle = new Bundle();
-        bundle.putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId);
-        bundle.putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation);
-        if (walkieRoomFragment != null) {
-            removeFragment(walkieRoomFragment);
-        }
-
-        walkieRoomFragment.setArguments(bundle);
-        showFragment(walkieRoomFragment, R.id.chatroom_fragment);
-    }
-
-    /**
-     * 加入文字类型聊天
-     * @param roomId
-     */
-    private void joinNormalRoom(String roomId){
-        LogUtils.d(TAG, "joinNormalRoom() called with: roomId = [" + roomId + "]");
-        Bundle bundle = new Bundle();
-        bundle.putString(ChatFragment.ARG_ROOM_ID, roomId);
-        if (chatFragment != null) {
-            removeFragment(chatFragment);
-        }
-
-        chatFragment = new ChatFragment();
-        chatFragment.setArguments(bundle);
-
-        showFragment(chatFragment, R.id.chatroom_fragment);
-    }
-
-    private void showFragment(Fragment fragment, int fragmentId){
-        LogUtils.d(TAG, "showFragment() called with: fragment = [" + fragment + "], fragmentId = [" + fragmentId + "]");
-        FragmentManager fm = getChildFragmentManager();
-        FragmentTransaction ft = fm.beginTransaction();
-        if(fragment.getParentFragment() == null){
-            ft.add(fragmentId,  fragment);
-        }
-        else {
-            ft.show(fragment);
-        }
-
-        ft.commitAllowingStateLoss();
-    }
-
-    private void removeFragment(Fragment fragment){
-        FragmentManager fm = getChildFragmentManager();
-        FragmentTransaction ft = fm.beginTransaction();
-        ft.remove(chatFragment);
-
-        ft.commitAllowingStateLoss();
+        chatRoom.joinRoom(roomId, fromInvitation, roomMode);
     }
 }
