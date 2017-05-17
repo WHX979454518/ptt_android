@@ -18,14 +18,11 @@ import java.util.List;
  */
 
 public class TraceGridAdapter extends BaseAdapter {
-    private List<Node> traceData ;
+    private List<Node> traceData = new ArrayList<>() ;
     private Context context;
     private LayoutInflater inflater;
 
     public void setTraceData(List<Node> traceDatas) {
-        if(traceData!=null){
-            traceData.clear();
-        }
         this.traceData = traceDatas;
         notifyDataSetChanged();
     }
@@ -75,6 +72,13 @@ public class TraceGridAdapter extends BaseAdapter {
             holder=(Holder) convertView.getTag();
         }
 
+        /*if (convertView.isSelected()){
+            holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg_slected);
+            holder.user.setTextColor(context.getResources().getColor(R.color.textwhit));
+        }else {
+            holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg);
+            holder.user.setTextColor(context.getResources().getColor(R.color.grid_item_text));
+        }*/
         if(((Node)getItem(position)).isSelected()){
                 holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg_slected);
                 holder.user.setTextColor(context.getResources().getColor(R.color.textwhit));

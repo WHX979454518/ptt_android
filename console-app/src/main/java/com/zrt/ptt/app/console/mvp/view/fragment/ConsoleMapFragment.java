@@ -62,8 +62,8 @@ import butterknife.Unbinder;
 
 
 public class ConsoleMapFragment extends Fragment implements IConsoMapView,
-        View.OnClickListener,CompoundButton.OnCheckedChangeListener,
-        AdapterView.OnItemSelectedListener,AdapterView.OnItemClickListener{
+        View.OnClickListener, CompoundButton.OnCheckedChangeListener,
+        AdapterView.OnItemClickListener {
 
     @BindView(R.id.bmapView)
     MapView bmapView;
@@ -104,7 +104,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
      */
     private float mCurrentAccracy;
     private volatile boolean isFristLocation = true;
-    public BDLocationListener myListener ;
+    public BDLocationListener myListener;
     //定位都要通过LocationManager这个类实现
     private LocationManager locationManager;
     private String provider;
@@ -120,7 +120,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
      */
     private String routeJson = "{\"list\":[{\"lon\":122.235502,\"lat\":37.330564},{\"lon\":122.235727,\"lat\":37.328527},{\"lon\":122.236086,\"lat\":37.326676},{\"lon\":122.23694,\"lat\":37.325083},{\"lon\":122.237218,\"lat\":37.324703},{\"lon\":122.238862,\"lat\":37.323153},{\"lon\":122.240982,\"lat\":37.321596},{\"lon\":122.243381,\"lat\":37.319867},{\"lon\":122.245267,\"lat\":37.318454},{\"lon\":122.247504,\"lat\":37.316804},{\"lon\":122.249696,\"lat\":37.315182},{\"lon\":122.251762,\"lat\":37.313661},{\"lon\":122.253451,\"lat\":37.312075},{\"lon\":122.254547,\"lat\":37.31008},{\"lon\":122.25478,\"lat\":37.307677},{\"lon\":122.254196,\"lat\":37.30523},{\"lon\":122.253478,\"lat\":37.302603},{\"lon\":122.252939,\"lat\":37.300565},{\"lon\":122.25231,\"lat\":37.298663},{\"lon\":122.251735,\"lat\":37.297156},{\"lon\":122.251223,\"lat\":37.296022},{\"lon\":122.250253,\"lat\":37.293962},{\"lon\":122.249282,\"lat\":37.291895},{\"lon\":122.24816,\"lat\":37.289519},{\"lon\":122.24718,\"lat\":37.287431},{\"lon\":122.246102,\"lat\":37.285155},{\"lon\":122.245105,\"lat\":37.283081},{\"lon\":122.243938,\"lat\":37.280604},{\"lon\":122.24294,\"lat\":37.278458},{\"lon\":122.241782,\"lat\":37.275823},{\"lon\":122.241135,\"lat\":37.271222},{\"lon\":122.241458,\"lat\":37.269096},{\"lon\":122.242303,\"lat\":37.266799},{\"lon\":122.243372,\"lat\":37.264587},{\"lon\":122.244557,\"lat\":37.262189},{\"lon\":122.245761,\"lat\":37.259741},{\"lon\":122.247001,\"lat\":37.257386},{\"lon\":122.248097,\"lat\":37.255167},{\"lon\":122.249327,\"lat\":37.252668},{\"lon\":122.25081,\"lat\":37.249709},{\"lon\":122.252121,\"lat\":37.24698},{\"lon\":122.253118,\"lat\":37.244502},{\"lon\":122.253549,\"lat\":37.243202},{\"lon\":122.253657,\"lat\":37.242929},{\"lon\":122.253936,\"lat\":37.241845},{\"lon\":122.254277,\"lat\":37.240272},{\"lon\":122.2546,\"lat\":37.238527},{\"lon\":122.255032,\"lat\":37.23625},{\"lon\":122.25566,\"lat\":37.23296},{\"lon\":122.257026,\"lat\":37.227767},{\"lon\":122.258221,\"lat\":37.225303},{\"lon\":122.258993,\"lat\":37.224017},{\"lon\":122.259029,\"lat\":37.223952},{\"lon\":122.259415,\"lat\":37.223471},{\"lon\":122.260161,\"lat\":37.222429},{\"lon\":122.261041,\"lat\":37.221193},{\"lon\":122.261931,\"lat\":37.219979},{\"lon\":122.263053,\"lat\":37.218449},{\"lon\":122.263871,\"lat\":37.217256},{\"lon\":122.264814,\"lat\":37.215597},{\"lon\":122.265479,\"lat\":37.214038},{\"lon\":122.265542,\"lat\":37.21398},{\"lon\":122.265641,\"lat\":37.21375},{\"lon\":122.265955,\"lat\":37.212744},{\"lon\":122.266224,\"lat\":37.211472},{\"lon\":122.266476,\"lat\":37.208879},{\"lon\":122.266575,\"lat\":37.206436},{\"lon\":122.266656,\"lat\":37.204244},{\"lon\":122.266745,\"lat\":37.201901},{\"lon\":122.266862,\"lat\":37.199501},{\"lon\":122.266961,\"lat\":37.197015},{\"lon\":122.267042,\"lat\":37.194622},{\"lon\":122.26715,\"lat\":37.192164},{\"lon\":122.267518,\"lat\":37.189109},{\"lon\":122.268488,\"lat\":37.186536},{\"lon\":122.270042,\"lat\":37.184099},{\"lon\":122.271722,\"lat\":37.181749},{\"lon\":122.273168,\"lat\":37.179729},{\"lon\":122.274588,\"lat\":37.177652},{\"lon\":122.275836,\"lat\":37.175682},{\"lon\":122.276303,\"lat\":37.174518},{\"lon\":122.276699,\"lat\":37.173756},{\"lon\":122.276735,\"lat\":37.17359},{\"lon\":122.276995,\"lat\":37.172756},{\"lon\":122.277283,\"lat\":37.171354},{\"lon\":122.277525,\"lat\":37.16978},{\"lon\":122.277849,\"lat\":37.16781},{\"lon\":122.278244,\"lat\":37.165251},{\"lon\":122.278585,\"lat\":37.163065},{\"lon\":122.27898,\"lat\":37.160772},{\"lon\":122.279187,\"lat\":37.159326},{\"lon\":122.279223,\"lat\":37.159017},{\"lon\":122.279313,\"lat\":37.158607},{\"lon\":122.279474,\"lat\":37.157637},{\"lon\":122.279753,\"lat\":37.156191},{\"lon\":122.280409,\"lat\":37.153826},{\"lon\":122.280777,\"lat\":37.152977},{\"lon\":122.2819,\"lat\":37.150849},{\"lon\":122.283113,\"lat\":37.14854},{\"lon\":122.284406,\"lat\":37.146139},{\"lon\":122.286023,\"lat\":37.143082},{\"lon\":122.287919,\"lat\":37.139608},{\"lon\":122.289365,\"lat\":37.136911},{\"lon\":122.290443,\"lat\":37.134574},{\"lon\":122.291036,\"lat\":37.132172},{\"lon\":122.29117,\"lat\":37.129582},{\"lon\":122.291206,\"lat\":37.127165},{\"lon\":122.291251,\"lat\":37.124784},{\"lon\":122.291305,\"lat\":37.122813},{\"lon\":122.29126,\"lat\":37.122144},{\"lon\":122.29126,\"lat\":37.122144},{\"lon\":122.291269,\"lat\":37.122159},{\"lon\":122.291278,\"lat\":37.122144},{\"lon\":122.291278,\"lat\":37.122166},{\"lon\":122.291296,\"lat\":37.12218}]}";
     private ProgressBar pb;// 进度条
-    private ImageView playIv,trace_view_close;
+    private ImageView playIv, trace_view_close;
 
     public ConsoleMapFragment() {
         // Required empty public constructor
@@ -138,7 +138,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         return view;
     }
 
-    private void initMap(){
+    private void initMap() {
         baiduMap = bmapView.getMap();
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
 
@@ -146,13 +146,14 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         initMyLocation();
         parseJson();
     }
-    private void initView(View view)
-    {
+
+    private void initView(View view) {
         View btnView = view.findViewById(R.id.organiz_function_inc);
         traceControlLayout = (FrameLayout) view.findViewById(R.id.trace_control_layout);
         gridView = (GridView) traceControlLayout.findViewById(R.id.trace_user_label_grid);
-        gridAdapter = new TraceGridAdapter(traceData,getActivity());
+        gridAdapter = new TraceGridAdapter(traceData, getActivity());
         gridView.setAdapter(gridAdapter);
+        gridView.setOnItemClickListener(this);
         trace_view_close = (ImageView) view.findViewById(R.id.trace_view_close);
         trace_view_close.setOnClickListener(this);
         playIv = (ImageView) btnView.findViewById(R.id.location_ivPlay);
@@ -184,18 +185,18 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     }
 
-    private void painStroke(ArrayList<LatLng> routeList){
+    private void painStroke(ArrayList<LatLng> routeList) {
         baiduMap.clear();
         LatLng latLng = null;
         Marker marker = null;
         BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_geo);
         OverlayOptions options;
 
-            // 经纬度
-            latLng = routeList.get(routeList.size()/2);
-            // 图标
+        // 经纬度
+        latLng = routeList.get(routeList.size() / 2);
+        // 图标
 
-            //屏蔽代码属于描述maker展示的详情
+        //屏蔽代码属于描述maker展示的详情
             /*Bundle arg0 = new Bundle();
             arg0.putSerializable("info", latLin);
             marker.setExtraInfo(arg0);*/
@@ -237,7 +238,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         points.add(pt4);//点元素
         index.add(2);//设置该点的纹理索引
         points.add(pt5);//点元素
-        for(LatLng lat:points){
+        for (LatLng lat : points) {
             options = new MarkerOptions().position(lat).icon(mMarker)
                     .zIndex(5);
             baiduMap.addOverlay(options);
@@ -249,20 +250,17 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
 
-
-
     @Override
     public void onClick(View v) {
 //        painStroke(routeList);
       /*  MapMoveUtil map = new MapMoveUtil(bmapView,baiduMap);
         map.moveLooper();*/
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.trace_view_close:
                 traceControlLayout.setVisibility(View.INVISIBLE);
                 break;
         }
     }
-
 
 
     /**
@@ -356,8 +354,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         Marker marker = null;
         BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
         OverlayOptions options;
-        for (LatLng latLin : locations)
-        {
+        for (LatLng latLin : locations) {
             // 经纬度
             latLng = new LatLng(latLin.latitude, latLin.longitude);
             // 图标
@@ -387,86 +384,44 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         return traceControlLayout.getVisibility();
     }
 
+    private List<Node> adpterNodes = new ArrayList<>();
     @Override
     public void sendCheckedUsers(List<Node> checkedNodes) {
+        if(adpterNodes!=null){
+            adpterNodes.clear();
+        }
+        for(Node bean : checkedNodes){
+            adpterNodes.add(bean)  ;
+        }
         gridAdapter.setTraceData(checkedNodes);
+        gridAdapter.notifyDataSetChanged();
     }
 
-    public int getVisibiliyControlLayout(){
+    public int getVisibiliyControlLayout() {
         return traceControlLayout.getVisibility();
     }
+
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        Toast.makeText(getActivity(),"isChecked"+isChecked,Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "isChecked" + isChecked, Toast.LENGTH_SHORT).show();
 
     }
 
-    /**
-     * 适配器选中事件
-     * @param parent
-     * @param view
-     * @param position
-     * @param id
-     */
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        /*TextView textView = (TextView)parent.getAdapter().getItem(position);
-        textView.setBackground(getResources().getDrawable(R.drawable.tracegrid_item_bg_slected));
-        textView.setTextColor(getResources().getColor(R.color.textwhit));*/
-        TextView textView = (TextView) gridView.getChildAt(position).findViewById(R.id.trace_grid_item_txt);
-        Node node = (Node)gridView.getAdapter().getItem(position);
-        if(node.isSelected()){
-            ((Node)gridView.getAdapter().getItem(position)).setSelected(false);
-        }else {
-            ((Node)gridView.getAdapter().getItem(position)).setSelected(true);
-        }
-
-        for(int i=0;i<parent.getCount();i++){
-            View item = gridView.getChildAt(i);
-            if(i==position){
-                textView.setSelected(true);
-                textView.setBackgroundResource(R.drawable.tracegrid_item_bg_slected);
-                textView.setTextColor(getResources().getColor(R.color.textwhit));
-            }else {
-                textView.setSelected(false);
-                textView.setBackgroundResource(R.drawable.tracegrid_item_bg);
-                textView.setTextColor(getResources().getColor(R.color.grid_item_text));
-            }
-        }
-        gridAdapter.notifyDataSetChanged();
-
-    }
-
-    /**
-     * 适配器选中事件
-     * @param parent
-     */
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-
-    }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        TextView textView = (TextView) gridView.getChildAt(position).findViewById(R.id.trace_grid_item_txt);
-        for(int i=0;i<parent.getCount();i++){
-            View item = gridView.getChildAt(i);
-            if(i==position){
-                textView.setSelected(true);
-                textView.setBackgroundResource(R.drawable.tracegrid_item_bg_slected);
-                textView.setTextColor(getResources().getColor(R.color.textwhit));
-            }else {
-                textView.setSelected(false);
-                textView.setBackgroundResource(R.drawable.tracegrid_item_bg);
-                textView.setTextColor(getResources().getColor(R.color.grid_item_text));
+        Node node = (Node) parent.getAdapter().getItem(position);
+        boolean isSelected = node.isSelected();
+//        view.setSelected(!isSelected);
+        for(Node bean :adpterNodes){
+            if(bean.get_id().equals(node.get_id())){
+                bean.setSelected(!isSelected);
             }
         }
-        Node node = (Node)gridView.getAdapter().getItem(position);
-        if(node.isSelected()){
-            ((Node)gridView.getAdapter().getItem(position)).setSelected(false);
-        }else {
-            ((Node)gridView.getAdapter().getItem(position)).setSelected(true);
-        }
+//        adpterNodes.get(adpterNodes.indexOf(node)).setSelected(!isSelected);
+//        ((Node) parent.getAdapter()).setSelected(!isSelected);
+        ((TraceGridAdapter) parent.getAdapter()).setTraceData(adpterNodes);
+//        gridAdapter.setTraceData(adpterNodes);
         gridAdapter.notifyDataSetChanged();
     }
 
@@ -486,7 +441,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 					.latitude(location.getLatitude())//
 					.longitude(location.getLongitude())//
 					.build();*/
-       //西宁101.764866,36.640738
+            //西宁101.764866,36.640738
             // 构造定位数据假数据上线再去掉
             MyLocationData locData = new MyLocationData.Builder()
                     .accuracy(location.getRadius())
@@ -507,8 +462,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     mCurrentMode, true, null);
             baiduMap.setMyLocationConfigeration(config);
             // 第一次定位时，将地图位置移动到当前位置
-            if (isFristLocation)
-            {
+            if (isFristLocation) {
                 LatLng ll = new LatLng(36.640738,
                         101.764866);
                 MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(ll);
@@ -526,16 +480,13 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     /**
      * 初始化方向传感器
      */
-    private void initOritationListener()
-    {
+    private void initOritationListener() {
         myOrientationListener = new MyOrientationListener(
                 App.getInstance().getApplicationContext());
         myOrientationListener
-                .setOnOrientationListener(new MyOrientationListener.OnOrientationListener()
-                {
+                .setOnOrientationListener(new MyOrientationListener.OnOrientationListener() {
                     @Override
-                    public void onOrientationChanged(float x)
-                    {
+                    public void onOrientationChanged(float x) {
                         mXDirection = (int) x;
 
                         // 构造定位数据

@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.baidu.mapapi.model.LatLng;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.mvp.model.OrgNodeBean;
@@ -258,9 +259,15 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                     locationUserIds.remove(node.get_id());
                     multiMediaUserID.remove(node.get_id());
                 }
-                if(mainActivityPresenter.getLayoutVisibilily()==View.VISIBLE){
-                    mainActivityPresenter.sendCheckedUsers(checkedNodes);
+//                if(mainActivityPresenter.getLayoutVisibilily()==View.VISIBLE){
+                List<Node> checkdata = new ArrayList<Node>();
+                for(Node bean :checkedNodes){
+                    if(bean.isLeaf()){
+                        bean.setSelected(false);
+                        checkdata.add(bean);
+                    }
                 }
+                    mainActivityPresenter.sendCheckedUsers(checkdata);
                /* if(NodeAddDelet.contains(node)){
                     if(!node.isChecked()){
                         NodeAddDelet.remove(node);

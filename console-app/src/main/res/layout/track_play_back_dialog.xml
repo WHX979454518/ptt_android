@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="250dp"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="@drawable/tracedialog_bg"
     android:orientation="vertical">
     <LinearLayout
@@ -85,7 +86,7 @@
                 android:verticalSpacing="10dp"
                 android:horizontalSpacing="10dp"
                 android:numColumns="auto_fit"
-                android:listSelector="@drawable/grid_item_txt_selector">
+                android:listSelector="@color/transparen">
 
             </GridView>
 

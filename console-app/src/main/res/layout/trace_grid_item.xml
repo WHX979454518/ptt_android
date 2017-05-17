@@ -7,7 +7,6 @@
     android:textSize="12sp"
     android:textColor="@color/grid_item_text"
     android:gravity="center"
-    android:clickable="true"
     android:background="@drawable/grid_item_txt_selector"
     android:singleLine="true"/>
 
