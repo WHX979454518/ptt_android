@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="300dp"
+    android:layout_width="250dp"
     android:layout_height="match_parent"
     android:background="@drawable/tracedialog_bg"
     android:orientation="vertical">
@@ -9,14 +9,16 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
         //顶部部分选中的信息
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="20dp"
             android:padding="5dp">
             <TextView
+                android:id="@+id/selected_base"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:text="当前选中人员："
                 android:textColor="#EF651D"
                 android:textSize="14sp"/>
@@ -24,15 +26,26 @@
                 android:id="@+id/selected_user"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@+id/selected_base"
                 android:textColor="#EF651D"
                 android:textSize="12sp"
                 android:text=""/>
-        </LinearLayout>
+            <ImageView
+                android:id="@+id/trace_view_close"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="10dp"
+                android:layout_gravity="end"
+                android:layout_alignParentRight="true"
+                android:src="@drawable/trace_close"/>
+        </RelativeLayout>
 
         //
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="120dp"
             android:orientation="horizontal"
             android:layout_marginRight="20dp"
             android:layout_marginLeft="20dp"
@@ -40,23 +53,23 @@
             android:background="@drawable/tracegrid_bg">
             <RelativeLayout
                 android:id="@+id/control_btn"
-                android:layout_width="50dp"
+                android:layout_width="30dp"
                 android:layout_height="match_parent"
                 android:layout_alignParentRight="true"
                 android:background="#F1F1F1">
 
                 <ImageView
                     android:id="@+id/turn_on"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_centerHorizontal="true"
                     android:layout_alignParentTop="true"
                     android:src="@drawable/trace_grid_go_up"
                     />
                 <ImageView
                     android:id="@+id/turn_down"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_alignParentBottom="true"
                     android:src="@drawable/trace_grid_go_down"
                     android:layout_centerHorizontal="true"
@@ -65,13 +78,14 @@
             <GridView
                 android:id="@+id/trace_user_label_grid"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="150dp"
                 android:layout_alignParentLeft="true"
                 android:scrollbars="none"
                 android:layout_toLeftOf="@+id/control_btn"
                 android:verticalSpacing="10dp"
                 android:horizontalSpacing="10dp"
-                android:numColumns="auto_fit">
+                android:numColumns="auto_fit"
+                android:listSelector="@drawable/grid_item_txt_selector">
 
             </GridView>
 
@@ -81,8 +95,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="20dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp"
             android:layout_marginLeft="20dp"
             android:gravity="center_vertical">
             <TextView
@@ -104,7 +118,8 @@
                 android:layout_height="20dp"
                 android:layout_marginLeft="20dp"
                 android:background="#9E9E9E"/>
-            <RadioButton
+            <CheckBox
+                android:id="@+id/trace_radio_selectedall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
@@ -120,8 +135,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:layout_height="wrap_content"
             android:gravity="center_vertical">
             <ImageView
@@ -133,10 +148,11 @@
                 android:id="@+id/trace_start_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
+                android:padding="3dp"
                 android:layout_marginLeft="10dp"
+                android:singleLine="true"
                 android:gravity="center"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:clickable="true"
                 android:text="2017-5-14 13:35"
                 android:background="@drawable/tracegrid_bg"/>
@@ -149,11 +165,12 @@
                 android:id="@+id/trace_end_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
                 android:padding="3dp"
                 android:clickable="true"
                 android:layout_marginLeft="5dp"
                 android:gravity="center"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:text="2017-5-14 13:35"
                 android:background="@drawable/tracegrid_bg"/>
         </LinearLayout>
@@ -221,7 +238,7 @@
     //中间蓝色部分
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="40dp"
         android:background="#89ABD9"
         android:gravity="center_vertical"
         android:orientation="horizontal"

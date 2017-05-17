@@ -8,6 +8,7 @@ import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.model.ModelImp.OrganizationMain;
+import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 
 import org.json.JSONObject;
@@ -103,6 +104,14 @@ public class MainActivityPresenter {
 
     public void showHistoryTraceDialog() {
         iMainView.showHistorytraceDialog();
+    }
+
+    public int getLayoutVisibilily() {
+        return iMainView.getLayoutVisible();
+    }
+
+    public void sendCheckedUsers(List<Node> checkedNodes) {
+        iMainView.sendCheckedUsers(checkedNodes);
     }
 
     class orgHandler extends Handler {

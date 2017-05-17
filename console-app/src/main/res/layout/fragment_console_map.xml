@@ -38,10 +38,11 @@
 
     </FrameLayout>
     <FrameLayout
-        android:layout_width="300dp"
+        android:id="@+id/trace_control_layout"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:background="#50323232"
         android:layout_marginBottom="70dp"
+        android:visibility="invisible"
         android:layout_gravity="left">
         <include layout="@layout/track_play_back_dialog"/>
     </FrameLayout>

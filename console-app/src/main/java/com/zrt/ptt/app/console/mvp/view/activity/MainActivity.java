@@ -21,6 +21,7 @@ import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.zrt.ptt.app.console.R;
+import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
@@ -301,6 +302,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public void showHistorytraceDialog() {
         IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
         imapView.showHistoryDialog();
+    }
+
+    //拿到mapfragment的轨迹控制界面显示隐藏
+    @Override
+    public int getLayoutVisible() {
+        IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
+        return imapView.getLayoutVisibility();
+    }
+
+    @Override
+    public void sendCheckedUsers(List<Node> checkedNodes) {
+        IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
+        imapView.sendCheckedUsers(checkedNodes);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////

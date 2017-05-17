@@ -22,11 +22,11 @@ public class TraceGridAdapter extends BaseAdapter {
     private Context context;
     private LayoutInflater inflater;
 
-    public void setTraceData(List<Node> traceData) {
+    public void setTraceData(List<Node> traceDatas) {
         if(traceData!=null){
             traceData.clear();
         }
-        this.traceData = traceData;
+        this.traceData = traceDatas;
         notifyDataSetChanged();
     }
     public void addItemUser(Node node){
@@ -74,6 +74,15 @@ public class TraceGridAdapter extends BaseAdapter {
         }else{
             holder=(Holder) convertView.getTag();
         }
+
+        if(((Node)getItem(position)).isSelected()){
+                holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg_slected);
+                holder.user.setTextColor(context.getResources().getColor(R.color.textwhit));
+            }else {
+                holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg);
+                holder.user.setTextColor(context.getResources().getColor(R.color.grid_item_text));
+            }
+
         holder.user.setText(traceData.get(position).getName());
 
         return convertView;

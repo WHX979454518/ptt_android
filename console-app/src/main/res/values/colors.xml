@@ -16,4 +16,5 @@
     <color name="pop_up_color">#ece5e5</color>
     <color name="pop_txt_pred">#e22626</color>
     <color name="item_bg_white">#fff</color>
+    <color name="grid_item_text">#CECECE</color>
 </resources>

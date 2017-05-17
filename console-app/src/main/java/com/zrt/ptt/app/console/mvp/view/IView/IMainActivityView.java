@@ -3,6 +3,7 @@ package com.zrt.ptt.app.console.mvp.view.IView;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
+import com.zrt.ptt.app.console.mvp.model.Node;
 
 import org.json.JSONObject;
 
@@ -37,4 +38,8 @@ public interface IMainActivityView {
      */
     void showChatRoomView(List<String> userIds, List<String> groupIds, RoomMode roomMode);
     void showHistorytraceDialog();
+
+    int getLayoutVisible();
+
+    void sendCheckedUsers(List<Node> checkedNodes);
 }

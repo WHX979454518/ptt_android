@@ -48,6 +48,16 @@ public class Node {
     private Node parent;
     private boolean isOnline;//false不在线,true在线
     private boolean isGroup = false;//是否是预定义组,默认不是
+    private boolean isSelected = false;//只用于轨迹控制界面Gridviewitem选中
+
+    public boolean isSelected() {
+        return isSelected;
+    }
+
+    public void setSelected(boolean selected) {
+        isSelected = selected;
+    }
+
     public boolean isGroup() {
         return isGroup;
     }

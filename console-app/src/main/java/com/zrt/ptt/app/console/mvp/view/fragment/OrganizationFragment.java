@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.baidu.mapapi.model.LatLng;
 import com.google.gson.Gson;
@@ -163,7 +164,9 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 for(String id:locationUserIds){
                     userLoactionsIds.add(id);
                 }
-                mainActivityPresenter.showLocations(userLoactionsIds);
+                if(userLoactionsIds.size()!=0){
+                    mainActivityPresenter.showLocations(userLoactionsIds);
+                }
                 break;
 
             case R.id.talk:
@@ -251,9 +254,12 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                     }
                 }
                 selectedPersNum.setText("已选("+num+")");
-                if(!node.isChecked()){
+                if(!node.isChecked()&&node.isLeaf()){
                     locationUserIds.remove(node.get_id());
                     multiMediaUserID.remove(node.get_id());
+                }
+                if(mainActivityPresenter.getLayoutVisibilily()==View.VISIBLE){
+                    mainActivityPresenter.sendCheckedUsers(checkedNodes);
                 }
                /* if(NodeAddDelet.contains(node)){
                     if(!node.isChecked()){
