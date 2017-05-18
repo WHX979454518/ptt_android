@@ -17,4 +17,6 @@
     <color name="pop_txt_pred">#e22626</color>
     <color name="item_bg_white">#fff</color>
     <color name="grid_item_text">#CECECE</color>
+    <color name="layout_title">#008EEF</color>
+    <color name="white">#ffffffff</color>
 </resources>

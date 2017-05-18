@@ -133,9 +133,11 @@ public class MyTreeListViewAdapter<T> extends TreeListViewAdapter<T> {
      */
     private void setCheckBoxBg(CheckBox cb,boolean isChecked){
         if(isChecked){
-            cb.setBackgroundResource(R.drawable.selected);
+//            cb.setBackgroundResource(R.drawable.selected);
+            cb.setChecked(true);
         }else{
-            cb.setBackgroundResource(R.drawable.selectedno);
+//            cb.setBackgroundResource(R.drawable.selectedno);
+            cb.setChecked(false);
         }
     }
 

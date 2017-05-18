@@ -1,6 +1,7 @@
 package com.zrt.ptt.app.console.mvp.view.IView;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.mvp.model.Node;
 
 import java.util.List;
@@ -16,4 +17,6 @@ public interface IConsoMapView {
     int getLayoutVisibility();
 
     void sendCheckedUsers(List<Node> checkedNodes);
+
+    void showTrackPlayback(List<UserLocation> userLocations);
 }

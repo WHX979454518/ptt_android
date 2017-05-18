@@ -79,6 +79,11 @@ public class TraceGridAdapter extends BaseAdapter {
             holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg);
             holder.user.setTextColor(context.getResources().getColor(R.color.grid_item_text));
         }*/
+        for(Node bean :traceData){
+            if(!((Node)getItem(position)).isSelected()){
+
+            }
+        }
         if(((Node)getItem(position)).isSelected()){
                 holder.user.setBackgroundResource(R.drawable.tracegrid_item_bg_slected);
                 holder.user.setTextColor(context.getResources().getColor(R.color.textwhit));

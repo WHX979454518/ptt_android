@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="30dp"
+    android:layout_height="40dp"
     android:descendantFocusability="blocksDescendants"
     android:background="@color/lst_item_bg"
      >
 
     <ImageView
         android:id="@+id/id_treenode_icon"
-        android:layout_width="10dp"
-        android:layout_height="10dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:scaleType="centerCrop"
         android:layout_centerVertical="true"
         android:layout_marginLeft="5dp"
@@ -18,15 +18,14 @@
     
     <CheckBox
         android:id="@+id/id_treeNode_check"
-        android:layout_width="10dp"
-        android:layout_height="10dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:scaleType="centerCrop"
         android:layout_centerVertical="true"
         android:layout_toRightOf="@id/id_treenode_icon"
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp"
-        android:background="@drawable/selectedno"
-        android:button="@null"
+
         android:focusable="true"
         />
     <ImageView

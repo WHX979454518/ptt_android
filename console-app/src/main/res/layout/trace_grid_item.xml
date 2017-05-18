@@ -3,6 +3,8 @@
     android:id="@+id/trace_grid_item_txt"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:paddingBottom="3dp"
+    android:paddingTop="3dp"
     android:padding="0dp"
     android:textSize="12sp"
     android:textColor="@color/grid_item_text"
