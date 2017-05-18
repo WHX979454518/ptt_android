@@ -61,10 +61,21 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import utils.CommonUtil;
 
 
@@ -135,6 +146,13 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private ImageView playIv, trace_view_close,trace_play;
     private List<String> traceHistoryUserIds =  new ArrayList<String>();
     private DateDialog dateDialog;
+    private String labels;
+    private static final String PALY = "PALY";//播放
+    private static final String PAUSE = "PAUSE";//暂停
+    private static final String PREVIOUSSTEP = "PREVIOUSSTEP";//上一步
+    private static final String NEXTSTEP = "NEXTSTEP";//下一步
+    private static final String NEXT = "NEXT";//下一位
+    private static final String LAST = "LAST";//上一位
 
     public ConsoleMapFragment() {
         // Required empty public constructor
@@ -468,10 +486,78 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         gridAdapter.notifyDataSetChanged();
     }
 
+    Timer timer;
+    TimerTask mTimerTask;
+    int num=0;
     //拿到历史轨迹数据，业务在这里处理
     @Override
     public void showTrackPlayback(List<UserLocation> userLocations) {
         listAdapter.setUserLocations(userLocations);
+        Observable.create(new ObservableOnSubscribe<UserLocation>() {
+            @Override
+            public void subscribe(@NonNull ObservableEmitter<UserLocation> observableEmitter) throws Exception {
+                timer = new Timer();
+                mTimerTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        switch (labels){
+                            case PALY:
+                                if(num<userLocations.size()){
+                                    observableEmitter.onNext(userLocations.get(num++));
+                                }else {
+                                    observableEmitter.onComplete();
+                                }
+                                break;
+                            case PAUSE:
+                                observableEmitter.onComplete();
+                                break;
+                            case PREVIOUSSTEP:
+                                break;
+                            case NEXTSTEP:
+                                break;
+                            case NEXT:
+                                break;
+                            case LAST:
+                                break;
+                        }
+                    }
+                };
+                timer.schedule(mTimerTask,1000,1000);
+            }
+        }).subscribeOn(Schedulers.newThread()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<UserLocation>() {
+            @Override
+            public void onSubscribe(Disposable disposable) {
+
+            }
+
+            @Override
+            public void onNext(UserLocation userLocation) {
+                listView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        listView.smoothScrollToPosition(num);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onComplete() {
+                if (timer != null) {
+                    timer.cancel();
+                    timer = null;
+                }
+                if (mTimerTask != null) {
+                    mTimerTask.cancel();
+                    mTimerTask = null;
+                }
+            }
+        });
+
     }
 
     public int getVisibiliyControlLayout() {
