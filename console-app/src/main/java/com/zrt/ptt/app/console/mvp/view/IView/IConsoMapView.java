@@ -6,6 +6,8 @@ import com.zrt.ptt.app.console.mvp.model.Node;
 
 import java.util.List;
 
+import io.reactivex.disposables.Disposable;
+
 /**
  * Created by surpass on 2017-5-9.
  */
@@ -19,4 +21,5 @@ public interface IConsoMapView {
     void sendCheckedUsers(List<Node> checkedNodes);
 
     void showTrackPlayback(List<UserLocation> userLocations);
+    void callBackiDisposable(Disposable disposable);
 }

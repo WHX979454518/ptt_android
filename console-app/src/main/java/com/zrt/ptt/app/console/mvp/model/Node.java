@@ -7,7 +7,7 @@ import java.util.List;
  * Created by surpass on 2017-4-20.
  */
 
-public class Node {
+public class Node implements Cloneable {
 
 
 
@@ -49,6 +49,21 @@ public class Node {
     private boolean isOnline;//false不在线,true在线
     private boolean isGroup = false;//是否是预定义组,默认不是
     private boolean isSelected = false;//只用于轨迹控制界面Gridviewitem选中
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        Node clone = null;
+        try{
+            clone = (Node) super.clone();
+        }catch(CloneNotSupportedException e){
+            throw new RuntimeException(e);  // won't happen
+        }
+        return clone;
+    }
+
+    public Node cloneNode() throws CloneNotSupportedException{
+        return (Node) clone();
+    }
 
     public boolean isSelected() {
         return isSelected;

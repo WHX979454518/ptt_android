@@ -224,14 +224,14 @@
                 android:layout_height="20dp"
                 android:layout_marginLeft="10dp"
                 android:src="@drawable/next"/>
-            <ImageView
+            <!--<ImageView
                 android:id="@+id/trace_export"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="20dp"
                 android:layout_marginLeft="10dp"
                 android:src="@drawable/export"
-                />
+                />-->
         </LinearLayout>
 
     </LinearLayout>

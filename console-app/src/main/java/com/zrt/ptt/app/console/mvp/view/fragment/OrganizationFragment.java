@@ -4,6 +4,7 @@ package com.zrt.ptt.app.console.mvp.view.fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.format.Time;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,11 +31,27 @@ import com.zrt.ptt.app.console.mvp.view.adapter.TreeListViewAdapter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.reactivestreams.Subscription;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 
 /**
@@ -64,6 +81,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private List<LatLng> locations = new ArrayList<>();
     private HashSet<String> locationUserIds = new HashSet<>();
     private HashSet<String> multiMediaUserID = new HashSet<>();
+    private Timer timer;
+    private TimerTask timerTask;
 
     public OrganizationFragment() {
         // Required empty public constructor
@@ -167,6 +186,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 }
                 if(userLoactionsIds.size()!=0){
                     mainActivityPresenter.showLocations(userLoactionsIds);
+                    getLocationData(userLoactionsIds);
                 }
                 break;
 
@@ -181,9 +201,36 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), RoomMode.NORMAL);
                 break;
             case R.id.trajectory_btn:
+                if(allLocaSubcription!=null) allLocaSubcription.dispose();
+                if(singleSubcription!=null) singleSubcription.dispose();
                 mainActivityPresenter.showHistoryTraceDialog();
                 break;
         }
+    }
+
+    private Disposable singleSubcription;
+    private Disposable allLocaSubcription;
+    //多人定位时时刷新
+    private void getLocationData(List<String> userLoactionsIds ){
+        mainActivityPresenter.showLocations(userLoactionsIds);
+        allLocaSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
+            @Override
+            public void accept(@NonNull Long ongs) throws Exception {
+                mainActivityPresenter.showLocations(userLoactionsIds);
+            }
+        });
+    }
+
+
+    //单人定位时时刷新
+    private void getSingleLocationData(List<String> userLoactionsIds ){
+        mainActivityPresenter.showLocation(userLoactionsIds);
+        singleSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
+            @Override
+            public void accept(@NonNull Long Longs) throws Exception {
+                mainActivityPresenter.showLocation(userLoactionsIds);
+            }
+        });
     }
 
     private void initLatLng(){
@@ -235,7 +282,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                     List<String> singleUserID = new ArrayList<String>();
                     singleUserID.add(locationUserId);
 //                    locations.add(new LatLng(30.664214,104.074297));
-                    mainActivityPresenter.showLocation(singleUserID);
+                    getSingleLocationData(singleUserID);
                 }
             }
 
@@ -263,8 +310,11 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 List<Node> checkdata = new ArrayList<Node>();
                 for(Node bean :checkedNodes){
                     if(bean.isLeaf()){
-                        bean.setSelected(false);
-                        checkdata.add(bean);
+                        try {
+                            checkdata.add((Node)bean.cloneNode());
+                        } catch (CloneNotSupportedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
                     mainActivityPresenter.sendCheckedUsers(checkdata);

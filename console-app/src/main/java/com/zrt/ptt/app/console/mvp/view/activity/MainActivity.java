@@ -33,11 +33,28 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
+import utils.CommonUtil;
 import utils.LogUtils;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener, IMainActivityView {
@@ -82,6 +99,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     private LinearLayout playBack;
     private ImageView userLocation;
     private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
+    private Timer timer;
+    private TimerTask timerTask;
+    private TextView time_hms,time_ymd;
 
 
     @Override
@@ -97,7 +117,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     private void initView() {
-        View view = getLayoutInflater().inflate(R.layout.organiz_function_btn_ly, null);
+        View view = getLayoutInflater().inflate(R.layout.main_title_layout, null);
+        time_hms = (TextView) findViewById(R.id.time_hms);
+        time_ymd = (TextView) findViewById(R.id.time_ymd);
+        updateSystemTime();
         rootView = findViewById(R.id.main_title);
         View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
         logRecord = (LinearLayout) popupView.findViewById(R.id.log_record);
@@ -133,6 +156,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         });
     }
 
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+    private Disposable timeDisposable;
+    private void updateSystemTime(){
+        timeDisposable =  Observable.interval(1,1,TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
+            @Override
+            public void accept(@NonNull Long aLong) throws Exception {
+                SimpleDateFormat dff = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                dff.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String s = dff.format(new Date());
+                String year = s.substring(0,s.indexOf(" "));
+                String time = s.substring(s.indexOf(" ")+1);
+                time_hms.setText(time);
+                time_ymd.setText(year);
+            }
+        });
+        compositeDisposable.add(timeDisposable);
+    }
     public void setBackgroundAlpha(float bgAlpha) {
         WindowManager.LayoutParams lp = getWindow()
                 .getAttributes();
@@ -209,6 +249,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if(compositeDisposable != null) {
+            compositeDisposable.clear();
+        }
+//        if(timeDisposable!=null)timeDisposable.dispose();
     }
 
     @Override

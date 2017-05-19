@@ -8,6 +8,8 @@ import com.zrt.ptt.app.console.mvp.view.fragment.ConsoleMapFragment;
 
 import java.util.List;
 
+import io.reactivex.disposables.Disposable;
+
 /**
  * Created by surpass on 2017-5-18.
  */
@@ -26,6 +28,11 @@ public class ConsoleMapPresener {
             @Override
             public void callBackTraceDatas(List<UserLocation> userLocations) {
                 iConsoMapView.showTrackPlayback(userLocations);
+            }
+
+            @Override
+            public void callBackDisposable(Disposable disposable) {
+                iConsoMapView.callBackiDisposable(disposable);
             }
         }, traceHistoryUserIds, startTime, endTime);
     }

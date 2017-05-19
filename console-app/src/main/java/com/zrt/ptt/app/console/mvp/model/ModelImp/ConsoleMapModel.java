@@ -7,8 +7,10 @@ import com.zrt.ptt.app.console.mvp.model.Imodel.IConsoleMap;
 
 import java.util.List;
 
+import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
@@ -22,11 +24,29 @@ public class ConsoleMapModel implements IConsoleMap {
         ((AppComponent) App.getInstance().getApplicationContext()).getSignalBroker()
                 .findUserLocations(traceHistoryUserIds,startTime,endTime)
                 .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<List<UserLocation>>() {
-            @Override
-            public void accept(@NonNull List<UserLocation> userLocations) throws Exception {
-                callback.callBackTraceDatas(userLocations);
-            }
-        });
+                .subscribe(new Observer<List<UserLocation>>() {
+                    @Override
+                    public void onSubscribe(Disposable disposable) {
+                        if(disposable!=null){
+                            callback.callBackDisposable(disposable);
+                        }
+                    }
+
+                    @Override
+                    public void onNext(List<UserLocation> userLocations) {
+                        callback.callBackTraceDatas(userLocations);
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
     }
 }
