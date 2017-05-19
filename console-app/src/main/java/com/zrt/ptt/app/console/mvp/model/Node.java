@@ -12,6 +12,7 @@ public class Node implements Cloneable {
 
 
 
+
     /**
      * 节点id
      */
@@ -223,5 +224,8 @@ public class Node implements Cloneable {
         this.isHideChecked = isHideChecked;
     }
 
-
+    @Override
+    public boolean equals(Object obj) {
+        return this._id == ((Node)obj).get_id();
+    }
 }

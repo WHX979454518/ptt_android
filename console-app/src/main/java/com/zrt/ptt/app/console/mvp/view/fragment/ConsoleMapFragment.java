@@ -511,41 +511,43 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
     private List<Node> adpterNodes = new ArrayList<>();
+    private void addNodes(){
+
+    }
     @Override
     public void sendCheckedUsers(List<Node> checkedNodes) {
-        for(Node bean : checkedNodes){
-            if(!adpterNodes.contains(bean)){
-                try {
-                    adpterNodes.add(bean.cloneNode()) ;
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
+        adpterNodes.clear();
+        for(Node node :checkedNodes){
+            try {
+                adpterNodes.add(node.cloneNode());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
             }
-        }
-        for(Iterator<Node> it = adpterNodes.iterator(); it.hasNext();){
-            if(!checkedNodes.contains(it.next())){
-                it.remove();
-            }
-        }
-        boolean isSelected= false;
-        for(Node node:adpterNodes){
-            if(node.isSelected()){
-                isSelected = true;
-               break;
-            }
-        }
-        if(!isSelected && adpterNodes.size()>0){
-            adpterNodes.get(0).setSelected(true);
         }
 
+        boolean exsitSelected = false;
         traceHistoryUserIds.clear();
-        for(Node node:adpterNodes){
-            if(node.isSelected()){
+        for(Node node :adpterNodes){
+            if(selectedNodes.size()>0 && node.equals(selectedNodes.get(0))){
+                node.setSelected(true);
+                exsitSelected = true;
                 traceHistoryUserIds.add(node.get_id());
+                break;
             }
         }
-        gridAdapter.setTraceData(checkedNodes);
-        gridAdapter.notifyDataSetChanged();
+        if(adpterNodes.size() > 0 && !exsitSelected){
+            adpterNodes.get(0).setSelected(true);
+            try {
+                selectedNodes.clear();
+                selectedNodes.add(adpterNodes.get(0).cloneNode());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+            traceHistoryUserIds.add(adpterNodes.get(0).get_id());
+
+        }
+
+        gridAdapter.setTraceData(adpterNodes);
     }
 
     Timer timer;
@@ -639,14 +641,21 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
 
+    private List<Node> selectedNodes = new ArrayList<>();
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Node node = (Node) parent.getAdapter().getItem(position);
+        selectedNodes.clear();
         traceHistoryUserIds.clear();
         traceHistoryUserIds.add(node.get_id());
         for(Node bean :adpterNodes){
             if(bean.get_id().equals(node.get_id())){
                 bean.setSelected(true);
+                try {
+                    selectedNodes.add(bean.cloneNode());
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             }else {
                 bean.setSelected(false);
             }
