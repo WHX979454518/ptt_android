@@ -570,6 +570,8 @@ class SignalApi(private val appComponent: AppComponent,
     fun findUserLocations(userIds: List<String>, startTime: Long, endTime: Long): Single<List<UserLocation>> {
         return waitForLoggedIn()
                 .andThen(Single.defer { restfulApi!!.findUserLocations(userIds, startTime, endTime) })
+                .map { it.data ?: emptyList<UserLocation>() }
+
     }
 
     private fun waitForLoggedIn(): Completable {
@@ -610,7 +612,7 @@ class SignalApi(private val appComponent: AppComponent,
         @GET("api/locations")
         fun findUserLocations(@Query("userIds[]") userIds: List<String>,
                               @Query("startTime") startTime: Long,
-                              @Query("endTime") endTime: Long): Single<List<UserLocation>>
+                              @Query("endTime") endTime: Long): Single<Dto<List<UserLocation>>>
 
         @POST("upload/do/binary")
         @Multipart
