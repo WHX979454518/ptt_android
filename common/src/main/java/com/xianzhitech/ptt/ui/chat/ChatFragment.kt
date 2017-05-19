@@ -94,32 +94,33 @@ class ChatFragment : BaseViewModelFragment<ChatViewModel, FragmentChatBinding>()
             viewModel.title.toRxObservable()
                     .subscribe { activity.title = it.orNull() }
                     .bindToLifecycle()
-
-            viewModel.moreSelectionOpen.toRxObservable()
-                    .distinctUntilChanged()
-                    .subscribe {
-                        if (it.get()) {
-                            dataBinding.editText.clearFocus()
-                            inputMethodManager.hideSoftInputFromWindow(dataBinding.editText.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
-                        }
-                        else {
-                            inputMethodManager.showSoftInput(dataBinding.editText, InputMethodManager.SHOW_IMPLICIT)
-                        }
-                    }
-                    .bindToLifecycle()
-
-            viewModel.moreSelectionOpen.toRxObservable()
-                    .distinctUntilChanged()
-                    .switchMap { open ->
-                        if (open.get()) {
-                            Observable.timer(100, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).map { true }
-                        } else {
-                            Observable.just(open.get())
-                        }
-                    }
-                    .subscribe { dataBinding.bottomSelection.show = it }
-                    .bindToLifecycle()
         }
+
+        viewModel.moreSelectionOpen.toRxObservable()
+                .distinctUntilChanged()
+                .subscribe {
+                    if (it.get()) {
+                        dataBinding.editText.clearFocus()
+                        inputMethodManager.hideSoftInputFromWindow(dataBinding.editText.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+                    }
+                    else {
+                        inputMethodManager.showSoftInput(dataBinding.editText, InputMethodManager.SHOW_IMPLICIT)
+                    }
+                }
+                .bindToLifecycle()
+
+        viewModel.moreSelectionOpen.toRxObservable()
+                .distinctUntilChanged()
+                .switchMap { open ->
+                    if (open.get()) {
+                        Observable.timer(100, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread()).map { true }
+                    } else {
+                        Observable.just(open.get())
+                    }
+                }
+                .subscribe { dataBinding.bottomSelection.show = it }
+                .bindToLifecycle()
+
     }
 
     override fun navigateToVideoChatPage(roomId: String, audioOnly: Boolean) {

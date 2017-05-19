@@ -4,7 +4,13 @@ package com.zrt.ptt.app.console.mvp.view.fragment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.socket.client.On;
+import kotlin.Pair;
+import utils.DatabindingUtils;
 import utils.FragmentManagerUtils;
 import utils.LogUtils;
 
@@ -18,10 +24,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import com.google.common.base.Optional;
+import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.broker.RoomMode;
+import com.xianzhitech.ptt.data.Room;
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment;
 import com.xianzhitech.ptt.ui.chat.ChatFragment;
 import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment;
+import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.databinding.FragmentChatRoomBinding;
 import com.zrt.ptt.app.console.viewmodel.ChatRoomViewModel;
@@ -39,6 +49,7 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
     //Normal--文字聊天类型Fragment
     private ChatFragment chatFragment;
+    private Disposable titleDisposable;
 
 
     public ChatRoomFragment() {
@@ -79,17 +90,7 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
     @NotNull
     @Override
     public ChatRoomViewModel onCreateViewModel() {
-
         ChatRoomViewModel viewModel = new ChatRoomViewModel();
-//        viewModel.setRoomName("10人组");
-
-        Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                getViewModel().roomName.set("50人组");
-            }
-        }, 1000);
         return viewModel;
     }
 
@@ -144,8 +145,6 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
      */
     private void joinNormalRoom(String roomId){
         LogUtils.d(TAG, "joinNormalRoom() called with: roomId = [" + roomId + "]");
-        getViewModel().roomName.set("30人组");
-
         Bundle bundle = new Bundle();
         bundle.putString(ChatFragment.ARG_ROOM_ID, roomId);
         if (chatFragment != null) {
@@ -154,6 +153,22 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
         chatFragment = new ChatFragment();
         chatFragment.setArguments(bundle);
+
         FragmentManagerUtils.showFragment(this, chatFragment, R.id.chatroom_fragment_placeholder);
+
+        //设置房间标题
+
+        if(titleDisposable != null)
+            titleDisposable.dispose();
+
+        titleDisposable = ((AppComponent) (App.getInstance())).getStorage().getRoomWithName(roomId)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Optional<Pair<Room, String>>>() {
+                    @Override
+                    public void accept(@NonNull Optional<Pair<Room, String>> pairOptional) throws Exception {
+                        Log.d(TAG, "ChatRoomFragment.roomTitle = [" + pairOptional.orNull().getSecond() + "]");
+                        getViewModel().roomName.set(pairOptional.orNull().getSecond());
+                    }
+                });
     }
 }
