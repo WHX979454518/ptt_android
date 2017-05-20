@@ -186,7 +186,6 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 }
                 if(userLoactionsIds.size()!=0){
                     mainActivityPresenter.showLocations(userLoactionsIds);
-                    getLocationData(userLoactionsIds);
                 }
                 break;
 
@@ -291,6 +290,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                                       List<Node> checkedNodes) {
                 // TODO Auto-generated method stub
                 NodeAddDelet = checkedNodes;
+                locationUserIds.clear();
                 int num = 0;
                 for (Node bean:checkedNodes){
                     if(bean.isLeaf()){
