@@ -73,7 +73,7 @@
                 android:onClick="@{ignored -> viewModel.onClickEmoji()}"
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_mood_black_24dp"
-                android:tint="?attr/colorControlNormal" />
+                />
 
             <ImageView
                 android:id="@+id/send"
@@ -99,7 +99,6 @@
                 android:onClick="@{ignored -> viewModel.onClickMore()}"
                 android:padding="@dimen/unit_one"
                 android:src="@drawable/ic_add_circle_outline_black_24dp"
-                android:tint="?attr/colorControlNormal"
                 app:show="@{safeUnbox(viewModel.displayMoreButton)}" />
 
 
