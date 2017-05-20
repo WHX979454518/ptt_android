@@ -43,7 +43,8 @@ import com.zrt.ptt.app.console.viewmodel.ChatRoomViewModel;
  * A simple {@link Fragment} subclass.
  */
 
-public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, FragmentChatRoomBinding> implements WalkieRoomFragment.Callbacks, ChatFragment.Callbacks{
+public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, FragmentChatRoomBinding>
+        implements WalkieRoomFragment.Callbacks, ChatFragment.Callbacks, CallFragment.Callbacks{
     private static final String TAG = "ChatRoomFragment";
 
     private WalkieRoomFragment walkieRoomFragment;
@@ -165,6 +166,14 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////Implement CallFragment.Callbacks interface //////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void closeCallPage() {
+        Log.d(TAG, "closeCallPage() called");
+        FragmentManagerUtils.removeFragment(this, callFragment);
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////Inner help methods//////////////////////////////////////////
