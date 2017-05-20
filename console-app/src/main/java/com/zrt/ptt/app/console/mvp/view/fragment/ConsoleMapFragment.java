@@ -41,6 +41,7 @@ import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.baidu.MapMoveUtil;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
+import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.presenter.ConsoleMapPresener;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
@@ -65,6 +66,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -76,7 +78,9 @@ import io.reactivex.Observer;
 import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import utils.CommonUtil;
 
@@ -99,7 +103,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private CheckBox traceRadioSelectedall;
     private GridView gridView;//轨迹回放选中用户Node
     private ListView listView;
-    private TextView trace_start_time,trace_end_time;
+    private TextView trace_start_time,trace_end_time,current_user,selected_user;
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+    private Disposable traceDisposable;
     /**
      * 当前定位的模式
      */
@@ -135,7 +141,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private List<Node> traceData;
     private TraceGridAdapter gridAdapter;
     private TraceHistoryListAdapter listAdapter;
-    private List<UserLocation> userLocations = new ArrayList<>();
+    private List<TraceListItemData>  userLocations = new ArrayList<>();
     private ConsoleMapPresener consoleMapPresener;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //轨迹回放
@@ -214,6 +220,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         trace_next_user.setOnClickListener(this);
         traceRadioSelectedall = (CheckBox) traceControlLayout.findViewById(R.id.trace_radio_selectedall);
         traceRadioSelectedall.setOnCheckedChangeListener(this);
+        current_user = (TextView) view.findViewById(R.id.current_user);
+        selected_user = (TextView) view.findViewById(R.id.selected_user);
 
     }
 
@@ -318,7 +326,13 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 traceControlLayout.setVisibility(View.INVISIBLE);
                 break;
             case R.id.trace_play://播放
+                labels = PALY;
                 consoleMapPresener.showUserTraceHistory(traceHistoryUserIds,this,startTime,endTime);
+                for(Node node :adpterNodes){
+                    if(node.get_id().equals(traceHistoryUserIds.get(0))){
+                        current_user.setText(node.getName());
+                    }
+                }
                 break;
             case R.id.trace_the_previous://上一个
                 if(timer!=null)timer.cancel();
@@ -344,7 +358,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     startTimeCallback = new DateDialog.Callback() {
                         @Override
                         public void onDateCallback(long timeStamp) {
-                            startTime = timeStamp;
+                            startTime = timeStamp*1000;
                             StringBuilder startTimeBuilder = new StringBuilder();
 //                            startTimeBuilder.append(getResources().getString(R.string.start_time));
                             startTimeBuilder.append(simpleDateFormat.format(timeStamp * 1000));
@@ -364,7 +378,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     endTimeCallback = new DateDialog.Callback() {
                         @Override
                         public void onDateCallback(long timeStamp) {
-                            endTime = timeStamp;
+                            endTime = timeStamp*1000;
                             StringBuilder endTimeBuilder = new StringBuilder();
 //                            endTimeBuilder.append(getResources().getString(R.string.end_time));
                             endTimeBuilder.append(simpleDateFormat.format(timeStamp * 1000));
@@ -423,7 +437,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         if (bmapView != null) {
             bmapView.onDestroy();
         }
-
+        compositeDisposable.clear();
         baiduMap.setMyLocationEnabled(false);
     }
 
@@ -611,12 +625,14 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             if(selectedNodes.size()>0 && node.equals(selectedNodes.get(0))){
                 node.setSelected(true);
                 exsitSelected = true;
+                selected_user.setText(node.getName());
                 traceHistoryUserIds.add(node.get_id());
                 break;
             }
         }
         if(adpterNodes.size() > 0 && !exsitSelected){
             adpterNodes.get(0).setSelected(true);
+            selected_user.setText(adpterNodes.get(0).getName());
             try {
                 selectedNodes.clear();
                 selectedNodes.add(adpterNodes.get(0).cloneNode());
@@ -635,79 +651,56 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     int num=0;
     //拿到历史轨迹数据，业务在这里处理
     @Override
-    public void showTrackPlayback(List<UserLocation> userLocations) {
-        listAdapter.setUserLocations(userLocations);
-        Observable.create(new ObservableOnSubscribe<UserLocation>() {
+    public void showTrackPlayback(List<TraceListItemData> datas) {
+        listAdapter.setUserLocations(datas);
+        userLocations = datas;
+       /*traceDisposable =  Observable.interval(1,1,TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
             @Override
-            public void subscribe(@NonNull ObservableEmitter<UserLocation> observableEmitter) throws Exception {
-                timer = new Timer();
-                mTimerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        switch (labels){
-                            case PALY:
-                                if(num<userLocations.size()){
-                                    observableEmitter.onNext(userLocations.get(num++));
-                                }else {
-                                    observableEmitter.onComplete();
+            public void accept(@NonNull Long aLong) throws Exception {
+                switch (labels){
+                    case PALY:
+                        if(num<userLocations.size()){
+                            listView.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if(userLocations.size()>0)
+                                    listView.smoothScrollToPosition(num);
+                                    for (int i=0;i<userLocations.size();i++){
+                                        if(i==num){
+                                            userLocations.get(i).setCurrent(true);
+                                        }else {
+                                            userLocations.get(i).setCurrent(false);
+                                        }
+                                    }
+                                    listAdapter.setUserLocations(userLocations);
+                                    num++;
+
                                 }
-                                break;
-                            case PAUSE:
-                                observableEmitter.onComplete();
-                                break;
-                            case PREVIOUSSTEP:
-                                break;
-                            case NEXTSTEP:
-                                break;
-                            case NEXT:
-                                break;
-                            case LAST:
-                                break;
+                            });
+                        }else {
                         }
-                    }
-                };
-                timer.schedule(mTimerTask,1000,1000);
-            }
-        }).subscribeOn(Schedulers.newThread()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<UserLocation>() {
-            @Override
-            public void onSubscribe(Disposable disposable) {
-
-            }
-
-            @Override
-            public void onNext(UserLocation userLocation) {
-                listView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        listView.smoothScrollToPosition(num);
-                    }
-                });
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-
-            }
-
-            @Override
-            public void onComplete() {
-                if (timer != null) {
-                    timer.cancel();
-                    timer = null;
-                }
-                if (mTimerTask != null) {
-                    mTimerTask.cancel();
-                    mTimerTask = null;
+                        break;
+                    case PAUSE:
+                        break;
+                    case PREVIOUSSTEP:
+                        break;
+                    case NEXTSTEP:
+                        break;
+                    case NEXT:
+                        break;
+                    case LAST:
+                        break;
                 }
             }
-        });
-
+        });*/
     }
 
-    private Disposable disposable;
     @Override
     public void callBackiDisposable(Disposable disposable) {
-        this.disposable = disposable;
+//        this.disposable = disposable;
+        if(disposable!=null){
+            compositeDisposable.add(disposable);
+        }
     }
 
     public int getVisibiliyControlLayout() {
@@ -741,6 +734,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             }
         }
         ((TraceGridAdapter) parent.getAdapter()).setTraceData(adpterNodes);
+        selected_user.setText(node.getName());
+
     }
 
 

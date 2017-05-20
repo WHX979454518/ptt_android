@@ -1,11 +1,13 @@
 package com.zrt.ptt.app.console.mvp.presenter;
 
 import com.xianzhitech.ptt.api.dto.UserLocation;
+import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IConsoleMap;
 import com.zrt.ptt.app.console.mvp.model.ModelImp.ConsoleMapModel;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 import com.zrt.ptt.app.console.mvp.view.fragment.ConsoleMapFragment;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.disposables.Disposable;
@@ -27,7 +29,15 @@ public class ConsoleMapPresener {
         iConsoleMap.getUserTraceHistory(new IConsoleMap.CallBackTraceHistory() {
             @Override
             public void callBackTraceDatas(List<UserLocation> userLocations) {
-                iConsoMapView.showTrackPlayback(userLocations);
+                List<TraceListItemData> datas = new ArrayList<TraceListItemData>();
+                for(UserLocation ulocation:userLocations){
+                    datas.add(new TraceListItemData(ulocation.getLocation().getTime(),
+                            ulocation.getLocation().getSpeed()+"km/h",
+                            ulocation.getLocation().getRadius()+"",
+                            ulocation.getLocation().getLatLng().getLat()+"",
+                            ulocation.getLocation().getLatLng().getLng()+""));
+                }
+                iConsoMapView.showTrackPlayback(datas);
             }
 
             @Override

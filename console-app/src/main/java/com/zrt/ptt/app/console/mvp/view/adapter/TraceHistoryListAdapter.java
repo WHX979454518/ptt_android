@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.R;
+import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,18 +22,18 @@ import java.util.List;
 public class TraceHistoryListAdapter extends BaseAdapter {
 
 
-    private List<UserLocation> userLocations = new ArrayList<>();
+    private List<TraceListItemData>  userLocations = new ArrayList<>();
     private Context context;
     private LayoutInflater inflater;
 
-    public TraceHistoryListAdapter(List<UserLocation> userLocations, Context context) {
+    public TraceHistoryListAdapter(List<TraceListItemData>  userLocations, Context context) {
         this.userLocations = userLocations;
         this.context = context;
         inflater = LayoutInflater.from(context);
     }
 
-    public void setUserLocations(List<UserLocation> userLocations) {
-        this.userLocations = userLocations;
+    public void setUserLocations(List<TraceListItemData> datas) {
+        this.userLocations = datas;
         notifyDataSetChanged();
     }
     @Override
@@ -67,13 +68,13 @@ public class TraceHistoryListAdapter extends BaseAdapter {
         }else{
             holder=(Holder) convertView.getTag();
         }
-        UserLocation userLocation = (UserLocation) getItem(position);
-        holder.colum.setText(position);
-        holder.time.setText(simpleDateFormat.format(userLocation.getLocation().getTime()));
-        holder.address.setText(userLocation.getLocation().getRadius()+"");
-        holder.speed.setText(userLocation.getLocation().getSpeed());
-        holder.latitude.setText(userLocation.getLocation().getLatLng().getLat()+"");
-        holder.longitude.setText(userLocation.getLocation().getLatLng().getLng()+"");
+        TraceListItemData userLocation = (TraceListItemData) getItem(position);
+        holder.colum.setText(position+"");
+        holder.time.setText(simpleDateFormat.format(userLocation.getTime()));
+        holder.address.setText(userLocation.getAddres());
+        holder.speed.setText(userLocation.getSpeed());
+        holder.latitude.setText(userLocation.getLatitude());
+        holder.longitude.setText(userLocation.getLongitude());
         return convertView;
     }
 
