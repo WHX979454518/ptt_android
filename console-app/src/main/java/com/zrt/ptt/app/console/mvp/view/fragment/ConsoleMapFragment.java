@@ -35,6 +35,7 @@ import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
@@ -466,36 +467,60 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 //        myOrientationListener.stop();
     }
 
-    @Override
-    public void onDestroyOptionsMenu() {
-        super.onDestroyOptionsMenu();
-        if(disposable!=null)disposable.dispose();
-    }
+//    @Override
+//    public void onDestroyOptionsMenu() {
+//        super.onDestroyOptionsMenu();
+//        if(disposable!=null)disposable.dispose();
+//    }
+//
+//    //展示传递过来的用户参数坐标定位
+//    @Override
+//    public void showUsersLocation(List<LatLng> locations) {
+//        baiduMap.clear();
+//        LatLng latLng = null;
+//        Marker marker = null;
+//        List<OverlayOptions> optionList = new ArrayList<OverlayOptions>();
+//        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+//        OverlayOptions options;
+//        for (LatLng latLin : locations) {
+//            // 经纬度
+//            latLng = new LatLng(latLin.latitude, latLin.longitude);
+//            // 图标
+//            options = new MarkerOptions().position(latLng).icon(mMarker)
+//                    .zIndex(5);
+//            optionList.add(options);
+//            //marker = (Marker) baiduMap.addOverlay(options);
+//            //屏蔽代码属于描述maker展示的详情
+//            /*Bundle arg0 = new Bundle();
+//            arg0.putSerializable("info", latLin);
+//            marker.setExtraInfo(arg0);*/
+//        }
+//        baiduMap.addOverlays(optionList);
+////        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
+//        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(latLng);
+//        baiduMap.setMapStatus(msu);
+//        msu = MapStatusUpdateFactory.zoomTo(15.0f);
+//        baiduMap.setMapStatus(msu);
+//    }
 
-    //展示传递过来的用户参数坐标定位
     @Override
-    public void showUsersLocation(List<LatLng> locations) {
+    public void showLocations(List<LastLocationByUser> lastLocationByUsers)
+    {
         baiduMap.clear();
-        LatLng latLng = null;
-        Marker marker = null;
+        List<OverlayOptions> optionList = new ArrayList<OverlayOptions>();
         BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
-        OverlayOptions options;
-        for (LatLng latLin : locations) {
-            // 经纬度
-            latLng = new LatLng(latLin.latitude, latLin.longitude);
-            // 图标
-            options = new MarkerOptions().position(latLng).icon(mMarker)
-                    .zIndex(5);
-            marker = (Marker) baiduMap.addOverlay(options);
-            //屏蔽代码属于描述maker展示的详情
-            /*Bundle arg0 = new Bundle();
-            arg0.putSerializable("info", latLin);
-            marker.setExtraInfo(arg0);*/
+        for (LastLocationByUser user : lastLocationByUsers ){
+            LatLng gpsLng = new LatLng(user.getLatLng().getLat(), user.getLatLng().getLng());
+            OverlayOptions options = new MarkerOptions().position(gpsLng).icon(mMarker);
+            optionList.add(options);
         }
+        baiduMap.addOverlays(optionList);
 //        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
-        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(latLng);
+        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(
+                new LatLng(lastLocationByUsers.get(0).getLatLng().getLat(),
+                        lastLocationByUsers.get(0).getLatLng().getLng()));
         baiduMap.setMapStatus(msu);
-        msu = MapStatusUpdateFactory.zoomTo(15.0f);
+//        msu = MapStatusUpdateFactory.zoomTo(15.0f);
         baiduMap.setMapStatus(msu);
     }
 
