@@ -213,24 +213,24 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     //多人定位时时刷新
     private void getLocationData(List<String> userLoactionsIds ){
         mainActivityPresenter.showLocations(userLoactionsIds);
-        allLocaSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
-            @Override
-            public void accept(@NonNull Long ongs) throws Exception {
-                mainActivityPresenter.showLocations(userLoactionsIds);
-            }
-        });
+//        allLocaSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
+//            @Override
+//            public void accept(@NonNull Long ongs) throws Exception {
+//                mainActivityPresenter.showLocations(userLoactionsIds);
+//            }
+//        });
     }
 
 
     //单人定位时时刷新
     private void getSingleLocationData(List<String> userLoactionsIds ){
         mainActivityPresenter.showLocation(userLoactionsIds);
-        singleSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
-            @Override
-            public void accept(@NonNull Long Longs) throws Exception {
-                mainActivityPresenter.showLocation(userLoactionsIds);
-            }
-        });
+//        singleSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
+//            @Override
+//            public void accept(@NonNull Long Longs) throws Exception {
+//                mainActivityPresenter.showLocation(userLoactionsIds);
+//            }
+//        });
     }
 
     private void initLatLng(){

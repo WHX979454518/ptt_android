@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.zrt.ptt.app.console.R;
@@ -325,15 +326,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         Log.e("Organization", data.toString());
     }
 
-
-    /**
-     * 传递点极坐标参数
-     * @param locations
-     */
     @Override
-    public void showLocation(List<LatLng> locations) {
+    public void showLocations(List<LastLocationByUser> lastLocationByUsers) {
         IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
-        imapView.showUsersLocation(locations);
+        imapView.showLocations(lastLocationByUsers);
     }
 
     @Override

@@ -503,6 +503,58 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 //        baiduMap.setMapStatus(msu);
 //    }
 
+    //根据原始数据计算中心坐标和缩放级别，并为地图设置中心坐标和缩放级别。
+    private void setZoom(List<LastLocationByUser> lastLocationByUsers){
+        if(lastLocationByUsers.size() > 0){
+            double maxLng = lastLocationByUsers.get(0).getLatLng().getLng();
+            double minLng = lastLocationByUsers.get(0).getLatLng().getLng();
+            double maxLat = lastLocationByUsers.get(0).getLatLng().getLat();
+            double minLat = lastLocationByUsers.get(0).getLatLng().getLat();
+            com.xianzhitech.ptt.data.LatLng res;
+            for (LastLocationByUser usr : lastLocationByUsers) {
+                res = usr.getLatLng();
+                if(res.getLng() > maxLng) maxLng = res.getLng();
+                if(res.getLng() < minLng) minLng = res.getLng();
+                if(res.getLat() > maxLat) maxLat = res.getLat();
+                if(res.getLat() < minLat) minLat = res.getLat();
+            };
+            double cenLng =(maxLng + minLng)/2;
+            double cenLat = (maxLat + minLat)/2;
+            double zoom = getZoom(maxLng, minLng, maxLat, minLat);
+            map.centerAndZoom(new BMap.Point(cenLng,cenLat), zoom);
+        }else{
+            //没有坐标，显示全中国
+            map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
+        }
+    }
+
+    public static double getDistance(double lat_a, double lng_a, double lat_b, double lng_b){
+        double pk = 180 / 3.14169;
+        double a1 = lat_a / pk;
+        double a2 = lng_a / pk;
+        double b1 = lat_b / pk;
+        double b2 = lng_b / pk;
+        double t1 = Math.cos(a1) * Math.cos(a2) * Math.cos(b1) * Math.cos(b2);
+        double t2 = Math.cos(a1) * Math.sin(a2) * Math.cos(b1) * Math.sin(b2);
+        double t3 = Math.sin(a1) * Math.sin(b1);
+        double tt = Math.acos(t1 + t2 + t3);
+        return 6371000 * tt;
+    }
+
+    //根据经纬极值计算绽放级别。
+    private double getZoom (double maxLng, double minLng, double maxLat, double minLat) {
+        int []zoom = {50,100,200,500,1000,2000,5000,10000,20000,25000,50000,100000,200000,500000,1000000,2000000};//级别18到3。
+//        var pointA = new BMap.Point(maxLng,maxLat);  // 创建点坐标A
+//        var pointB = new BMap.Point(minLng,minLat);  // 创建点坐标B
+        //var distance = map.getDistance(pointA,pointB).toFixed(1);  //获取两点距离,保留小数点后两位
+        double distance = getDistance(maxLat,maxLng, minLat,minLng);
+        for (int i = 0,zoomLen = zoom.length; i < zoomLen; i++) {
+            if(zoom[i] - distance > 0){
+                return 18-i+3;//之所以会多3，是因为地图范围常常是比例尺距离的10倍以上。所以级别会增加3。
+            }
+        };
+    }
+
     @Override
     public void showLocations(List<LastLocationByUser> lastLocationByUsers)
     {

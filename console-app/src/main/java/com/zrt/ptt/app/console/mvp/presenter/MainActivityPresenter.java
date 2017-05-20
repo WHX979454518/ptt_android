@@ -58,7 +58,7 @@ public class MainActivityPresenter {
                     if (cationUser != null) {
                         LatLng lng = new LatLng(cationUser.getLatLng().getLat(), cationUser.getLatLng().getLng());
                         locations.add(lng);
-                        iMainView.showLocation(locations);
+                        //iMainView.showLocation(locations);
                     }
                 } else return;
 
@@ -85,15 +85,17 @@ public class MainActivityPresenter {
             @Override
             public void getAllLocations(List<LastLocationByUser> lastLocationByUsers) {
                 List<LatLng> locations = new ArrayList<LatLng>();
-                if (lastLocationByUsers.size() != 0) {
-                    for (LastLocationByUser cationsUser : lastLocationByUsers) {
-                        if (cationsUser != null) {
-                            LatLng lng = new LatLng(cationsUser.getLatLng().getLat(), cationsUser.getLatLng().getLng());
-                            locations.add(lng);
-                            iMainView.showLocation(locations);
-                        }
-                    }
-                }
+                //iMainView.showLocations(lastLocationByUsers);
+                iMainView.showLocations(lastLocationByUsers);
+//                if (lastLocationByUsers.size() != 0) {
+//                    for (LastLocationByUser cationsUser : lastLocationByUsers) {
+//                        if (cationsUser != null) {
+//                            LatLng lng = new LatLng(cationsUser.getLatLng().getLat(), cationsUser.getLatLng().getLng());
+//                            locations.add(lng);
+//                            iMainView.showLocation(locations);
+//                        }
+//                    }
+//                }
             }
         }, locationUserIds);
     }

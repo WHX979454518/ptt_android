@@ -1,6 +1,7 @@
 package com.zrt.ptt.app.console.mvp.view.IView;
 
 import com.baidu.mapapi.model.LatLng;
+import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IOranizationMain;
 import com.zrt.ptt.app.console.mvp.model.Node;
@@ -25,10 +26,9 @@ public interface IMainActivityView {
 
     /**
      * 点击定位传递数据接口方法
-     * @param locations
+     * @param lastLocationByUsers
      */
-    void showLocation(List<LatLng> locations);
-
+    void showLocations(List<LastLocationByUser> lastLocationByUsers);
 
     /**
      * 创建房间并加入房间聊天，跳转到聊天界面
