@@ -37,6 +37,7 @@ import com.zrt.ptt.app.console.mvp.view.adapter.MyTreeListViewAdapter;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Consumer;
 
+import static com.xianzhitech.ptt.broker.RoomMode.Conversion;
 import static com.xianzhitech.ptt.broker.RoomMode.NORMAL;
 
 /**
@@ -210,8 +211,7 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     @Override
     public void navigateToChatRoomPage(@NotNull Room room) {
         Log.d(TAG, "navigateToChatRoomPage() called with: room = [" + room + "]");
-        //FIXME(feihe)://此处写死了room类型，后面需要修改
-        joinRoom(room.getId(), false, NORMAL);
+        joinRoom(room.getId(), false, Conversion);
     }
 
     @Override

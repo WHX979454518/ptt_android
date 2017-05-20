@@ -40,17 +40,19 @@
 
 
             <ImageView
-                android:id="@+id/talk"
+                android:id="@+id/audio_talk"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:src="@drawable/talk_back"/>
             <ImageView
+                android:id="@+id/text_talk"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:src="@drawable/conversation"/>
             <ImageView
+                android:id="@+id/video_talk"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"

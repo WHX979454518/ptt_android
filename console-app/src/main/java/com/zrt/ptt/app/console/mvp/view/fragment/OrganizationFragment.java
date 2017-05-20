@@ -77,7 +77,7 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private static final String all = "ALL";
     private static final String ON_LINE = "ON_LINE";
     private static final String OFF_LINE = "OFF_LINE";
-    private ImageView userLocation,talk,trajectory_btn;
+    private ImageView userLocation,trajectory_btn;
     private List<LatLng> locations = new ArrayList<>();
     private HashSet<String> locationUserIds = new HashSet<>();
     private HashSet<String> multiMediaUserID = new HashSet<>();
@@ -131,11 +131,13 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
         showSelectedUsers = (LinearLayout) view.findViewById(R.id.show_orgzation_selected);
         userLocation = (ImageView) view.findViewById(R.id.user_location);
         trajectory_btn = (ImageView) view.findViewById(R.id.trajectory_btn);
-        talk = (ImageView) view.findViewById(R.id.talk);
         trajectory_btn.setOnClickListener(this);
         userLocation.setOnClickListener(this);
         showSelectedUsers.setOnClickListener(this);
-        talk.setOnClickListener(this);
+        view.findViewById(R.id.audio_talk).setOnClickListener(this);
+        view.findViewById(R.id.text_talk).setOnClickListener(this);
+        view.findViewById(R.id.video_talk).setOnClickListener(this);
+
         fragPresen = new OrganFragmentPresenter(this);
     }
 
@@ -189,16 +191,26 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 }
                 break;
 
-            case R.id.talk:
-                //FIXME:暂时使用假数据
-                List<String> userIds = new ArrayList<String>();
-                userIds.add("500006");
+            case R.id.audio_talk:
+            case R.id.video_talk:
+            case R.id.text_talk: {
+                RoomMode roomMode = RoomMode.Conversion;
+                int vId = v.getId();
+                if(vId == R.id.audio_talk){
+                    roomMode = RoomMode.NORMAL;
+                }
+                else if(vId == R.id.video_talk){
+                    roomMode = RoomMode.VIDEO;
+                }
+
                 List<String> usermultiMediaIds = new ArrayList<>();
-                for(String id:multiMediaUserID){
+                for (String id : multiMediaUserID) {
                     usermultiMediaIds.add(id);
                 }
-                mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), RoomMode.NORMAL);
+                mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), roomMode);
+            }
                 break;
+
             case R.id.trajectory_btn:
                 if(allLocaSubcription!=null) allLocaSubcription.dispose();
                 if(singleSubcription!=null) singleSubcription.dispose();

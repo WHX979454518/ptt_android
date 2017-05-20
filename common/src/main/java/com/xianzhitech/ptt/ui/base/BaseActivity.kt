@@ -243,6 +243,7 @@ abstract class BaseActivity : AppCompatActivity(),
             RoomMode.EMERGENCY -> TODO()
             RoomMode.BROADCAST -> TODO()
             RoomMode.SYSTEM_CALL -> TODO()
+            RoomMode.Conversion -> TODO()
             RoomMode.NORMAL -> {
                 intent = Intent(this, WalkieRoomActivity::class.java)
                         .putExtra(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId)

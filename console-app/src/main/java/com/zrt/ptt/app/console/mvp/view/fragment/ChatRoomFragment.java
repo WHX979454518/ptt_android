@@ -28,7 +28,9 @@ import com.google.common.base.Optional;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.broker.RoomMode;
 import com.xianzhitech.ptt.data.Room;
+import com.xianzhitech.ptt.ui.base.BaseActivity;
 import com.xianzhitech.ptt.ui.base.BaseViewModelFragment;
+import com.xianzhitech.ptt.ui.call.CallFragment;
 import com.xianzhitech.ptt.ui.chat.ChatFragment;
 import com.xianzhitech.ptt.ui.walkie.WalkieRoomFragment;
 import com.zrt.ptt.app.console.App;
@@ -41,11 +43,12 @@ import com.zrt.ptt.app.console.viewmodel.ChatRoomViewModel;
  * A simple {@link Fragment} subclass.
  */
 
-
-public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, FragmentChatRoomBinding> implements WalkieRoomFragment.Callbacks{
+public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, FragmentChatRoomBinding> implements WalkieRoomFragment.Callbacks, ChatFragment.Callbacks{
     private static final String TAG = "ChatRoomFragment";
 
     private WalkieRoomFragment walkieRoomFragment;
+    private CallFragment callFragment;
+
 
     //Normal--文字聊天类型Fragment
     private ChatFragment chatFragment;
@@ -57,22 +60,24 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////Public methods////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     public void joinRoom(String roomId, boolean fromInvitation, RoomMode roomMode){
         LogUtils.d(TAG, "joinRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "], roomMode = [" + roomMode + "]");
 
         switch (roomMode){
-            case NORMAL:{
-                joinNormalRoom(roomId);
+            case NORMAL:
+                joinNormalRoom(roomId, fromInvitation);
                 break;
-            }
-
-            case AUDIO:{
+            case AUDIO:
                 joinAuidoRoom(roomId, fromInvitation);
                 break;
-            }
-
+            case VIDEO:
+                joinVideoRoom(roomId, fromInvitation);
+                break;
+            case Conversion:
+                joinChatRoom(roomId);
+                break;
             default:
                 LogUtils.e(TAG, "joinRoom: Unsupport roomMode = " + roomMode);
         }
@@ -118,46 +123,66 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
         ft.commitAllowingStateLoss();
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////Implement ChatFragment.Callbacks interface //////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void navigateToWalkieTalkiePage(@NotNull String roomId) {
+        Log.d(TAG, "navigateToWalkieTalkiePage() called with: roomId = [" + roomId + "]");
+        if(getActivity() instanceof BaseActivity)
+        {
+            ((BaseActivity)getActivity()).navigateToWalkieTalkiePage(roomId);
+        }
+    }
+
+    @Override
+    public void navigateToWalkieTalkiePage() {
+        Log.d(TAG, "navigateToWalkieTalkiePage() called");
+
+        if(getActivity() instanceof BaseActivity)
+        {
+            ((BaseActivity)getActivity()).navigateToWalkieTalkiePage();
+        }
+    }
+
+    @Override
+    public void navigateToVideoChatPage() {
+        Log.d(TAG, "navigateToVideoChatPage() called");
+
+        if(getActivity() instanceof BaseActivity)
+        {
+            ((BaseActivity)getActivity()).navigateToVideoChatPage();
+        }
+    }
+
+    @Override
+    public void navigateToVideoChatPage(@NotNull String roomId, boolean audioOnly) {
+        Log.d(TAG, "navigateToVideoChatPage() called with: roomId = [" + roomId + "], audioOnly = [" + audioOnly + "]");
+
+        if(getActivity() instanceof BaseActivity)
+        {
+            ((BaseActivity)getActivity()).navigateToVideoChatPage(roomId, audioOnly);
+        }
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////Inner help methods//////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     /**
-     * 加入语音类型的聊天
-     * @param roomId
-     * @param fromInvitation
-     */
-    private void joinAuidoRoom(String roomId, boolean fromInvitation){
-        Log.d(TAG, "joinAuidoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
-        Bundle bundle = new Bundle();
-        bundle.putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId);
-        bundle.putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation);
-        if (walkieRoomFragment != null) {
-            FragmentManagerUtils.removeFragment(this, walkieRoomFragment);
-        }
-
-        walkieRoomFragment.setArguments(bundle);
-        FragmentManagerUtils.showFragment(this, walkieRoomFragment, R.id.chatroom_fragment_placeholder);
-    }
-
-    /**
-     * 加入文字类型聊天
+     * 进入文字聊天室
      * @param roomId
      */
-    private void joinNormalRoom(String roomId){
-        LogUtils.d(TAG, "joinNormalRoom() called with: roomId = [" + roomId + "]");
-        Bundle bundle = new Bundle();
-        bundle.putString(ChatFragment.ARG_ROOM_ID, roomId);
+    private void joinChatRoom(String roomId){
+        Log.d(TAG, "joinChatRoom() called with: roomId = [" + roomId + "]");
         if (chatFragment != null) {
             FragmentManagerUtils.removeFragment(this, chatFragment);
         }
 
-        chatFragment = new ChatFragment();
-        chatFragment.setArguments(bundle);
-
+        chatFragment = ChatFragment.Companion.createInstance(roomId);
         FragmentManagerUtils.showFragment(this, chatFragment, R.id.chatroom_fragment_placeholder);
 
         //设置房间标题
-
         if(titleDisposable != null)
             titleDisposable.dispose();
 
@@ -170,5 +195,59 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
                         getViewModel().roomName.set(pairOptional.orNull().getSecond());
                     }
                 });
+    }
+
+    /**
+     * 加入语音类型的聊天
+     * @param roomId
+     * @param fromInvitation
+     */
+    private void joinAuidoRoom(String roomId, boolean fromInvitation){
+        Log.d(TAG, "joinAuidoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
+
+        Bundle bundle = new Bundle();
+        bundle.putString(CallFragment.ARG_JOIN_ROOM_ID, roomId);
+        bundle.putBoolean(CallFragment.ARG_JOIN_ROOM_AUDIO_ONLY, true);
+        if (callFragment != null) {
+            FragmentManagerUtils.removeFragment(this, callFragment);
+        }
+
+        callFragment = new CallFragment();
+        callFragment.setArguments(bundle);
+        FragmentManagerUtils.showFragment(this, callFragment, R.id.chatroom_fragment_placeholder);
+
+    }
+
+    private void joinVideoRoom(String roomId, boolean fromInvitation){
+        Log.d(TAG, "joinVideoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
+
+        Bundle bundle = new Bundle();
+        bundle.putString(CallFragment.ARG_JOIN_ROOM_ID, roomId);
+        bundle.putBoolean(CallFragment.ARG_JOIN_ROOM_AUDIO_ONLY, false);
+        if (callFragment != null) {
+            FragmentManagerUtils.removeFragment(this, callFragment);
+        }
+
+        callFragment = new CallFragment();
+        callFragment.setArguments(bundle);
+        FragmentManagerUtils.showFragment(this, callFragment, R.id.chatroom_fragment_placeholder);
+    }
+
+    /**
+     * 加入普通
+     * @param roomId
+     */
+    private void joinNormalRoom(String roomId, boolean fromInvitation){
+        Log.d(TAG, "joinNormalRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
+        Bundle bundle = new Bundle();
+        bundle.putString(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_ID, roomId);
+        bundle.putBoolean(WalkieRoomFragment.ARG_REQUEST_JOIN_ROOM_FROM_INVITATION, fromInvitation);
+        if (walkieRoomFragment != null) {
+            FragmentManagerUtils.removeFragment(this, walkieRoomFragment);
+        }
+
+        walkieRoomFragment = new WalkieRoomFragment();
+        walkieRoomFragment.setArguments(bundle);
+        FragmentManagerUtils.showFragment(this, walkieRoomFragment, R.id.chatroom_fragment_placeholder);
     }
 }
