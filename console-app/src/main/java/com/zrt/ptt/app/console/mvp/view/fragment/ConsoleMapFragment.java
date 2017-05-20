@@ -520,11 +520,17 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             };
             double cenLng =(maxLng + minLng)/2;
             double cenLat = (maxLat + minLat)/2;
-            double zoom = getZoom(maxLng, minLng, maxLat, minLat);
-            map.centerAndZoom(new BMap.Point(cenLng,cenLat), zoom);
+            float zoom = getZoom(maxLng, minLng, maxLat, minLat);
+
+            MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(
+                    new LatLng(cenLat,cenLng));
+            baiduMap.setMapStatus(msu);
+        msu = MapStatusUpdateFactory.zoomTo(zoom);
+            baiduMap.setMapStatus(msu);
+            //map.centerAndZoom(new BMap.Point(cenLng,cenLat), zoom);
         }else{
             //没有坐标，显示全中国
-            map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
+            //map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
         }
     }
 
@@ -542,7 +548,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
     //根据经纬极值计算绽放级别。
-    private double getZoom (double maxLng, double minLng, double maxLat, double minLat) {
+    private float getZoom (double maxLng, double minLng, double maxLat, double minLat) {
         int []zoom = {50,100,200,500,1000,2000,5000,10000,20000,25000,50000,100000,200000,500000,1000000,2000000};//级别18到3。
 //        var pointA = new BMap.Point(maxLng,maxLat);  // 创建点坐标A
 //        var pointB = new BMap.Point(minLng,minLat);  // 创建点坐标B
@@ -552,7 +558,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             if(zoom[i] - distance > 0){
                 return 18-i+3;//之所以会多3，是因为地图范围常常是比例尺距离的10倍以上。所以级别会增加3。
             }
-        };
+        }
+        return 0;
     }
 
     @Override
@@ -566,14 +573,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             OverlayOptions options = new MarkerOptions().position(gpsLng).icon(mMarker);
             optionList.add(options);
         }
+
         baiduMap.addOverlays(optionList);
-//        MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
-        MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(
-                new LatLng(lastLocationByUsers.get(0).getLatLng().getLat(),
-                        lastLocationByUsers.get(0).getLatLng().getLng()));
-        baiduMap.setMapStatus(msu);
-//        msu = MapStatusUpdateFactory.zoomTo(15.0f);
-        baiduMap.setMapStatus(msu);
+
+        setZoom(lastLocationByUsers);
     }
 
     @Override
