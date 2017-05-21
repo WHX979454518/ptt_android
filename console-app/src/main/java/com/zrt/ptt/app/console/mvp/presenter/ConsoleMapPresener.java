@@ -1,5 +1,6 @@
 package com.zrt.ptt.app.console.mvp.presenter;
 
+import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 import com.zrt.ptt.app.console.mvp.model.Imodel.IConsoleMap;
@@ -25,17 +26,18 @@ public class ConsoleMapPresener {
         this.iConsoleMap = new ConsoleMapModel();
     }
 
-    public void showUserTraceHistory(List<String> traceHistoryUserIds, IConsoMapView ImapView,Long startTime, long endTime) {
+    public void showUserTraceHistory(List<String> traceHistoryUserIds, IConsoMapView ImapView, Long startTime, long endTime) {
         iConsoleMap.getUserTraceHistory(new IConsoleMap.CallBackTraceHistory() {
             @Override
             public void callBackTraceDatas(List<UserLocation> userLocations) {
                 List<TraceListItemData> datas = new ArrayList<TraceListItemData>();
-                for(UserLocation ulocation:userLocations){
+                for (UserLocation ulocation : userLocations) {
                     datas.add(new TraceListItemData(ulocation.getLocation().getTime(),
-                            ulocation.getLocation().getSpeed()+"km/h",
-                            ulocation.getLocation().getRadius()+"",
-                            ulocation.getLocation().getLatLng().getLat()+"",
-                            ulocation.getLocation().getLatLng().getLng()+""));
+                            ulocation.getLocation().getSpeed() + "km/h",
+                            ulocation.getLocation().getRadius() + "",
+                            new LatLng(ulocation.getLocation().getLatLng().getLat(),
+                                    ulocation.getLocation().getLatLng().getLng()),
+                            ulocation.getUserId()));
                 }
                 iConsoMapView.showTrackPlayback(datas);
             }

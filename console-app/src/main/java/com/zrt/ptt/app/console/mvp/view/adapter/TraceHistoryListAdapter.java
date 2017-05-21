@@ -15,6 +15,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.zrt.ptt.app.console.R.color.title_bg_red;
+
 /**
  * Created by surpass on 2017-5-18.
  */
@@ -22,11 +24,11 @@ import java.util.List;
 public class TraceHistoryListAdapter extends BaseAdapter {
 
 
-    private List<TraceListItemData>  userLocations = new ArrayList<>();
+    private List<TraceListItemData> userLocations = new ArrayList<>();
     private Context context;
     private LayoutInflater inflater;
 
-    public TraceHistoryListAdapter(List<TraceListItemData>  userLocations, Context context) {
+    public TraceHistoryListAdapter(List<TraceListItemData> userLocations, Context context) {
         this.userLocations = userLocations;
         this.context = context;
         inflater = LayoutInflater.from(context);
@@ -36,6 +38,7 @@ public class TraceHistoryListAdapter extends BaseAdapter {
         this.userLocations = datas;
         notifyDataSetChanged();
     }
+
     @Override
     public int getCount() {
         return userLocations.size();
@@ -52,33 +55,41 @@ public class TraceHistoryListAdapter extends BaseAdapter {
     }
 
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         Holder holder;
-        if(convertView==null){
-            convertView =inflater.inflate(R.layout.trace_listview_item_ly,null);
-            holder=new Holder();
-            holder.colum=(TextView) convertView.findViewById(R.id.trace_listitem_num);
-            holder.time=(TextView) convertView.findViewById(R.id.trace_location_time);
-            holder.address=(TextView) convertView.findViewById(R.id.trace_lcation_address);
-            holder.speed=(TextView) convertView.findViewById(R.id.trace_location_speed);
-            holder.latitude=(TextView) convertView.findViewById(R.id.trace_location_latitude);
-            holder.longitude=(TextView) convertView.findViewById(R.id.trace_lcation_longitude);
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.trace_listview_item_ly, null);
+            holder = new Holder();
+            holder.colum = (TextView) convertView.findViewById(R.id.trace_listitem_num);
+            holder.time = (TextView) convertView.findViewById(R.id.trace_location_time);
+            holder.address = (TextView) convertView.findViewById(R.id.trace_lcation_address);
+            holder.speed = (TextView) convertView.findViewById(R.id.trace_location_speed);
+            holder.latitude = (TextView) convertView.findViewById(R.id.trace_location_latitude);
+            holder.longitude = (TextView) convertView.findViewById(R.id.trace_lcation_longitude);
             convertView.setTag(holder);
-        }else{
-            holder=(Holder) convertView.getTag();
+        } else {
+            holder = (Holder) convertView.getTag();
         }
+
         TraceListItemData userLocation = (TraceListItemData) getItem(position);
-        holder.colum.setText(position+"");
+
+        if (userLocation.isCurrent()) {
+            convertView.setBackgroundResource(R.color.title_bg_red);
+        } else {
+            convertView.setBackgroundResource(R.color.lst_item_bg);
+        }
+        holder.colum.setText(position + "");
         holder.time.setText(simpleDateFormat.format(userLocation.getTime()));
         holder.address.setText(userLocation.getAddres());
         holder.speed.setText(userLocation.getSpeed());
-        holder.latitude.setText(userLocation.getLatitude());
-        holder.longitude.setText(userLocation.getLongitude());
+        holder.latitude.setText(userLocation.getLatLng().latitude+"");
+        holder.longitude.setText(userLocation.getLatLng().longitude+"");
         return convertView;
     }
 
-    class Holder{
+    class Holder {
         TextView colum;
         TextView time;
         TextView address;

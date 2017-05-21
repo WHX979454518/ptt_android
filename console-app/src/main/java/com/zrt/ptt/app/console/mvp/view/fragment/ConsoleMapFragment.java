@@ -3,7 +3,6 @@ package com.zrt.ptt.app.console.mvp.view.fragment;
 import android.content.Context;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,14 +31,13 @@ import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.Overlay;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.api.dto.LastLocationByUser;
-import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
-import com.zrt.ptt.app.console.baidu.MapMoveUtil;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
 import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 import com.zrt.ptt.app.console.mvp.model.Node;
@@ -48,21 +46,17 @@ import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
 import com.zrt.ptt.app.console.mvp.view.adapter.TraceGridAdapter;
 import com.zrt.ptt.app.console.mvp.view.adapter.TraceHistoryListAdapter;
 import com.zrt.ptt.app.console.mvp.view.dialog.DateDialog;
-import com.zrt.ptt.app.console.mvp.view.dialog.TrackPlayBackDialog;
 
-import android.os.Handler;
-import android.os.Message;
-import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.reactivestreams.Subscription;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -72,17 +66,11 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
-import io.reactivex.Scheduler;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
 import utils.CommonUtil;
+import utils.LogUtils;
 
 
 public class ConsoleMapFragment extends Fragment implements IConsoMapView,
@@ -103,7 +91,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private CheckBox traceRadioSelectedall;
     private GridView gridView;//轨迹回放选中用户Node
     private ListView listView;
-    private TextView trace_start_time,trace_end_time,current_user,selected_user;
+    private TextView trace_start_time, trace_end_time, current_user, selected_user;
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Disposable traceDisposable;
     /**
@@ -141,8 +129,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private List<Node> traceData;
     private TraceGridAdapter gridAdapter;
     private TraceHistoryListAdapter listAdapter;
-    private List<TraceListItemData>  userLocations = new ArrayList<>();
+    private List<TraceListItemData> userLocations = new ArrayList<>();
     private ConsoleMapPresener consoleMapPresener;
+    private Subscription subscription;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //轨迹回放
     private ArrayList<LatLng> routeList;// 路线点的集合
@@ -151,8 +140,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
      */
     private String routeJson = "{\"list\":[{\"lon\":122.235502,\"lat\":37.330564},{\"lon\":122.235727,\"lat\":37.328527},{\"lon\":122.236086,\"lat\":37.326676},{\"lon\":122.23694,\"lat\":37.325083},{\"lon\":122.237218,\"lat\":37.324703},{\"lon\":122.238862,\"lat\":37.323153},{\"lon\":122.240982,\"lat\":37.321596},{\"lon\":122.243381,\"lat\":37.319867},{\"lon\":122.245267,\"lat\":37.318454},{\"lon\":122.247504,\"lat\":37.316804},{\"lon\":122.249696,\"lat\":37.315182},{\"lon\":122.251762,\"lat\":37.313661},{\"lon\":122.253451,\"lat\":37.312075},{\"lon\":122.254547,\"lat\":37.31008},{\"lon\":122.25478,\"lat\":37.307677},{\"lon\":122.254196,\"lat\":37.30523},{\"lon\":122.253478,\"lat\":37.302603},{\"lon\":122.252939,\"lat\":37.300565},{\"lon\":122.25231,\"lat\":37.298663},{\"lon\":122.251735,\"lat\":37.297156},{\"lon\":122.251223,\"lat\":37.296022},{\"lon\":122.250253,\"lat\":37.293962},{\"lon\":122.249282,\"lat\":37.291895},{\"lon\":122.24816,\"lat\":37.289519},{\"lon\":122.24718,\"lat\":37.287431},{\"lon\":122.246102,\"lat\":37.285155},{\"lon\":122.245105,\"lat\":37.283081},{\"lon\":122.243938,\"lat\":37.280604},{\"lon\":122.24294,\"lat\":37.278458},{\"lon\":122.241782,\"lat\":37.275823},{\"lon\":122.241135,\"lat\":37.271222},{\"lon\":122.241458,\"lat\":37.269096},{\"lon\":122.242303,\"lat\":37.266799},{\"lon\":122.243372,\"lat\":37.264587},{\"lon\":122.244557,\"lat\":37.262189},{\"lon\":122.245761,\"lat\":37.259741},{\"lon\":122.247001,\"lat\":37.257386},{\"lon\":122.248097,\"lat\":37.255167},{\"lon\":122.249327,\"lat\":37.252668},{\"lon\":122.25081,\"lat\":37.249709},{\"lon\":122.252121,\"lat\":37.24698},{\"lon\":122.253118,\"lat\":37.244502},{\"lon\":122.253549,\"lat\":37.243202},{\"lon\":122.253657,\"lat\":37.242929},{\"lon\":122.253936,\"lat\":37.241845},{\"lon\":122.254277,\"lat\":37.240272},{\"lon\":122.2546,\"lat\":37.238527},{\"lon\":122.255032,\"lat\":37.23625},{\"lon\":122.25566,\"lat\":37.23296},{\"lon\":122.257026,\"lat\":37.227767},{\"lon\":122.258221,\"lat\":37.225303},{\"lon\":122.258993,\"lat\":37.224017},{\"lon\":122.259029,\"lat\":37.223952},{\"lon\":122.259415,\"lat\":37.223471},{\"lon\":122.260161,\"lat\":37.222429},{\"lon\":122.261041,\"lat\":37.221193},{\"lon\":122.261931,\"lat\":37.219979},{\"lon\":122.263053,\"lat\":37.218449},{\"lon\":122.263871,\"lat\":37.217256},{\"lon\":122.264814,\"lat\":37.215597},{\"lon\":122.265479,\"lat\":37.214038},{\"lon\":122.265542,\"lat\":37.21398},{\"lon\":122.265641,\"lat\":37.21375},{\"lon\":122.265955,\"lat\":37.212744},{\"lon\":122.266224,\"lat\":37.211472},{\"lon\":122.266476,\"lat\":37.208879},{\"lon\":122.266575,\"lat\":37.206436},{\"lon\":122.266656,\"lat\":37.204244},{\"lon\":122.266745,\"lat\":37.201901},{\"lon\":122.266862,\"lat\":37.199501},{\"lon\":122.266961,\"lat\":37.197015},{\"lon\":122.267042,\"lat\":37.194622},{\"lon\":122.26715,\"lat\":37.192164},{\"lon\":122.267518,\"lat\":37.189109},{\"lon\":122.268488,\"lat\":37.186536},{\"lon\":122.270042,\"lat\":37.184099},{\"lon\":122.271722,\"lat\":37.181749},{\"lon\":122.273168,\"lat\":37.179729},{\"lon\":122.274588,\"lat\":37.177652},{\"lon\":122.275836,\"lat\":37.175682},{\"lon\":122.276303,\"lat\":37.174518},{\"lon\":122.276699,\"lat\":37.173756},{\"lon\":122.276735,\"lat\":37.17359},{\"lon\":122.276995,\"lat\":37.172756},{\"lon\":122.277283,\"lat\":37.171354},{\"lon\":122.277525,\"lat\":37.16978},{\"lon\":122.277849,\"lat\":37.16781},{\"lon\":122.278244,\"lat\":37.165251},{\"lon\":122.278585,\"lat\":37.163065},{\"lon\":122.27898,\"lat\":37.160772},{\"lon\":122.279187,\"lat\":37.159326},{\"lon\":122.279223,\"lat\":37.159017},{\"lon\":122.279313,\"lat\":37.158607},{\"lon\":122.279474,\"lat\":37.157637},{\"lon\":122.279753,\"lat\":37.156191},{\"lon\":122.280409,\"lat\":37.153826},{\"lon\":122.280777,\"lat\":37.152977},{\"lon\":122.2819,\"lat\":37.150849},{\"lon\":122.283113,\"lat\":37.14854},{\"lon\":122.284406,\"lat\":37.146139},{\"lon\":122.286023,\"lat\":37.143082},{\"lon\":122.287919,\"lat\":37.139608},{\"lon\":122.289365,\"lat\":37.136911},{\"lon\":122.290443,\"lat\":37.134574},{\"lon\":122.291036,\"lat\":37.132172},{\"lon\":122.29117,\"lat\":37.129582},{\"lon\":122.291206,\"lat\":37.127165},{\"lon\":122.291251,\"lat\":37.124784},{\"lon\":122.291305,\"lat\":37.122813},{\"lon\":122.29126,\"lat\":37.122144},{\"lon\":122.29126,\"lat\":37.122144},{\"lon\":122.291269,\"lat\":37.122159},{\"lon\":122.291278,\"lat\":37.122144},{\"lon\":122.291278,\"lat\":37.122166},{\"lon\":122.291296,\"lat\":37.12218}]}";
     private ProgressBar pb;// 进度条
-    private ImageView playIv, trace_view_close,trace_play,trace_the_previous,trace_previous_loaction,trace_pause,trace_next_location,trace_next_user;
-    private List<String> traceHistoryUserIds =  new ArrayList<String>();
+    private ImageView playIv, trace_view_close, trace_play, trace_the_previous, trace_previous_loaction, trace_pause, trace_next_location, trace_next_user;
+    private List<String> traceHistoryUserIds = new ArrayList<String>();//只负责装数据
     private DateDialog dateDialog;
     private String labels;
     private static final String PALY = "PALY";//播放
@@ -196,7 +185,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         gridView.setAdapter(gridAdapter);
         gridView.setOnItemClickListener(this);
         listView = (ListView) traceControlLayout.findViewById(R.id.tracehistory_listv);
-        listAdapter = new TraceHistoryListAdapter(userLocations,getActivity());
+        listAdapter = new TraceHistoryListAdapter(userLocations, getActivity());
         listView.setAdapter(listAdapter);
         trace_view_close = (ImageView) view.findViewById(R.id.trace_view_close);
         trace_start_time = (TextView) view.findViewById(R.id.trace_start_time);
@@ -291,15 +280,15 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 //        List<LatLng> points = new ArrayList<LatLng>();
         List<LatLng> points = routeList;
         List<Integer> index = new ArrayList<Integer>();
-        points.add(pt1);//点元素
+//        points.add(pt1);//点元素
         index.add(0);//设置该点的纹理索引
-        points.add(pt2);//点元素
+//        points.add(pt2);//点元素
         index.add(0);//设置该点的纹理索引
-        points.add(pt3);//点元素
+//        points.add(pt3);//点元素
         index.add(1);//设置该点的纹理索引
-        points.add(pt4);//点元素
+//        points.add(pt4);//点元素
         index.add(2);//设置该点的纹理索引
-        points.add(pt5);//点元素
+//        points.add(pt5);//点元素
         for (LatLng lat : points) {
             options = new MarkerOptions().position(lat).icon(mMarker)
                     .zIndex(5);
@@ -316,6 +305,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private long startTime = CommonUtil.getCurrentTime();
     private long endTime = CommonUtil.getCurrentTime();
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
     @Override
     public void onClick(View v) {
 //        painStroke(routeList);
@@ -327,28 +317,35 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 break;
             case R.id.trace_play://播放
                 labels = PALY;
-                consoleMapPresener.showUserTraceHistory(traceHistoryUserIds,this,startTime,endTime);
-                for(Node node :adpterNodes){
-                    if(node.get_id().equals(traceHistoryUserIds.get(0))){
+                observable = Observable.interval(1, 1, TimeUnit.SECONDS);
+                if (userLocations.size() > 0 &&
+                        userLocations.get(0).getName().equals(traceHistoryUserIds.get(0))) {
+                    showTrackPlayback(userLocations);
+                } else {
+                    consoleMapPresener.showUserTraceHistory(traceHistoryUserIds, this, startTime, endTime);
+                }
+
+                for (Node node : adpterNodes) {
+                    if (node.get_id().equals(traceHistoryUserIds.get(0))) {
                         current_user.setText(node.getName());
                     }
                 }
                 break;
             case R.id.trace_the_previous://上一个
-                if(timer!=null)timer.cancel();
-               if(mTimerTask!=null) mTimerTask.cancel();
+                if (timer != null) timer.cancel();
+                if (mTimerTask != null) mTimerTask.cancel();
                 break;
             case R.id.trace_previous_loaction://上一位置
-                if(timer!=null)timer.cancel();
-                if(mTimerTask!=null) mTimerTask.cancel();
+                if (timer != null) timer.cancel();
+                if (mTimerTask != null) mTimerTask.cancel();
                 break;
             case R.id.trace_pause://暂停
-                if(timer!=null)timer.cancel();
-                if(mTimerTask!=null) mTimerTask.cancel();
+                if (timer != null) timer.cancel();
+                if (mTimerTask != null) mTimerTask.cancel();
                 break;
             case R.id.trace_next_location://下一位置
-                if(timer!=null)timer.cancel();
-                if(mTimerTask!=null) mTimerTask.cancel();
+                if (timer != null) timer.cancel();
+                if (mTimerTask != null) mTimerTask.cancel();
                 break;
             case R.id.trace_next_user://下一用户
 
@@ -358,7 +355,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     startTimeCallback = new DateDialog.Callback() {
                         @Override
                         public void onDateCallback(long timeStamp) {
-                            startTime = timeStamp*1000;
+                            startTime = timeStamp * 1000;
                             StringBuilder startTimeBuilder = new StringBuilder();
 //                            startTimeBuilder.append(getResources().getString(R.string.start_time));
                             startTimeBuilder.append(simpleDateFormat.format(timeStamp * 1000));
@@ -378,7 +375,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     endTimeCallback = new DateDialog.Callback() {
                         @Override
                         public void onDateCallback(long timeStamp) {
-                            endTime = timeStamp*1000;
+                            endTime = timeStamp * 1000;
                             StringBuilder endTimeBuilder = new StringBuilder();
 //                            endTimeBuilder.append(getResources().getString(R.string.end_time));
                             endTimeBuilder.append(simpleDateFormat.format(timeStamp * 1000));
@@ -518,8 +515,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 //    }
 
     //根据原始数据计算中心坐标和缩放级别，并为地图设置中心坐标和缩放级别。
-    private void setZoom(List<LastLocationByUser> lastLocationByUsers){
-        if(lastLocationByUsers.size() > 0){
+    private void setZoom(List<LastLocationByUser> lastLocationByUsers) {
+        if (lastLocationByUsers.size() > 0) {
             double maxLng = lastLocationByUsers.get(0).getLatLng().getLng();
             double minLng = lastLocationByUsers.get(0).getLatLng().getLng();
             double maxLat = lastLocationByUsers.get(0).getLatLng().getLat();
@@ -527,28 +524,60 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             com.xianzhitech.ptt.data.LatLng res;
             for (LastLocationByUser usr : lastLocationByUsers) {
                 res = usr.getLatLng();
-                if(res.getLng() > maxLng) maxLng = res.getLng();
-                if(res.getLng() < minLng) minLng = res.getLng();
-                if(res.getLat() > maxLat) maxLat = res.getLat();
-                if(res.getLat() < minLat) minLat = res.getLat();
-            };
-            double cenLng =(maxLng + minLng)/2;
-            double cenLat = (maxLat + minLat)/2;
+                if (res.getLng() > maxLng) maxLng = res.getLng();
+                if (res.getLng() < minLng) minLng = res.getLng();
+                if (res.getLat() > maxLat) maxLat = res.getLat();
+                if (res.getLat() < minLat) minLat = res.getLat();
+            }
+            ;
+            double cenLng = (maxLng + minLng) / 2;
+            double cenLat = (maxLat + minLat) / 2;
             float zoom = getZoom(maxLng, minLng, maxLat, minLat);
 
             MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(
-                    new LatLng(cenLat,cenLng));
+                    new LatLng(cenLat, cenLng));
             baiduMap.setMapStatus(msu);
-        msu = MapStatusUpdateFactory.zoomTo(zoom);
+            msu = MapStatusUpdateFactory.zoomTo(zoom);
             baiduMap.setMapStatus(msu);
             //map.centerAndZoom(new BMap.Point(cenLng,cenLat), zoom);
-        }else{
+        } else {
             //没有坐标，显示全中国
             //map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
         }
     }
+    //根据轨迹原始数据计算中心坐标和缩放级别，并为地图设置中心坐标和缩放级别。
+    private void setTraceZoom(List<LatLng> latLngs) {
+        LatLng resd;
+        if (latLngs.size() > 0) {
+            double maxLng = latLngs.get(0).longitude;
+            double minLng = latLngs.get(0).longitude;;
+            double maxLat = latLngs.get(0).latitude;
+            double minLat = latLngs.get(0).latitude;
+            com.xianzhitech.ptt.data.LatLng res;
+            for (LatLng usr : latLngs) {
+                resd = usr;
+                if (resd.longitude > maxLng) maxLng = resd.longitude;
+                if (resd.longitude < minLng) minLng = resd.longitude;
+                if (resd.latitude> maxLat) maxLat = resd.latitude;
+                if (resd.latitude < minLat) minLat = resd.latitude;
+            }
+            ;
+            double cenLng = (maxLng + minLng) / 2;
+            double cenLat = (maxLat + minLat) / 2;
+            float zoom = getZoom(maxLng, minLng, maxLat, minLat);
 
-    public static double getDistance(double lat_a, double lng_a, double lat_b, double lng_b){
+            MapStatusUpdate msu = MapStatusUpdateFactory.newLatLng(
+                    new LatLng(cenLat, cenLng));
+            baiduMap.setMapStatus(msu);
+            msu = MapStatusUpdateFactory.zoomTo(zoom);
+            baiduMap.setMapStatus(msu);
+            //map.centerAndZoom(new BMap.Point(cenLng,cenLat), zoom);
+        } else {
+            //没有坐标，显示全中国
+            //map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
+        }
+    }
+    public static double getDistance(double lat_a, double lng_a, double lat_b, double lng_b) {
         double pk = 180 / 3.14169;
         double a1 = lat_a / pk;
         double a2 = lng_a / pk;
@@ -562,27 +591,26 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
     //根据经纬极值计算绽放级别。
-    private float getZoom (double maxLng, double minLng, double maxLat, double minLat) {
-        int []zoom = {50,100,200,500,1000,2000,5000,10000,20000,25000,50000,100000,200000,500000,1000000,2000000};//级别18到3。
+    private float getZoom(double maxLng, double minLng, double maxLat, double minLat) {
+        int[] zoom = {50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 25000, 50000, 100000, 200000, 500000, 1000000, 2000000};//级别18到3。
 //        var pointA = new BMap.Point(maxLng,maxLat);  // 创建点坐标A
 //        var pointB = new BMap.Point(minLng,minLat);  // 创建点坐标B
         //var distance = map.getDistance(pointA,pointB).toFixed(1);  //获取两点距离,保留小数点后两位
-        double distance = getDistance(maxLat,maxLng, minLat,minLng);
-        for (int i = 0,zoomLen = zoom.length; i < zoomLen; i++) {
-            if(zoom[i] - distance > 0){
-                return 18-i+3;//之所以会多3，是因为地图范围常常是比例尺距离的10倍以上。所以级别会增加3。
+        double distance = getDistance(maxLat, maxLng, minLat, minLng);
+        for (int i = 0, zoomLen = zoom.length; i < zoomLen; i++) {
+            if (zoom[i] - distance > 0) {
+                return 18 - i + 3;//之所以会多3，是因为地图范围常常是比例尺距离的10倍以上。所以级别会增加3。
             }
         }
         return 0;
     }
 
     @Override
-    public void showLocations(List<LastLocationByUser> lastLocationByUsers)
-    {
+    public void showLocations(List<LastLocationByUser> lastLocationByUsers) {
         baiduMap.clear();
         List<OverlayOptions> optionList = new ArrayList<OverlayOptions>();
         BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
-        for (LastLocationByUser user : lastLocationByUsers ){
+        for (LastLocationByUser user : lastLocationByUsers) {
             LatLng gpsLng = new LatLng(user.getLatLng().getLat(), user.getLatLng().getLng());
             OverlayOptions options = new MarkerOptions().position(gpsLng).icon(mMarker);
             optionList.add(options);
@@ -605,13 +633,15 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
     private List<Node> adpterNodes = new ArrayList<>();
-    private void addNodes(){
+
+    private void addNodes() {
 
     }
+
     @Override
     public void sendCheckedUsers(List<Node> checkedNodes) {
         adpterNodes.clear();
-        for(Node node :checkedNodes){
+        for (Node node : checkedNodes) {
             try {
                 adpterNodes.add(node.cloneNode());
             } catch (CloneNotSupportedException e) {
@@ -621,8 +651,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
         boolean exsitSelected = false;
         traceHistoryUserIds.clear();
-        for(Node node :adpterNodes){
-            if(selectedNodes.size()>0 && node.equals(selectedNodes.get(0))){
+        for (Node node : adpterNodes) {
+            if (selectedNodes.size() > 0 && node.equals(selectedNodes.get(0))) {
                 node.setSelected(true);
                 exsitSelected = true;
                 selected_user.setText(node.getName());
@@ -630,7 +660,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 break;
             }
         }
-        if(adpterNodes.size() > 0 && !exsitSelected){
+        if (adpterNodes.size() > 0 && !exsitSelected) {
             adpterNodes.get(0).setSelected(true);
             selected_user.setText(adpterNodes.get(0).getName());
             try {
@@ -648,27 +678,73 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     Timer timer;
     TimerTask mTimerTask;
-    int num=0;
+    private int num = 0;//轨迹列表数据滚动计数器
+    Observable<Long> observable;
+    Disposable disposable;
+    ArrayList<LatLng> ltns = new ArrayList<>();
+    private Overlay myOverlay;
+
     //拿到历史轨迹数据，业务在这里处理
     @Override
     public void showTrackPlayback(List<TraceListItemData> datas) {
-        listAdapter.setUserLocations(datas);
-        userLocations = datas;
-       /*traceDisposable =  Observable.interval(1,1,TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
+        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+//        userLocations.clear();
+        if (userLocations.size() > 0 &&
+                userLocations.get(0).getName().equals(datas.get(0).getName())) {
+            listAdapter.setUserLocations(userLocations);
+            for (int i = 0; i < userLocations.size(); i++) {
+                if (i == 0) {
+                    userLocations.get(i).setCurrent(true);
+                } else {
+                    userLocations.get(i).setCurrent(false);
+                }
+            }
+            listView.setSelection(0);
+        } else {
+
+            userLocations.clear();
+            for (TraceListItemData listItem : datas) {
+                try {
+                    userLocations.add(listItem.cloneNode());
+                    ltns.add(listItem.getLatLng());
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        painStroke(ltns);
+        setTraceZoom(ltns);
+        listAdapter.setUserLocations(userLocations);
+        num = 0;
+        observable.subscribe(new Observer<Long>() {
             @Override
-            public void accept(@NonNull Long aLong) throws Exception {
-                switch (labels){
+            public void onSubscribe(Disposable disposable) {
+                if(num==userLocations.size()&&disposable!=null){
+                    disposable.dispose();
+                    observable =null;
+                }
+            }
+
+            @Override
+            public void onNext(Long aLong) {
+                switch (labels) {
                     case PALY:
-                        if(num<userLocations.size()){
+                        if (num < userLocations.size()) {
                             listView.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if(userLocations.size()>0)
-                                    listView.smoothScrollToPosition(num);
-                                    for (int i=0;i<userLocations.size();i++){
-                                        if(i==num){
+//                                    listView.smoothScrollToPosition(num);
+                                    listView.smoothScrollToPositionFromTop(num, 0);
+                                    for (int i = 0; i < userLocations.size(); i++) {
+                                        if (i == num) {
+                                            if(i>0&&myOverlay!=null){
+                                                myOverlay.remove();
+                                            }
                                             userLocations.get(i).setCurrent(true);
-                                        }else {
+                                            LatLng gpsLng = new LatLng(userLocations.get(i).getLatLng().latitude, userLocations.get(i).getLatLng().longitude);
+                                            OverlayOptions overlayOptions = new MarkerOptions().position(gpsLng).icon(mMarker).zIndex(6);
+                                            myOverlay = baiduMap.addOverlay(overlayOptions);
+                                        } else {
                                             userLocations.get(i).setCurrent(false);
                                         }
                                     }
@@ -677,7 +753,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
                                 }
                             });
-                        }else {
+                        } else {
+                            LogUtils.d("num is :", "num is --------------->" + num);
+                            LogUtils.d("userLocations is :", "userLocations is --------------->" + userLocations.size());
                         }
                         break;
                     case PAUSE:
@@ -692,13 +770,23 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                         break;
                 }
             }
-        });*/
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
     }
 
     @Override
     public void callBackiDisposable(Disposable disposable) {
 //        this.disposable = disposable;
-        if(disposable!=null){
+        if (disposable != null) {
             compositeDisposable.add(disposable);
         }
     }
@@ -715,21 +803,22 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
 
     private List<Node> selectedNodes = new ArrayList<>();
+
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Node node = (Node) parent.getAdapter().getItem(position);
         selectedNodes.clear();
         traceHistoryUserIds.clear();
         traceHistoryUserIds.add(node.get_id());
-        for(Node bean :adpterNodes){
-            if(bean.get_id().equals(node.get_id())){
+        for (Node bean : adpterNodes) {
+            if (bean.get_id().equals(node.get_id())) {
                 bean.setSelected(true);
                 try {
                     selectedNodes.add(bean.cloneNode());
                 } catch (CloneNotSupportedException e) {
                     e.printStackTrace();
                 }
-            }else {
+            } else {
                 bean.setSelected(false);
             }
         }
