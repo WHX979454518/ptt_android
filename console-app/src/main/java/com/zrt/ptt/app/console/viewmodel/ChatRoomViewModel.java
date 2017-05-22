@@ -1,6 +1,8 @@
 package com.zrt.ptt.app.console.viewmodel;
 
+import android.databinding.ObservableBoolean;
 import android.databinding.ObservableField;
+import android.util.Log;
 
 import com.xianzhitech.ptt.viewmodel.LifecycleViewModel;
 
@@ -9,17 +11,49 @@ import com.xianzhitech.ptt.viewmodel.LifecycleViewModel;
  */
 
 public class ChatRoomViewModel extends LifecycleViewModel  {
-    public final ObservableField<String> roomName = new ObservableField<>("");
+    private static final String TAG = "ChatRoomViewModel";
+
+    public final ObservableField<String> chatRoomTitleName = new ObservableField<>("");
+    public final ObservableField<String> callRoomTitleName = new ObservableField<>("");
+    public final ObservableBoolean chatRoomTitleNameVisible = new ObservableBoolean(false);
+    public final ObservableBoolean callRoomTitleNameVisible = new ObservableBoolean(false);
 
 
-    public ChatRoomViewModel(){
+
+    private Callbacks callbacks;
+
+
+    public interface Callbacks{
+        void onCloseCallRoom();
+        void onCloseChatRoom();
+        void onShowChatRoom();
+        void onShowCallRoom();
     }
 
-//    public void setRoomName(String name){
-//        roomName.set(name);
-//    }
-//
-//    public String getRoomName(){
-//        return roomName.get();
-//    }
+    public ChatRoomViewModel(Callbacks navigator){
+        this.callbacks = navigator;
+    }
+
+    public void onClickChatRoomTitle(){
+        Log.d(TAG, "onClickChatRoomTitle() called");
+
+        callbacks.onShowChatRoom();
+    }
+
+    public void onClickCallRoomTitle()
+    {
+        Log.d(TAG, "onClickCallRoomTitle() called");
+
+        callbacks.onShowCallRoom();
+    }
+
+    public void onClickCloseChatRoom(){
+        Log.d(TAG, "onClickCloseChatRoom() called");
+        callbacks.onCloseChatRoom();
+    }
+
+    public void onClickCloseCallRoom(){
+        Log.d(TAG, "onClickCloseCallRoom() called");
+        callbacks.onCloseCallRoom();
+    }
 }

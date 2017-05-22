@@ -25,11 +25,23 @@ public class FragmentManagerUtils {
     }
 
     public static void removeFragment(Fragment parentFragment, Fragment fragment){
-        assert parentFragment != null && fragment != null;
+        if(parentFragment == null || fragment == null){
+            return;
+        }
 
         FragmentManager fm = parentFragment.getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         ft.remove(fragment);
+
+        ft.commitAllowingStateLoss();
+    }
+
+    public static void replaceFragment(Fragment parentFragment, Fragment fragment, int fragmentId){
+        assert parentFragment != null && fragment != null;
+
+        FragmentManager fm = parentFragment.getChildFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.replace(fragmentId, fragment);
 
         ft.commitAllowingStateLoss();
     }

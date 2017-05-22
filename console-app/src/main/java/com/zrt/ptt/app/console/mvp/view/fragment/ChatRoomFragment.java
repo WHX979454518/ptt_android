@@ -1,22 +1,15 @@
 package com.zrt.ptt.app.console.mvp.view.fragment;
 
 
+import kotlin.Pair;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
-import io.socket.client.On;
-import kotlin.Pair;
-import utils.DatabindingUtils;
 import utils.FragmentManagerUtils;
 import utils.LogUtils;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -38,13 +31,18 @@ import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.databinding.FragmentChatRoomBinding;
 import com.zrt.ptt.app.console.viewmodel.ChatRoomViewModel;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+
 
 /**
  * A simple {@link Fragment} subclass.
  */
 
 public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, FragmentChatRoomBinding>
-        implements WalkieRoomFragment.Callbacks, ChatFragment.Callbacks, CallFragment.Callbacks{
+        implements WalkieRoomFragment.Callbacks, ChatFragment.Callbacks, CallFragment.Callbacks, ChatRoomViewModel.Callbacks{
     private static final String TAG = "ChatRoomFragment";
 
     private WalkieRoomFragment walkieRoomFragment;
@@ -53,7 +51,8 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
     //Normal--文字聊天类型Fragment
     private ChatFragment chatFragment;
-    private Disposable titleDisposable;
+    private Disposable chatRoomTitleDisposable;
+    private Disposable callRoomTitleDisposable;
 
 
     public ChatRoomFragment() {
@@ -71,10 +70,10 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
                 joinNormalRoom(roomId, fromInvitation);
                 break;
             case AUDIO:
-                joinAuidoRoom(roomId, fromInvitation);
+                joinVideoOrAudioRoom(roomId, fromInvitation, true);
                 break;
             case VIDEO:
-                joinVideoRoom(roomId, fromInvitation);
+                joinVideoOrAudioRoom(roomId, fromInvitation, false);
                 break;
             case Conversion:
                 joinChatRoom(roomId);
@@ -96,7 +95,7 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
     @NotNull
     @Override
     public ChatRoomViewModel onCreateViewModel() {
-        ChatRoomViewModel viewModel = new ChatRoomViewModel();
+        ChatRoomViewModel viewModel = new ChatRoomViewModel(this);
         return viewModel;
     }
 
@@ -175,6 +174,40 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
         FragmentManagerUtils.removeFragment(this, callFragment);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////Implement ChatRoomViewModel.Callbacks interface /////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void onCloseCallRoom() {
+        FragmentManagerUtils.removeFragment(this, callFragment);
+        FragmentManagerUtils.removeFragment(this, walkieRoomFragment);
+        getViewModel().callRoomTitleNameVisible.set(false);
+    }
+
+    @Override
+    public void onCloseChatRoom() {
+        FragmentManagerUtils.removeFragment(this, chatFragment);
+        getViewModel().chatRoomTitleNameVisible.set(false);
+    }
+
+    @Override
+    public void onShowChatRoom() {
+        FragmentManagerUtils.replaceFragment(this, chatFragment, R.id.chatroom_fragment_placeholder);
+    }
+
+    @Override
+    public void onShowCallRoom() {
+        if(callFragment!= null && !callFragment.isAdded()){
+            FragmentManagerUtils.replaceFragment(this, callFragment, R.id.chatroom_fragment_placeholder);
+        }
+
+        if(walkieRoomFragment != null && !walkieRoomFragment.isAdded()){
+            FragmentManagerUtils.replaceFragment(this, walkieRoomFragment, R.id.chatroom_fragment_placeholder);
+        }
+    }
+
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////Inner help methods//////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,57 +222,45 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
         }
 
         chatFragment = ChatFragment.Companion.createInstance(roomId);
-        FragmentManagerUtils.showFragment(this, chatFragment, R.id.chatroom_fragment_placeholder);
+        FragmentManagerUtils.replaceFragment(this, chatFragment, R.id.chatroom_fragment_placeholder);
 
         //设置房间标题
-        if(titleDisposable != null)
-            titleDisposable.dispose();
+        if(chatRoomTitleDisposable != null)
+            chatRoomTitleDisposable.dispose();
 
-        titleDisposable = ((AppComponent) (App.getInstance())).getStorage().getRoomWithName(roomId)
+        chatRoomTitleDisposable = ((AppComponent) (App.getInstance())).getStorage().getRoomWithName(roomId)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<Optional<Pair<Room, String>>>() {
                     @Override
                     public void accept(@NonNull Optional<Pair<Room, String>> pairOptional) throws Exception {
                         Log.d(TAG, "ChatRoomFragment.roomTitle = [" + pairOptional.orNull().getSecond() + "]");
-                        getViewModel().roomName.set(pairOptional.orNull().getSecond());
+                        getViewModel().callRoomTitleName.set(pairOptional.orNull().getSecond());
                     }
                 });
+
+        getViewModel().chatRoomTitleNameVisible.set(true);
     }
 
     /**
-     * 加入语音类型的聊天
+     * 加入语音类型的聊天或视频聊天
      * @param roomId
      * @param fromInvitation
      */
-    private void joinAuidoRoom(String roomId, boolean fromInvitation){
-        Log.d(TAG, "joinAuidoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
-
+    private void joinVideoOrAudioRoom(String roomId, boolean fromInvitation, boolean audioOnly){
+        Log.d(TAG, "joinVideoOrAudioRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
         Bundle bundle = new Bundle();
         bundle.putString(CallFragment.ARG_JOIN_ROOM_ID, roomId);
-        bundle.putBoolean(CallFragment.ARG_JOIN_ROOM_AUDIO_ONLY, true);
+        bundle.putBoolean(CallFragment.ARG_JOIN_ROOM_AUDIO_ONLY, audioOnly);
         if (callFragment != null) {
             FragmentManagerUtils.removeFragment(this, callFragment);
         }
 
         callFragment = new CallFragment();
         callFragment.setArguments(bundle);
-        FragmentManagerUtils.showFragment(this, callFragment, R.id.chatroom_fragment_placeholder);
+        FragmentManagerUtils.replaceFragment(this, callFragment, R.id.chatroom_fragment_placeholder);
 
-    }
+        setupVideoOrAudioRoomTitle(roomId);
 
-    private void joinVideoRoom(String roomId, boolean fromInvitation){
-        Log.d(TAG, "joinVideoRoom() called with: roomId = [" + roomId + "], fromInvitation = [" + fromInvitation + "]");
-
-        Bundle bundle = new Bundle();
-        bundle.putString(CallFragment.ARG_JOIN_ROOM_ID, roomId);
-        bundle.putBoolean(CallFragment.ARG_JOIN_ROOM_AUDIO_ONLY, false);
-        if (callFragment != null) {
-            FragmentManagerUtils.removeFragment(this, callFragment);
-        }
-
-        callFragment = new CallFragment();
-        callFragment.setArguments(bundle);
-        FragmentManagerUtils.showFragment(this, callFragment, R.id.chatroom_fragment_placeholder);
     }
 
     /**
@@ -257,6 +278,27 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
         walkieRoomFragment = new WalkieRoomFragment();
         walkieRoomFragment.setArguments(bundle);
-        FragmentManagerUtils.showFragment(this, walkieRoomFragment, R.id.chatroom_fragment_placeholder);
+        FragmentManagerUtils.replaceFragment(this, walkieRoomFragment, R.id.chatroom_fragment_placeholder);
+
+        getViewModel().callRoomTitleNameVisible.set(true);
+    }
+
+
+    private void setupVideoOrAudioRoomTitle(String roomId){
+        //设置房间标题
+        if(callRoomTitleDisposable != null)
+            callRoomTitleDisposable.dispose();
+
+        callRoomTitleDisposable = ((AppComponent) (App.getInstance())).getStorage().getRoomWithName(roomId)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Optional<Pair<Room, String>>>() {
+                    @Override
+                    public void accept(@NonNull Optional<Pair<Room, String>> pairOptional) throws Exception {
+                        Log.d(TAG, "ChatRoomFragment.roomTitle = [" + pairOptional.orNull().getSecond() + "]");
+                        getViewModel().callRoomTitleName.set(pairOptional.orNull().getSecond());
+                    }
+                });
+
+        getViewModel().callRoomTitleNameVisible.set(true);
     }
 }

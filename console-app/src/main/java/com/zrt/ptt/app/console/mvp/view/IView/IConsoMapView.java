@@ -3,6 +3,7 @@ package com.zrt.ptt.app.console.mvp.view.IView;
 import com.baidu.mapapi.model.LatLng;
 import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.api.dto.UserLocation;
+import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 import com.zrt.ptt.app.console.mvp.model.Node;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public interface IConsoMapView {
 
     void sendCheckedUsers(List<Node> checkedNodes);
 
+    void showTrackPlayback(List<TraceListItemData> datas);
     void showLocations(List<LastLocationByUser> lastLocationByUsers);
 
     void mapRectSelect();
