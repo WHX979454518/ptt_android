@@ -347,7 +347,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             case R.id.trace_play://播放
                 labels = PALY;
                 trace_play.setClickable(false);
-                if(observable==null){
+                if (observable == null) {
                     observable = Observable.interval(1, 1, TimeUnit.SECONDS);
                 }
                 if (userLocations.size() > 0 &&
@@ -365,55 +365,77 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 break;
             case R.id.trace_pause://暂停
                 setDisposeClick();
-                labels= PAUSE;
+                labels = PAUSE;
                 break;
             case R.id.trace_previous_loaction://上一位置
                 setDisposeClick();
-                int position = 0;
-                for(int i=0; i<adpterNodes.size() ;i++){
-                    if(adpterNodes.get(i).get_id().equals(traceHistoryUserIds.get(0))){
-                        position = i;
-                        break;
-                    }
-
-                    if(i == ++position){
-                        adpterNodes.get(i).setSelected(true);
-                        selected_user.setText(adpterNodes.get(i).getName());
-                    }else {
-                        adpterNodes.get(i).setSelected(false);
-                    }
-                }
-                gridAdapter.setTraceData(adpterNodes);
-
-
-                if(position>0){
-                    --position;
-                    traceHistoryUserIds.clear();
-                    traceHistoryUserIds.add(adpterNodes.get(position).get_id());
-                }else {
-                    showTrackPlayback(userLocations);
-                }
-                labels= PREVIOUSSTEP;
+                labels = PREVIOUSSTEP;
                 --num;
-                if(num>=0){
-                loactionMove(moveMarker);}
-                break;
-            case R.id.trace_next_location://下一位置
-                setDisposeClick();
-                labels= NEXTSTEP;
-                    num++;
-                if(num<=userLocations.size()) {
+                if (num >= 0) {
                     loactionMove(moveMarker);
                 }
                 break;
-            case R.id.trace_the_previous://上一个
+            case R.id.trace_next_location://下一位置
                 setDisposeClick();
-                consoleMapPresener.showUserTraceHistory(traceHistoryUserIds, this, startTime, endTime);
-                labels= LAST;
+                labels = NEXTSTEP;
+                num++;
+                if (num <= userLocations.size()) {
+                    loactionMove(moveMarker);
+                }
                 break;
+            case R.id.trace_the_previous://上一个用户
+                setDisposeClick();
+                labels = LAST;
+                int position = 0;
+                for (int i = 0; i < adpterNodes.size(); i++) {
+                    if (adpterNodes.get(i).get_id().equals(traceHistoryUserIds.get(0))) {
+                        position = i;
+                        break;
+                    }
+                }
+                for (int k = 0; k < adpterNodes.size(); k++) {
+                    if(position==0){
+                        trace_the_previous.setClickable(false);
+                        return;
+                    }
+                    if (k == position - 1) {
+                        adpterNodes.get(k).setSelected(true);
+                        traceHistoryUserIds.clear();
+                        traceHistoryUserIds.add(adpterNodes.get(k).get_id());
+                        selected_user.setText(adpterNodes.get(k).getName());
+                    } else {
+                        adpterNodes.get(k).setSelected(false);
+                    }
+                }
+            gridAdapter.setTraceData(adpterNodes);
+            consoleMapPresener.showUserTraceHistory(traceHistoryUserIds, this, startTime, endTime);
+            break;
             case R.id.trace_next_user://下一用户
                 setDisposeClick();
-                labels= NEXT;
+                labels = NEXT;
+                int posNext = 0;
+                for (int i = 0; i < adpterNodes.size(); i++) {
+                    if (adpterNodes.get(i).get_id().equals(traceHistoryUserIds.get(0))) {
+                        posNext = i;
+                        break;
+                    }
+                }
+                for (int k = 0; k < adpterNodes.size(); k++) {
+                    if(posNext==adpterNodes.size()-1){
+                        trace_the_previous.setClickable(false);
+                        return;
+                    }
+                    if (k == posNext + 1) {
+                        adpterNodes.get(k).setSelected(true);
+                        traceHistoryUserIds.clear();
+                        traceHistoryUserIds.add(adpterNodes.get(k).get_id());
+                        selected_user.setText(adpterNodes.get(k).getName());
+                    } else {
+                        adpterNodes.get(k).setSelected(false);
+                    }
+                }
+                gridAdapter.setTraceData(adpterNodes);
+                consoleMapPresener.showUserTraceHistory(traceHistoryUserIds, this, startTime, endTime);
                 break;
             case R.id.trace_start_time:
                 if (null == startTimeCallback) {
@@ -458,9 +480,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         }
     }
 
-    private void setDisposeClick(){
+    private void setDisposeClick() {
         trace_play.setClickable(true);
-        if(timerdisposable!=null && !timerdisposable.isDisposed())
+        if (timerdisposable != null && !timerdisposable.isDisposed())
             timerdisposable.dispose();
     }
 
@@ -512,8 +534,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
         @Override
         public void onTouch(MotionEvent motionEvent) {
-            switch (motionEvent.getAction())
-            {
+            switch (motionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     System.out.print("down");
                     break;
@@ -530,7 +551,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         // 开启图层定位
         baiduMap.setMyLocationEnabled(true);
         baiduMap.setOnMapTouchListener(new myMapTouchListener());
-        baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener(){
+        baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
 
             @Override
             public void onMapClick(LatLng latLng) {
@@ -644,12 +665,14 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             //map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
         }
     }
+
     //根据轨迹原始数据计算中心坐标和缩放级别，并为地图设置中心坐标和缩放级别。
     private void setTraceZoom(List<LatLng> latLngs) {
         LatLng resd;
         if (latLngs.size() > 0) {
             double maxLng = latLngs.get(0).longitude;
-            double minLng = latLngs.get(0).longitude;;
+            double minLng = latLngs.get(0).longitude;
+            ;
             double maxLat = latLngs.get(0).latitude;
             double minLat = latLngs.get(0).latitude;
             com.xianzhitech.ptt.data.LatLng res;
@@ -657,7 +680,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 resd = usr;
                 if (resd.longitude > maxLng) maxLng = resd.longitude;
                 if (resd.longitude < minLng) minLng = resd.longitude;
-                if (resd.latitude> maxLat) maxLat = resd.latitude;
+                if (resd.latitude > maxLat) maxLat = resd.latitude;
                 if (resd.latitude < minLat) minLat = resd.latitude;
             }
             ;
@@ -676,6 +699,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             //map.centerAndZoom(new BMap.Point(103.388611,35.563611), 5);
         }
     }
+
     public static double getDistance(double lat_a, double lng_a, double lat_b, double lng_b) {
         double pk = 180 / 3.14169;
         double a1 = lat_a / pk;
@@ -721,55 +745,50 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     }
 
-    private void calcRectLatLng(Point startPoint, Point endPoint)
-    {
-        if(startPoint.x == endPoint.x && startPoint.y == endPoint.y)
-        {
+    private void calcRectLatLng(Point startPoint, Point endPoint) {
+        if (startPoint.x == endPoint.x && startPoint.y == endPoint.y) {
             return;
         }
         LatLng topLeft = baiduMap.getProjection().fromScreenLocation(
-                                new android.graphics.Point(startPoint.x, startPoint.y));
+                new android.graphics.Point(startPoint.x, startPoint.y));
         LatLng bottomRight = baiduMap.getProjection().fromScreenLocation(
-                                new android.graphics.Point(endPoint.x,endPoint.y));
+                new android.graphics.Point(endPoint.x, endPoint.y));
 
         mapRectSelectView.setVisibility(View.INVISIBLE);
 
-        ((AppComponent)App.getInstance().getApplicationContext())
-        .getSignalBroker()
-        .findNearbyPeople(new com.xianzhitech.ptt.data.LatLng(topLeft.latitude,topLeft.longitude),
-                            new com.xianzhitech.ptt.data.LatLng(bottomRight.latitude, bottomRight.longitude))
-        .observeOn(AndroidSchedulers.mainThread())
-        .doOnSubscribe(disposable1 -> {
-            //应该被保存起来，统一释放，以免泄露
-        })
-        .subscribe(
-                rsult ->{
-                    List<LastLocationByUser> oneLineUsersLocList = new ArrayList<LastLocationByUser>();
-                    if (rsult.size() == 0)
-                    {
-                        Toast.makeText(textureBmapView.getContext(),
-                                R.string.tip_rect_select_no_people, Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    for (UserLocation ul : rsult)
-                    {
-                        LastLocationByUser llb = new LastLocationByUser(ul.getUserId(),
-                                                        ul.getLocation().getLatLng(),
-                                                        "");
-                        oneLineUsersLocList.add(llb);
-                    }
-                    showLocations(oneLineUsersLocList);
-                },
-                err ->{
-                        Toast.makeText(textureBmapView.getContext(), err.getMessage(),
+        ((AppComponent) App.getInstance().getApplicationContext())
+                .getSignalBroker()
+                .findNearbyPeople(new com.xianzhitech.ptt.data.LatLng(topLeft.latitude, topLeft.longitude),
+                        new com.xianzhitech.ptt.data.LatLng(bottomRight.latitude, bottomRight.longitude))
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnSubscribe(disposable1 -> {
+                    //应该被保存起来，统一释放，以免泄露
+                })
+                .subscribe(
+                        rsult -> {
+                            List<LastLocationByUser> oneLineUsersLocList = new ArrayList<LastLocationByUser>();
+                            if (rsult.size() == 0) {
+                                Toast.makeText(textureBmapView.getContext(),
+                                        R.string.tip_rect_select_no_people, Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            for (UserLocation ul : rsult) {
+                                LastLocationByUser llb = new LastLocationByUser(ul.getUserId(),
+                                        ul.getLocation().getLatLng(),
+                                        "");
+                                oneLineUsersLocList.add(llb);
+                            }
+                            showLocations(oneLineUsersLocList);
+                        },
+                        err -> {
+                            Toast.makeText(textureBmapView.getContext(), err.getMessage(),
                                     Toast.LENGTH_LONG).show();
-                }
-        );
+                        }
+                );
     }
 
     @Override
-    public void mapRectSelect()
-    {
+    public void mapRectSelect() {
         mapRectSelectView.setVisibility(View.VISIBLE);
     }
 
@@ -792,6 +811,14 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     @Override
     public void sendCheckedUsers(List<Node> checkedNodes) {
+        if (checkedNodes.size() == 0) {
+            trace_the_previous.setClickable(false);
+            trace_next_user.setClickable(false);
+            trace_play.setClickable(false);
+            trace_pause.setClickable(false);
+            trace_previous_loaction.setClickable(false);
+            trace_next_location.setClickable(false);
+        }
         adpterNodes.clear();
         for (Node node : checkedNodes) {
             try {
@@ -807,6 +834,12 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             if (selectedNodes.size() > 0 && node.equals(selectedNodes.get(0))) {
                 node.setSelected(true);
                 exsitSelected = true;
+                trace_the_previous.setClickable(true);
+                trace_play.setClickable(true);
+                trace_pause.setClickable(true);
+                trace_next_user.setClickable(true);
+                trace_previous_loaction.setClickable(true);
+                trace_next_location.setClickable(true);
                 selected_user.setText(node.getName());
                 traceHistoryUserIds.add(node.get_id());
                 break;
@@ -814,6 +847,12 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         }
         if (adpterNodes.size() > 0 && !exsitSelected) {
             adpterNodes.get(0).setSelected(true);
+            trace_the_previous.setClickable(false);
+            trace_next_user.setClickable(true);
+            trace_play.setClickable(true);
+            trace_pause.setClickable(true);
+            trace_previous_loaction.setClickable(true);
+            trace_next_location.setClickable(true);
             selected_user.setText(adpterNodes.get(0).getName());
             try {
                 selectedNodes.clear();
@@ -840,7 +879,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     public void showTrackPlayback(List<TraceListItemData> datas) {
 
 //        userLocations.clear();
-        if (userLocations.size() > 0 &&datas.size()>0&&
+        if (userLocations.size() > 0 && datas.size() > 0 &&
                 userLocations.get(0).getName().equals(datas.get(0).getName())) {
             listAdapter.setUserLocations(userLocations);
             for (int i = 0; i < userLocations.size(); i++) {
@@ -865,76 +904,76 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             }
             listView.setSelection(0);
         }
-        if(ltns.size()>0){
+        if (ltns.size() > 0) {
             painStroke(ltns);
             setTraceZoom(ltns);
         }
         listAdapter.setUserLocations(userLocations);
-      observable.take(userLocations.size()+1)
-              .subscribe(new Observer<Long>() {
-            /**
-             * this  function do only onece   when subcribe,so  you cant't dispose
-             * @param disposable1
-             */
-            @Override
-            public void onSubscribe(Disposable disposable1) {
-                timerdisposable = disposable1;
-            }
+        observable.take(userLocations.size() + 1)
+                .subscribe(new Observer<Long>() {
+                    /**
+                     * this  function do only onece   when subcribe,so  you cant't dispose
+                     * @param disposable1
+                     */
+                    @Override
+                    public void onSubscribe(Disposable disposable1) {
+                        timerdisposable = disposable1;
+                    }
 
-            @Override
-            public void onNext(Long aLong) {
+                    @Override
+                    public void onNext(Long aLong) {
 
-                switch (labels) {
-                    case PALY:
-                        if (num < userLocations.size()) {
-                            loactionMove(moveMarker);
-                            num++;
-                        } else {
-                            //当 aLong == listview 适配器数据的count 的时候调用 disabl.dispo()   cancel  this  subscriptpion
-                            if(num==userLocations.size()){
-                                num=0;
-                                trace_play.setClickable(true);
-                            }
+                        switch (labels) {
+                            case PALY:
+                                if (num < userLocations.size()) {
+                                    loactionMove(moveMarker);
+                                    num++;
+                                } else {
+                                    //当 aLong == listview 适配器数据的count 的时候调用 disabl.dispo()   cancel  this  subscriptpion
+                                    if (num == userLocations.size()) {
+                                        num = 0;
+                                        trace_play.setClickable(true);
+                                    }
+                                }
+                                break;
+                            case PAUSE:
+                                if (!timerdisposable.isDisposed()) {
+                                    timerdisposable.dispose();
+                                    timerdisposable = null;
+                                }
+                                break;
+                            case PREVIOUSSTEP://上一步
+                                if (num < userLocations.size() && num >= 0) {
+                                    --num;
+                                    loactionMove(moveMarker);
+                                }
+                                break;
+                            case NEXTSTEP://下一步
+                                if (num < userLocations.size()) {
+                                    ++num;
+                                    loactionMove(moveMarker);
+                                }
+                                break;
+                            case NEXT://上一位
+                                break;
+                            case LAST://下一位
+                                break;
                         }
-                        break;
-                    case PAUSE:
-                        if(!timerdisposable.isDisposed()){
-                            timerdisposable.dispose();
-                            timerdisposable=null;
-                        }
-                        break;
-                    case PREVIOUSSTEP://上一步
-                        if (num < userLocations.size()&&num>=0) {
-                            --num;
-                            loactionMove(moveMarker);
-                        }
-                        break;
-                    case NEXTSTEP://下一步
-                        if (num < userLocations.size()) {
-                            ++num;
-                            loactionMove(moveMarker);
-                        }
-                        break;
-                    case NEXT://上一位
-                        break;
-                    case LAST://下一位
-                        break;
-                }
-            }
+                    }
 
-            @Override
-            public void onError(Throwable throwable) {
+                    @Override
+                    public void onError(Throwable throwable) {
 
-            }
+                    }
 
-            @Override
-            public void onComplete() {
+                    @Override
+                    public void onComplete() {
 
-            }
-        });
+                    }
+                });
     }
 
-    private void loactionMove(BitmapDescriptor mMarker){
+    private void loactionMove(BitmapDescriptor mMarker) {
         listView.post(new Runnable() {
             @Override
             public void run() {
@@ -942,7 +981,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 listView.smoothScrollToPositionFromTop(num, 0);
                 for (int i = 0; i < userLocations.size(); i++) {
                     if (i == num) {
-                        if(i>0&&myOverlay!=null){
+                        if (i > 0 && myOverlay != null) {
                             myOverlay.remove();
                         }
                         userLocations.get(i).setCurrent(true);
@@ -982,6 +1021,16 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        if (position > 0) {
+            trace_the_previous.setClickable(true);
+        } else {
+            trace_the_previous.setClickable(false);
+        }
+        if (position < parent.getAdapter().getCount() - 1) {
+            trace_next_user.setClickable(true);
+        } else {
+            trace_next_user.setClickable(false);
+        }
         Node node = (Node) parent.getAdapter().getItem(position);
         selectedNodes.clear();
         traceHistoryUserIds.clear();
