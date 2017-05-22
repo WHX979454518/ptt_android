@@ -235,7 +235,8 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
 
     //单人定位时时刷新
     private void getSingleLocationData(List<String> userLoactionsIds ){
-        mainActivityPresenter.showLocation(userLoactionsIds);
+        //mainActivityPresenter.showLocation(userLoactionsIds);
+        mainActivityPresenter.showLocations(userLoactionsIds);
 //        singleSubcription = (Disposable) Observable.interval(10,10, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Long>() {
 //            @Override
 //            public void accept(@NonNull Long Longs) throws Exception {

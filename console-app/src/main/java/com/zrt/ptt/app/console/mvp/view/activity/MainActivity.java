@@ -63,6 +63,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     @BindView(R.id.pupmenu)
     ImageView pupmenu;
+    @BindView(R.id.frame_map)
+    TextView frame_map;
     @BindView(R.id.all_call)
     TextView allCall;
     @BindView(R.id.sign_out)
@@ -282,9 +284,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      *
      * @param view
      */
-    @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.contacts_container})
+    @OnClick({R.id.pupmenu, R.id.all_call, R.id.sign_out, R.id.contacts_container, R.id.frame_map})
     public void onViewClicked(View view) {
         switch (view.getId()) {
+            case R.id.frame_map:
+            {
+                IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().
+                        findFragmentById(R.id.map_container);
+                imapView.mapRectSelect();
+            }
+                break;
             case R.id.pupmenu:
                 if (popupWindow.isShowing()) {
                     popupWindow.dismiss();

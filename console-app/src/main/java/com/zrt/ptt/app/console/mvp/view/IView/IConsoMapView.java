@@ -23,6 +23,8 @@ public interface IConsoMapView {
 
     void showLocations(List<LastLocationByUser> lastLocationByUsers);
 
+    void mapRectSelect();
+
     void showTrackPlayback(List<UserLocation> userLocations);
     void callBackiDisposable(Disposable disposable);
 }

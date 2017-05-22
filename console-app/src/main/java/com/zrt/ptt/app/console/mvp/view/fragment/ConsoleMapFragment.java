@@ -1,11 +1,18 @@
 package com.zrt.ptt.app.console.mvp.view.fragment;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -25,6 +32,7 @@ import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
@@ -34,7 +42,10 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolylineOptions;
+import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.model.inner.Point;
+import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.api.dto.LastLocationByUser;
 import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.App;
@@ -77,6 +88,7 @@ import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import utils.CommonUtil;
 
@@ -85,8 +97,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         View.OnClickListener, CompoundButton.OnCheckedChangeListener,
         AdapterView.OnItemClickListener {
 
-    @BindView(R.id.bmapView)
-    MapView bmapView;
+    @BindView(R.id.textureBmapView)
+    TextureMapView textureBmapView;
     @BindView(R.id.organiz_function_inc)
     LinearLayout organizFunctionInc;
     @BindView(R.id.sys_state_func_inc)
@@ -100,6 +112,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private GridView gridView;//轨迹回放选中用户Node
     private ListView listView;
     private TextView trace_start_time,trace_end_time;
+    @BindView(R.id.map_op_rect_select_surfaceview)
+    MapRectSelectView mapRectSelectView;
     /**
      * 当前定位的模式
      */
@@ -166,6 +180,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_console_map, container, false);
         unbinder = ButterKnife.bind(this, view);
+
+        //mapRectSelectView = new MapRectSelectView(this.getContext());
+        //mapRectSelectLayout = (FrameLayout) inflater.inflate(R.id.map_op_rect_select_view, container, false);
 //        initTrace(inflater);
         initView(view);
         initMap();
@@ -173,7 +190,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
     private void initMap() {
-        baiduMap = bmapView.getMap();
+        baiduMap = textureBmapView.getMap();
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
 
         baiduMap.setMapStatus(msu);
@@ -215,6 +232,14 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         traceRadioSelectedall = (CheckBox) traceControlLayout.findViewById(R.id.trace_radio_selectedall);
         traceRadioSelectedall.setOnCheckedChangeListener(this);
 
+        //rectSelect
+        mapRectSelectView.setAlpha(0.1f);
+        mapRectSelectView.addRectSelectedCallBack(new MapRectSelectView.RectSelectedCallBack() {
+            @Override
+            public void rectSelected(Point startPoint, Point endPoint) {
+                calcRectLatLng(startPoint, endPoint);
+            }
+        });
     }
 
     /**
@@ -420,11 +445,27 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     public void onDestroy() {
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
-        if (bmapView != null) {
-            bmapView.onDestroy();
+        if (textureBmapView != null) {
+            textureBmapView.onDestroy();
         }
 
         baiduMap.setMyLocationEnabled(false);
+    }
+
+    private class myMapTouchListener implements BaiduMap.OnMapTouchListener {
+
+        @Override
+        public void onTouch(MotionEvent motionEvent) {
+            switch (motionEvent.getAction())
+            {
+                case MotionEvent.ACTION_DOWN:
+                    System.out.print("down");
+                    break;
+                case MotionEvent.ACTION_UP:
+                    System.out.print("up");
+                    break;
+            }
+        }
     }
 
     @Override
@@ -432,6 +473,19 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         super.onStart();
         // 开启图层定位
         baiduMap.setMyLocationEnabled(true);
+        baiduMap.setOnMapTouchListener(new myMapTouchListener());
+        baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener(){
+
+            @Override
+            public void onMapClick(LatLng latLng) {
+                System.out.print(latLng.latitude);
+            }
+
+            @Override
+            public boolean onMapPoiClick(MapPoi mapPoi) {
+                return false;
+            }
+        });
         if (!mLocationClient.isStarted()) {
             mLocationClient.start();
         }
@@ -444,7 +498,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     public void onResume() {
         super.onResume();
         //在activity执行onResume时执行mMapView. onResume ()，实现地图生命周期管理
-        bmapView.onResume();
+        textureBmapView.onResume();
 //                addRouteLine(routeList);// 添加路线
 
     }
@@ -453,7 +507,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     public void onPause() {
         super.onPause();
         //在activity执行onPause时执行mMapView. onPause ()，实现地图生命周期管理
-        bmapView.onPause();
+        textureBmapView.onPause();
     }
 
     @Override
@@ -577,6 +631,52 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         baiduMap.addOverlays(optionList);
 
         setZoom(lastLocationByUsers);
+
+    }
+
+    private void calcRectLatLng(Point startPoint, Point endPoint)
+    {
+        if(startPoint.x == endPoint.x && startPoint.y == endPoint.y)
+        {
+            return;
+        }
+        LatLng topLeft = baiduMap.getProjection().fromScreenLocation(
+                                new android.graphics.Point(startPoint.x, startPoint.y));
+        LatLng bottomRight = baiduMap.getProjection().fromScreenLocation(
+                                new android.graphics.Point(endPoint.x,endPoint.y));
+
+        mapRectSelectView.setVisibility(View.INVISIBLE);
+
+        ((AppComponent)App.getInstance().getApplicationContext())
+        .getSignalBroker()
+        .findNearbyPeople(new com.xianzhitech.ptt.data.LatLng(topLeft.latitude,topLeft.longitude),
+                            new com.xianzhitech.ptt.data.LatLng(bottomRight.latitude, bottomRight.longitude))
+        .observeOn(AndroidSchedulers.mainThread())
+        .doOnSubscribe(disposable1 -> {
+            //应该被保存起来，统一释放，以免泄露
+        })
+        .subscribe(
+                rsult ->{
+                    List<LastLocationByUser> oneLineUsersLocList = new ArrayList<LastLocationByUser>();
+                    for (UserLocation ul : rsult)
+                    {
+                        LastLocationByUser llb = new LastLocationByUser(ul.getUserId(),
+                                                        ul.getLocation().getLatLng(),
+                                                        "");
+                        oneLineUsersLocList.add(llb);
+                    }
+                    showLocations(oneLineUsersLocList);
+                },
+                err ->{
+
+                }
+        );
+    }
+
+    @Override
+    public void mapRectSelect()
+    {
+        mapRectSelectView.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -750,7 +850,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         public void onReceiveLocation(BDLocation location) {
 
             // map view 销毁后不在处理新接收的位置
-            if (location == null || bmapView == null)
+            if (location == null || textureBmapView == null)
                 return;
        /* // 构造定位数据
        MyLocationData data = new MyLocationData.Builder()//
