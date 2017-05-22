@@ -233,7 +233,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         traceRadioSelectedall.setOnCheckedChangeListener(this);
 
         //rectSelect
-        mapRectSelectView.setAlpha(0.1f);
+        mapRectSelectView.setAlpha(0.3f);
         mapRectSelectView.addRectSelectedCallBack(new MapRectSelectView.RectSelectedCallBack() {
             @Override
             public void rectSelected(Point startPoint, Point endPoint) {
@@ -658,6 +658,12 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         .subscribe(
                 rsult ->{
                     List<LastLocationByUser> oneLineUsersLocList = new ArrayList<LastLocationByUser>();
+                    if (rsult.size() == 0)
+                    {
+                        Toast.makeText(textureBmapView.getContext(),
+                                R.string.tip_rect_select_no_people, Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     for (UserLocation ul : rsult)
                     {
                         LastLocationByUser llb = new LastLocationByUser(ul.getUserId(),
@@ -668,7 +674,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     showLocations(oneLineUsersLocList);
                 },
                 err ->{
-
+                        Toast.makeText(textureBmapView.getContext(), err.getMessage(),
+                                    Toast.LENGTH_LONG).show();
                 }
         );
     }
