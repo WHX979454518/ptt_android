@@ -80,10 +80,13 @@ import butterknife.Unbinder;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import utils.CommonUtil;
 import utils.LogUtils;
 
@@ -343,7 +346,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 break;
             case R.id.trace_play://播放
                 labels = PALY;
-                observable = Observable.interval(1, 1, TimeUnit.SECONDS);
+                trace_play.setClickable(false);
+                if(observable==null){
+                    observable = Observable.interval(1, 1, TimeUnit.SECONDS);
+                }
                 if (userLocations.size() > 0 &&
                         userLocations.get(0).getName().equals(traceHistoryUserIds.get(0))) {
                     showTrackPlayback(userLocations);
@@ -357,24 +363,57 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     }
                 }
                 break;
-            case R.id.trace_the_previous://上一个
-                if (timer != null) timer.cancel();
-                if (mTimerTask != null) mTimerTask.cancel();
+            case R.id.trace_pause://暂停
+                setDisposeClick();
+                labels= PAUSE;
                 break;
             case R.id.trace_previous_loaction://上一位置
-                if (timer != null) timer.cancel();
-                if (mTimerTask != null) mTimerTask.cancel();
-                break;
-            case R.id.trace_pause://暂停
-                if (timer != null) timer.cancel();
-                if (mTimerTask != null) mTimerTask.cancel();
+                setDisposeClick();
+                int position = 0;
+                for(int i=0; i<adpterNodes.size() ;i++){
+                    if(adpterNodes.get(i).get_id().equals(traceHistoryUserIds.get(0))){
+                        position = i;
+                        break;
+                    }
+
+                    if(i == ++position){
+                        adpterNodes.get(i).setSelected(true);
+                        selected_user.setText(adpterNodes.get(i).getName());
+                    }else {
+                        adpterNodes.get(i).setSelected(false);
+                    }
+                }
+                gridAdapter.setTraceData(adpterNodes);
+
+
+                if(position>0){
+                    --position;
+                    traceHistoryUserIds.clear();
+                    traceHistoryUserIds.add(adpterNodes.get(position).get_id());
+                }else {
+                    showTrackPlayback(userLocations);
+                }
+                labels= PREVIOUSSTEP;
+                --num;
+                if(num>=0){
+                loactionMove(moveMarker);}
                 break;
             case R.id.trace_next_location://下一位置
-                if (timer != null) timer.cancel();
-                if (mTimerTask != null) mTimerTask.cancel();
+                setDisposeClick();
+                labels= NEXTSTEP;
+                    num++;
+                if(num<=userLocations.size()) {
+                    loactionMove(moveMarker);
+                }
+                break;
+            case R.id.trace_the_previous://上一个
+                setDisposeClick();
+                consoleMapPresener.showUserTraceHistory(traceHistoryUserIds, this, startTime, endTime);
+                labels= LAST;
                 break;
             case R.id.trace_next_user://下一用户
-
+                setDisposeClick();
+                labels= NEXT;
                 break;
             case R.id.trace_start_time:
                 if (null == startTimeCallback) {
@@ -419,6 +458,11 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         }
     }
 
+    private void setDisposeClick(){
+        trace_play.setClickable(true);
+        if(timerdisposable!=null && !timerdisposable.isDisposed())
+            timerdisposable.dispose();
+    }
 
     /**
      * 初始化定位相关代码
@@ -784,33 +828,33 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         gridAdapter.setTraceData(adpterNodes);
     }
 
-    Timer timer;
-    TimerTask mTimerTask;
     private int num = 0;//轨迹列表数据滚动计数器
     Observable<Long> observable;
-    Disposable disposable;
+    Disposable timerdisposable;
     ArrayList<LatLng> ltns = new ArrayList<>();
     private Overlay myOverlay;
+    BitmapDescriptor moveMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
 
     //拿到历史轨迹数据，业务在这里处理
     @Override
     public void showTrackPlayback(List<TraceListItemData> datas) {
-        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+
 //        userLocations.clear();
-        if (userLocations.size() > 0 &&
+        if (userLocations.size() > 0 &&datas.size()>0&&
                 userLocations.get(0).getName().equals(datas.get(0).getName())) {
             listAdapter.setUserLocations(userLocations);
             for (int i = 0; i < userLocations.size(); i++) {
-                if (i == 0) {
+                if (i == num) {
                     userLocations.get(i).setCurrent(true);
                 } else {
                     userLocations.get(i).setCurrent(false);
                 }
             }
-            listView.setSelection(0);
+            listView.setSelection(num);
         } else {
 
             userLocations.clear();
+            num = 0;
             for (TraceListItemData listItem : datas) {
                 try {
                     userLocations.add(listItem.cloneNode());
@@ -819,62 +863,61 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                     e.printStackTrace();
                 }
             }
+            listView.setSelection(0);
         }
-        painStroke(ltns);
-        setTraceZoom(ltns);
+        if(ltns.size()>0){
+            painStroke(ltns);
+            setTraceZoom(ltns);
+        }
         listAdapter.setUserLocations(userLocations);
-        num = 0;
-        observable.subscribe(new Observer<Long>() {
+      observable.take(userLocations.size()+1)
+              .subscribe(new Observer<Long>() {
+            /**
+             * this  function do only onece   when subcribe,so  you cant't dispose
+             * @param disposable1
+             */
             @Override
-            public void onSubscribe(Disposable disposable) {
-                if(num==userLocations.size()&&disposable!=null){
-                    disposable.dispose();
-                    observable =null;
-                }
+            public void onSubscribe(Disposable disposable1) {
+                timerdisposable = disposable1;
             }
 
             @Override
             public void onNext(Long aLong) {
+
                 switch (labels) {
                     case PALY:
                         if (num < userLocations.size()) {
-                            listView.post(new Runnable() {
-                                @Override
-                                public void run() {
-//                                    listView.smoothScrollToPosition(num);
-                                    listView.smoothScrollToPositionFromTop(num, 0);
-                                    for (int i = 0; i < userLocations.size(); i++) {
-                                        if (i == num) {
-                                            if(i>0&&myOverlay!=null){
-                                                myOverlay.remove();
-                                            }
-                                            userLocations.get(i).setCurrent(true);
-                                            LatLng gpsLng = new LatLng(userLocations.get(i).getLatLng().latitude, userLocations.get(i).getLatLng().longitude);
-                                            OverlayOptions overlayOptions = new MarkerOptions().position(gpsLng).icon(mMarker).zIndex(6);
-                                            myOverlay = baiduMap.addOverlay(overlayOptions);
-                                        } else {
-                                            userLocations.get(i).setCurrent(false);
-                                        }
-                                    }
-                                    listAdapter.setUserLocations(userLocations);
-                                    num++;
-
-                                }
-                            });
+                            loactionMove(moveMarker);
+                            num++;
                         } else {
-                            LogUtils.d("num is :", "num is --------------->" + num);
-                            LogUtils.d("userLocations is :", "userLocations is --------------->" + userLocations.size());
+                            //当 aLong == listview 适配器数据的count 的时候调用 disabl.dispo()   cancel  this  subscriptpion
+                            if(num==userLocations.size()){
+                                num=0;
+                                trace_play.setClickable(true);
+                            }
                         }
                         break;
                     case PAUSE:
+                        if(!timerdisposable.isDisposed()){
+                            timerdisposable.dispose();
+                            timerdisposable=null;
+                        }
                         break;
-                    case PREVIOUSSTEP:
+                    case PREVIOUSSTEP://上一步
+                        if (num < userLocations.size()&&num>=0) {
+                            --num;
+                            loactionMove(moveMarker);
+                        }
                         break;
-                    case NEXTSTEP:
+                    case NEXTSTEP://下一步
+                        if (num < userLocations.size()) {
+                            ++num;
+                            loactionMove(moveMarker);
+                        }
                         break;
-                    case NEXT:
+                    case NEXT://上一位
                         break;
-                    case LAST:
+                    case LAST://下一位
                         break;
                 }
             }
@@ -887,6 +930,31 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             @Override
             public void onComplete() {
 
+            }
+        });
+    }
+
+    private void loactionMove(BitmapDescriptor mMarker){
+        listView.post(new Runnable() {
+            @Override
+            public void run() {
+//              listView.smoothScrollToPosition(num);
+                listView.smoothScrollToPositionFromTop(num, 0);
+                for (int i = 0; i < userLocations.size(); i++) {
+                    if (i == num) {
+                        if(i>0&&myOverlay!=null){
+                            myOverlay.remove();
+                        }
+                        userLocations.get(i).setCurrent(true);
+                        LatLng gpsLng = new LatLng(userLocations.get(i).getLatLng().latitude,
+                                userLocations.get(i).getLatLng().longitude);
+                        OverlayOptions overlayOptions = new MarkerOptions().position(gpsLng).icon(mMarker).zIndex(6);
+                        myOverlay = baiduMap.addOverlay(overlayOptions);
+                    } else {
+                        userLocations.get(i).setCurrent(false);
+                    }
+                }
+                listAdapter.setUserLocations(userLocations);
             }
         });
     }
