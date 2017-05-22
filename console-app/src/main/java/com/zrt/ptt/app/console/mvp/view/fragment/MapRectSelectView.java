@@ -35,6 +35,7 @@ public class MapRectSelectView extends TextureView
         paint.setColor(Color.RED);
 
         setOnTouchListener(this);
+        setSurfaceTextureListener(this);
     }
 
     public MapRectSelectView(Context context, AttributeSet attrs)
@@ -46,19 +47,24 @@ public class MapRectSelectView extends TextureView
         endPoint = new Point();
 
         setOnTouchListener(this);
+        setSurfaceTextureListener(this);
     }
 
+    private void  clear()
+    {
+        Canvas canvas = lockCanvas();
+
+        canvas.drawColor(Color.BLACK);
+
+        unlockCanvasAndPost(canvas);
+    }
 
     private void  draw()
     {
         Canvas canvas = lockCanvas();
 
-        canvas.drawColor(Color.WHITE);
-//            canvas.drawRect(startPoint.x, startPoint.y,
-//                            (endPoint.x - startPoint.x), endPoint.y - startPoint.y,
-//                            paint);
+        canvas.drawColor(Color.BLACK);
         canvas.drawRect(startPoint.x, startPoint.y, endPoint.x, endPoint.y, paint);
-        canvas.drawLine(0,0,200,200,paint);
 
         unlockCanvasAndPost(canvas);
     }
@@ -89,6 +95,7 @@ public class MapRectSelectView extends TextureView
                 {
                     rectSelectedCallBack.rectSelected(startPoint, endPoint);
                 }
+                clear();
             }
                 break;
         }
@@ -102,7 +109,7 @@ public class MapRectSelectView extends TextureView
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-
+        clear();
     }
 
     @Override

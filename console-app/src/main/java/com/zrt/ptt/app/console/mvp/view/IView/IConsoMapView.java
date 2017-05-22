@@ -27,6 +27,5 @@ public interface IConsoMapView {
 
     void mapRectSelect();
 
-    void showTrackPlayback(List<UserLocation> userLocations);
     void callBackiDisposable(Disposable disposable);
 }

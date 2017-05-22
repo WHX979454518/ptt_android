@@ -47,6 +47,7 @@ import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.inner.Point;
 import com.xianzhitech.ptt.AppComponent;
 import com.xianzhitech.ptt.api.dto.LastLocationByUser;
+import com.xianzhitech.ptt.api.dto.UserLocation;
 import com.zrt.ptt.app.console.App;
 import com.zrt.ptt.app.console.R;
 import com.zrt.ptt.app.console.baidu.MyOrientationListener;
@@ -78,6 +79,7 @@ import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -107,6 +109,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private TextView trace_start_time, trace_end_time, current_user, selected_user;
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Disposable traceDisposable;
+    @BindView(R.id.map_op_rect_select_surfaceview)
+    MapRectSelectView mapRectSelectView;
+
     /**
      * 当前定位的模式
      */
