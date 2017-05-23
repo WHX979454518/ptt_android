@@ -56,7 +56,9 @@ import com.zrt.ptt.app.console.baidu.MyOrientationListener;
 import com.zrt.ptt.app.console.mvp.bean.TraceListItemData;
 import com.zrt.ptt.app.console.mvp.model.Node;
 import com.zrt.ptt.app.console.mvp.presenter.ConsoleMapPresener;
+import com.zrt.ptt.app.console.mvp.presenter.MainActivityPresenter;
 import com.zrt.ptt.app.console.mvp.view.IView.IConsoMapView;
+import com.zrt.ptt.app.console.mvp.view.IView.IMainActivityView;
 import com.zrt.ptt.app.console.mvp.view.adapter.TraceGridAdapter;
 import com.zrt.ptt.app.console.mvp.view.adapter.TraceHistoryListAdapter;
 import com.zrt.ptt.app.console.mvp.view.dialog.DateDialog;
@@ -118,8 +120,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private Disposable traceDisposable;
     @BindView(R.id.map_op_rect_select_surfaceview)
     MapRectSelectView mapRectSelectView;
-//    @BindView(R.id.map_container)
-//    IConsoMapView imapView;
+    private MainActivityPresenter mainActivityPresenter;
 
     /**
      * 当前定位的模式
@@ -177,7 +178,8 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private static final String NEXTSTEP = "NEXTSTEP";//下一步
     private static final String NEXT = "NEXT";//下一位
     private static final String LAST = "LAST";//上一位
-    private Button btn_MapOP_RectSelLocation, btn_MapOP_RectSelPTT;
+    private Button btn_MapOP_RectSelLocation, btn_MapOP_RectSelPTT, btn_MapOP_RectSelConversion,
+                    btn_MapOP_RectSelAudio,btn_MapOP_RectSelVidio;
 
     public ConsoleMapFragment() {
         // Required empty public constructor
@@ -223,6 +225,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         trace_view_close.setOnClickListener(this);
        // playIv = (ImageView) btnView.findViewById(R.id.location_ivPlay);
         btn_MapOP_RectSelLocation = (Button) btnView.findViewById(R.id.rectsel_location);
+        btn_MapOP_RectSelConversion = (Button) btnView.findViewById(R.id.rectsel_conversion);
+        btn_MapOP_RectSelPTT = (Button) btnView.findViewById(R.id.rectsel_ptt);
+        btn_MapOP_RectSelAudio = (Button) btnView.findViewById(R.id.rectsel_audio);
+        btn_MapOP_RectSelVidio = (Button) btnView.findViewById(R.id.rectsel_video);
         trace_play = (ImageView) traceControlLayout.findViewById(R.id.trace_play);
         trace_the_previous = (ImageView) traceControlLayout.findViewById(R.id.trace_the_previous);
         trace_previous_loaction = (ImageView) traceControlLayout.findViewById(R.id.trace_previous_loaction);
@@ -231,6 +237,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         trace_next_user = (ImageView) traceControlLayout.findViewById(R.id.trace_next_user);
         //playIv.setOnClickListener(this);
         btn_MapOP_RectSelLocation.setOnClickListener(this);
+        btn_MapOP_RectSelConversion.setOnClickListener(this);
+        btn_MapOP_RectSelPTT.setOnClickListener(this);
+        btn_MapOP_RectSelAudio.setOnClickListener(this);
+        btn_MapOP_RectSelVidio.setOnClickListener(this);
         trace_play.setOnClickListener(this);
         trace_the_previous.setOnClickListener(this);
         trace_previous_loaction.setOnClickListener(this);
@@ -345,6 +355,26 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             case R.id.rectsel_location:
             {
                 mapRectSelect(null);
+            }
+                break;
+            case R.id.rectsel_conversion:
+            {
+                mapRectSelect(RoomMode.Conversion);
+            }
+                break;
+            case R.id.rectsel_ptt:
+            {
+                mapRectSelect(RoomMode.NORMAL);
+            }
+                break;
+            case R.id.rectsel_audio:
+            {
+                mapRectSelect(RoomMode.AUDIO);
+            }
+                break;
+            case R.id.rectsel_video:
+            {
+                mapRectSelect(RoomMode.VIDEO);
             }
                 break;
             case R.id.trace_view_close:
@@ -511,6 +541,12 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        try {
+            mainActivityPresenter = new MainActivityPresenter((IMainActivityView) context);
+        }catch (ClassCastException e) {
+            throw new ClassCastException(getActivity().getClass().getName()
+                    +" must implements interface MyListener");
+        }
     }
 
     @Override
@@ -793,12 +829,13 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private void handleRectSel(List<UserLocation> rsult, RoomMode roomMode)
     {
         List<LastLocationByUser> oneLineUsersLocList = new ArrayList<LastLocationByUser>();
-
+        List<String> usermultiMediaIds = new ArrayList<>();
         for (UserLocation ul : rsult) {
             LastLocationByUser llb = new LastLocationByUser(ul.getUserId(),
                     ul.getLocation().getLatLng(),
                     "");
             oneLineUsersLocList.add(llb);
+            usermultiMediaIds.add(ul.getUserId());
         }
 
         showLocations(oneLineUsersLocList);
@@ -808,29 +845,38 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             return;
         }
 
-        switch (roomMode)
-        {
-            case Conversion:
-            {
-
-            }
-                break;
-            case NORMAL://对讲
-                break;
-            case VIDEO:
-                break;
-            case AUDIO:
-                break;
-            case BROADCAST:
-                break;
-            case SYSTEM_CALL:
-                break;
-            case EMERGENCY:
-                break;
-            default:
-
-                break;
-        }
+//        if (roomMode != RoomMode.Conversion)
+//        {
+//            mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), RoomMode.Conversion);
+//        }
+        mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), roomMode);
+//
+//        switch (roomMode)
+//        {
+//            case Conversion:
+//            {
+//                mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), roomMode);
+//            }
+//                break;
+//            case NORMAL://对讲
+//            {
+//                mainActivityPresenter.showChatkRoom(usermultiMediaIds, new ArrayList<>(), roomMode);
+//            }
+//                break;
+//            case VIDEO:
+//                break;
+//            case AUDIO:
+//                break;
+//            case BROADCAST:
+//                break;
+//            case SYSTEM_CALL:
+//                break;
+//            case EMERGENCY:
+//                break;
+//            default:
+//
+//                break;
+//        }
     }
 
 

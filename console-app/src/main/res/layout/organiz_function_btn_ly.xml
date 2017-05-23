@@ -62,20 +62,18 @@
             />
 
         <Button
-            android:id="@+id/rectsel_redio"
+            android:id="@+id/rectsel_audio"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/mapop_recselradio"
-            />
+            android:background="@drawable/mapop_recselradio" />
 
         <Button
-            android:id="@+id/rectsel_vedio"
+            android:id="@+id/rectsel_video"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/mapop_recselvidio"
-            />
+            android:background="@drawable/mapop_recselvidio" />
     </LinearLayout>
 
 
