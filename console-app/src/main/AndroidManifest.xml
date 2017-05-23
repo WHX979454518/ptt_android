@@ -46,7 +46,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".mvp.view.activity.MainActivity"
-            android:screenOrientation="landscape"/>
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden"/>
 
         <service
             android:name="com.baidu.location.f"
