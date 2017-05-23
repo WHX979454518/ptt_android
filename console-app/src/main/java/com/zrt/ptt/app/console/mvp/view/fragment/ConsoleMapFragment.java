@@ -382,10 +382,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 break;
             case R.id.trace_play://播放
                 labels = PALY;
-                trace_play.setClickable(false);
                 if (observable == null) {
                     observable = Observable.interval(1, 1, TimeUnit.SECONDS);
                 }
+                setDisposeClick();
                 if (userLocations.size() > 0 &&
                         userLocations.get(0).getName().equals(traceHistoryUserIds.get(0))) {
                     showTrackPlayback(userLocations);
@@ -406,20 +406,39 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             case R.id.trace_previous_loaction://上一位置
                 setDisposeClick();
                 labels = PREVIOUSSTEP;
-                --num;
-                if (num >= 0) {
+                if(num>0){
+                    --num;
+                }
+                if(num>=0){
                     loactionMove(moveMarker);
+                }
+//                trace_next_location.setClickable(true);
+                if(num==0){
+                    Toast.makeText(getActivity(),"已是第一条定位数据，前面已没有数据了",Toast.LENGTH_LONG).show();
+                    return;
+//                    trace_previous_loaction.setClickable(false);
                 }
                 break;
             case R.id.trace_next_location://下一位置
                 setDisposeClick();
                 labels = NEXTSTEP;
-                num++;
-                if (num <= userLocations.size()) {
+                if(num<userLocations.size()-1){
+                    num++;
+                }
+                if(num<=userLocations.size()-1){
                     loactionMove(moveMarker);
+                }
+//                trace_previous_loaction.setClickable(true);
+                if(num==userLocations.size()-1){
+                    Toast.makeText(getActivity(),"已是最后一条定位数据，没有更多数据了",Toast.LENGTH_LONG).show();
+                    return;
+//                    trace_next_location.setClickable(false);
                 }
                 break;
             case R.id.trace_the_previous://上一个用户
+                if (observable == null) {
+                    observable = Observable.interval(1, 1, TimeUnit.SECONDS);
+                }
                 setDisposeClick();
                 labels = LAST;
                 int position = 0;
@@ -431,7 +450,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 }
                 for (int k = 0; k < adpterNodes.size(); k++) {
                     if(position==0){
-                        trace_the_previous.setClickable(false);
+                        Toast.makeText(getActivity(),"前面已没有用户了，请选择下一位",Toast.LENGTH_LONG).show();
                         return;
                     }
                     if (k == position - 1) {
@@ -439,6 +458,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                         traceHistoryUserIds.clear();
                         traceHistoryUserIds.add(adpterNodes.get(k).get_id());
                         selected_user.setText(adpterNodes.get(k).getName());
+                        current_user.setText(adpterNodes.get(k).getName());
                     } else {
                         adpterNodes.get(k).setSelected(false);
                     }
@@ -447,6 +467,10 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             consoleMapPresener.showUserTraceHistory(traceHistoryUserIds, this, startTime, endTime);
             break;
             case R.id.trace_next_user://下一用户
+                trace_play.setClickable(false);
+                if (observable == null) {
+                    observable = Observable.interval(1, 1, TimeUnit.SECONDS);
+                }
                 setDisposeClick();
                 labels = NEXT;
                 int posNext = 0;
@@ -458,7 +482,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 }
                 for (int k = 0; k < adpterNodes.size(); k++) {
                     if(posNext==adpterNodes.size()-1){
-                        trace_the_previous.setClickable(false);
+                        Toast.makeText(getActivity(),"已经是最后一位用户，请选择上一位",Toast.LENGTH_LONG).show();
                         return;
                     }
                     if (k == posNext + 1) {
@@ -466,6 +490,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                         traceHistoryUserIds.clear();
                         traceHistoryUserIds.add(adpterNodes.get(k).get_id());
                         selected_user.setText(adpterNodes.get(k).getName());
+                        current_user.setText(adpterNodes.get(k).getName());
                     } else {
                         adpterNodes.get(k).setSelected(false);
                     }
@@ -560,18 +585,6 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         unbinder.unbind();
     }
 
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
-        if (textureBmapView != null) {
-            textureBmapView.onDestroy();
-        }
-        compositeDisposable.clear();
-        baiduMap.setMyLocationEnabled(false);
-    }
-
     private class myMapTouchListener implements BaiduMap.OnMapTouchListener {
 
         @Override
@@ -638,6 +651,17 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
         // 关闭方向传感器
 //        myOrientationListener.stop();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
+        if (textureBmapView != null) {
+            textureBmapView.onDestroy();
+        }
+        compositeDisposable.clear();
+        baiduMap.setMyLocationEnabled(false);
     }
 
 //    @Override
@@ -913,14 +937,6 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     @Override
     public void sendCheckedUsers(List<Node> checkedNodes) {
-        if (checkedNodes.size() == 0) {
-            trace_the_previous.setClickable(false);
-            trace_next_user.setClickable(false);
-            trace_play.setClickable(false);
-            trace_pause.setClickable(false);
-            trace_previous_loaction.setClickable(false);
-            trace_next_location.setClickable(false);
-        }
         adpterNodes.clear();
         for (Node node : checkedNodes) {
             try {
@@ -936,12 +952,6 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             if (selectedNodes.size() > 0 && node.equals(selectedNodes.get(0))) {
                 node.setSelected(true);
                 exsitSelected = true;
-                trace_the_previous.setClickable(true);
-                trace_play.setClickable(true);
-                trace_pause.setClickable(true);
-                trace_next_user.setClickable(true);
-                trace_previous_loaction.setClickable(true);
-                trace_next_location.setClickable(true);
                 selected_user.setText(node.getName());
                 traceHistoryUserIds.add(node.get_id());
                 break;
@@ -949,12 +959,6 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         }
         if (adpterNodes.size() > 0 && !exsitSelected) {
             adpterNodes.get(0).setSelected(true);
-            trace_the_previous.setClickable(false);
-            trace_next_user.setClickable(true);
-            trace_play.setClickable(true);
-            trace_pause.setClickable(true);
-            trace_previous_loaction.setClickable(true);
-            trace_next_location.setClickable(true);
             selected_user.setText(adpterNodes.get(0).getName());
             try {
                 selectedNodes.clear();
@@ -970,18 +974,23 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     }
 
     private int num = 0;//轨迹列表数据滚动计数器
-    Observable<Long> observable;
-    Disposable timerdisposable;
-    ArrayList<LatLng> ltns = new ArrayList<>();
+    private Observable<Long> observable;
+    private Disposable timerdisposable;
+    private ArrayList<LatLng> ltns = new ArrayList<>();
     private Overlay myOverlay;
-    BitmapDescriptor moveMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_marka);
+    private BitmapDescriptor moveMarker = BitmapDescriptorFactory.fromResource(R.drawable.navigation);
 
     //拿到历史轨迹数据，业务在这里处理
     @Override
     public void showTrackPlayback(List<TraceListItemData> datas) {
-
-//        userLocations.clear();
-        if (userLocations.size() > 0 && datas.size() > 0 &&
+        if(datas.size()==0){
+            Toast.makeText(getActivity(),"该时间段内没有用户定位数据，请换个时间段",Toast.LENGTH_SHORT).show();
+            baiduMap.clear();
+            userLocations.clear();
+            listAdapter.setUserLocations(userLocations);
+            return;
+        }
+        if (datas.size() > 0 && userLocations.size() > 0 &&
                 userLocations.get(0).getName().equals(datas.get(0).getName())) {
             listAdapter.setUserLocations(userLocations);
             for (int i = 0; i < userLocations.size(); i++) {
@@ -1013,10 +1022,6 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         listAdapter.setUserLocations(userLocations);
         observable.take(userLocations.size() + 1)
                 .subscribe(new Observer<Long>() {
-                    /**
-                     * this  function do only onece   when subcribe,so  you cant't dispose
-                     * @param disposable1
-                     */
                     @Override
                     public void onSubscribe(Disposable disposable1) {
                         timerdisposable = disposable1;
@@ -1024,41 +1029,15 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
                     @Override
                     public void onNext(Long aLong) {
-
                         switch (labels) {
                             case PALY:
-                                if (num < userLocations.size()) {
-                                    loactionMove(moveMarker);
-                                    num++;
-                                } else {
-                                    //当 aLong == listview 适配器数据的count 的时候调用 disabl.dispo()   cancel  this  subscriptpion
-                                    if (num == userLocations.size()) {
-                                        num = 0;
-                                        trace_play.setClickable(true);
-                                    }
-                                }
-                                break;
-                            case PAUSE:
-                                if (!timerdisposable.isDisposed()) {
-                                    timerdisposable.dispose();
-                                    timerdisposable = null;
-                                }
-                                break;
-                            case PREVIOUSSTEP://上一步
-                                if (num < userLocations.size() && num >= 0) {
-                                    --num;
-                                    loactionMove(moveMarker);
-                                }
-                                break;
-                            case NEXTSTEP://下一步
-                                if (num < userLocations.size()) {
-                                    ++num;
-                                    loactionMove(moveMarker);
-                                }
+                                playNextLast();
                                 break;
                             case NEXT://上一位
+                                playNextLast();
                                 break;
                             case LAST://下一位
+                                playNextLast();
                                 break;
                         }
                     }
@@ -1075,6 +1054,19 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 });
     }
 
+    //播放，上一位，下一位逻辑
+    private void playNextLast(){
+        if (num < userLocations.size()) {
+            loactionMove(moveMarker);
+            num++;
+        } else {
+            //当 aLong == listview 适配器数据的count 的时候调用 disabl.dispo()   cancel  this  subscriptpion
+            if (num == userLocations.size()) {
+                num = 0;
+            }
+        }
+    }
+    //轨迹播放listview动态滚动与轨迹跳动
     private void loactionMove(BitmapDescriptor mMarker) {
         listView.post(new Runnable() {
             @Override
@@ -1123,16 +1115,6 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        if (position > 0) {
-            trace_the_previous.setClickable(true);
-        } else {
-            trace_the_previous.setClickable(false);
-        }
-        if (position < parent.getAdapter().getCount() - 1) {
-            trace_next_user.setClickable(true);
-        } else {
-            trace_next_user.setClickable(false);
-        }
         Node node = (Node) parent.getAdapter().getItem(position);
         selectedNodes.clear();
         traceHistoryUserIds.clear();

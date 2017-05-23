@@ -99,6 +99,8 @@
                     android:gravity="center_vertical"
                     android:background="#d3e5e4"
                     android:padding="5dp"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
                     android:orientation="horizontal">
                     <EditText
                         android:id="@+id/state_search_edit"
