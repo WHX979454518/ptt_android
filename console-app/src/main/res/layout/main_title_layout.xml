@@ -27,17 +27,7 @@
         android:gravity="center_vertical"
         android:visibility="gone"
         android:textColor="@color/textwhit"/>
-    <TextView
-        android:id="@+id/frame_map"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="center_vertical"
-        android:layout_marginLeft="20dp"
-        android:layout_toRightOf="@+id/all_call"
-        android:text="框选"
-        android:textSize="30sp"
-        android:gravity="center_vertical"
-        android:textColor="@color/textwhit"/>
+
     <ImageView
         android:layout_width="55dp"
         android:layout_height="55dp"

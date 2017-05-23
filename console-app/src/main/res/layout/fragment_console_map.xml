@@ -20,7 +20,7 @@
     <FrameLayout
         android:id="@+id/organiz_func_container"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@color/transparen"
         android:gravity="center_vertical"

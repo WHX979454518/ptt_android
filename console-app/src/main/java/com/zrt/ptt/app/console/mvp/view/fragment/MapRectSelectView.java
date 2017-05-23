@@ -55,6 +55,7 @@ public class MapRectSelectView extends TextureView
         Canvas canvas = lockCanvas();
 
         canvas.drawColor(Color.BLACK);
+        canvas.drawText("框选：请在地图上拖动", 0,"框选：请在地图上拖动".length(), 20, 20, paint);
 
         unlockCanvasAndPost(canvas);
     }
