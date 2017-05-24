@@ -186,15 +186,21 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
     @Override
     public void onCloseChatRoom() {
-        if(chatFragment.isVisible()){
+        if(chatFragment!=null&&chatFragment.isVisible()){
             FragmentManagerUtils.removeFragment(this, chatFragment);
             getViewModel().chatRoomTitleNameVisible.set(false);
+//            onShowCallRoom();
         }
         //我加的
-        if(!chatFragment.isVisible()){
-            FragmentManagerUtils.removeFragment(this, callFragment);
+        if(walkieRoomFragment!=null&&walkieRoomFragment.isVisible()){
             FragmentManagerUtils.removeFragment(this, walkieRoomFragment);
             getViewModel().callRoomTitleNameVisible.set(false);
+            onShowChatRoom();
+        }
+        if(callFragment!=null&&callFragment.isVisible()){
+            FragmentManagerUtils.removeFragment(this, callFragment);
+            getViewModel().callRoomTitleNameVisible.set(false);
+            onShowChatRoom();
         }
 
     }
@@ -249,7 +255,6 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
                 });
 
         getViewModel().chatRoomTitleNameVisible.set(true);
-        getViewModel().chatRoomBitmap.set(R.drawable.chat);
     }
 
     /**
@@ -314,6 +319,5 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
         getViewModel().callRoomTitleNameVisible.set(true);
 //        getViewModel().chatRoomTitleNameVisible.set(true);
-        getViewModel().callRoomBitMap.set(R.drawable.ic_call_black);
     }
 }

@@ -17,8 +17,8 @@ public class ChatRoomViewModel extends LifecycleViewModel  {
 
     public final ObservableField<String> chatRoomTitleName = new ObservableField<>("");
     public final ObservableField<String> callRoomTitleName = new ObservableField<>("");
-    public final ObservableField<Integer> chatRoomBitmap = new ObservableField<>(R.drawable.chat);
-    public final ObservableField<Integer> callRoomBitMap = new ObservableField<>(R.drawable.ic_call_black);
+   /* public final ObservableField<Integer> chatRoomBitmap = new ObservableField<>(R.drawable.chat);
+    public final ObservableField<Integer> callRoomBitMap = new ObservableField<>(R.drawable.ic_call_black);*/
     public final ObservableBoolean chatRoomTitleNameVisible = new ObservableBoolean(false);
     public final ObservableBoolean callRoomTitleNameVisible = new ObservableBoolean(false);
 
