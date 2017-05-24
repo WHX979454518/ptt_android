@@ -42,6 +42,7 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.Overlay;
 import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.map.Polyline;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.model.LatLng;
@@ -65,6 +66,7 @@ import com.zrt.ptt.app.console.mvp.view.dialog.DateDialog;
 
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ZoomControls;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -99,7 +101,7 @@ import static java.sql.Types.NULL;
 
 public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         View.OnClickListener, CompoundButton.OnCheckedChangeListener,
-        AdapterView.OnItemClickListener {
+        AdapterView.OnItemClickListener,BaiduMap.OnMarkerClickListener,BaiduMap.OnPolylineClickListener{
 
     @BindView(R.id.textureBmapView)
     TextureMapView textureBmapView;
@@ -115,7 +117,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private CheckBox traceRadioSelectedall;
     private GridView gridView;//轨迹回放选中用户Node
     private ListView listView;
-    private TextView trace_start_time, trace_end_time, current_user, selected_user;
+    private TextView trace_start_time, trace_end_time, current_user, selected_user,trace_selected_user;
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Disposable traceDisposable;
     @BindView(R.id.map_op_rect_select_surfaceview)
@@ -179,7 +181,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
     private static final String NEXT = "NEXT";//下一位
     private static final String LAST = "LAST";//上一位
     private Button btn_MapOP_RectSelLocation, btn_MapOP_RectSelPTT, btn_MapOP_RectSelConversion,
-                    btn_MapOP_RectSelAudio,btn_MapOP_RectSelVidio;
+                    btn_MapOP_RectSelAudio,btn_MapOP_RectSelVidio,btn_MapOP_RectselMark;
 
     public ConsoleMapFragment() {
         // Required empty public constructor
@@ -199,7 +201,16 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
 
     private void initMap() {
         baiduMap = textureBmapView.getMap();
+        textureBmapView.getChildAt(2).setPadding(0,0,0,300);
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15.0f);
+       /* baiduMap.setOnMapLoadedCallback(new BaiduMap.OnMapLoadedCallback() {
+            @Override
+            public void onMapLoaded() {
+
+                textureBmapView.setZoomControlsPosition(new android.graphics.Point(200,200));
+                textureBmapView.showZoomControls(false);
+            }
+        });*/
 
         baiduMap.setMapStatus(msu);
         initMyLocation();
@@ -220,6 +231,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         trace_view_close = (ImageView) view.findViewById(R.id.trace_view_close);
         trace_start_time = (TextView) view.findViewById(R.id.trace_start_time);
         trace_end_time = (TextView) view.findViewById(R.id.trace_end_time);
+        trace_selected_user = (TextView) view.findViewById(R.id.trace_selected_user);
         trace_start_time.setOnClickListener(this);
         trace_end_time.setOnClickListener(this);
         trace_view_close.setOnClickListener(this);
@@ -229,6 +241,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         btn_MapOP_RectSelPTT = (Button) btnView.findViewById(R.id.rectsel_ptt);
         btn_MapOP_RectSelAudio = (Button) btnView.findViewById(R.id.rectsel_audio);
         btn_MapOP_RectSelVidio = (Button) btnView.findViewById(R.id.rectsel_video);
+        btn_MapOP_RectselMark = (Button) btnView.findViewById(R.id.rectsel_mark);
         trace_play = (ImageView) traceControlLayout.findViewById(R.id.trace_play);
         trace_the_previous = (ImageView) traceControlLayout.findViewById(R.id.trace_the_previous);
         trace_previous_loaction = (ImageView) traceControlLayout.findViewById(R.id.trace_previous_loaction);
@@ -241,6 +254,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         btn_MapOP_RectSelPTT.setOnClickListener(this);
         btn_MapOP_RectSelAudio.setOnClickListener(this);
         btn_MapOP_RectSelVidio.setOnClickListener(this);
+        btn_MapOP_RectselMark.setOnClickListener(this);
         trace_play.setOnClickListener(this);
         trace_the_previous.setOnClickListener(this);
         trace_previous_loaction.setOnClickListener(this);
@@ -280,7 +294,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         baiduMap.clear();
         LatLng latLng = null;
         Marker marker = null;
-        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_geo);
+        BitmapDescriptor mMarker = BitmapDescriptorFactory.fromResource(R.drawable.location_point);//icon_geo
         OverlayOptions options;
 
         // 经纬度
@@ -305,11 +319,11 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         BitmapDescriptor custom3 = BitmapDescriptorFactory
                 .fromResource(R.drawable.icon_road_blue_arrow);
 // 定义点
-        LatLng pt1 = new LatLng(39.93923, 116.357428);
+       /* LatLng pt1 = new LatLng(39.93923, 116.357428);
         LatLng pt2 = new LatLng(39.91923, 116.327428);
         LatLng pt3 = new LatLng(39.89923, 116.347428);
         LatLng pt4 = new LatLng(39.89923, 116.367428);
-        LatLng pt5 = new LatLng(39.91923, 116.387428);
+        LatLng pt5 = new LatLng(39.91923, 116.387428);*/
 
 //构造纹理队列
         List<BitmapDescriptor> customList = new ArrayList<BitmapDescriptor>();
@@ -335,7 +349,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             baiduMap.addOverlay(options);
         }
 //构造对象
-        OverlayOptions ooPolyline = new PolylineOptions().width(15).color(0xAAFF0000).points(points).customTextureList(customList).textureIndex(index);
+        OverlayOptions ooPolyline = new PolylineOptions().width(10).color(R.color.layout_title).points(points);//.customTextureList(customList).textureIndex(index);
 //添加到地图
         baiduMap.addOverlay(ooPolyline);
     }
@@ -376,6 +390,19 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             {
                 mapRectSelect(RoomMode.VIDEO);
             }
+                break;
+            case R.id.rectsel_mark:
+                baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
+                    @Override
+                    public void onMapClick(LatLng latLng) {
+
+                    }
+
+                    @Override
+                    public boolean onMapPoiClick(MapPoi mapPoi) {
+                        return false;
+                    }
+                });
                 break;
             case R.id.trace_view_close:
                 traceControlLayout.setVisibility(View.INVISIBLE);
@@ -585,6 +612,29 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         unbinder.unbind();
     }
 
+    //maker点击事件
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        Toast.makeText(getActivity(),"marker:"+marker,Toast.LENGTH_LONG).show();
+        LatLng latLng = marker.getPosition();
+        for(TraceListItemData data :userLocations){
+            if(data.getLatLng().equals(latLng)){
+                setDisposeClick();
+                num = userLocations.indexOf(data);
+                loactionMove(moveMarker);
+            }
+        }
+        return false;
+    }
+
+    //轨迹先点击事件
+    @Override
+    public boolean onPolylineClick(Polyline polyline) {
+        Toast.makeText(getActivity(),"polyline:"+polyline,Toast.LENGTH_LONG).show();
+        return false;
+    }
+
+
     private class myMapTouchListener implements BaiduMap.OnMapTouchListener {
 
         @Override
@@ -605,19 +655,9 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         super.onStart();
         // 开启图层定位
         baiduMap.setMyLocationEnabled(true);
+        baiduMap.setOnMarkerClickListener(this);
+        baiduMap.setOnPolylineClickListener(this);
         baiduMap.setOnMapTouchListener(new myMapTouchListener());
-        baiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
-
-            @Override
-            public void onMapClick(LatLng latLng) {
-                System.out.print(latLng.latitude);
-            }
-
-            @Override
-            public boolean onMapPoiClick(MapPoi mapPoi) {
-                return false;
-            }
-        });
         if (!mLocationClient.isStarted()) {
             mLocationClient.start();
         }
@@ -953,6 +993,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
                 node.setSelected(true);
                 exsitSelected = true;
                 selected_user.setText(node.getName());
+                trace_selected_user.setText("1");
                 traceHistoryUserIds.add(node.get_id());
                 break;
             }
@@ -963,6 +1004,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
             try {
                 selectedNodes.clear();
                 selectedNodes.add(adpterNodes.get(0).cloneNode());
+                trace_selected_user.setText("1");
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
             }
@@ -1122,6 +1164,7 @@ public class ConsoleMapFragment extends Fragment implements IConsoMapView,
         for (Node bean : adpterNodes) {
             if (bean.get_id().equals(node.get_id())) {
                 bean.setSelected(true);
+                trace_selected_user.setText("1");
                 try {
                     selectedNodes.add(bean.cloneNode());
                 } catch (CloneNotSupportedException e) {

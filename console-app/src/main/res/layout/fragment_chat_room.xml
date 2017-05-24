@@ -35,6 +35,7 @@
                     android:gravity="center"
                     app:show="@{viewModel.chatRoomTitleNameVisible}"
                     >
+                    //android:onClick="@{ignored -> viewModel.onClickChatRoomTitle()}"
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -42,12 +43,19 @@
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_weight="1"
-                        android:onClick="@{ignored -> viewModel.onClickChatRoomTitle()}"
                         />
+                    //android:src="@drawable/chat"
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:src="@drawable/chat"
+                        android:onClick="@{ignored -> viewModel.onClickChatRoomTitle()}"
+                        app:show="@{viewModel.chatRoomTitleNameVisible &amp;&amp; viewModel.callRoomTitleNameVisible}"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/ic_call_black"
+                        android:onClick="@{ignored -> viewModel.onClickCallRoomTitle()}"
                         app:show="@{viewModel.chatRoomTitleNameVisible &amp;&amp; viewModel.callRoomTitleNameVisible}"/>
 
                     <ImageButton
@@ -57,7 +65,7 @@
                         android:onClick="@{ignored -> viewModel.onClickCloseChatRoom()}"
                         />
                 </LinearLayout>
-                <LinearLayout
+                <!--<LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -85,7 +93,7 @@
                         android:src="@drawable/clear"
                         android:onClick="@{ignored -> viewModel.onClickCloseCallRoom()}"
                         />
-                </LinearLayout>
+                </LinearLayout>-->
             </LinearLayout>
 
             <FrameLayout

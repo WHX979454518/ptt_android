@@ -186,8 +186,17 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
 
     @Override
     public void onCloseChatRoom() {
-        FragmentManagerUtils.removeFragment(this, chatFragment);
-        getViewModel().chatRoomTitleNameVisible.set(false);
+        if(chatFragment.isVisible()){
+            FragmentManagerUtils.removeFragment(this, chatFragment);
+            getViewModel().chatRoomTitleNameVisible.set(false);
+        }
+        //我加的
+        if(!chatFragment.isVisible()){
+            FragmentManagerUtils.removeFragment(this, callFragment);
+            FragmentManagerUtils.removeFragment(this, walkieRoomFragment);
+            getViewModel().callRoomTitleNameVisible.set(false);
+        }
+
     }
 
     @Override
@@ -234,11 +243,13 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
                     @Override
                     public void accept(@NonNull Optional<Pair<Room, String>> pairOptional) throws Exception {
                         Log.d(TAG, "ChatRoomFragment.roomTitle = [" + pairOptional.orNull().getSecond() + "]");
-                        getViewModel().callRoomTitleName.set(pairOptional.orNull().getSecond());
+//                        getViewModel().callRoomTitleName.set(pairOptional.orNull().getSecond());
+                        getViewModel().chatRoomTitleName.set(pairOptional.orNull().getSecond());
                     }
                 });
 
         getViewModel().chatRoomTitleNameVisible.set(true);
+        getViewModel().chatRoomBitmap.set(R.drawable.chat);
     }
 
     /**
@@ -281,6 +292,7 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
         FragmentManagerUtils.replaceFragment(this, walkieRoomFragment, R.id.chatroom_fragment_placeholder);
 
         getViewModel().callRoomTitleNameVisible.set(true);
+//        getViewModel().chatRoomTitleNameVisible.set(true);
     }
 
 
@@ -295,10 +307,13 @@ public class ChatRoomFragment extends BaseViewModelFragment<ChatRoomViewModel, F
                     @Override
                     public void accept(@NonNull Optional<Pair<Room, String>> pairOptional) throws Exception {
                         Log.d(TAG, "ChatRoomFragment.roomTitle = [" + pairOptional.orNull().getSecond() + "]");
-                        getViewModel().callRoomTitleName.set(pairOptional.orNull().getSecond());
+//                        getViewModel().callRoomTitleName.set(pairOptional.orNull().getSecond());
+                        getViewModel().chatRoomTitleName.set(pairOptional.orNull().getSecond());
                     }
                 });
 
         getViewModel().callRoomTitleNameVisible.set(true);
+//        getViewModel().chatRoomTitleNameVisible.set(true);
+        getViewModel().callRoomBitMap.set(R.drawable.ic_call_black);
     }
 }
