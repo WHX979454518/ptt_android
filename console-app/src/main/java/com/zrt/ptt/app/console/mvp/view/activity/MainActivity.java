@@ -103,7 +103,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     private MainActivityPresenter mainPresenter = new MainActivityPresenter(this);
     private Timer timer;
     private TimerTask timerTask;
-    private TextView time_hms,time_ymd;
+    private TextView time_hms,time_ymd,company_name;
 
 
     @Override
@@ -122,6 +122,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         View view = getLayoutInflater().inflate(R.layout.main_title_layout, null);
         time_hms = (TextView) findViewById(R.id.time_hms);
         time_ymd = (TextView) findViewById(R.id.time_ymd);
+        company_name = (TextView) findViewById(R.id.company_name);
         updateSystemTime();
         rootView = findViewById(R.id.main_title);
         View popupView = getLayoutInflater().inflate(R.layout.menu_popup, null);
@@ -130,7 +131,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         playBack = (LinearLayout) popupView.findViewById(R.id.play_back);
         playBack.setOnClickListener(this);
-        popupWindow = new PopupWindow(popupView, WindowManager.LayoutParams.WRAP_CONTENT,
+        popupWindow = new PopupWindow(popupView, 150,
                 WindowManager.LayoutParams.WRAP_CONTENT, true);
 //        popupWindow.setContentView(popupView);
         popupWindow.setOutsideTouchable(true);
@@ -356,6 +357,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public void sendCheckedUsers(List<Node> checkedNodes) {
         IConsoMapView imapView = (ConsoleMapFragment)getSupportFragmentManager().findFragmentById(R.id.map_container);
         imapView.sendCheckedUsers(checkedNodes);
+    }
+
+    @Override
+    public void setCompanyName(String compayName) {
+        company_name.setText(compayName);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////

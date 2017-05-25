@@ -42,11 +42,11 @@ public class OrganFragmentPresenter {
             }
 
             @Override
-            public void getNodeData(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
+            public void getNodeData(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize,String compayName) {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        iFragmentView.showAll(list,contactUserSize,onLineUserSize);
+                        iFragmentView.showAll(list,contactUserSize,onLineUserSize,compayName);
                     }
                 });
 
@@ -68,7 +68,7 @@ public class OrganFragmentPresenter {
             }
 
             @Override
-            public void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize) {
+            public void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize,String compayName) {
                 iFragmentView.showOnLine(list,contactUserSize,onLineUserSize);
             }
 
@@ -88,7 +88,7 @@ public class OrganFragmentPresenter {
             }
 
             @Override
-            public void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize) {
+            public void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize,String compayName) {
                 iFragmentView.showOffline(list,contactUserSize,onLineUserSize);
             }
 

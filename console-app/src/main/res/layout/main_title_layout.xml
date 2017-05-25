@@ -119,7 +119,7 @@
             android:id="@+id/logo"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
-            android:layout_marginRight="40dp"
+            android:layout_marginRight="100dp"
             android:layout_toLeftOf="@+id/console"
             android:gravity="center_vertical"
             android:src="@drawable/logo_console" />
@@ -141,12 +141,14 @@
                 android:textSize="18sp" />
 
             <TextView
+                android:id="@+id/company_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="3dp"
+                android:singleLine="true"
                 android:text="xx"
                 android:textColor="@color/textwhit"
-                android:textSize="18sp" />
+                android:textSize="14sp" />
         </LinearLayout>
 
     </RelativeLayout>

@@ -14,7 +14,7 @@ import io.reactivex.disposables.Disposable;
 
 public interface IOrgFragmentView {
     //第二个参数方便统计用户数量
-    void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
+    void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize,String compayName);
     void showOnLine(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
     void showOffline(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize);
     void showSlected();

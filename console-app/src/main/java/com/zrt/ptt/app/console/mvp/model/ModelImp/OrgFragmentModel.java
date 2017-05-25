@@ -222,7 +222,7 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                 userNum = contactUserlist.size();
                 returnOrgData(departlist,contactUserlist);
                 addPredefinedGroups(contactUserlist,contactGroups);
-                listener.getNodeData(contactUserlist,userNum,setLine.size());
+                listener.getNodeData(contactUserlist,userNum,setLine.size(),compayName);
                 break;
             case ON_LINE:
 //                List<OrgNodeBean> onLineOrgList = new ArrayList<OrgNodeBean>();
@@ -240,7 +240,7 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                 userNum = contactUserlist.size();
                 returnOrgData(departlist,contactUserlist);
                 addPredefinedGroups(contactUserlist,contactGroups);
-                listener.getNodeData(contactUserlist,userNum,setLine.size());
+                listener.getNodeData(contactUserlist,userNum,setLine.size(),compayName);
                 break;
             case OFF_LINE:
 //                List<OrgNodeBean> offLineOrgList = new ArrayList<OrgNodeBean>();
@@ -270,7 +270,7 @@ public class OrgFragmentModel implements IOrgFragmentModel {
                 userNum = contactUserlist.size();
                 returnOrgData(departlist,contactUserlist);
                 addPredefinedGroups(contactUserlist,contactGroups);
-                listener.getNodeData(contactUserlist,userNum,setLine.size());
+                listener.getNodeData(contactUserlist,userNum,setLine.size(),compayName);
                 break;
         }
 

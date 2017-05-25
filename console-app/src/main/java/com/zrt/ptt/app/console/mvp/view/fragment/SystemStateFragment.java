@@ -1,6 +1,10 @@
 package com.zrt.ptt.app.console.mvp.view.fragment;
 
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,8 +74,8 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_system_state, container, false);
-
         super.onCreate(savedInstanceState);
+        initView();
         FragmentManager fm = getChildFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         if (roomListFragment == null) {
@@ -89,6 +93,48 @@ public class SystemStateFragment extends Fragment implements RoomListFragment.Ca
 
     }
 
+    public void initView(){
+        String[] cpuInfos = null;
+        try{
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream("/proc/stat")), 1000);
+            String load = reader.readLine();
+            reader.close();
+            cpuInfos = load.split(" ");
+        }catch(IOException ex){
+            Log.e(TAG, "IOException" + ex.toString());
+        }
+        long totalCpu = 0;
+        try{
+            totalCpu = Long.parseLong(cpuInfos[2])
+                    + Long.parseLong(cpuInfos[3]) + Long.parseLong(cpuInfos[4])
+                    + Long.parseLong(cpuInfos[6]) + Long.parseLong(cpuInfos[5])
+                    + Long.parseLong(cpuInfos[7]) + Long.parseLong(cpuInfos[8]);
+        }catch(ArrayIndexOutOfBoundsException e){
+            Log.i(TAG, "ArrayIndexOutOfBoundsException" + e.toString());
+        }
+
+
+        String[] cpuInfoss = null;
+        try{
+            int pid = android.os.Process.myPid();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream("/proc/" + pid + "/stat")), 1000);
+            String load = reader.readLine();
+            reader.close();
+            cpuInfoss = load.split(" ");
+        }catch(IOException e){
+            Log.e(TAG, "IOException" + e.toString());
+        }
+        long appCpuTime = 0;
+        try{
+            appCpuTime = Long.parseLong(cpuInfos[13])
+                    + Long.parseLong(cpuInfos[14]) + Long.parseLong(cpuInfos[15])
+                    + Long.parseLong(cpuInfos[16]);
+        }catch(ArrayIndexOutOfBoundsException e){
+            Log.i(TAG, "ArrayIndexOutOfBoundsException" + e.toString());
+        }
+    }
 
     public void showChatRoomView(List<String> usersIds, List<String> groupIds, RoomMode roomMode) {
         Log.d(TAG, "showChatRoomView() called with: usersIds = [" + usersIds + "], groupIds = [" + groupIds + "], roomMode = [" + roomMode + "]");

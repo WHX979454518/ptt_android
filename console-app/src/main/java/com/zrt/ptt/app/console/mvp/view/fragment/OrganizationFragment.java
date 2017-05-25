@@ -78,7 +78,6 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
     private static final String ON_LINE = "ON_LINE";
     private static final String OFF_LINE = "OFF_LINE";
     private ImageView userLocation,trajectory_btn;
-    private List<LatLng> locations = new ArrayList<>();
     private HashSet<String> locationUserIds = new HashSet<>();
     private HashSet<String> multiMediaUserID = new HashSet<>();
     private Timer timer;
@@ -181,7 +180,6 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
                 setCheckAdapter(NodeAddDelet,checkDatas);
                 break;
             case R.id.user_location:
-                initLatLng();
                 List<String> userLoactionsIds = new ArrayList<>();
                 for(String id:locationUserIds){
                     userLoactionsIds.add(id);
@@ -245,16 +243,10 @@ public class OrganizationFragment extends Fragment implements View.OnClickListen
 //        });
     }
 
-    private void initLatLng(){
-        locations.add(new LatLng(30.664214,104.074297));
-        locations.add(new LatLng(30.663197,104.069231));
-        locations.add(new LatLng(30.662498,104.07401));
-        locations.add(new LatLng(30.663888,104.076552));
-        locations.add(new LatLng(30.662288,104.070704));
-    }
     //通过presenter拿到所有数据回调展示
     @Override
-    public void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize) {
+    public void showAll(List<OrgNodeBean> list,int contactUserSize, int onLineUserSize,String compayName) {
+        mainActivityPresenter.setCompanyName(compayName);
         checkDatas.clear();
         for (OrgNodeBean node:list) {
             for(Node bean:NodeAddDelet){

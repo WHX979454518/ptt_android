@@ -19,4 +19,5 @@
     <color name="grid_item_text">#CECECE</color>
     <color name="layout_title">#008EEF</color>
     <color name="white">#ffffffff</color>
+    <color name="location_btn_color">#F2260E</color>
 </resources>

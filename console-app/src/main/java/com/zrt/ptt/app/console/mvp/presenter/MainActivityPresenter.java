@@ -47,6 +47,9 @@ public class MainActivityPresenter {
 
     }
 
+    public void setCompanyName(String compayName){
+        iMainView.setCompanyName(compayName);
+    }
     //单人定位
     public void showLocation(List<String> locationUserIds) {
         iOrgMain.getSingleLocation(new IOranizationMain.callBackLocations() {

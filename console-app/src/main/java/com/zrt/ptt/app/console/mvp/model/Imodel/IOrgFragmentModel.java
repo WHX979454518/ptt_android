@@ -16,7 +16,7 @@ public interface IOrgFragmentModel {
     void getDepartUser(callDisposListener listener,String labe);
     interface callDisposListener{
         void callDisposable(Disposable disposable);
-        void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize);
+        void getNodeData(List<OrgNodeBean> list, int contactUserSize, int onLineUserSize,String compayName);
         void callOnlineUser(List<OrgNodeBean> list);
     }
 

@@ -42,4 +42,5 @@ public interface IMainActivityView {
     int getLayoutVisible();
 
     void sendCheckedUsers(List<Node> checkedNodes);
+    void setCompanyName(String compayName);
 }

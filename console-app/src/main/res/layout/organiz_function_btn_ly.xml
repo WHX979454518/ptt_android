@@ -10,39 +10,51 @@
         android:layout_height="wrap_content">
         <Button
             android:id="@+id/rectsel_showview"
-            android:layout_width="0dp"
+            android:layout_width="120dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:clickable="true"
-            android:background="@drawable/mapop_filter"
+            android:text="过 滤"
+            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"
             />
 
         <Button
             android:id="@+id/rectsel_mark"
-            android:layout_width="0dp"
+            android:layout_width="120dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/mapop_marker"
+            android:text="标 记"
+            android:layout_marginLeft="20dp"
+            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"
              />
 
         <Button
             android:id="@+id/rectsel_weilan"
-            android:layout_width="0dp"
+            android:layout_width="120dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/mapop_recsellimit"
+            android:text="围 栏"
+            android:textSize="18sp"
+            android:layout_marginLeft="20dp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"
              />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp">
         <Button
             android:id="@+id/rectsel_location"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:clickable="true"
-            android:background="@drawable/mapop_recsellocation"
+            android:text="框选定位"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"
             />
 
         <Button
@@ -50,7 +62,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/mapop_recselconvation"
+            android:text="框选会话"
+            android:layout_marginLeft="10dp"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"
             />
 
         <Button
@@ -58,7 +74,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/mapop_recselptt"
+            android:text="框选对讲"
+            android:layout_marginLeft="10dp"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"
             />
 
         <Button
@@ -66,14 +86,22 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/mapop_recselradio" />
+            android:text="框选语音"
+            android:layout_marginLeft="10dp"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector" />
 
         <Button
             android:id="@+id/rectsel_video"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/mapop_recselvidio" />
+            android:text="框选视屏"
+            android:layout_marginLeft="10dp"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/lcation_btn_selector"  />
     </LinearLayout>
 
 
